@@ -1,0 +1,22 @@
+name: Bug report
+description: Report a reproducible problem using a synthetic example
+body:
+  - type: markdown
+    attributes:
+      value: Do not upload browser profiles, real settings, chat screenshots, private paths, tokens or copyrighted wallpaper packages. Use a generated test image/video instead.
+  - type: textarea
+    id: versions
+    attributes:
+      label: Windows / Codex / Node / PowerShell / FFmpeg versions
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected behavior and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: sanitized
+    attributes:
+      label: Sanitized error and synthetic reproduction

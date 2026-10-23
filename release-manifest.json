@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "hashFormat": "sha256 of UTF-8 text normalized to LF, no BOM",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "utf8Bytes": 122,
+      "sha256": "26f34a115aa825069ae4f3b7eb69e6e305a0988dd9d264c1cc9b02a8fbff572b"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "utf8Bytes": 713,
+      "sha256": "964d0cdae5c6130ac7d560d27a1110597e5567cd1867240a41334697a3d3183a"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "utf8Bytes": 363,
+      "sha256": "ae9ec9f7b7dc674ff9e478dd246d9d1b1295ae995043951de1ff0aa6a2bd631f"
+    },
+    {
+      "path": ".gitignore",
+      "utf8Bytes": 425,
+      "sha256": "50ade20bfe703d116237c25ac50bc7deb0425a6c6c6c61aeddf69b5f40f9dc6e"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "utf8Bytes": 742,
+      "sha256": "34022f3d02afb588749f4a27b74567053e2f4c15715617da5640204770525390"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "utf8Bytes": 1087,
+      "sha256": "652b6f0439a6b7cc3a4952f348c064d1124d030bf6ba32885e0a07d0b366640e"
+    },
+    {
+      "path": "LICENSE",
+      "utf8Bytes": 1092,
+      "sha256": "71bc69ba58903768d0748677a493455e6a0e4a202e3a95a961700afedb684623"
+    },
+    {
+      "path": "PRIVACY.md",
+      "utf8Bytes": 2280,
+      "sha256": "ecc5c65b295e1bc9f72aea4be157be2a1242949ee2558a96d5cc2475b8d3e111"
+    },
+    {
+      "path": "README.md",
+      "utf8Bytes": 5946,
+      "sha256": "e9e39095cff6256d6c1ddd33e413b7e3106fd393214dbfbf295ad34830d0ef2d"
+    },
+    {
+      "path": "README.zh-CN.md",
+      "utf8Bytes": 4638,
+      "sha256": "0d9f48bef6c53736ded3455a3585bd911c771b3ac5ad3f6721d5caaeab0e1b22"
+    },
+    {
+      "path": "SECURITY.md",
+      "utf8Bytes": 1551,
+      "sha256": "758a3bd7b3c6f41b2752378e6bedea2b834092d6c4f2c449234ba44f224d8e7c"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "utf8Bytes": 1839,
+      "sha256": "f5f91729c3d41f54e0e3f1a1f7454eecc444173cadfd071594b4d3e007b86022"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "utf8Bytes": 1629,
+      "sha256": "19a958de07f8c59c2dba45fab2fb5651a0bfe6d1f60d57222997e910282d806a"
+    },
+    {
+      "path": "docs/CONFIGURATION.md",
+      "utf8Bytes": 2178,
+      "sha256": "efe4698eab2d8efcfc09020f85449b03a81ae3e903f83fa700376430cb21bf6b"
+    },
+    {
+      "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
+      "utf8Bytes": 2487,
+      "sha256": "4ebbd3f5c234d1284c9de32a89ba97fecc0a3fc95ade59c7afda57757f364955"
+    },
+    {
+      "path": "docs/UPSTREAM-SOURCES.json",
+      "utf8Bytes": 4565,
+      "sha256": "d34c63084e9b1eef5a8c46f530a9300dfe935016cc34f10106c705b8cdf7aa7f"
+    },
+    {
+      "path": "docs/VALIDATION.md",
+      "utf8Bytes": 1888,
+      "sha256": "6ece9c039a1fae819ba5eda96c763d202c060c7a396d23aaabd5d214d18de673"
+    },
+    {
+      "path": "package.json",
+      "utf8Bytes": 715,
+      "sha256": "4974110f0a5ea5e6d81765156e7b7b6b79ede4c4bd193efc501dbdd47c62e8e5"
+    },
+    {
+      "path": "settings.example.json",
+      "utf8Bytes": 337,
+      "sha256": "62c6c43dbfc76776463652faf5e8202f98a2e1e0c17552b3ec4b964a0123924b"
+    },
+    {
+      "path": "src/cdp-client.mjs",
+      "utf8Bytes": 1653,
+      "sha256": "7a58d651ac895697819e5b3913c469b47870cb0bc42cc02b98f130ae8cdd02a0"
+    },
+    {
+      "path": "src/engine-library.mjs",
+      "utf8Bytes": 7019,
+      "sha256": "4d999c823ed402c8f39c8b2cb701d253a75740ce940a030905c14abd0a19fbe0"
+    },
+    {
+      "path": "src/media-converter.mjs",
+      "utf8Bytes": 2595,
+      "sha256": "9fb5c95e7b88a81d87845fc9cd034e90576341b6c29ff26903bdea39a06105ff"
+    },
+    {
+      "path": "src/media-store.mjs",
+      "utf8Bytes": 1534,
+      "sha256": "57764e9662e9e00349857259420c33b6f9c7530d15b32e18d9d8bccf89826ad4"
+    },
+    {
+      "path": "src/runtime-paths.mjs",
+      "utf8Bytes": 2621,
+      "sha256": "003a7ca6bcdd569d1d266e9a224258f4089db70e5ce7f6ad1af8699eaa0ef8f2"
+    },
+    {
+      "path": "src/video-cdp-host.mjs",
+      "utf8Bytes": 10014,
+      "sha256": "0869193f5977464254cebc0fae825d2ab1d8334c571547406e526e3bda7a2a25"
+    },
+    {
+      "path": "src/wallpaper-actions.mjs",
+      "utf8Bytes": 7333,
+      "sha256": "6682cd73a80fce9ea06ae2e4cb40163a2d38d08ff23d73ccb0e2a8cd84a15f94"
+    },
+    {
+      "path": "src/wallpaper-engine-source.mjs",
+      "utf8Bytes": 5136,
+      "sha256": "9bb270e421943f687990fdc6f427f2da8f09a0362be5c8eb95ef2f2186d666dc"
+    },
+    {
+      "path": "src/wallpaper-panel.mjs",
+      "utf8Bytes": 12649,
+      "sha256": "4174249ccbfbc6516e838e1af1b589d0c6fffd513e42c8ab18ef7a3f221c6143"
+    },
+    {
+      "path": "src/wallpaper-style.mjs",
+      "utf8Bytes": 5256,
+      "sha256": "4b339da67231b89212f27e09230ebc691d187abc19b6432242fae53e4b2bb12c"
+    },
+    {
+      "path": "test/core.test.mjs",
+      "utf8Bytes": 5273,
+      "sha256": "933c81bd84892d7468084f3d1a4f9ca04232378b8aa70415fa92787065985433"
+    },
+    {
+      "path": "test/integration.mjs",
+      "utf8Bytes": 7128,
+      "sha256": "ce353fb56e58a9d78e83ada5e973146c132410914d00f3553de5ef627cf9f407"
+    },
+    {
+      "path": "tools/check-release.mjs",
+      "utf8Bytes": 2336,
+      "sha256": "95533bee867bf9472e6c48e4d0e54db78b38a089842b05bb411415f06f44ebbe"
+    },
+    {
+      "path": "tools/create-manifest.mjs",
+      "utf8Bytes": 526,
+      "sha256": "dea71409299d82b8aa25d529ace1c95c9923bfeac3a2764a200ccde1593c8dcd"
+    },
+    {
+      "path": "tools/release-files.mjs",
+      "utf8Bytes": 1229,
+      "sha256": "62df52367b209d5989bd0d62ac36260b43577ee650dba424aad7b837ae54f5ff"
+    },
+    {
+      "path": "vendor/codex-dynamic-skin/LICENSE",
+      "utf8Bytes": 1093,
+      "sha256": "18f8478d0f9efd45307e5f17790194593b116658145c758ced3166398eb05b21"
+    },
+    {
+      "path": "vendor/codex-dynamic-skin/scripts/common-windows.ps1",
+      "utf8Bytes": 63281,
+      "sha256": "0a4085d309788501466cf580ba268cda2e211e7a1386e3ca9e55b50a6585e68b"
+    },
+    {
+      "path": "vendor/codex-dynamic-skin/scripts/config-utf8.ps1",
+      "utf8Bytes": 64111,
+      "sha256": "63ac66b2753e08689ace58384391bcc523970d56b7938a79dc0b028fff962e82"
+    },
+    {
+      "path": "vendor/webwallgl/LICENSE",
+      "utf8Bytes": 1085,
+      "sha256": "857432ca4f48930e6079aca25164c27b791576ee2a7d3e3c9d6a92a089fe4948"
+    },
+    {
+      "path": "vendor/webwallgl/we-scene/LICENSE",
+      "utf8Bytes": 1086,
+      "sha256": "55bb1034635de81dc53f0466ec62e7681c49ae171fe5dc3221e346a0ea732641"
+    },
+    {
+      "path": "vendor/webwallgl/we-scene/pkg/container.js",
+      "utf8Bytes": 4568,
+      "sha256": "af21f811eb55f3e478a31bfaa102c51b235e8765c53b1561f31a80d14cb3a8d1"
+    },
+    {
+      "path": "vendor/webwallgl/we-scene/pkg/limits.js",
+      "utf8Bytes": 3243,
+      "sha256": "fbf4ad2bcba7c16923a5dcbf40d50d003dbea2365579c66a097ad19879b8abce"
+    },
+    {
+      "path": "vendor/webwallgl/we-scene/pkg/tex-codecs.js",
+      "utf8Bytes": 16376,
+      "sha256": "bd58124e533b663e874af8d75b4a0245978eafe01ab61f71fe9c667dd81c0e45"
+    },
+    {
+      "path": "vendor/webwallgl/we-scene/pkg/texture.js",
+      "utf8Bytes": 18194,
+      "sha256": "f01538108fbd07fe2cc220b6e0aab54c3746cc986b90d1295624d49b52ba7146"
+    },
+    {
+      "path": "windows/Build-Launcher.ps1",
+      "utf8Bytes": 1448,
+      "sha256": "dd555f94befe496d92777547ca950195c81afcca8f67ed60cc6a87f2d8c1f179"
+    },
+    {
+      "path": "windows/CodexEntry.cs",
+      "utf8Bytes": 1962,
+      "sha256": "7740f9081200e4336b2727af368051e7945ec74cd6b62167f1e7f32f03f43cce"
+    },
+    {
+      "path": "windows/Pick-WallpaperFolder.ps1",
+      "utf8Bytes": 715,
+      "sha256": "b26e380ec26f12ec85bc71ceb1dd23e3b8eb8bea71ecc0683766341021778aa4"
+    },
+    {
+      "path": "windows/Prepare-TaskbarEntry.ps1",
+      "utf8Bytes": 3759,
+      "sha256": "a76c3a9a8b3dbc598a766d086b3d437c3b61f3997ee3a80eea63ea4363e4f499"
+    },
+    {
+      "path": "windows/Runtime.ps1",
+      "utf8Bytes": 762,
+      "sha256": "29ff63a320902df5ff481556d51de2770000543f31c2ae6389475a7973afaeca"
+    },
+    {
+      "path": "windows/Start-CodexWallpaper.ps1",
+      "utf8Bytes": 11514,
+      "sha256": "8f606ad6facfb9ee986d49fd5de6303b449247943ac09bba6eeebbf15e00eec0"
+    }
+  ]
+}

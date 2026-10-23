@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "library": [],
+  "selectedId": null,
+  "lightOverlay": 0.4,
+  "darkOverlay": 0.4,
+  "composerOverlay": 0.25,
+  "pauseOnBlur": true,
+  "palette": { "r": 20, "g": 22, "b": 28, "dark": true },
+  "playback": { "maxWidth": 1280, "fps": 24 },
+  "engineSearch": { "scope": "global", "kind": "engine", "folder": "" }
+}

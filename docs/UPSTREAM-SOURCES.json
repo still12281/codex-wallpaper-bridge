@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "component": "codex-dynamic-skin",
+      "repository": "https://github.com/CCDawn/Codex-Dynamic-Skin",
+      "commit": "5a0e74043b63ed9518ab37cdcf6865340a57006c",
+      "originalPath": "windows/scripts/common-windows.ps1",
+      "vendoredPath": "vendor/codex-dynamic-skin/scripts/common-windows.ps1",
+      "originalSha256": "a6ea8e59633943ec49f2d41061882e84a7b2255c4b442944d55fb0dd36914fc9",
+      "canonicalSha256": "0a4085d309788501466cf580ba268cda2e211e7a1386e3ca9e55b50a6585e68b",
+      "modified": false
+    },
+    {
+      "component": "codex-dynamic-skin",
+      "repository": "https://github.com/CCDawn/Codex-Dynamic-Skin",
+      "commit": "5a0e74043b63ed9518ab37cdcf6865340a57006c",
+      "originalPath": "windows/scripts/config-utf8.ps1",
+      "vendoredPath": "vendor/codex-dynamic-skin/scripts/config-utf8.ps1",
+      "originalSha256": "95170e1deccf31cd49f366d29f6b922e6ca9b3259ed8f1bd38e4747fda264ee4",
+      "canonicalSha256": "63ac66b2753e08689ace58384391bcc523970d56b7938a79dc0b028fff962e82",
+      "modified": false
+    },
+    {
+      "component": "codex-dynamic-skin",
+      "repository": "https://github.com/CCDawn/Codex-Dynamic-Skin",
+      "commit": "5a0e74043b63ed9518ab37cdcf6865340a57006c",
+      "originalPath": "LICENSE",
+      "vendoredPath": "vendor/codex-dynamic-skin/LICENSE",
+      "originalSha256": "0e8f0b5cc9f0d8103079fa6e4caf6955ba85ef7e2a7da8683e755df361382e4c",
+      "canonicalSha256": "18f8478d0f9efd45307e5f17790194593b116658145c758ced3166398eb05b21",
+      "modified": false
+    },
+    {
+      "component": "webwallgl",
+      "repository": "https://github.com/oneincase/webwallgl",
+      "commit": "197abe54266c31d346cebc314e49a26b70c960cc",
+      "originalPath": "renderer/vendor/we-scene/pkg/container.js",
+      "vendoredPath": "vendor/webwallgl/we-scene/pkg/container.js",
+      "originalSha256": "a240d0f3b847a693315cbc222da1159d0cbf7c2259d04bbd412c1ebdaa24a88b",
+      "canonicalSha256": "af21f811eb55f3e478a31bfaa102c51b235e8765c53b1561f31a80d14cb3a8d1",
+      "modified": false
+    },
+    {
+      "component": "webwallgl",
+      "repository": "https://github.com/oneincase/webwallgl",
+      "commit": "197abe54266c31d346cebc314e49a26b70c960cc",
+      "originalPath": "renderer/vendor/we-scene/pkg/texture.js",
+      "vendoredPath": "vendor/webwallgl/we-scene/pkg/texture.js",
+      "originalSha256": "851b1704c666fd7990105b415190e00ad7faf9005b2b5b5a2024905aea56dcfc",
+      "canonicalSha256": "f01538108fbd07fe2cc220b6e0aab54c3746cc986b90d1295624d49b52ba7146",
+      "modified": false
+    },
+    {
+      "component": "webwallgl",
+      "repository": "https://github.com/oneincase/webwallgl",
+      "commit": "197abe54266c31d346cebc314e49a26b70c960cc",
+      "originalPath": "renderer/vendor/we-scene/pkg/tex-codecs.js",
+      "vendoredPath": "vendor/webwallgl/we-scene/pkg/tex-codecs.js",
+      "originalSha256": "bf8c5e810ea040a0fddad554ec662aba898ee38d8f56a720c639aafafbf76035",
+      "canonicalSha256": "bd58124e533b663e874af8d75b4a0245978eafe01ab61f71fe9c667dd81c0e45",
+      "modified": false
+    },
+    {
+      "component": "webwallgl",
+      "repository": "https://github.com/oneincase/webwallgl",
+      "commit": "197abe54266c31d346cebc314e49a26b70c960cc",
+      "originalPath": "renderer/vendor/we-scene/pkg/limits.js",
+      "vendoredPath": "vendor/webwallgl/we-scene/pkg/limits.js",
+      "originalSha256": "92fc6ff6d813b3c28af87622c363bdca272d53a095a3803cd6b25425b9e45651",
+      "canonicalSha256": "fbf4ad2bcba7c16923a5dcbf40d50d003dbea2365579c66a097ad19879b8abce",
+      "modified": false
+    },
+    {
+      "component": "webwallgl",
+      "repository": "https://github.com/oneincase/webwallgl",
+      "commit": "197abe54266c31d346cebc314e49a26b70c960cc",
+      "originalPath": "LICENSE",
+      "vendoredPath": "vendor/webwallgl/LICENSE",
+      "originalSha256": "99dcac5899e7ab69080b9a1002181f4b2ac19e3c150b7637d4e34393f19cc8ee",
+      "canonicalSha256": "857432ca4f48930e6079aca25164c27b791576ee2a7d3e3c9d6a92a089fe4948",
+      "modified": false
+    },
+    {
+      "component": "webwallgl",
+      "repository": "https://github.com/oneincase/webwallgl",
+      "commit": "197abe54266c31d346cebc314e49a26b70c960cc",
+      "originalPath": "renderer/vendor/we-scene/LICENSE",
+      "vendoredPath": "vendor/webwallgl/we-scene/LICENSE",
+      "originalSha256": "b8af57a26cf907ebfbdb08b8508ac94fd3896d7e4ee5b54d43dbca9f06e0d455",
+      "canonicalSha256": "55bb1034635de81dc53f0466ec62e7681c49ae171fe5dc3221e346a0ea732641",
+      "modified": false
+    }
+  ]
+}
