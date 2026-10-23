@@ -9,15 +9,38 @@ import {createEngineCatalog} from './engine-library.mjs';
 import {convertMedia} from './media-converter.mjs';
 import {currentEngineSource,getCurrentEngineProject} from './wallpaper-engine-source.mjs';
 import {commitConverted,removeManagedFile} from './media-store.mjs';
+import {describeProject,realtimeProfile,findWorkshopProject} from './realtime-source.mjs';
 const types={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','video/mp4':'mp4','video/webm':'webm'};
 export async function saveConfig(root,settings){const temp=path.join(root,'settings.next.json');await writeFile(temp,JSON.stringify(settings,null,2));await rename(temp,path.join(root,'settings.json'))}
 export function normalizeLibrary(settings){
  settings.library??=[];settings.selectedId??=null;settings.pauseOnBlur??=true;settings.playback??={maxWidth:1280,fps:24};
  settings.engineSearch??={scope:'global',folder:'',kind:'engine'};
+ settings.surfaceSync={composer:true,context:true,menus:false,settings:true,wallpaperPanel:true,...settings.surfaceSync};
 }
-export function createActions(root,settings,apply){
- const uploads=new Map(),catalog=createEngineCatalog();
+export function createActions(root,settings,apply,applyAppearance=apply){
+ const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map();
+ const requestRealtime=async(c,projectRoot,applyNow,profile)=>{
+  const project=await describeProject(projectRoot);
+  if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
+  const limits=realtimeProfile(profile||settings.playback),token=randomUUID();
+  for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
+  confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits});
+  return {confirmation:{token,name:project.name,apply:applyNow,limits},message:'此壁纸需要实时渲染，请确认后继续。'};
+ };
  return async(c,req)=>{
+  if(req.action==='wallpaper-engine-confirm'){
+   const pending=confirmations.get(req.confirmationToken);
+   if(!pending||pending.owner!==c||pending.expires<Date.now()||req.confirmed!==true)throw Error('实时导入确认已失效，请重新选择');
+   confirmations.delete(req.confirmationToken);
+   const project=await describeProject(pending.project.root);
+   if(project.sourceKey!==pending.project.sourceKey)throw Error('壁纸项目已改变，请重新确认');
+   const existing=settings.library.find(e=>e.mode==='realtime'&&e.sourceKey===project.sourceKey);
+   if(existing&&!pending.applyNow)return {config:settings,message:'该实时壁纸已保存，当前背景保持不变。'};
+   const entry=existing||{id:randomUUID(),name:project.name+' · 实时',mode:'realtime',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:'Wallpaper Engine 原生实时场景',limits:pending.limits};
+   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId;if(existing)entry.limits=pending.limits;if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&e.mode!=='realtime'))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
+   try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
+   return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
+  }
   if(req.action==='engine-list'){const search={scope:req.scope||'global',folder:req.folder||'',kind:req.kind||'engine'};const result=await catalog.search(search);settings.engineSearch=search;await saveConfig(root,settings);return result}
   if(req.action==='engine-pick-folder'){const result=await promisify(execFile)(getPowerShell(),['-NoProfile','-STA','-File',fileURLToPath(new URL('../windows/Pick-WallpaperFolder.ps1',import.meta.url)),'-InitialPath',settings.engineSearch?.folder||''],{windowsHide:true,timeout:150000});return JSON.parse(result.stdout)}
   if(req.action==='delete'){
@@ -30,6 +53,11 @@ export function createActions(root,settings,apply){
   }
   if(req.action==='playback'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('当前壁纸不存在');
+   if(entry.mode==='realtime'){
+    const previous=entry.limits,oldProfile=settings.playback;entry.limits=realtimeProfile(req);settings.playback={maxWidth:entry.limits.maxWidth,fps:entry.limits.fps};
+    try{await apply();await saveConfig(root,settings)}catch(error){entry.limits=previous;settings.playback=oldProfile;await apply();throw error}
+    return {config:settings,message:'已更新实时输出分辨率与采集帧率；Wallpaper Engine 全局帧率未修改。'};
+   }
    const input=entry.sourcePath||path.join(root,entry.sourceFile||entry.file);
    try{await stat(input)}catch{throw Error('原素材不可用，请重新导入后调整规格')}
    const profile={maxWidth:Number(req.maxWidth),fps:Number(req.fps)};
@@ -39,21 +67,40 @@ export function createActions(root,settings,apply){
    try{await commitConverted(root,settings,entry,converted,previous,apply,saveConfig)}catch(e){settings.playback=oldProfile;throw e}return {config:settings};
   }
   if(req.action==='wallpaper-engine'){
+   const applyNow=req.apply!==false;
    const resolved=req.projectToken?await catalog.resolve(req.projectToken):(!req.workshopId?await getCurrentEngineProject():null);
    const workshopId=resolved?.workshopId||req.workshopId;
-   const existing=settings.library.find(e=>(resolved&&e.sourceKey===resolved.sourceKey)||(workshopId&&e.workshopId===workshopId));
-   if(existing){settings.selectedId=existing.id;await apply();await saveConfig(root,settings);return {config:settings,message:'已切换到已导入的壁纸，未重复生成。'}}
-   const id=randomUUID();const source=resolved?.kind==='media'?{input:resolved.file,mime:resolved.mime,name:path.basename(resolved.file),source:'本地图片/视频',sourceKey:resolved.sourceKey,temporary:false}:await currentEngineSource(root,id,workshopId,resolved?.root);let converted;
+   const projectRoot=resolved?.root||(workshopId?await findWorkshopProject(workshopId):null);
+   if(req.renderMode==='realtime'&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type))return requestRealtime(c,projectRoot,applyNow,req.profile)}
+   const existing=settings.library.find(e=>e.mode!=='realtime'&&((resolved&&e.sourceKey===resolved.sourceKey)||(workshopId&&e.workshopId===workshopId)));
+   if(existing){
+    if(!applyNow)return {config:settings,message:'该壁纸已在“我的壁纸”中，未重复导入；当前背景保持不变。'};
+    const previous=settings.selectedId;settings.selectedId=existing.id;
+    try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;await apply();throw e}
+    return {config:settings,message:'已切换到已导入的壁纸，未重复生成。'};
+   }
+   const id=randomUUID();let source,converted;
+   try{source=resolved?.kind==='media'?{input:resolved.file,mime:resolved.mime,name:path.basename(resolved.file),source:'本地图片/视频',sourceKey:resolved.sourceKey,temporary:false}:await currentEngineSource(root,id,workshopId,resolved?.root)}catch(error){if(error.code==='REALTIME_REQUIRED')return requestRealtime(c,projectRoot,applyNow,req.profile);throw error}
    try{converted=await convertMedia(root,source.input,source.mime,id,settings.playback)}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
-   const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey};const previous=settings.selectedId;settings.library.push(entry);settings.selectedId=id;
-   try{await commitConverted(root,settings,entry,converted,{...entry},apply,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;await apply();throw e}return {config:settings};
+   const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey};const previous=settings.selectedId;settings.library.push(entry);if(applyNow)settings.selectedId=id;
+   const refresh=applyNow?apply:async()=>{};
+   try{await commitConverted(root,settings,entry,converted,{...entry},refresh,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}
+   return {config:settings,message:applyNow?'已导入“我的壁纸”并应用。':'已保存到“我的壁纸”；当前背景保持不变，可稍后从列表选择应用。'};
   }
   if(req.action==='appearance'){
    if(!Number.isFinite(req.darkOverlay)||req.darkOverlay<.25||req.darkOverlay>.85)throw Error('遮罩浓度无效');
-   settings.darkOverlay=settings.lightOverlay=req.darkOverlay;settings.pauseOnBlur=!!req.pauseOnBlur;await apply();await saveConfig(root,settings);return {config:settings};
+   settings.darkOverlay=settings.lightOverlay=req.darkOverlay;settings.pauseOnBlur=!!req.pauseOnBlur;await applyAppearance();await saveConfig(root,settings);return {config:settings};
+  }
+  if(req.action==='surface-sync'){
+   const keys=['composer','context','menus','settings','wallpaperPanel'];
+   if(!keys.includes(req.region)||typeof req.enabled!=='boolean')throw Error('分区设置无效');
+   const previous={...settings.surfaceSync};settings.surfaceSync={...previous,[req.region]:req.enabled};
+   try{await applyAppearance();await saveConfig(root,settings)}catch(error){settings.surfaceSync=previous;await applyAppearance();throw error}
+   return {config:settings,message:'已即时切换并保存；关闭开关可恢复该分区原生底色。'};
   }
   if(req.action==='select'){
-   if(!settings.library.some(e=>e.id===req.selectedId))throw Error('壁纸不存在');
+   const selected=settings.library.find(e=>e.id===req.selectedId);if(!selected)throw Error('壁纸不存在');
+   if(selected.mode==='realtime')return requestRealtime(c,selected.projectRoot,true,selected.limits);
    const previous=settings.selectedId;settings.selectedId=req.selectedId;
    try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;await apply();throw e}return {config:settings};
   }

@@ -8,6 +8,8 @@ An experimental, local wallpaper layer for the Codex desktop app on Windows. Pic
 
 ## Features
 
+- Experimental native scene/web capture with explicit confirmation, save-only references and output size/FPS controls. Native acceptance is pending; see [realtime setup and manual checks](docs/REALTIME.md).
+
 - In-app wallpaper library, local imports, switching, and deletion of app-owned copies.
 - Default search limited to discovered Wallpaper Engine libraries across local disks, including Workshop, custom projects, and built-in projects.
 - Optional folder search for Wallpaper projects or ordinary images/videos.

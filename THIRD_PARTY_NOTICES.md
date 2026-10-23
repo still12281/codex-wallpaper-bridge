@@ -1,5 +1,7 @@
 # Third-party notices
 
+Realtime capture optionally installs `windows-capture==2.0.1` (MIT), `numpy==2.2.6` (BSD-3-Clause) and `opencv-python==4.12.0.88` (Apache-2.0 wrapper, with its bundled-component notices) into a separate local uv environment. These packages and binaries are not redistributed in this source repository. Preserve installed distribution licenses if packaging them later. Artifacts and hashes are pinned in `src/capture-scene.py.lock`; source: https://pypi.org/project/windows-capture/2.0.1/ .
+
 Original project code proposes MIT. The following vendored sources keep their original licenses and headers. No code in these vendor copies was modified during candidate preparation.
 
 | Component | Source / pinned revision | Included files | License |

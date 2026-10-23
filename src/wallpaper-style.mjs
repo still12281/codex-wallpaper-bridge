@@ -6,7 +6,7 @@ export function paintShell(config){
  const shade=[palette.r,palette.g,palette.b].join(',');
  const ink=dark?'#e9eff5':'#15212c',secondary=dark?'#b8c5d1':'#405262';
  const overlay=dark?config.darkOverlay:config.lightOverlay;
- const side=config.sidebarOverlay??0.38,composer=config.composerOverlay??0.25;
+ const sync={composer:true,context:true,menus:false,settings:true,...config.surfaceSync};
  const mediaRoot=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot;
  if(mediaRoot){let tint=mediaRoot.querySelector('[data-cwb-shade]');if(!tint){tint=document.createElement('div');tint.setAttribute('data-cwb-shade','');mediaRoot.appendChild(tint)}tint.style.cssText=`position:absolute;inset:0;pointer-events:none;background:rgba(${shade},${overlay})`}
  let style=document.getElementById('codex-wallpaper-bridge-style');if(!style){style=document.createElement('style');style.id='codex-wallpaper-bridge-style';document.head.appendChild(style)}
@@ -17,10 +17,12 @@ export function paintShell(config){
  [data-app-navigation-rail]{background:transparent!important;color:${ink}!important}
  [class*="_RightPanel_"],[class*="_SidePanel_"],[data-app-shell-right-panel],[class*="_PanelContent_"],[class*="_FeatureNavigation_"]{background:transparent!important;color:${ink}!important}
  main:is(.main-surface,[data-app-shell-main-surface],[class*="_MainContentSurface_"]),aside.app-shell-left-panel,[data-sidebar-navigation-root],header:is(.app-header-tint,[data-app-shell-header-edge-scroll],[class*="_Header_"]){background:transparent!important}
- [data-composer-surface-variant][data-composer-layout]{background:rgba(${shade},${Math.min(composer,.16)})!important;backdrop-filter:none!important}
+ ${sync.composer?`[data-composer-surface-variant][data-composer-layout]{background:rgba(${shade},.48)!important;backdrop-filter:none!important}[data-composer-surface-variant] [data-composer-body]{background:transparent!important;backdrop-filter:none!important}`:''}
+ ${sync.composer?`[data-composer-surface-variant][data-composer-utility-bar-variant="home"]{background:transparent!important}[data-composer-utility-bar-variant="home"] [data-composer-body]{background:rgba(${shade},.48)!important}`:''}
  [data-thread-scroll-footer] [class*="_background_"],[data-thread-scroll-footer] [class*="_background_"]::before,[data-thread-scroll-footer] [class*="_background_"]::after{background:transparent!important;backdrop-filter:none!important}
- main[data-app-shell-main-surface] [class~="electron:bg-surface"]:has([class~="group/settings"]){background:transparent!important}
- [class~="group/settings"] [class~="rounded-2xl"][class~="border"]{background:rgba(${shade},.28)!important;border-color:rgba(128,150,170,.24)!important;backdrop-filter:none!important}
+ ${sync.settings?`main[data-app-shell-main-surface] [class~="electron:bg-surface"]:has([class~="group/settings"]){background:transparent!important}[class~="group/settings"] [class~="rounded-2xl"][class~="border"]{background:rgba(${shade},.48)!important;border-color:rgba(128,150,170,.24)!important;backdrop-filter:none!important}`:''}
+ ${sync.context?`[data-composer-rail]{background:transparent!important;backdrop-filter:none!important}[data-composer-utility-rail]{background:rgba(${shade},.48)!important;backdrop-filter:none!important}`:''}
+ ${sync.menus?`[role="menu"],[data-radix-menu-content],[role="listbox"][data-state="open"],[data-radix-popper-content-wrapper] > [role="dialog"],[data-slot="popover-content"]{background:rgba(${shade},.58)!important;color:${ink}!important;border-color:rgba(128,150,170,.24)!important;backdrop-filter:none!important}`:''}
  [data-cwb-thread-space]:not(:has([data-expanded-composer])){height:calc(100% - var(--cwb-footer-height,160px))!important;flex:0 0 auto!important;box-sizing:border-box!important;--thread-scroll-padding-bottom:16px!important}
  [data-cwb-thread-space] [class*="_background_"][class*="_fade_"]{background:none!important}
  [data-app-shell-main-content-top-fade]:not(:has(*)),[class*="_MainContentTopFade_"]{background:transparent!important}
@@ -37,5 +39,5 @@ export function paintShell(config){
   const observer=new MutationObserver(changes=>{if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(n.matches?.('[data-thread-scroll-footer]')||n.querySelector?.('[data-thread-scroll-footer]')))))schedule()});observer.observe(document.body,{childList:true,subtree:true});
   window.__cwbLayout={version:2,refresh,dispose:()=>{observer.disconnect();for(const [f,o]of tracked){o.disconnect();f.parentElement?.removeAttribute('data-cwb-thread-space');f.offsetParent?.style.removeProperty('--cwb-footer-height')}tracked.clear()}};refresh();
  }
- return {painted:true,dark,sharedOverlay:overlay,composerOverlay:Math.min(composer,.16)};
+ return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? .48 : null,surfaces:sync};
 }

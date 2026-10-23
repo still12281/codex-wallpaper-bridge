@@ -4,9 +4,12 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {connectCdp} from './cdp-client.mjs';
 import {paintShell} from './wallpaper-style.mjs';
-import {installPanel} from './wallpaper-panel.mjs';
 import {normalizeLibrary,createActions,saveConfig} from './wallpaper-actions.mjs';
 import {randomUUID} from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {startRealtime} from './realtime-source.mjs';
+import {installRealtime} from './realtime-player.mjs';
 
 const codeRoot=path.dirname(fileURLToPath(import.meta.url));
 const root=getDataRoot();
@@ -17,10 +20,55 @@ if(arg<0||!Number.isInteger(port)||port<1024||port>65535)throw Error('Expected -
 const testArg=process.argv.indexOf('--test-url');const appUrl=testArg>=0?process.argv[testArg+1]:'app://-/index.html';
 const version=await(await fetch('http://127.0.0.1:'+port+'/json/version')).json();
 const status={pid:process.pid,browserId:version.webSocketDebuggerUrl.split('/').pop(),source:'native-video-blob',phase:'connecting',cdpPort:port,wallpaperId:settings.wallpaperId,targets:[]};
-const save=async()=>{status.updatedAt=new Date().toISOString();await writeFile(path.join(root,'runtime-status.json'),JSON.stringify(status,null,2))};
+const save=async()=>{status.memory=process.memoryUsage();status.updatedAt=new Date().toISOString();await writeFile(path.join(root,'runtime-status.json'),JSON.stringify(status,null,2))};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const sessions=new Map();let busy=false,stopped=false,acting=false,actionQueue=Promise.resolve();
-const actions=createActions(root,settings,async()=>{for(const [id,c]of sessions){c.installed=false;await mount(c,{id})}});
+let realtime=null,realtimeKey=null,streamTimer=null,streaming=false;
+const evaluateAsync=async(c,expression)=>{const result=await c.call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(result.exceptionDetails)throw Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text);return result.result?.value};
+async function stopRealtime(){const previous=realtime;realtime=null;realtimeKey=null;if(previous)await previous.stop()}
+async function ensureRealtime(entry){
+ const key=JSON.stringify([entry.id,entry.projectRoot,entry.limits]);if(realtimeKey===key&&realtime&&!realtime.error&&!realtime.closed)return realtime;
+ const next=await startRealtime(entry,root),previous=realtime;realtime=next;realtimeKey=key;
+ if(previous)await previous.stop();return next;
+}
+async function stream(){
+ if(stopped)return;
+ if(streaming||busy||acting){streamTimer=setTimeout(stream,50);streamTimer.unref();return}streaming=true;
+ try{
+  const source=realtime;if(!source)return;let anyActive=false;
+  if(source.error&&!source.recoveryQueued){
+   source.recoveryQueued=true;const failure=source.error;
+   actionQueue=actionQueue.then(async()=>{
+    while(busy||streaming)await sleep(25);acting=true;
+    try{
+     if(realtime!==source)return;
+     const fallback=settings.library.find(e=>e.id===settings.realtimeFallbackId&&e.mode!=='realtime');
+     await stopRealtime();settings.selectedId=fallback?.id||null;await applySelected();await saveConfig(root,settings);
+     const message=failure+(fallback?'；已恢复上一个图片/视频背景。':'；已停止实时背景，可重新选择壁纸。');
+     for(const c of sessions.values())await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbRuntimeError?.('+JSON.stringify(message)+');true').catch(()=>{});
+    }catch(error){status.streamError='实时故障恢复失败：'+error.message}
+    finally{acting=false}
+   });return;
+  }
+  for(const c of sessions.values()){
+   if(!c.installed)continue;
+   const sample=await c.evaluate('window.__codexWallpaperBridge?.sample()').catch(()=>null);if(sample?.mode!=='realtime')continue;
+   if(source.error){if(!c.reportedCaptureError){await c.evaluate('(()=>{const text='+JSON.stringify(source.error)+';window.__codexWallpaperBridge.captureError=text;document.getElementById("codex-wallpaper-controls")?.__cwbRuntimeError?.(text);return true})()').catch(()=>{});c.reportedCaptureError=true}continue}
+   if(sample.paused)continue;anyActive=true;
+   if(source.frame&&c.captureSequence!==source.sequence){const encoded=source.frame.toString('base64');await evaluateAsync(c,'window.__codexWallpaperBridge?.draw?.('+JSON.stringify(encoded)+')');c.captureSequence=source.sequence}
+  }
+  if(!source.error&&source.paused===anyActive)source.setPaused(!anyActive);
+ }catch(error){status.streamError=error.message}
+ finally{streaming=false;if(!stopped){streamTimer=setTimeout(stream,Math.max(16,Math.round(1000/(realtime?.profile.fps||24))));streamTimer.unref()}}
+}
+streamTimer=setTimeout(stream,1000);
+async function applyAppearance(){
+ const {paintShell}=await import('./wallpaper-style.mjs?v='+(await stat(path.join(codeRoot,'wallpaper-style.mjs'))).mtimeMs);
+ for(const c of sessions.values())await c.evaluate('(()=>{const config='+JSON.stringify(settings)+';window.__codexWallpaperBridge?.setPauseOnBlur?.(config.pauseOnBlur);document.getElementById("codex-wallpaper-controls")?.__cwbRenderConfig?.(config);return ('+paintShell.toString()+')(config)})()');
+}
+async function applySelected(){for(const [id,c]of sessions){c.installed=false;await mount(c,{id})}}
+const actions=createActions(root,settings,applySelected,applyAppearance);
+async function alignTaskbar(){if(appUrl!=='app://-/index.html'||process.platform!=='win32')return;try{await stat(path.join(root,'Align-Taskbar.exe'))}catch{return}try{const r=await promisify(execFile)(path.join(root,'Align-Taskbar.exe'),['--apply'],{windowsHide:true,timeout:8000});status.taskbar={updatedAt:new Date().toISOString(),result:r.stdout.trim()};}catch(e){status.taskbar={error:e.message}}}
 
 function prepareLayer(size,mime){
  const old=window.__codexWallpaperBridge;
@@ -42,6 +90,7 @@ function startVideo(config){
  state.blobUrl=URL.createObjectURL(new Blob([state.bytes],{type:state.mime}));delete state.bytes;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const visibility=()=>{if(video.tagName!=='VIDEO')return;if(document.hidden||(config.pauseOnBlur&&!document.hasFocus())||reduced.matches)video.pause();else video.play().catch(e=>{state.error=String(e)})};
+ state.setPauseOnBlur=value=>{config.pauseOnBlur=!!value;visibility()};
  document.addEventListener('visibilitychange',visibility);window.addEventListener('focus',visibility);window.addEventListener('blur',visibility);reduced.addEventListener('change',visibility);
  state.dispose=()=>{video.pause?.();video.removeAttribute('src');video.load?.();URL.revokeObjectURL(state.blobUrl);document.removeEventListener('visibilitychange',visibility);window.removeEventListener('focus',visibility);window.removeEventListener('blur',visibility);reduced.removeEventListener('change',visibility)};
  video.addEventListener('error',()=>{state.error=video.error?.message||'Video decode error'});
@@ -51,8 +100,15 @@ function startVideo(config){
 async function mount(c,target){
  const styleVersion=(await stat(path.join(codeRoot,'wallpaper-style.mjs'))).mtimeMs;
  const {paintShell}=await import('./wallpaper-style.mjs?v='+styleVersion);
+ const {installPanel}=await import('./wallpaper-panel.mjs?v='+(await stat(path.join(codeRoot,'wallpaper-panel.mjs'))).mtimeMs);
  const entry=settings.library.find(e=>e.id===settings.selectedId);
- if(!entry){await c.evaluate('window.__codexWallpaperBridge?.dispose?.();window.__cwbLayout?.dispose?.();delete window.__cwbLayout;document.getElementById("codex-wallpaper-bridge-layer")?.remove();document.getElementById("codex-wallpaper-bridge-style")?.remove();window.__codexWallpaperBridge={disabled:true,sample:()=>({ready:false,disabled:true,paused:true})};true');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;return}
+ if(!entry){await stopRealtime();await c.evaluate('window.__codexWallpaperBridge?.dispose?.();window.__cwbLayout?.dispose?.();delete window.__cwbLayout;document.getElementById("codex-wallpaper-bridge-layer")?.remove();document.getElementById("codex-wallpaper-bridge-style")?.remove();window.__codexWallpaperBridge={disabled:true,sample:()=>({ready:false,disabled:true,paused:true})};true');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;setImmediate(()=>global.gc?.());return}
+ if(entry.mode==='realtime'){
+  const source=await ensureRealtime(entry);
+  await evaluateAsync(c,'('+installRealtime.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(source.frame.toString('base64'))+','+JSON.stringify({name:source.name,fps:source.profile.fps})+')');
+  settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(settings)+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');
+  c.captureSequence=source.sequence;c.reportedCaptureError=false;c.installed=true;return;
+ }
  const mediaPath=path.resolve(root,entry.file);const mediaLimit=Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024);if(!mediaPath.startsWith(root+path.sep)||(await stat(mediaPath)).size>mediaLimit)throw Error('Unsupported local media path or size');
  const media=await readFile(mediaPath);status.mediaBytes=media.length;
  status.phase='loading-lightweight-video';delete status.error;await save();
@@ -66,34 +122,43 @@ async function mount(c,target){
  for(let i=0;i<40;i++){
   const current=await c.evaluate('({error:window.__codexWallpaperBridge?.error,...window.__codexWallpaperBridge?.sample()})');
   if(current.error)throw Error(current.error);
-  if(current.ready){settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');if(!acting)await saveConfig(root,settings);await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(settings)+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;return}
+  if(current.ready){await stopRealtime();settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');if(!acting)await saveConfig(root,settings);await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(settings)+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;setImmediate(()=>global.gc?.());return}
   await sleep(100);
  }
  throw Error('Lightweight video did not decode a first frame');
 }
 
 async function tick(){
- if(busy||stopped||acting)return;busy=true;
+ if(busy||stopped||acting||streaming)return;busy=true;
  try{
   const list=await(await fetch('http://127.0.0.1:'+port+'/json/list',{signal:AbortSignal.timeout(2000)})).json();
   const targets=list.filter(t=>t.type==='page'&&t.url===appUrl);
+  if(!targets.length){await stopRealtime();status.phase='waiting-for-target';status.targets=[];await save()}
   for(const [id,c]of sessions)if(!targets.some(t=>t.id===id)){c.close();sessions.delete(id)}
   for(const target of targets){
    if(!new RegExp('^ws://127\\.0\\.0\\.1:'+port+'/devtools/page/[A-Za-z0-9-]+$').test(target.webSocketDebuggerUrl))continue;
-   let c=sessions.get(target.id);if(!c||c.ws.readyState!==1){c=await connectCdp(target.webSocketDebuggerUrl);sessions.set(target.id,c);c.token=randomUUID();await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});c.ws.addEventListener('message',event=>{let e;try{e=JSON.parse(event.data)}catch{return}if(e.method!=='Runtime.bindingCalled'||e.params.name!=='__codexWallpaperSend')return;let req;try{req=JSON.parse(e.params.payload)}catch{return}if(req.token!==c.token)return;actionQueue=actionQueue.then(async()=>{while(busy)await sleep(25);acting=true;try{const result=await actions(c,req);await c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:true,...result})+')')}catch(error){await c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:false,error:error.message})+')').catch(()=>{})}finally{acting=false}})})}
+   let c=sessions.get(target.id);if(!c||c.ws.readyState!==1){c=await connectCdp(target.webSocketDebuggerUrl);sessions.set(target.id,c);c.token=randomUUID();await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});c.ws.addEventListener('message',event=>{let e;try{e=JSON.parse(event.data)}catch{return}if(e.method!=='Runtime.bindingCalled'||e.params.name!=='__codexWallpaperSend')return;let req;try{req=JSON.parse(e.params.payload)}catch{return}if(req.token!==c.token)return;actionQueue=actionQueue.then(async()=>{while(busy||streaming)await sleep(25);acting=true;try{const result=await actions(c,req);await c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:true,...result})+')')}catch(error){await c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:false,error:error.message})+')').catch(()=>{})}finally{acting=false}})})}
    if(!await c.evaluate('!!document.querySelector("aside.app-shell-left-panel")&&!!document.querySelector("main[data-app-shell-main-surface],main[class*=\\"_MainContentSurface_\\"],main.main-surface")'))continue;
    const tree=await c.call('Page.getFrameTree');
-   if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.failed=false;await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'})}
-   if(c.failed)continue;
+   if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.failed=false;c.retryAt=0;c.failures=0;await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});await alignTaskbar()}
+   if(c.retryAt&&Date.now()<c.retryAt)continue;
    try{
+    const healthy=await c.evaluate('(()=>{const s=window.__codexWallpaperBridge,controls=document.getElementById("codex-wallpaper-controls");if(!s||s.error||!controls?.isConnected)return false;if(s.disabled)return true;const layer=document.getElementById("codex-wallpaper-bridge-layer");return !!(layer?.isConnected&&layer.shadowRoot?.firstElementChild?.isConnected&&document.getElementById("codex-wallpaper-bridge-style")?.isConnected)})()');
+    if(!healthy)c.installed=false;
     if(!c.installed)await mount(c,target);
     const observed=await c.evaluate('window.__codexWallpaperBridge?.sample()');
     if(!observed){c.installed=false;continue}
-    status.phase=observed.disabled?'background-disabled':'background-rendered';status.targets=[{targetId:target.id,installed:true,...observed}];await save();
-   }catch(error){c.failed=true;status.phase='background-failed';status.error=error.message;await save();await c.evaluate('window.__codexWallpaperBridge?.dispose?.();document.getElementById("codex-wallpaper-bridge-layer")?.remove();document.getElementById("codex-wallpaper-bridge-style")?.remove();delete window.__codexWallpaperBridge;true').catch(()=>{})}
+    status.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':realtime?.paused?'realtime-capture-paused':Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';status.targets=[{targetId:target.id,installed:true,...observed}];status.realtime=realtime?{sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile}:null;await save();
+    if(observed.mode==='realtime'){
+     const age=Math.max(0,Math.floor((Date.now()-(realtime?.lastFrameAt||Date.now()))/1000));
+     const note=`实时输出：${observed.width} × ${observed.height}，采集上限 ${observed.captureFps} FPS，已绘制 ${observed.frames} 帧。`+(observed.paused?'当前暂停采集/绘制，源引擎仍可能运行。':age>10?`已 ${age} 秒没有新画面，请检查源窗口或 Wallpaper Engine 暂停规则。`:'');
+     await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbCaptureStats?.('+JSON.stringify(note)+');true');
+    }
+    c.failures=0;c.retryAt=0;delete status.error;
+   }catch(error){c.installed=false;c.failures=(c.failures||0)+1;c.retryAt=Date.now()+Math.min(30000,1000*2**Math.min(c.failures-1,5));status.phase='background-retrying';status.error=error.message;status.retryAt=new Date(c.retryAt).toISOString();await save()}
   }
  }catch(error){status.phase='waiting-for-cdp';status.error=error.message;await save()}
  finally{busy=false}
 }
 await save();await tick();const timer=setInterval(tick,5000);
-const stop=()=>{stopped=true;clearInterval(timer);for(const c of sessions.values())c.close()};process.on('SIGINT',stop);process.on('SIGTERM',stop);
+const stop=()=>{stopped=true;clearInterval(timer);clearTimeout(streamTimer);for(const c of sessions.values())c.close();stopRealtime().finally(()=>process.exit(0))};process.on('SIGINT',stop);process.on('SIGTERM',stop);

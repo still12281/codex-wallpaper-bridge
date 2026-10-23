@@ -4,7 +4,7 @@
 
 Source code, newly written documentation, synthetic test generators, minimal licensed third-party source, and an empty example configuration. It does not include real account profiles, cookies, tokens, chat transcripts, screenshots, personal wallpaper selections, imported wallpaper files, shortcut files, binaries, or machine-specific Git history.
 
-The public host does **not** automatically take screenshots. Preparation used an explicit file allowlist, not a copy of the development runtime directory.
+The public host does **not** automatically take screenshots of the desktop or chats. Opt-in realtime wallpapers capture only their uniquely named Wallpaper Engine render window after confirmation and pass JPEG frames in memory; frames are not saved or uploaded. Preparation used an explicit file allowlist, not a copy of the development runtime directory.
 
 ## Local runtime data
 

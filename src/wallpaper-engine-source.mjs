@@ -31,7 +31,7 @@ export async function currentEngineSource(root,id,workshopId,projectDirectory){
   const extension=path.extname(input).toLowerCase(),mime={'.mp4':'video/mp4','.webm':'video/webm','.gif':'image/gif','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp'}[extension];
   if(!mime)throw Error('当前壁纸媒体格式暂不支持');return {input,mime,name:title,source:'Wallpaper Engine',...metadata,temporary:false};
  }
- if(type!=='scene')throw Error('轻量模式暂不支持这类壁纸，请使用图片或视频壁纸');
+ if(type!=='scene')throw Object.assign(Error('轻量模式暂不支持这类壁纸，请使用图片或视频壁纸'),{code:type==='web'?'REALTIME_REQUIRED':'UNSUPPORTED_TYPE'});
  const pkgPath=await realpath(path.join(projectRoot,'scene.pkg'));if(!pkgPath.toLowerCase().startsWith((projectRoot+path.sep).toLowerCase()))throw Error('场景包路径不受支持');const size=(await stat(pkgPath)).size;
  const handle=await open(pkgPath,'r');let candidate;
  try{
@@ -46,7 +46,7 @@ export async function currentEngineSource(root,id,workshopId,projectDirectory){
    const sample=Buffer.alloc(Math.min(entry.size,4096));await handle.read(sample,0,sample.length,start);
    try{const tex=parseTex(sample,{name:entry.name});if(tex.isVideo){const payload=tex.images[0][0].data;const offset=payload.byteOffset-sample.byteOffset;videos.push({start:start+offset,size:entry.size-offset,mime:'video/mp4'})}}catch{}
   }
-  if(videos.length!==1)throw Error('当前场景不含单一背景视频，轻量模式暂不支持；请选择视频壁纸');candidate=videos[0];
+  if(videos.length!==1)throw Object.assign(Error('当前场景不含单一背景视频，需要实时渲染'),{code:'REALTIME_REQUIRED'});candidate=videos[0];
  }finally{await handle.close()}
  await mkdir(path.join(root,'staging'),{recursive:true});const input=path.join(root,'staging','we-'+id+'.mp4');
  await pipeline(createReadStream(pkgPath,{start:candidate.start,end:candidate.start+candidate.size-1}),createWriteStream(input,{flags:'wx'}));
