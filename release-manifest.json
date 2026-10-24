@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 3419,
-      "sha256": "db52aa1f0996d8b652fed46aff8cf4b4999079c3c5d5bccfc09bbc48a5da5487"
+      "utf8Bytes": 3866,
+      "sha256": "5cf714f03c4408065a1aca5c1e9f58fc5c8bd39e4ddae86538f123a52e3ba931"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -89,8 +89,8 @@
     },
     {
       "path": "docs/SURFACE-COVERAGE.md",
-      "utf8Bytes": 1621,
-      "sha256": "83005393e4ddf7384afa4e866cc6a685a7e46c530ad85a604b573f6ec5b8a5d2"
+      "utf8Bytes": 1946,
+      "sha256": "f5607c35450cec5273c60b075ac849e87b1af53796ea287cf05590971b8c1273"
     },
     {
       "path": "docs/UPSTREAM-SOURCES.json",
@@ -109,8 +109,8 @@
     },
     {
       "path": "settings.example.json",
-      "utf8Bytes": 337,
-      "sha256": "62c6c43dbfc76776463652faf5e8202f98a2e1e0c17552b3ec4b964a0123924b"
+      "utf8Bytes": 505,
+      "sha256": "a007a237aeb5e89a98fa46e6ef9b85d393825c20ff56463b0ca3db126aa7cc26"
     },
     {
       "path": "src/capture-scene.py",
@@ -174,13 +174,13 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 23441,
-      "sha256": "0d3310d1e91ee50b5b46eed962853aab8b17e8d055e280a2cb9452a6c76aa530"
+      "utf8Bytes": 24657,
+      "sha256": "0739104a7356fb5e50f0af51ecb24f4e1560a1949f507d58a8df59219e3d8f79"
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 8675,
-      "sha256": "4629c7d26466055830c0777706caf20c90de010fafcb47eac275c9d3dd1c2283"
+      "utf8Bytes": 8969,
+      "sha256": "2424ab6929ff8b40c87cb1bde068367dfd6d14d7b3f3f9b109e553f3acc79e59"
     },
     {
       "path": "test/core.test.mjs",
