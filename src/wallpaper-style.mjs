@@ -6,7 +6,7 @@ export function paintShell(config){
  const shade=[palette.r,palette.g,palette.b].join(',');
  const ink=dark?'#e9eff5':'#15212c',secondary=dark?'#b8c5d1':'#405262';
  const overlay=dark?config.darkOverlay:config.lightOverlay;
- const sync={composer:true,context:true,menus:false,settings:true,...config.surfaceSync};
+ const sync={composer:true,context:true,menus:false,settings:true,navigation:true,panels:true,embedded:true,...config.surfaceSync};
  const mediaRoot=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot;
  if(mediaRoot){let tint=mediaRoot.querySelector('[data-cwb-shade]');if(!tint){tint=document.createElement('div');tint.setAttribute('data-cwb-shade','');mediaRoot.appendChild(tint)}tint.style.cssText=`position:absolute;inset:0;pointer-events:none;background:rgba(${shade},${overlay})`}
  let style=document.getElementById('codex-wallpaper-bridge-style');if(!style){style=document.createElement('style');style.id='codex-wallpaper-bridge-style';document.head.appendChild(style)}
@@ -15,8 +15,10 @@ export function paintShell(config){
  [data-app-shell-page-surface]{color:${ink}!important}
  [data-app-shell-page-surface][data-app-shell-application-menu-bar]{background:transparent!important}
  [data-app-navigation-rail]{background:transparent!important;color:${ink}!important}
- [class*="_RightPanel_"],[class*="_SidePanel_"],[data-app-shell-right-panel],[class*="_PanelContent_"],[class*="_FeatureNavigation_"]{background:transparent!important;color:${ink}!important}
- main:is(.main-surface,[data-app-shell-main-surface],[class*="_MainContentSurface_"]),aside.app-shell-left-panel,[data-sidebar-navigation-root],header:is(.app-header-tint,[data-app-shell-header-edge-scroll],[class*="_Header_"]){background:transparent!important}
+ ${sync.panels?`[class*="_RightPanel_"],[class*="_SidePanel_"],[data-app-shell-right-panel],[class*="_PanelContent_"],[class*="_FeatureNavigation_"],[class*="_SideChat"],main[class~="bg-surface"],[data-summary-panel-variant]{background:transparent!important;color:${ink}!important}[data-app-shell-right-panel] [class~="bg-surface"],[class*="_SideChat"] [class~="bg-surface"]{background:transparent!important}`:''}
+ ${sync.navigation?`aside.app-shell-left-panel,[data-sidebar-navigation-root],[data-sidebar-container],[class*="_SidebarPopover"],[class*="_SidebarFlyout"],[role="dialog"]:has([data-sidebar-navigation-root]),[data-radix-popper-content-wrapper]:has([data-sidebar-navigation-root]){background:rgba(${shade},.22)!important;color:${ink}!important}`:''}
+ main:is(.main-surface,[data-app-shell-main-surface],[class*="_MainContentSurface_"]),header:is(.app-header-tint,[data-app-shell-header-edge-scroll],[class*="_Header_"]){background:transparent!important}
+ ${sync.embedded?`webview[class~="bg-surface"],webview[class~="bg-surface"]:is(:not([data-cwb-disabled])){background:transparent!important}`:''}
  ${sync.composer?`[data-composer-surface-variant][data-composer-layout]{background:rgba(${shade},.48)!important;backdrop-filter:none!important}[data-composer-surface-variant] [data-composer-body]{background:transparent!important;backdrop-filter:none!important}`:''}
  ${sync.composer?`[data-composer-surface-variant][data-composer-utility-bar-variant="home"]{background:transparent!important}[data-composer-utility-bar-variant="home"] [data-composer-body]{background:rgba(${shade},.48)!important}`:''}
  [data-thread-scroll-footer] [class*="_background_"],[data-thread-scroll-footer] [class*="_background_"]::before,[data-thread-scroll-footer] [class*="_background_"]::after{background:transparent!important;backdrop-filter:none!important}
@@ -40,4 +42,15 @@ export function paintShell(config){
   window.__cwbLayout={version:2,refresh,dispose:()=>{observer.disconnect();for(const [f,o]of tracked){o.disconnect();f.parentElement?.removeAttribute('data-cwb-thread-space');f.offsetParent?.style.removeProperty('--cwb-footer-height')}tracked.clear()}};refresh();
  }
  return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? .48 : null,surfaces:sync};
+}
+
+export function paintEmbedded(config){
+ if(location.origin!=='https://chatgpt.com')return {applied:false,reason:'not-chatgpt'};
+ const id='codex-wallpaper-embedded-style',enabled=config.enabled!==false&&config.surfaceSync?.embedded!==false;
+ let style=document.getElementById(id);if(!enabled){style?.remove();if(window.__cwbEmbeddedOriginal){document.documentElement.style.colorScheme=window.__cwbEmbeddedOriginal.scheme;document.documentElement.classList.toggle('dark',window.__cwbEmbeddedOriginal.dark);delete window.__cwbEmbeddedOriginal}return {applied:false,reason:'disabled'}}
+ const p=config.palette||{r:20,g:22,b:28,dark:true},shade=[p.r,p.g,p.b].join(','),ink=p.dark?'#e9eff5':'#15212c';
+ window.__cwbEmbeddedOriginal??={scheme:document.documentElement.style.colorScheme,dark:document.documentElement.classList.contains('dark')};document.documentElement.style.colorScheme=p.dark?'dark':'light';document.documentElement.classList.toggle('dark',!!p.dark);
+ if(!style){style=document.createElement('style');style.id=id;(document.head||document.documentElement).append(style)}
+ style.textContent=`:root{--main-surface-primary:transparent;--main-surface-secondary:rgba(${shade},.4);--main-surface-tertiary:rgba(${shade},.5);--sidebar-surface-primary:transparent;--sidebar-surface-secondary:rgba(${shade},.3);--text-primary:${ink};--text-secondary:${ink}}html,body,#root,#__next,main,[data-sidebar-container],[class~="bg-token-main-surface-primary"],[class~="bg-token-sidebar-surface-primary"]{background:transparent!important;color:${ink}}[role="dialog"],[role="menu"],[class~="bg-token-main-surface-secondary"]{background:rgba(${shade},.97)!important}[data-testid="composer"],[id="composer-background"]{background:rgba(${shade},.6)!important}`;
+ return {applied:true,dark:p.dark};
 }

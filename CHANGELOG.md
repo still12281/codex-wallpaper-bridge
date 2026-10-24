@@ -7,6 +7,7 @@
 - Separate deletion selection from active wallpaper selection; inactive deletion does not reload, and active deletion never silently starts a realtime neighbor.
 - Honor the chosen import resolution/FPS for newly converted local and Wallpaper Engine media.
 - Move wallpaper settings by dragging its title or using arrow keys; remember and clamp the panel position. Increase panel opacity for readable text.
+- Extend native surface rules to floating navigation, side chat and summary panels; include detached windows and separately style embedded ChatGPT/GPT webviews. Add a reviewed coverage matrix without claiming every-page visual acceptance.
 
 - Split selected import into import-and-apply and save-only; duplicate saves retain the active background.
 - Dismissible failure dialogs, selection locking and empty-selection handling.
