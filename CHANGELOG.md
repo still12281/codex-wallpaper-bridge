@@ -2,6 +2,9 @@
 
 ## Unreleased — source candidate
 
+- Capture system audio only while an eligible WebGL scene is active; stop capture in video/empty/background states, clear stale spectrum once, and coalesce unchanged media properties and closed-panel updates. Reuse scene media sources and separate five-second position corrections.
+- Add an optional one-click power-saving playback preset (960px, 12 FPS, pause on blur), with empty-library support and failure restoration.
+
 - Fix periodic helper restarts: parse only top-level JSON heartbeat rather than overwriting it with nested taskbar timestamps. Add adoption of an existing helper during supervisor upgrades.
 - Inspect the selected project before import and display its actual realtime requirement; invalidate cached scene inspection when project/package metadata changes.
 - Separate deletion selection from active wallpaper selection; inactive deletion does not reload, and active deletion never silently starts a realtime neighbor.

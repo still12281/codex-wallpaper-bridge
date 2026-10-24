@@ -7,6 +7,7 @@ import {createServer} from 'node:net';
 import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
 import {connectCdp} from '../src/cdp-client.mjs';
+import {installMediaActivity} from '../src/media-power.mjs';
 import {mountWebWallGL} from '../src/webwallgl-player.mjs';
 import {getDataRoot,findCommand} from '../src/runtime-paths.mjs';
 const temp=await mkdtemp(path.join(os.tmpdir(),'cwb-webgl-')),project=path.join(temp,'project');await mkdir(project);
@@ -30,6 +31,13 @@ try{
  const countListeners=async expression=>{const object=(await c.call('Runtime.evaluate',{expression,returnByValue:false})).result.objectId;const listeners=(await c.call('DOMDebugger.getEventListeners',{objectId:object})).listeners;await c.call('Runtime.releaseObject',{objectId:object});return listeners.length;};const before=[await countListeners('window'),await countListeners('document')];
  player=await mountWebWallGL(c,{id:'active',projectRoot:project,limits:{maxWidth:640,fps:24}},{dataRoot:getDataRoot(),config:{pauseOnBlur:false,palette:{r:20,g:22,b:28,dark:true}}});const activeId=await c.evaluate('window.__codexWallpaperBridge.rendererId');
  await c.evaluate('window.__codexWallpaperBridge.setSystemSpectrum({audioAvailable:true,bands:Array(64).fill(128)});true');await sleep(100);assert.equal((await player.sample()).systemAudioActive,true);await c.evaluate('window.__codexWallpaperBridge.setSystemSpectrum({audioAvailable:false,bands:Array(64).fill(0)});true');await sleep(100);assert.equal((await player.sample()).systemAudioActive,false);result.systemSpectrumAttachDetach=true;
+ await c.evaluate('window.__testMediaActivity=[];window.__cwbMediaActivitySend=p=>window.__testMediaActivity.push(JSON.parse(p));('+installMediaActivity.toString()+')(' + JSON.stringify('test-token')+');true');
+ assert.equal(await c.evaluate('window.__testMediaActivity.at(-1).active'),true);
+ await c.evaluate('window.__codexWallpaperBridge.setPauseOnBlur(true);true');await c.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});await sleep(200);
+ assert.equal(await c.evaluate('window.__testMediaActivity.at(-1).active'),false);assert.equal((await player.sample()).systemAudioActive,false);
+ await c.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});await c.evaluate('window.__codexWallpaperBridge.setPauseOnBlur(false);true');await sleep(200);assert.equal(await c.evaluate('window.__testMediaActivity.at(-1).active'),true);
+ await c.evaluate('window.__codexWallpaperBridge.supportsAudio=false;window.__cwbMediaActivity.report();true');assert.equal(await c.evaluate('window.__testMediaActivity.at(-1).audio'),false);assert.equal(await c.evaluate('window.__testMediaActivity.at(-1).active'),true);
+ await c.evaluate('window.__cwbMediaActivity.dispose();delete window.__cwbMediaActivity;true');result.mediaActivityPauseResume=true;
  await assert.rejects(mountWebWallGL(c,{id:'broken',projectRoot:broken},{dataRoot:getDataRoot(),config:{}}),/没有可读取的场景包/);assert.equal(await c.evaluate('window.__codexWallpaperBridge.rendererId'),activeId);assert(await c.evaluate('window.__codexWallpaperBridge.ready'));result.failedSwapRetainsActive=true;
  await player.dispose();assert.deepEqual([await countListeners('window'),await countListeners('document')],before);result.listenersRestored=true;result.passed=true;
 }catch(error){result.error=error.stack;process.exitCode=1;}finally{await player?.dispose();if(c){await c.call('Browser.close').catch(()=>{});c.close();}browser.kill();console.log(JSON.stringify(result,null,2));}

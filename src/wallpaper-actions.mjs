@@ -90,6 +90,18 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    for(const file of [entry.file,entry.sourceFile,entry.sourcePath])await removeManagedFile(root,settings,file);
    return {config:settings,message:'已从 Codex 删除并清理专属缓存；Wallpaper Engine 原文件不变。'};
   }
+  if(req.action==='power-saving'){
+   const previous={pause:settings.pauseOnBlur,playback:settings.playback};
+   settings.pauseOnBlur=true;
+   try{
+    await applyAppearance();
+    const entry=settings.library.find(e=>e.id===settings.selectedId);
+    const needsPlayback=entry&&(['realtime','webwallgl'].includes(entry.mode)||entry.limits?.maxWidth!==960||(entry.mime?.startsWith('video/')&&entry.limits?.fps!==12));
+    if(entry)await action(c,{action:'playback',maxWidth:960,fps:12});
+    if(!needsPlayback){settings.playback={maxWidth:960,fps:12};await saveConfig(root,settings);}
+   }catch(error){settings.pauseOnBlur=previous.pause;settings.playback=previous.playback;await applyAppearance();throw error;}
+   return {config:settings,message:'已应用省电设置：960 / 12 FPS，失去焦点时暂停。'};
+  }
   if(req.action==='playback'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('当前壁纸不存在');
    if(['realtime','webwallgl'].includes(entry.mode)){

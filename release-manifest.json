@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 5140,
-      "sha256": "48fbee7b3ddcbe226c51178268ce731d30a0fafed5de8b4b7350ce8489d4c0ab"
+      "utf8Bytes": 5564,
+      "sha256": "c40be3065deac5640dd6f1601cae664a1e3ff7509406e9222f4065f0bb691675"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -69,8 +69,8 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 2178,
-      "sha256": "efe4698eab2d8efcfc09020f85449b03a81ae3e903f83fa700376430cb21bf6b"
+      "utf8Bytes": 2648,
+      "sha256": "b4179360344fd4128722e6d42d954e414724aa2f4b67eb51970657819fc4f2b7"
     },
     {
       "path": "docs/FEATURE-MIGRATION.md",
@@ -104,8 +104,8 @@
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
-      "utf8Bytes": 3676,
-      "sha256": "a2ac1ad6020a226f2ca8868769288196ba814bb75483acde1f60f946a34979a2"
+      "utf8Bytes": 4572,
+      "sha256": "4eff81a0ed8689d88162925a2a92d3c98d923fdae89e3a612d855e2961461da6"
     },
     {
       "path": "docs/UPSTREAM-SOURCES.json",
@@ -114,8 +114,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "utf8Bytes": 3077,
-      "sha256": "44e186db14dd6947199975ba16368d5cf159d52fe264fb5cc1d7f5c77339c13a"
+      "utf8Bytes": 4015,
+      "sha256": "f52df01fc3f285183e447eb883de8a2ee655fe3a68f66d09e083fda98f1d9ca4"
     },
     {
       "path": "docs/WEBWALLGL.md",
@@ -169,8 +169,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 25593,
-      "sha256": "60968775a2e2d5208398774f5f0f05c6d49dacf846dfdbb9070ac998a9025c31"
+      "utf8Bytes": 25738,
+      "sha256": "95711e6033ba77d90b91330743bc4a6b8dfe10a78f95cd6f15ed50949d2456f4"
     },
     {
       "path": "src/library-preview.mjs",
@@ -181,6 +181,11 @@
       "path": "src/media-converter.mjs",
       "utf8Bytes": 2595,
       "sha256": "9fb5c95e7b88a81d87845fc9cd034e90576341b6c29ff26903bdea39a06105ff"
+    },
+    {
+      "path": "src/media-power.mjs",
+      "utf8Bytes": 4902,
+      "sha256": "8a467df78b23bb2ff52b35ca6995e44af6211efa531b3434addd04223f804584"
     },
     {
       "path": "src/media-store.mjs",
@@ -204,8 +209,8 @@
     },
     {
       "path": "src/system-media.mjs",
-      "utf8Bytes": 6278,
-      "sha256": "033a6ab7267635a8fde6d2c12c5b808467112f24377adb594a50b86d8544a468"
+      "utf8Bytes": 6311,
+      "sha256": "42d74db83a6edf4cb8f492a906869f058c63e0b682d95a8e40adcae8725f7eb9"
     },
     {
       "path": "src/upstream-adapters.mjs",
@@ -214,13 +219,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 24394,
-      "sha256": "5e3d300c86aa5f430f0f900f1bf739bbb9a66e25f98e04b6fec5bf2547e60ea0"
+      "utf8Bytes": 24311,
+      "sha256": "d32b281bc56e84243471dc34aa6bb0c990fa578e46a2c77fab237f1ec99ee012"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 20378,
-      "sha256": "b6973018b3c48c1c1ab1ba15230c33d845df44ead006272184305d5da5cc0959"
+      "utf8Bytes": 21196,
+      "sha256": "9729e5e609bf8cd98e77a86e340a18a6516068c3ffc84bddd598f7a1e88013be"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -229,8 +234,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 30837,
-      "sha256": "ef2313df18e4391b123c627297e29f738b404e2e7138f3374fd4a3521b044b25"
+      "utf8Bytes": 31354,
+      "sha256": "969bfd5ab200bde9742a367c6c9016e5a22c9e811f8bc2c08cbc22df614dd51b"
     },
     {
       "path": "src/wallpaper-style.mjs",
@@ -244,8 +249,8 @@
     },
     {
       "path": "src/webwallgl-player.mjs",
-      "utf8Bytes": 14910,
-      "sha256": "2fd3c47b3814016d3b1ddc4666eed859c5601facad57a12743cac291cced8ac1"
+      "utf8Bytes": 15366,
+      "sha256": "5ec25b93b0720ce754ac3b7a16c2bb337adc315c3acba03f4fda0835d177b963"
     },
     {
       "path": "src/webwallgl-source.mjs",
@@ -274,8 +279,18 @@
     },
     {
       "path": "test/integration.mjs",
-      "utf8Bytes": 18126,
-      "sha256": "1b24f23e1d3e917657201496eeb31347d83dccc4f7f47dc56a2a453741027719"
+      "utf8Bytes": 18321,
+      "sha256": "7adb1a63643c5b5ac5bfc588742bde2e6b12efd323f2366b251c2fb8176419e1"
+    },
+    {
+      "path": "test/media-power.test.mjs",
+      "utf8Bytes": 6754,
+      "sha256": "9fe183754cbd025c910226a5ea92755f976f8760a89073b03f23d0f8045bf194"
+    },
+    {
+      "path": "test/power-saving.test.mjs",
+      "utf8Bytes": 1386,
+      "sha256": "02af53af6037858c3eca5dcbf6bf4945c41c974f96a472bc91e3cf942e610e10"
     },
     {
       "path": "test/preflight.test.mjs",
@@ -294,8 +309,8 @@
     },
     {
       "path": "test/webwallgl-integration.mjs",
-      "utf8Bytes": 5935,
-      "sha256": "72bf334f72b1b5c5c863f9d4a6cb2008f16c10d7972f4ac2b98facaf8b29335c"
+      "utf8Bytes": 7323,
+      "sha256": "a73d86cc5c6f1d0f904a83d53098660969d763a95c508eb742f26077d1839561"
     },
     {
       "path": "test/webwallgl-source.test.mjs",
