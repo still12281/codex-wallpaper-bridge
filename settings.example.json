@@ -6,8 +6,23 @@
   "darkOverlay": 0.4,
   "composerOverlay": 0.25,
   "pauseOnBlur": true,
-  "palette": { "r": 20, "g": 22, "b": 28, "dark": true },
-  "playback": { "maxWidth": 1280, "fps": 24 },
-  "engineSearch": { "scope": "global", "kind": "engine", "folder": "" },
-  "surfaceSync": { "composer": true, "context": true, "menus": false, "settings": true, "wallpaperPanel": true, "navigation": true, "panels": true, "embedded": true }
+  "palette": {
+    "r": 20,
+    "g": 22,
+    "b": 28,
+    "dark": true
+  },
+  "playback": {
+    "maxWidth": 1280,
+    "fps": 24
+  },
+  "engineSearch": {
+    "scope": "global",
+    "kind": "engine",
+    "folder": ""
+  },
+  "surfaceSync": {
+    "code": true,
+    "embedded": true
+  }
 }

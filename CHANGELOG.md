@@ -15,7 +15,10 @@
 
 - Split selected import into import-and-apply and save-only; duplicate saves retain the active background.
 - Dismissible failure dialogs, selection locking and empty-selection handling.
-- Five independent wallpaper surface controls and current composer/menu styling updates.
+- Automatically adapt native page surfaces and retain only two folded native-background preferences: code/terminal and embedded pages. Migrate retired layout switches while preserving relevant opt-outs.
+- Use native surface tokens for library/site/GPT/profile/file-tree coverage; keep menus and dialogs solid and readable.
+- Add a version-gated native terminal theme adapter with original-theme restoration and container-remount tracking; verify native toggles, persistence and leave/return behavior in the installed client.
+- Record actual page visits across all native navigation areas, 29 settings destinations and workspace panels, including unavailable/loading-state limits.
 - Opt-in native Wallpaper Engine scene/web rendering, per-window Windows.Graphics.Capture, bounded in-memory JPEG transport and canvas playback.
 - Mandatory confirmation before realtime import/application; saved references do not start rendering.
 - Realtime output resolution/capture FPS controls; global render settings remain user-managed.

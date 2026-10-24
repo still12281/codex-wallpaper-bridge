@@ -15,7 +15,7 @@ export async function saveConfig(root,settings){const temp=path.join(root,'setti
 export function normalizeLibrary(settings){
  settings.library??=[];settings.selectedId??=null;settings.pauseOnBlur??=true;settings.playback??={maxWidth:1280,fps:24};
  settings.engineSearch??={scope:'global',folder:'',kind:'engine'};
- settings.surfaceSync={composer:true,context:true,menus:false,settings:true,wallpaperPanel:true,navigation:true,panels:true,embedded:true,...settings.surfaceSync};
+ settings.surfaceSync={code:settings.surfaceSync?.code!==false,embedded:settings.surfaceSync?.embedded!==false};
 }
 export function createActions(root,settings,apply,applyAppearance=apply){
  const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map();
@@ -94,7 +94,7 @@ export function createActions(root,settings,apply,applyAppearance=apply){
    settings.darkOverlay=settings.lightOverlay=req.darkOverlay;settings.pauseOnBlur=!!req.pauseOnBlur;await applyAppearance();await saveConfig(root,settings);return {config:settings};
   }
   if(req.action==='surface-sync'){
-   const keys=['composer','context','menus','settings','wallpaperPanel','navigation','panels','embedded'];
+   const keys=['code','embedded'];
    if(!keys.includes(req.region)||typeof req.enabled!=='boolean')throw Error('分区设置无效');
    const previous={...settings.surfaceSync};settings.surfaceSync={...previous,[req.region]:req.enabled};
    try{await applyAppearance();await saveConfig(root,settings)}catch(error){settings.surfaceSync=previous;await applyAppearance();throw error}
