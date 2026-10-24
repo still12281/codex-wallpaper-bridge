@@ -8,7 +8,10 @@ An experimental, local wallpaper layer for the Codex desktop app on Windows. Pic
 
 ## Features
 
-- Experimental native scene/web capture with explicit confirmation, save-only references and output size/FPS controls. Native acceptance is pending; see [realtime setup and manual checks](docs/REALTIME.md).
+- Optional sandboxed WebGL scenes and native scene/web capture, with confirmation, save-only references and failure recovery. Native sample acceptance and limits: [WebGL](docs/WEBWALLGL.md), [realtime](docs/REALTIME.md).
+- Paged thumbnails, type/rating filters, hide/restore, portable appearance presets, image/video rotation, glass, fonts, parallax and click/trail FX.
+- Optional [system media](docs/SYSTEM-MEDIA.md), off by default.
+- Resize the embedded settings panel from its lower-right grip; drag its title, remember its size, or reset it. No separate window.
 
 - In-app wallpaper library, local imports, switching, and deletion of app-owned copies.
 - Default search limited to discovered Wallpaper Engine libraries across local disks, including Workshop, custom projects, and built-in projects.
@@ -56,7 +59,7 @@ Open **壁纸** in the client. The current UI is in Chinese.
 - Choose resolution and FPS, then apply. Conversion takes time; the host switches after decoding the new copy. Default: 1280-wide, 24 FPS, muted, pause in the background. High settings and large sources can still cost CPU/GPU time.
 - Delete removes app-owned records and unreferenced app copies, never Workshop or external source files.
 
-Wallpaper Engine scene support is limited to extracting a single embedded video. Pure 3D scenes, webpages, app wallpapers, independent scripts, clocks, and complex effects are not rendered. This is not Wallpaper Engine's renderer or a live connection to its desktop session.
+Auto mode first attempts embedded-video extraction. WebGL mode supports scene scripts with project-dependent compatibility. Web wallpapers use native capture; WebGL Web resource loading is not yet accepted. See the [feature migration status](docs/FEATURE-MIGRATION.md), including the remaining official pet API gap.
 
 ## Development
 

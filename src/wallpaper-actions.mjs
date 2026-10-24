@@ -18,8 +18,9 @@ export function normalizeLibrary(settings){
  settings.engineSearch??={scope:'global',folder:'',kind:'engine'};
  settings.surfaceSync={code:settings.surfaceSync?.code!==false,embedded:settings.surfaceSync?.embedded!==false};
  settings.visual=sanitizeVisual(settings.visual);settings.presets??=[];settings.hiddenWallpaperIds??=[];settings.rotation??={enabled:false,intervalSeconds:60,order:'sequential',ids:[]};
+ settings.systemMedia??={enabled:false,audio:false};
 }
-export function createActions(root,settings,apply,applyAppearance=apply){
+export function createActions(root,settings,apply,applyAppearance=apply,services={}){
  const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map();
  const requestRealtime=async(c,projectRoot,applyNow,profile,renderer='native')=>{
   const project=await describeProject(projectRoot);
@@ -31,6 +32,10 @@ export function createActions(root,settings,apply,applyAppearance=apply){
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
  return async(c,req)=>{
+  if(req.action==='system-media-config'){
+   if(typeof req.enabled!=='boolean'||typeof req.audio!=='boolean'||typeof services.configureMedia!=='function')throw Error('系统媒体配置不可用');const previous=settings.systemMedia;settings.systemMedia={enabled:req.enabled,audio:req.audio};try{await services.configureMedia(settings.systemMedia);await saveConfig(root,settings);}catch(error){settings.systemMedia=previous;await services.configureMedia(previous);throw error;}return {config:settings,message:req.enabled?'系统媒体联动已启用，采集状态以面板显示为准。':'系统媒体联动已关闭。'};
+  }
+  if(req.action==='system-media-control'){if(typeof services.controlMedia!=='function')throw Error('系统媒体未启用');await services.controlMedia(req.command);return {message:'已向当前播放器执行操作。'};}
   if(req.action==='visual'){
    const previous=settings.visual;settings.visual=sanitizeVisual({...previous,...req.values});try{await applyAppearance();await saveConfig(root,settings);}catch(error){settings.visual=previous;await applyAppearance();throw error;}return {config:settings};
   }

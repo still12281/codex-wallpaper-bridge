@@ -25,3 +25,7 @@ No telemetry or upload service is implemented by this project's host. Its CDP co
 Do not attach an entire data directory, browser profile, real settings file, or raw debugging dump to an issue. Redact personal names, paths, titles, media and any conversation/account information from screenshots and logs. Prefer a newly generated sample video and a minimal description of client/OS/dependency versions.
 
 `npm run check:privacy` checks the release allowlist, content patterns and hashes. It is a guard against common mistakes, not proof that arbitrary future edits contain no private information. Review the actual files and Git history again before publishing.
+
+## Optional system media
+
+System media and loopback spectrum are disabled by default. When enabled, a separate local helper reads Windows playback metadata and optional system output spectrum over stdio. No continuous audio is saved or uploaded by the host. The helper may cache metadata/artwork under the private data root; online lyrics lookup is disabled. Wallpaper scenes receive bounded text metadata and fresh spectrum values, not account/player handles. See [SYSTEM-MEDIA.md](docs/SYSTEM-MEDIA.md) for the exact network and acceptance scope. Panel size and position are saved in the local client profile.

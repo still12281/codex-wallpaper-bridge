@@ -20,3 +20,5 @@ The scene parser dependency is limited to four source files. The complete WebWal
 FFmpeg is a separately installed executable, not redistributed here. Its own license/build options apply separately. Node.js, PowerShell, the Windows/.NET runtime, Codex and Wallpaper Engine are also separately supplied software. Local icon extraction during launcher setup does not grant rights to redistribute the original brand asset.
 
 The original and vendored file hashes are recorded in `docs/UPSTREAM-SOURCES.json`. Upstream copyright names and the contact address present in an original third-party license are public attribution, not this maintainer's identity.
+
+Optional system media uses `oneincase/media-bridge` v0.1.5 (MIT, commit `a508378f4e5e654c8de60e1076d559dca258e825`). `tools/prepare-media-bridge.mjs` downloads a separately supplied Windows executable through authenticated gh, verifies the pinned architecture-specific SHA-256, and preserves the original LICENSE beside it. No binary or cache is redistributed. Source: https://github.com/oneincase/media-bridge .

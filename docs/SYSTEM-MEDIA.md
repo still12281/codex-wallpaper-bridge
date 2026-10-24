@@ -1,0 +1,11 @@
+# Optional system media on Windows
+
+Prepare `oneincase/media-bridge` v0.1.5 with `npm run prepare:media`, using the same `CODEX_WALLPAPER_DATA_DIR` as the host. Preparation requires authenticated `gh`; the Windows executable is downloaded separately, SHA-256 checked, and stored with its original MIT license outside Git. Release commit: `a508378f4e5e654c8de60e1076d559dca258e825`.
+
+Both metadata and system output audio capture are off by default. Enable them separately in **系统音乐联动**. The helper uses protocol 1 over local standard input/output, a one-second metadata/status poll, and optional 100ms spectrum subscriptions. Playback buttons require the active media provider's capabilities and an applied result. This adapter does not save continuous audio, forward album artwork or lyrics to scenes, or expose a general media API to wallpaper scripts.
+
+On Windows the helper is launched with `--no-online` to disable online lyrics lookup, and `--no-audio` unless spectrum capture was enabled. `--no-online` is a lyrics-provider option, not a universal firewall. The inspected Windows metadata adapter does not supply remote artwork URLs. Metadata/artwork caches may exist in the private runtime data directory. The official client and media player retain their own network behavior.
+
+Actual source state and a received spectrum frame newer than one second are required before external audio is attached to WebGL. A provider exit, error, disabled capture or stale spectrum detaches it. WebWallGL then resumes its engine default audio processing, which can include simulation and scene BGM; that behavior is not evidence of live system audio. The WebGL scene volume control does not alter system volume or native capture audio.
+
+Local native evidence on 2026-10-24: metadata-only mode initialized successfully with audio idle; audio mode reported WASAPI running at 48kHz/stereo and delivered 22 spectrum events in about 2.5 seconds. The sampled output was silent (zero RMS/peak). This verifies the protocol and capture lifecycle, not a nonzero music-reactive visual effect. Isolated browser tests separately verify external spectrum attach/detach. Real player playback controls were not automatically pressed during acceptance.

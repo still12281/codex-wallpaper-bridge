@@ -10,3 +10,7 @@
 - Independent review caught media rollback/removal, resize, resource concurrency, listener cleanup, rotation locking and thumbnail memory limits. Implemented candidate media layers, bounded logical iframe size, queued asset reads, explicit disposal, serialized scheduler and 8 MiB/96-item preview cache.
 - Transport `id` is reserved for request correlation; preset actions use `presetId`. UI roundtrip caught and fixed the field collision that direct action unit tests did not expose.
 - Empty synthetic scenes can enter the engine's idle state; resume acceptance checks the paused state, while native dynamic scenes independently provide changing-pixel evidence. A transient early frame-navigation failure was diagnosed with frame/target inventory; repeated full sandbox runs subsequently passed.
+
+- Native library audit accepted 24-card pages and real previews, save-only WebGL import, application and return to the prior video with no leaked renderer. Generated native Web capture accepted changing frames and stopped its source.
+- Embedded panel resizing uses explicit pointer capture; tests must include the pressed mouse button during CDP movement. Initialize grip placement synchronously on open, and suppress backdrop clicks from resize release. User canceled the separate-window proposal.
+- Optional system media is Windows-only, protocol 1, online lyrics disabled, metadata/audio opt-in. A live native silent sample delivered spectrum; no nonzero visual music acceptance is claimed. Source state plus a fresh received frame gates external audio.

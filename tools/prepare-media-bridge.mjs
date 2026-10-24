@@ -1,0 +1,13 @@
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {mkdir,readFile,writeFile,rename} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import path from 'node:path';
+import {getDataRoot} from '../src/runtime-paths.mjs';
+const hashes={x64:'61a7f6dd5d9b012aceebc4180d9b429b17cd519764c92ea217acf3e63407ee0c',arm64:'3cd69363ea3dd7d12a7036d36f7be048c55496b96fa1f14382fef6ef0a318cd4'};
+if(process.platform!=='win32'||!hashes[process.arch])throw Error('This preparation target supports Windows x64/ARM64');
+const directory=path.join(getDataRoot(),'engines','media-bridge-0.1.5');await mkdir(directory,{recursive:true});const file=path.join(directory,'media-bridge.exe'),run=promisify(execFile);
+await run('gh',['release','download','v0.1.5','--repo','oneincase/media-bridge','--pattern','media-bridge-win32-'+process.arch+'.exe','--output',file+'.next','--clobber'],{windowsHide:true,timeout:90000,maxBuffer:65536});
+if(createHash('sha256').update(await readFile(file+'.next')).digest('hex')!==hashes[process.arch])throw Error('Media bridge SHA-256 mismatch; existing runtime was not replaced');
+const license=JSON.parse((await run('gh',['api','repos/oneincase/media-bridge/git/blobs/d60d301a36267c42675e4def7272e411cfd06986'],{windowsHide:true,timeout:15000,maxBuffer:65536})).stdout);
+await writeFile(path.join(directory,'LICENSE'),Buffer.from(license.content.replace(/\s/g,''),'base64'));await rename(file+'.next',file);console.log(JSON.stringify({prepared:true,version:'0.1.5',directory,sha256:hashes[process.arch]}));

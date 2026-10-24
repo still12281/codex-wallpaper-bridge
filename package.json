@@ -11,7 +11,8 @@
     "check:privacy": "node tools/check-release.mjs",
     "test:integration": "node test/integration.mjs",
     "prepare:webwallgl": "node tools/prepare-webwallgl.mjs",
-    "test:webwallgl": "node test/webwallgl-integration.mjs"
+    "test:webwallgl": "node test/webwallgl-integration.mjs",
+    "prepare:media": "node tools/prepare-media-bridge.mjs"
   },
   "files": ["src/", "windows/", "vendor/", "docs/", "tools/", "test/", "README.md", "README.zh-CN.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "PRIVACY.md", "SECURITY.md", "CONTRIBUTING.md", "CHANGELOG.md", "settings.example.json", "release-manifest.json"]
 }

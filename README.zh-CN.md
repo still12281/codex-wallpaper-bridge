@@ -8,7 +8,10 @@
 
 ## 能做什么
 
-- 实验性实时场景/网页接入：导入前二次确认，仅保存不启动渲染，可调输出尺寸和采集 FPS。此项尚待用户手测；依赖准备与验证步骤见 [实时模式](docs/REALTIME.md)。
+- 场景可选隔离沙箱 WebGL 渲染；场景/网页也可选原生实时采集。支持二次确认、仅保存、失败回退；已有本机样例验收，兼容范围见 [WebGL](docs/WEBWALLGL.md) 和 [实时模式](docs/REALTIME.md)。
+- 缩略图分页、类型/分级筛选、隐藏与恢复；外观预设导入导出、图片/视频轮播、玻璃、字体、视差、点击与拖尾特效。
+- 可选 [系统音乐联动](docs/SYSTEM-MEDIA.md)，默认关闭。
+- 设置面板右下角可拖动缩放并记忆大小，标题可移动，底部可重置；保留在 Codex 内。
 
 - 在 Codex 内导入、切换和删除壁纸记录。
 - 默认只搜索各本地磁盘已发现的 Wallpaper Engine 库，包括工坊、自建与内置项目。
@@ -22,7 +25,7 @@
 
 需要 Windows 10/11 x64、官方 Microsoft Store Codex、Node.js 22+、PowerShell 7，以及单独安装的 FFmpeg（含 H.264/WebP 编码器）。可选 GUI 启动器使用本机 .NET Framework C# 编译器。Wallpaper Engine 只对其库功能必需，本地图片/视频导入不依赖它。
 
-无需安装生产 npm 依赖。必要上游源码已最小化随附，并保留三份原许可证；见 [第三方来源](THIRD_PARTY_NOTICES.md)。没有随附 FFmpeg、Codex、Wallpaper Engine 程序或任何壁纸素材。
+无需安装生产 npm 依赖。必要上游源码已最小化随附，并保留原许可证；见 [第三方来源](THIRD_PARTY_NOTICES.md)。没有随附 FFmpeg、Codex、Wallpaper Engine 程序或任何壁纸素材。
 
 先阅读 [隐私说明](PRIVACY.md)、[安全说明](SECURITY.md)、[验证边界](docs/VALIDATION.md)。在仓库根目录用 PowerShell 7 运行：
 
@@ -47,7 +50,7 @@
 4. 默认 1280 宽、24 FPS、静音、后台暂停。高规格仍可能卡顿，首次转换会暂时使用 CPU。
 5. 删除只清理 Codex 内记录及专属副本，保留 Wallpaper Engine 和外部原文件。
 
-场景包仅尝试提取单一背景视频，不支持完整网页/纯实时 3D 场景、独立脚本、时钟和复杂特效。这不是 Wallpaper Engine 原渲染器，也不是实时跟随其桌面渲染。
+自动模式优先提取场景视频层；WebGL 模式可运行场景脚本，具体效果依项目而定。网页使用原生实时模式，WebGL 网页资源通道尚未验收。完整迁移范围与桌宠接口缺口见 [功能状态](docs/FEATURE-MIGRATION.md)。
 
 ## 开发与验证
 

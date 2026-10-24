@@ -6,7 +6,7 @@ Select **WebGL 场景** when importing a Scene project. The confirmation explain
 
 Scene packages and loose scene directories use the same broker. No local HTTP endpoint, CSP bypass, client package modification or native source window is required. The previous background stays in place while loading; only the ready candidate is adopted. Changing background, failed mounts and shutdown destroy the engine, listeners, pending buffers and iframe URLs. Focus/visibility/reduced-motion state and pointer coordinates travel through a per-instance message token.
 
-The requested maximum width and FPS are quality limits, not performance guarantees. Video textures currently use half-size upload. Audio starts muted; no system music source is fabricated. Scripts execute only in the isolated wallpaper context. Effects, shared engine assets, codecs and individual scripts can still differ from Wallpaper Engine itself.
+The requested maximum width and FPS are quality limits, not performance guarantees. Video textures currently use half-size upload. Audio starts muted. Optional live system spectrum is gated by source state and fresh frames; otherwise the engine uses its own default audio processing, which can include simulation and scene BGM. See SYSTEM-MEDIA.md. Scripts execute only in the isolated wallpaper context. Effects, shared engine assets, codecs and individual scripts can still differ from Wallpaper Engine itself.
 
 ## Verified scope, 2026-10-24
 

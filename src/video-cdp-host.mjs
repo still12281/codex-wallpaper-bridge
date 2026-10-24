@@ -14,6 +14,7 @@ import {installRealtime} from './realtime-player.mjs';
 import {mountWebWallGL} from './webwallgl-player.mjs';
 import {upstreamRuntime,decorateShell} from './upstream-adapters.mjs';
 import {installFeaturePanel} from './feature-panel.mjs';
+import {startSystemMedia} from './system-media.mjs';
 
 const codeRoot=path.dirname(fileURLToPath(import.meta.url));
 const root=getDataRoot();
@@ -72,7 +73,9 @@ async function applyAppearance(){
  for(const c of sessions.values())await c.evaluate('(()=>{const config='+JSON.stringify(settings)+';window.__codexWallpaperBridge?.setPauseOnBlur?.(config.pauseOnBlur);document.getElementById("codex-wallpaper-controls")?.__cwbRenderConfig?.(config);return ('+paintShell.toString()+')(config)})()');
 }
 async function applySelected(){for(const [id,c]of sessions){const key=JSON.stringify(settings.library.find(e=>e.id===settings.selectedId));if(c.activeKey===key&&await c.evaluate('!!window.__codexWallpaperBridge?.ready&&!window.__codexWallpaperBridge?.error')){c.installed=true;continue;}c.installed=false;try{await mount(c,{id});c.activeKey=key;}catch(error){await c.evaluate('window.__cwbPendingMedia?.dispose?.();document.getElementById("codex-wallpaper-bridge-pending")?.remove();delete window.__cwbPendingMedia;true').catch(()=>{});throw error;}}}
-const actions=createActions(root,settings,applySelected,applyAppearance);
+let mediaBackend=null,mediaKey='',mediaBusy=false,mediaError=null;
+async function configureMedia(options){const key=JSON.stringify(options);if(mediaKey===key&&(!options.enabled||(mediaBackend&&!mediaBackend.state.error)))return;const next=options.enabled?await startSystemMedia(root,options):null,previous=mediaBackend;mediaBackend=next;mediaKey=key;mediaError=null;await previous?.stop();}
+const actions=createActions(root,settings,applySelected,applyAppearance,{configureMedia,controlMedia:async command=>{if(!mediaBackend)throw Error('系统媒体未启用');await mediaBackend.control(command);}});
 async function alignTaskbar(){if(appUrl!=='app://-/index.html'||process.platform!=='win32')return;try{await stat(path.join(root,'Align-Taskbar.exe'))}catch{return}try{const r=await promisify(execFile)(path.join(root,'Align-Taskbar.exe'),['--apply'],{windowsHide:true,timeout:8000});status.taskbar={updatedAt:new Date().toISOString(),result:r.stdout.trim()};}catch(e){status.taskbar={error:e.message}}}
 
 function prepareLayer(size,mime){
@@ -195,5 +198,9 @@ const rotationTimer=setInterval(()=>{
   finally{if(acquired)acting=false;rotating=false;}
  });
 },1000);rotationTimer.unref();
+await configureMedia(settings.systemMedia).catch(error=>{mediaError=error.message;});
+let spectrumBusy=false;
+const spectrumTimer=setInterval(async()=>{if(spectrumBusy||stopped||busy||acting||streaming||![...sessions.values()].some(c=>c.webPlayer))return;spectrumBusy=true;try{const {audioAvailable=false,bands=[]}=mediaBackend?.payload()||{};for(const c of sessions.values())if(c.webPlayer)await c.evaluate('window.__codexWallpaperBridge?.setSystemSpectrum?.('+JSON.stringify({audioAvailable,bands})+');true').catch(()=>{});}finally{spectrumBusy=false;}},100);spectrumTimer.unref();
+const mediaTimer=setInterval(async()=>{if(mediaBusy||stopped||busy||acting||streaming)return;mediaBusy=true;try{const payload=mediaBackend?.payload()||{hasMedia:false,audioAvailable:false,sources:[],error:mediaError,capabilities:{}};for(const c of sessions.values())await c.evaluate('window.__codexWallpaperBridge?.setSystemMedia?.('+JSON.stringify(payload)+');document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+JSON.stringify(payload)+');true').catch(()=>{});}finally{mediaBusy=false;}},1000);mediaTimer.unref();
 await save();await tick();const timer=setInterval(tick,5000);
- const stop=()=>{stopped=true;clearInterval(timer);clearInterval(rotationTimer);clearTimeout(streamTimer);Promise.all([...sessions.values()].map(async c=>{await c.evaluate('window.__cwbDecorations?.dispose();true').catch(()=>{});await c.webPlayer?.dispose();c.close();})).then(stopRealtime).finally(()=>process.exit(0))};process.on('SIGINT',stop);process.on('SIGTERM',stop);
+ const stop=()=>{stopped=true;clearInterval(timer);clearInterval(rotationTimer);clearInterval(mediaTimer);clearInterval(spectrumTimer);clearTimeout(streamTimer);Promise.all([...sessions.values()].map(async c=>{await c.evaluate('window.__cwbDecorations?.dispose();true').catch(()=>{});await c.webPlayer?.dispose();c.close();})).then(()=>Promise.all([stopRealtime(),mediaBackend?.stop()])).finally(()=>process.exit(0))};process.on('SIGINT',stop);process.on('SIGTERM',stop);
