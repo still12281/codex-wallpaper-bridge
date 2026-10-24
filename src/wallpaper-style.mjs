@@ -10,7 +10,9 @@ export function paintShell(config){
  const mediaRoot=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot;
  if(mediaRoot){let tint=mediaRoot.querySelector('[data-cwb-shade]');if(!tint){tint=document.createElement('div');tint.setAttribute('data-cwb-shade','');mediaRoot.appendChild(tint)}tint.style.cssText=`position:absolute;inset:0;pointer-events:none;background:rgba(${shade},${overlay})`}
  let style=document.getElementById('codex-wallpaper-bridge-style');if(!style){style=document.createElement('style');style.id='codex-wallpaper-bridge-style';document.head.appendChild(style)}
- style.textContent=`html,body{background:transparent!important}body{isolation:isolate}#root,#app{position:relative;z-index:1;background:transparent!important}
+ // Native browser guests are portaled beside #root. A positive root z-index
+ // would place its transparent pane above the guest and intercept mouse input.
+ style.textContent=`html,body{background:transparent!important}body{isolation:isolate}#root,#app{position:relative;background:transparent!important}
  :root{--color-text-primary:${ink};--color-text-secondary:${secondary};--color-text-tertiary:${secondary};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
  :root{--color-surface:transparent;--color-surface-canvas:transparent;--color-surface-secondary:rgba(${shade},.22);--color-surface-tertiary:rgba(${shade},.35);--color-surface-card:rgba(${shade},.55)}
  [role="dialog"],[role="menu"],[role="listbox"],[data-slot="popover-content"],[data-radix-popper-content-wrapper]{--color-surface:var(--color-surface-elevated);--color-surface-canvas:var(--color-surface-elevated);--color-surface-secondary:var(--color-surface-elevated-secondary)}
