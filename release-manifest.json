@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 1947,
-      "sha256": "ec0ecfca507497a9f9a8b61fb7e3baf970162b2ebf347597bc31b3011964613e"
+      "utf8Bytes": 2367,
+      "sha256": "047dcc4b9474258f1344da849d92df08b59cd80ed62266f50e38c9a559ed4540"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -154,18 +154,18 @@
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 12116,
-      "sha256": "e9ffd036248b0da006fa4776c2c4eb770dd29e663bfe119880b071f87bae595e"
+      "utf8Bytes": 12708,
+      "sha256": "6da3d2e0c8602d998fa09954282f0799e498073156d7c30a0dfba068080c5e78"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
-      "utf8Bytes": 5222,
-      "sha256": "824c10338572b3c761d1ead0948de778a05d176cfbba041ab302dfa315f21224"
+      "utf8Bytes": 7739,
+      "sha256": "c9591758ebdf7c3fc70762c242d16f2293f9717b36dd3dae9e25b15dbabe6165"
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 19428,
-      "sha256": "ed8202db6ce8bde526198f0729f865c82b27ec2ab2831dd673ec3b99485cd39a"
+      "utf8Bytes": 21343,
+      "sha256": "fc0456cc5b57441ccd28ab9a48c9cdbbe07a201dcd61e04dfea83505cf20156f"
     },
     {
       "path": "src/wallpaper-style.mjs",
@@ -181,6 +181,11 @@
       "path": "test/integration.mjs",
       "utf8Bytes": 7128,
       "sha256": "ce353fb56e58a9d78e83ada5e973146c132410914d00f3553de5ef627cf9f407"
+    },
+    {
+      "path": "test/preflight.test.mjs",
+      "utf8Bytes": 2091,
+      "sha256": "d6dc920ef1d16287e71f2745bbda93c7d9a5fc1a3cca8686ac30b97a9f554b88"
     },
     {
       "path": "tools/check-release.mjs",

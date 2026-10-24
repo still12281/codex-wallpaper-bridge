@@ -7,7 +7,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {createEngineCatalog} from './engine-library.mjs';
 import {convertMedia} from './media-converter.mjs';
-import {currentEngineSource,getCurrentEngineProject} from './wallpaper-engine-source.mjs';
+import {currentEngineSource,getCurrentEngineProject,inspectEngineProject} from './wallpaper-engine-source.mjs';
 import {commitConverted,removeManagedFile} from './media-store.mjs';
 import {describeProject,realtimeProfile,findWorkshopProject} from './realtime-source.mjs';
 const types={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','video/mp4':'mp4','video/webm':'webm'};
@@ -42,12 +42,13 @@ export function createActions(root,settings,apply,applyAppearance=apply){
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
   if(req.action==='engine-list'){const search={scope:req.scope||'global',folder:req.folder||'',kind:req.kind||'engine'};const result=await catalog.search(search);settings.engineSearch=search;await saveConfig(root,settings);return result}
+  if(req.action==='engine-inspect'){const item=await catalog.resolve(req.projectToken);return {inspection:item.kind==='media'?{supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:item.mime.startsWith('video/')?'当前选中的是视频，生成副本后直接播放。':'当前选中的是图片，可直接导入。'}:await inspectEngineProject(item.root,req.renderMode)}}
   if(req.action==='engine-pick-folder'){const result=await promisify(execFile)(getPowerShell(),['-NoProfile','-STA','-File',fileURLToPath(new URL('../windows/Pick-WallpaperFolder.ps1',import.meta.url)),'-InitialPath',settings.engineSearch?.folder||''],{windowsHide:true,timeout:150000});return JSON.parse(result.stdout)}
   if(req.action==='delete'){
    const index=settings.library.findIndex(e=>e.id===req.selectedId);if(index<0)throw Error('壁纸不存在');
    const entry=settings.library[index],selected=settings.selectedId;settings.library.splice(index,1);
-   if(selected===entry.id)settings.selectedId=settings.library[Math.min(index,settings.library.length-1)]?.id||null;
-   try{await apply();await saveConfig(root,settings)}catch(e){settings.library.splice(index,0,entry);settings.selectedId=selected;await apply();throw e}
+   const wasActive=selected===entry.id;if(wasActive)settings.selectedId=settings.library.find(e=>e.mode!=='realtime')?.id||null;
+   try{if(wasActive)await apply();await saveConfig(root,settings)}catch(e){settings.library.splice(index,0,entry);settings.selectedId=selected;if(wasActive)await apply();throw e}
    for(const file of [entry.file,entry.sourceFile,entry.sourcePath])await removeManagedFile(root,settings,file);
    return {config:settings,message:'已从 Codex 删除并清理专属缓存；Wallpaper Engine 原文件不变。'};
   }
@@ -81,7 +82,8 @@ export function createActions(root,settings,apply,applyAppearance=apply){
    }
    const id=randomUUID();let source,converted;
    try{source=resolved?.kind==='media'?{input:resolved.file,mime:resolved.mime,name:path.basename(resolved.file),source:'本地图片/视频',sourceKey:resolved.sourceKey,temporary:false}:await currentEngineSource(root,id,workshopId,resolved?.root)}catch(error){if(error.code==='REALTIME_REQUIRED')return requestRealtime(c,projectRoot,applyNow,req.profile);throw error}
-   try{converted=await convertMedia(root,source.input,source.mime,id,settings.playback)}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
+   const requestedProfile=req.profile?realtimeProfile(req.profile):settings.playback;
+   try{converted=await convertMedia(root,source.input,source.mime,id,requestedProfile)}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
    const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey};const previous=settings.selectedId;settings.library.push(entry);if(applyNow)settings.selectedId=id;
    const refresh=applyNow?apply:async()=>{};
    try{await commitConverted(root,settings,entry,converted,{...entry},refresh,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}
@@ -118,7 +120,7 @@ export function createActions(root,settings,apply,applyAppearance=apply){
   }
   if(req.action!=='import-end')throw Error('不支持的操作');
   if(u.received!==u.size)throw Error('文件未传输完整');await u.handle.close();uploads.delete(u.id);
-  const converted=await convertMedia(root,path.join(root,u.file),u.mime,u.id,settings.playback);
+  const converted=await convertMedia(root,path.join(root,u.file),u.mime,u.id,req.profile?realtimeProfile(req.profile):settings.playback);
   const entry={id:u.id,name:u.name,sourceFile:u.file,sourceMime:u.mime};const previous=settings.selectedId;settings.library.push(entry);settings.selectedId=entry.id;
   try{await commitConverted(root,settings,entry,converted,{...entry},apply,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;await apply();throw e}return {config:settings};
  };
