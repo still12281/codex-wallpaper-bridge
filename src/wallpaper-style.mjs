@@ -48,6 +48,7 @@ export function paintShell(config){
   window.__cwbLayout={version:2,refresh,dispose:()=>{observer.disconnect();for(const [f,o]of tracked){o.disconnect();f.parentElement?.removeAttribute('data-cwb-thread-space');f.offsetParent?.style.removeProperty('--cwb-footer-height')}tracked.clear()}};refresh();
  }
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
+ window.__cwbDecorate?.(config);
  return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? .48 : null,surfaces:sync};
 }
 

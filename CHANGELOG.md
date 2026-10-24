@@ -41,3 +41,4 @@ Full native cold-start and taskbar integration for this portable candidate remai
 
 - Add an optional, separately prepared WebWallGL 3.0.0 Scene renderer with sandboxed scripts, bounded project reads, first-frame adoption, pointer and pause forwarding, and explicit native/WebGL selection.
 - Keep Web wallpapers on the existing native renderer pending a separate resource/script compatibility gate. Preserve third-party notices and record native vs synthetic acceptance separately in docs/WEBWALLGL.md.
+- Reuse the upstream picker/FX model for paged wallpaper previews, filters, batch hide/restore, click/trail effects; add transactional portable presets, Codex glass/fonts, background parallax, first-frame fade-in and foreground image/video rotation.

@@ -10,12 +10,14 @@ import {convertMedia} from './media-converter.mjs';
 import {currentEngineSource,getCurrentEngineProject,inspectEngineProject} from './wallpaper-engine-source.mjs';
 import {commitConverted,removeManagedFile} from './media-store.mjs';
 import {describeProject,realtimeProfile,findWorkshopProject} from './realtime-source.mjs';
+import {sanitizeVisual,appearanceSnapshot,parsePreset,nextRotation} from './appearance-model.mjs';
 const types={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','video/mp4':'mp4','video/webm':'webm'};
 export async function saveConfig(root,settings){const temp=path.join(root,'settings.next.json');await writeFile(temp,JSON.stringify(settings,null,2));await rename(temp,path.join(root,'settings.json'))}
 export function normalizeLibrary(settings){
  settings.library??=[];settings.selectedId??=null;settings.pauseOnBlur??=true;settings.playback??={maxWidth:1280,fps:24};
  settings.engineSearch??={scope:'global',folder:'',kind:'engine'};
  settings.surfaceSync={code:settings.surfaceSync?.code!==false,embedded:settings.surfaceSync?.embedded!==false};
+ settings.visual=sanitizeVisual(settings.visual);settings.presets??=[];settings.hiddenWallpaperIds??=[];settings.rotation??={enabled:false,intervalSeconds:60,order:'sequential',ids:[]};
 }
 export function createActions(root,settings,apply,applyAppearance=apply){
  const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map();
@@ -29,6 +31,28 @@ export function createActions(root,settings,apply,applyAppearance=apply){
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
  return async(c,req)=>{
+  if(req.action==='visual'){
+   const previous=settings.visual;settings.visual=sanitizeVisual({...previous,...req.values});try{await applyAppearance();await saveConfig(root,settings);}catch(error){settings.visual=previous;await applyAppearance();throw error;}return {config:settings};
+  }
+  if(req.action==='preset-export'){const name=String(req.name||'我的外观').trim().slice(0,80)||'我的外观';return {preset:JSON.stringify({format:'codex-wallpaper-appearance',version:1,name,appearance:appearanceSnapshot(settings)},null,2)};}
+  if(req.action==='preset-save'||req.action==='preset-import'){
+   const preset=req.action==='preset-import'?parsePreset(req.json):{name:String(req.name||'我的外观').trim().slice(0,80)||'我的外观',appearance:appearanceSnapshot(settings)};if(settings.presets.length>=50)throw Error('最多保存50个外观预设');const entry={id:randomUUID(),...preset};settings.presets.push(entry);try{await saveConfig(root,settings);}catch(error){settings.presets.pop();throw error;}return {config:settings,message:'外观预设已保存，未切换当前外观。'};
+  }
+  if(req.action==='preset-apply'){
+   const preset=settings.presets.find(p=>p.id===req.presetId);if(!preset)throw Error('预设不存在');const checked=parsePreset(JSON.stringify({format:'codex-wallpaper-appearance',version:1,...preset})),previous=appearanceSnapshot(settings);Object.assign(settings,checked.appearance);try{await applyAppearance();await saveConfig(root,settings);}catch(error){Object.assign(settings,previous);await applyAppearance();throw error;}return {config:settings,message:'已应用整套外观；壁纸和素材库保持不变。'};
+  }
+  if(req.action==='preset-delete'){const index=settings.presets.findIndex(p=>p.id===req.presetId);if(index<0)throw Error('预设不存在');const [removed]=settings.presets.splice(index,1);try{await saveConfig(root,settings);}catch(error){settings.presets.splice(index,0,removed);throw error;}return {config:settings};}
+  if(req.action==='library-visibility'){
+   if(!Array.isArray(req.ids)||req.ids.length>3000||req.ids.some(id=>typeof id!=='string'||id.length>128)||typeof req.hidden!=='boolean')throw Error('隐藏项目无效');const previous=settings.hiddenWallpaperIds,ids=new Set(previous);for(const id of req.ids)req.hidden?ids.add(id):ids.delete(id);if(ids.size>6000)throw Error('隐藏记录达到上限');settings.hiddenWallpaperIds=[...ids];try{await saveConfig(root,settings);}catch(error){settings.hiddenWallpaperIds=previous;throw error;}return {config:settings,message:req.hidden?'已隐藏所选壁纸，原文件保持不变。':'已恢复所选壁纸。'};
+  }
+  if(req.action==='rotation-config'){
+   if(typeof req.enabled!=='boolean'||!Number.isInteger(req.intervalSeconds)||req.intervalSeconds<10||req.intervalSeconds>86400||!['sequential','shuffle'].includes(req.order)||!Array.isArray(req.ids)||req.ids.length>3000||req.ids.some(id=>!settings.library.some(e=>e.id===id&&!['realtime','webwallgl'].includes(e.mode))))throw Error('轮播参数无效');
+   const previous=settings.rotation;settings.rotation={enabled:req.enabled,intervalSeconds:req.intervalSeconds,order:req.order,ids:[...new Set(req.ids)]};try{await saveConfig(root,settings);}catch(error){settings.rotation=previous;throw error;}return {config:settings,message:'轮播设置已保存；仅轮播已导入的图片和视频，后台自动等待。'};
+  }
+  if(req.action==='rotation-next'){
+   const next=nextRotation(settings);if(!next)return {config:settings,message:'至少需要两张未隐藏的图片或视频。'};const previous=settings.selectedId;settings.selectedId=next.id;try{await apply();await saveConfig(root,settings);}catch(error){settings.selectedId=previous;await apply();throw error;}return {config:settings};
+  }
+  if(req.action==='engine-preview')return {preview:await catalog.preview(req.projectToken)};
   if(req.action==='wallpaper-engine-confirm'){
    const pending=confirmations.get(req.confirmationToken);
    if(!pending||pending.owner!==c||pending.expires<Date.now()||req.confirmed!==true)throw Error('实时导入确认已失效，请重新选择');
