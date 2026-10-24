@@ -28,3 +28,9 @@ Authorized 2026-10-24. Baseline: 1c1036e. Preserve the official client and the e
 - Installed library: 88 compatible items, 24-card page, loaded previews, save-only WebGL reference, scene application and return to prior video; no leftover WebGL or pending media layers.
 - 18 unit tests, isolated browser UI flow and isolated WebGL lifecycle/spectrum attach-detach passed. Native WASAPI fresh-frame delivery accepted; silent sample means nonzero music visualization remains unverified.
 - Remaining boundaries are documented: WebGL Web resource/script channel, official pet choreography API and general/fresh-machine compatibility. No independent settings window was created.
+
+## Follow-up authorized
+- [x] My-library thumbnail preview and explicit apply/delete; selected import inspection visible beside preview.
+- [x] Checked-item batch save with counts/results and duplicate dialogs including uploaded-file content hashing.
+- [x] Real nonzero spectrum/visual acceptance passed. Player-control assessment completed with a partial failure on Windows current-session switching; exact-session recovery restored original playback. Identity/readback guards added; pinned-session controls remain a limitation.
+- [x] Inspect upstream startup effects only; no pet work.

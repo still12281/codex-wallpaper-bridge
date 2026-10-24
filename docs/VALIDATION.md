@@ -18,3 +18,5 @@ Checks available in this candidate:
 Before a public release, a maintainer should use a disposable profile and original test media on a fresh Windows installation, test ordinary exit/start, focus pause, settings navigation, narrow windows and multiline/attachment composer sizes. Preserve drafts and never force-close a live user's client for acceptance tests.
 
 Do not replace this status with an unqualified “all supported” claim merely because tests are green.
+
+Follow-up checks: 24 unit tests; isolated UI import tests include duplicate upload/folder reminders, checked-item partial-success batches and explicit preview/apply. Installed Codex accepted thumbnail preview, visible renderer inspection, two-item batch saving, repeat-batch duplicate summaries, duplicate modal and deletion with the prior wallpaper retained. Real nonzero system spectrum changed a generated Scene and its zero-state restored. Player-control acceptance is partial due to Windows current-session changes; see SYSTEM-MEDIA.md.

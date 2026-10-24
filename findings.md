@@ -14,3 +14,8 @@
 - Native library audit accepted 24-card pages and real previews, save-only WebGL import, application and return to the prior video with no leaked renderer. Generated native Web capture accepted changing frames and stopped its source.
 - Embedded panel resizing uses explicit pointer capture; tests must include the pressed mouse button during CDP movement. Initialize grip placement synchronously on open, and suppress backdrop clicks from resize release. User canceled the separate-window proposal.
 - Optional system media is Windows-only, protocol 1, online lyrics disabled, metadata/audio opt-in. A live native silent sample delivered spectrum; no nonzero visual music acceptance is claimed. Source state plus a fresh received frame gates external audio.
+
+- Batch checkboxes were only connected to visibility. They now drive save-only imports, separately from the highlighted detail item; summary reports per-item errors and duplicates.
+- Media duplicate identity uses content hashes when available; an old external source path cannot establish the bytes originally imported, so historical mutable paths are not retroactively treated as content identity. Renderer versions remain distinct.
+- Preview review required format-constrained FFmpeg input/protocols, bounded caches, completed/inflight hits and coalescing saved previews to the latest selection.
+- Native current-player control exposed an actual Windows source switch after pause. API accepted does not imply observed state change. Restored the exact original music session; added source identity checks, explicit play/pause and mandatory readback. Full pinned-player control remains unsupported by the external helper.

@@ -2,6 +2,7 @@ import {getPowerShell} from './runtime-paths.mjs';
 import {fileURLToPath} from 'node:url';
 import {open,writeFile,rename,mkdir,stat} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
+import {libraryPreview,hashMedia,duplicateEntry} from './library-preview.mjs';
 import path from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -22,20 +23,26 @@ export function normalizeLibrary(settings){
 }
 export function createActions(root,settings,apply,applyAppearance=apply,services={}){
  const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map();
- const requestRealtime=async(c,projectRoot,applyNow,profile,renderer='native')=>{
+ const populateHashes=async()=>{for(const entry of settings.library){if(entry.contentHash||['realtime','webwallgl'].includes(entry.mode))continue;const source=entry.sourceFile;if(!source)continue;try{entry.contentHash=await hashMedia(path.resolve(root,source));}catch{}}};
+ const duplicate=(entry,applyNow,policy)=>policy==='skip'?{config:settings,duplicateSkipped:entry.name,message:'已跳过重复壁纸：'+entry.name}:{duplicate:{existingId:entry.id,name:entry.name,apply:applyNow},message:'该壁纸已在我的壁纸中。'};
+ const requestRealtime=async(c,projectRoot,applyNow,profile,renderer='native',duplicatePolicy)=>{
   const project=await describeProject(projectRoot);
   if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
   if(renderer==='webwallgl'&&project.type!=='scene')throw Error('网页 WebWallGL 资源通道尚未通过验收，请选择原生实时模式');
   const limits=realtimeProfile(profile||settings.playback),token=randomUUID();
   for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
-  confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer});
+  confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer,duplicatePolicy});
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
- return async(c,req)=>{
+ return async function action(c,req){
+  if(req.action==='library-preview'){const entry=settings.library.find(e=>e.id===req.selectedId);if(!entry)throw Error('壁纸不存在');return libraryPreview(root,entry);}
+  if(req.action==='duplicate-use'){
+   const entry=settings.library.find(e=>e.id===req.existingId);if(!entry||typeof req.apply!=='boolean')throw Error('已有壁纸不存在');if(!req.apply)return {config:settings,message:'已保留已有壁纸，未重复导入。'};return action(c,{action:'select',selectedId:entry.id});
+  }
   if(req.action==='system-media-config'){
    if(typeof req.enabled!=='boolean'||typeof req.audio!=='boolean'||typeof services.configureMedia!=='function')throw Error('系统媒体配置不可用');const previous=settings.systemMedia;settings.systemMedia={enabled:req.enabled,audio:req.audio};try{await services.configureMedia(settings.systemMedia);await saveConfig(root,settings);}catch(error){settings.systemMedia=previous;await services.configureMedia(previous);throw error;}return {config:settings,message:req.enabled?'系统媒体联动已启用，采集状态以面板显示为准。':'系统媒体联动已关闭。'};
   }
-  if(req.action==='system-media-control'){if(typeof services.controlMedia!=='function')throw Error('系统媒体未启用');await services.controlMedia(req.command);return {message:'已向当前播放器执行操作。'};}
+  if(req.action==='system-media-control'){if(typeof services.controlMedia!=='function')throw Error('系统媒体未启用');if(typeof req.sourceId!=='string'||!req.sourceId||req.sourceId.length>200)throw Error('播放器身份已失效，请等待媒体信息刷新');await services.controlMedia(req.command,req.sourceId);return {message:'已向当前播放器执行操作。'};}
   if(req.action==='visual'){
    const previous=settings.visual;settings.visual=sanitizeVisual({...previous,...req.values});try{await applyAppearance();await saveConfig(root,settings);}catch(error){settings.visual=previous;await applyAppearance();throw error;}return {config:settings};
   }
@@ -66,7 +73,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    if(project.sourceKey!==pending.project.sourceKey)throw Error('壁纸项目已改变，请重新确认');
    const mode=pending.renderer==='webwallgl'?'webwallgl':'realtime';
    const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey);
-   if(existing&&!pending.applyNow)return {config:settings,message:'该实时壁纸已保存，当前背景保持不变。'};
+   if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
    const entry=existing||{id:randomUUID(),name:project.name+(mode==='webwallgl'?' · WebGL':' · 实时'),mode,scripts:mode==='webwallgl',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
    const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId;if(existing)entry.limits=pending.limits;if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
    try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
@@ -103,19 +110,16 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const resolved=req.projectToken?await catalog.resolve(req.projectToken):(!req.workshopId?await getCurrentEngineProject():null);
    const workshopId=resolved?.workshopId||req.workshopId;
    const projectRoot=resolved?.root||(workshopId?await findWorkshopProject(workshopId):null);
-   if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type))return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native')}
-   const existing=settings.library.find(e=>!['realtime','webwallgl'].includes(e.mode)&&((resolved&&e.sourceKey===resolved.sourceKey)||(workshopId&&e.workshopId===workshopId)));
+   if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type)){const existing=duplicateEntry(settings,{mode:req.renderMode,sourceKey:project.sourceKey});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native',req.duplicatePolicy)}}
+   let contentHash;if(resolved?.kind==='media'){contentHash=await hashMedia(resolved.file);await populateHashes();}const existing=duplicateEntry(settings,{sourceKey:resolved?.sourceKey,workshopId,contentHash});
    if(existing){
-    if(!applyNow)return {config:settings,message:'该壁纸已在“我的壁纸”中，未重复导入；当前背景保持不变。'};
-    const previous=settings.selectedId;settings.selectedId=existing.id;
-    try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;await apply();throw e}
-    return {config:settings,message:'已切换到已导入的壁纸，未重复生成。'};
+    return duplicate(existing,applyNow,req.duplicatePolicy);
    }
    const id=randomUUID();let source,converted;
-   try{source=resolved?.kind==='media'?{input:resolved.file,mime:resolved.mime,name:path.basename(resolved.file),source:'本地图片/视频',sourceKey:resolved.sourceKey,temporary:false}:await currentEngineSource(root,id,workshopId,resolved?.root)}catch(error){if(error.code==='REALTIME_REQUIRED')return requestRealtime(c,projectRoot,applyNow,req.profile);throw error}
+   try{source=resolved?.kind==='media'?{input:resolved.file,mime:resolved.mime,name:path.basename(resolved.file),source:'本地图片/视频',sourceKey:resolved.sourceKey,temporary:false}:await currentEngineSource(root,id,workshopId,resolved?.root)}catch(error){if(error.code==='REALTIME_REQUIRED')return requestRealtime(c,projectRoot,applyNow,req.profile,'native',req.duplicatePolicy);throw error}
    const requestedProfile=req.profile?realtimeProfile(req.profile):settings.playback;
-   try{converted=await convertMedia(root,source.input,source.mime,id,requestedProfile)}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
-   const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey};const previous=settings.selectedId;settings.library.push(entry);if(applyNow)settings.selectedId=id;
+   try{contentHash??=await hashMedia(source.input);converted=await convertMedia(root,source.input,source.mime,id,requestedProfile)}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
+   const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey,...(contentHash?{contentHash}:{})};const previous=settings.selectedId;settings.library.push(entry);if(applyNow)settings.selectedId=id;
    const refresh=applyNow?apply:async()=>{};
    try{await commitConverted(root,settings,entry,converted,{...entry},refresh,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}
    return {config:settings,message:applyNow?'已导入“我的壁纸”并应用。':'已保存到“我的壁纸”；当前背景保持不变，可稍后从列表选择应用。'};
@@ -133,7 +137,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   }
   if(req.action==='select'){
    const selected=settings.library.find(e=>e.id===req.selectedId);if(!selected)throw Error('壁纸不存在');
-   if(['realtime','webwallgl'].includes(selected.mode))return requestRealtime(c,selected.projectRoot,true,selected.limits,selected.mode==='webwallgl'?'webwallgl':'native');
+   if(['realtime','webwallgl'].includes(selected.mode))return requestRealtime(c,selected.projectRoot,true,selected.limits,selected.mode==='webwallgl'?'webwallgl':'native','use');
    const previous=settings.selectedId;settings.selectedId=req.selectedId;
    try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;await apply();throw e}return {config:settings};
   }
@@ -151,8 +155,11 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   }
   if(req.action!=='import-end')throw Error('不支持的操作');
   if(u.received!==u.size)throw Error('文件未传输完整');await u.handle.close();uploads.delete(u.id);
+  const contentHash=await hashMedia(path.join(root,u.file));
+  await populateHashes();
+  const existingUpload=duplicateEntry(settings,{contentHash});if(existingUpload){await removeManagedFile(root,settings,u.file);return duplicate(existingUpload,true,req.duplicatePolicy);}
   const converted=await convertMedia(root,path.join(root,u.file),u.mime,u.id,req.profile?realtimeProfile(req.profile):settings.playback);
-  const entry={id:u.id,name:u.name,sourceFile:u.file,sourceMime:u.mime};const previous=settings.selectedId;settings.library.push(entry);settings.selectedId=entry.id;
+  const entry={id:u.id,name:u.name,sourceFile:u.file,sourceMime:u.mime,contentHash};const previous=settings.selectedId;settings.library.push(entry);settings.selectedId=entry.id;
   try{await commitConverted(root,settings,entry,converted,{...entry},apply,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;await apply();throw e}return {config:settings};
  };
 }
