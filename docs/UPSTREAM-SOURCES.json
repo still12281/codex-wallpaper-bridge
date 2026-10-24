@@ -90,6 +90,36 @@
       "originalSha256": "b8af57a26cf907ebfbdb08b8508ac94fd3896d7e4ee5b54d43dbca9f06e0d455",
       "canonicalSha256": "55bb1034635de81dc53f0466ec62e7681c49ae171fe5dc3221e346a0ea732641",
       "modified": false
+    },
+    {
+      "component": "dsh-wallpaper-engine",
+      "repository": "https://github.com/elysia395/dsh-wallpaper-engine",
+      "commit": "3b0103bc1d5431840208966ce67155f392c4095c",
+      "originalPath": "LICENSE",
+      "vendoredPath": "vendor/dsh-wallpaper/LICENSE",
+      "originalSha256": "a116f28b94e928c3b22acc3346cbd29b3cb2fddd68f73be5c9b93d7626f20cf6",
+      "canonicalSha256": "a116f28b94e928c3b22acc3346cbd29b3cb2fddd68f73be5c9b93d7626f20cf6",
+      "modified": false
+    },
+    {
+      "component": "dsh-wallpaper-engine",
+      "repository": "https://github.com/elysia395/dsh-wallpaper-engine",
+      "commit": "3b0103bc1d5431840208966ce67155f392c4095c",
+      "originalPath": "src/picker-model.js",
+      "vendoredPath": "vendor/dsh-wallpaper/picker-model.js",
+      "originalSha256": "c89954a4f212dc147cf5274292ddab789bdb0491ca23b67ed4d4e53caa0a4e7d",
+      "canonicalSha256": "c89954a4f212dc147cf5274292ddab789bdb0491ca23b67ed4d4e53caa0a4e7d",
+      "modified": false
+    },
+    {
+      "component": "dsh-wallpaper-engine",
+      "repository": "https://github.com/elysia395/dsh-wallpaper-engine",
+      "commit": "3b0103bc1d5431840208966ce67155f392c4095c",
+      "originalPath": "packages/fx/src/fx-layer.js",
+      "vendoredPath": "vendor/dsh-wallpaper/fx-layer.js",
+      "originalSha256": "7e9b1369d6e6a9da5c088ff73cf1bd1ed0c0b0ea3a64cce3d5caccff95df34ea",
+      "canonicalSha256": "7e9b1369d6e6a9da5c088ff73cf1bd1ed0c0b0ea3a64cce3d5caccff95df34ea",
+      "modified": false
     }
   ]
 }

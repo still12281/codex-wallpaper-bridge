@@ -1,0 +1,34 @@
+// Optional isolated browser test. It never attaches to a real Codex session.
+import {mkdtemp,mkdir,writeFile,access} from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import {spawn} from 'node:child_process';
+import {createServer} from 'node:net';
+import {pathToFileURL} from 'node:url';
+import assert from 'node:assert/strict';
+import {connectCdp} from '../src/cdp-client.mjs';
+import {mountWebWallGL} from '../src/webwallgl-player.mjs';
+import {getDataRoot,findCommand} from '../src/runtime-paths.mjs';
+const temp=await mkdtemp(path.join(os.tmpdir(),'cwb-webgl-')),project=path.join(temp,'project');await mkdir(project);
+await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene',title:'Synthetic scene',file:'scene.json'}));
+await writeFile(path.join(project,'scene.json'),JSON.stringify({camera:{center:'0 0 -1',eye:'0 0 0',up:'0 1 0'},general:{clearcolor:'0.2 0.4 0.6',orthogonalprojection:{width:640,height:360}},objects:[]}));
+const html=path.join(temp,'shell.html');await writeFile(html,'<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src &apos;none&apos;; frame-src blob:; script-src &apos;self&apos; &apos;unsafe-eval&apos; blob:; style-src &apos;unsafe-inline&apos;; img-src blob: data:; worker-src blob:"><title>Synthetic sandbox test</title><main>Generated fixture</main>');
+let chrome=process.env.CODEX_WALLPAPER_TEST_CHROME||findCommand('chrome');if(!chrome)for(const base of [process.env.ProgramFiles,process.env['ProgramFiles(x86)'],process.env.LOCALAPPDATA].filter(Boolean)){const candidate=path.join(base,'Google/Chrome/Application/chrome.exe');try{await access(candidate);chrome=candidate;break;}catch{}}
+if(!chrome)throw Error('Set CODEX_WALLPAPER_TEST_CHROME');
+const server=createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;await new Promise(resolve=>server.close(resolve));
+const url=pathToFileURL(html).href,browser=spawn(chrome,['--headless=new','--no-first-run','--no-default-browser-check','--disable-background-networking','--enable-unsafe-swiftshader','--remote-debugging-port='+port,'--user-data-dir='+path.join(temp,'profile'),url],{windowsHide:true,stdio:'ignore'});
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));let c,player;const result={kind:'isolated-synthetic-webwallgl-not-native-codex'};
+try{
+ for(let i=0;i<100;i++){try{const target=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url);if(target){c=await connectCdp(target.webSocketDebuggerUrl);break;}}catch{}await sleep(100);}
+ assert(c);for(let i=0;i<50&&await c.evaluate('document.readyState')!=='complete';i++)await sleep(100);player=await mountWebWallGL(c,{id:'synthetic',projectRoot:project,limits:{maxWidth:640,fps:24}},{dataRoot:getDataRoot(),config:{},probe:true});
+ const first=await player.sample();result.firstFrame=first;assert(first.ready);assert(first.width<=640);assert(first.height>0);
+ const signature=await player.signature();assert(signature?.startsWith('data:image/png'));result.pixelReadback=true;
+ await c.call('Emulation.setDeviceMetricsOverride',{width:2200,height:1400,deviceScaleFactor:1,mobile:false});await sleep(400);assert((await player.sample()).width<=640);result.resizeBounded=true;
+ await player.pointer(.25,.75);result.pointerCall=true;await player.pause(true);assert.equal((await player.sample()).paused,true);result.pause=true;await player.pause(false);await sleep(1200);const resumed=await player.sample();assert.equal(resumed.paused,false);result.resume=true;
+ await player.dispose();assert.equal(await c.evaluate('document.querySelectorAll("[data-cwb-renderer-id]").length'),0);result.dispose=true;
+ const broken=path.join(temp,'broken');await mkdir(broken);await writeFile(path.join(broken,'project.json'),JSON.stringify({type:'scene'}));await assert.rejects(mountWebWallGL(c,{id:'missing',projectRoot:broken},{dataRoot:getDataRoot(),config:{},probe:true}),/没有可读取的场景包/);assert.equal(await c.evaluate('document.querySelectorAll("[data-cwb-renderer-id]").length'),0);result.failedMountCleaned=true;
+ const countListeners=async expression=>{const object=(await c.call('Runtime.evaluate',{expression,returnByValue:false})).result.objectId;const listeners=(await c.call('DOMDebugger.getEventListeners',{objectId:object})).listeners;await c.call('Runtime.releaseObject',{objectId:object});return listeners.length;};const before=[await countListeners('window'),await countListeners('document')];
+ player=await mountWebWallGL(c,{id:'active',projectRoot:project,limits:{maxWidth:640,fps:24}},{dataRoot:getDataRoot(),config:{pauseOnBlur:false,palette:{r:20,g:22,b:28,dark:true}}});const activeId=await c.evaluate('window.__codexWallpaperBridge.rendererId');
+ await assert.rejects(mountWebWallGL(c,{id:'broken',projectRoot:broken},{dataRoot:getDataRoot(),config:{}}),/没有可读取的场景包/);assert.equal(await c.evaluate('window.__codexWallpaperBridge.rendererId'),activeId);assert(await c.evaluate('window.__codexWallpaperBridge.ready'));result.failedSwapRetainsActive=true;
+ await player.dispose();assert.deepEqual([await countListeners('window'),await countListeners('document')],before);result.listenersRestored=true;result.passed=true;
+}catch(error){result.error=error.stack;process.exitCode=1;}finally{await player?.dispose();if(c){await c.call('Browser.close').catch(()=>{});c.close();}browser.kill();console.log(JSON.stringify(result,null,2));}

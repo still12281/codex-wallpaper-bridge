@@ -1,5 +1,9 @@
 # Third-party notices
 
+Optional browser rendering uses npm `webwallgl@3.0.0` (MIT, oneincase), prepared separately by `tools/prepare-webwallgl.mjs` using a pinned SHA-512 package digest. The browser bundle and wallpaper assets are not redistributed here. The runtime preparation preserves the original license beside the script. Source: https://github.com/oneincase/webwallgl .
+
+DSH Wallpaper Engine v1.4.0, commit `3b0103bc1d5431840208966ce67155f392c4095c`, contributes the unmodified picker model and FX layer under `vendor/dsh-wallpaper/` (MIT, Copyright (c) 2026 elysia395). Host adapters are original Codex bridge code. No DSH character images, preset-embedded assets or fonts are copied. Source: https://github.com/elysia395/dsh-wallpaper-engine .
+
 Realtime capture optionally installs `windows-capture==2.0.1` (MIT), `numpy==2.2.6` (BSD-3-Clause) and `opencv-python==4.12.0.88` (Apache-2.0 wrapper, with its bundled-component notices) into a separate local uv environment. These packages and binaries are not redistributed in this source repository. Preserve installed distribution licenses if packaging them later. Artifacts and hashes are pinned in `src/capture-scene.py.lock`; source: https://pypi.org/project/windows-capture/2.0.1/ .
 
 Original project code proposes MIT. The following vendored sources keep their original licenses and headers. No code in these vendor copies was modified during candidate preparation.

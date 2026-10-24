@@ -19,13 +19,14 @@ export function normalizeLibrary(settings){
 }
 export function createActions(root,settings,apply,applyAppearance=apply){
  const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map();
- const requestRealtime=async(c,projectRoot,applyNow,profile)=>{
+ const requestRealtime=async(c,projectRoot,applyNow,profile,renderer='native')=>{
   const project=await describeProject(projectRoot);
   if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
+  if(renderer==='webwallgl'&&project.type!=='scene')throw Error('网页 WebWallGL 资源通道尚未通过验收，请选择原生实时模式');
   const limits=realtimeProfile(profile||settings.playback),token=randomUUID();
   for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
-  confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits});
-  return {confirmation:{token,name:project.name,apply:applyNow,limits},message:'此壁纸需要实时渲染，请确认后继续。'};
+  confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer});
+  return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
  return async(c,req)=>{
   if(req.action==='wallpaper-engine-confirm'){
@@ -34,27 +35,28 @@ export function createActions(root,settings,apply,applyAppearance=apply){
    confirmations.delete(req.confirmationToken);
    const project=await describeProject(pending.project.root);
    if(project.sourceKey!==pending.project.sourceKey)throw Error('壁纸项目已改变，请重新确认');
-   const existing=settings.library.find(e=>e.mode==='realtime'&&e.sourceKey===project.sourceKey);
+   const mode=pending.renderer==='webwallgl'?'webwallgl':'realtime';
+   const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey);
    if(existing&&!pending.applyNow)return {config:settings,message:'该实时壁纸已保存，当前背景保持不变。'};
-   const entry=existing||{id:randomUUID(),name:project.name+' · 实时',mode:'realtime',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:'Wallpaper Engine 原生实时场景',limits:pending.limits};
-   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId;if(existing)entry.limits=pending.limits;if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&e.mode!=='realtime'))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
+   const entry=existing||{id:randomUUID(),name:project.name+(mode==='webwallgl'?' · WebGL':' · 实时'),mode,scripts:mode==='webwallgl',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
+   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId;if(existing)entry.limits=pending.limits;if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
    try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
   if(req.action==='engine-list'){const search={scope:req.scope||'global',folder:req.folder||'',kind:req.kind||'engine'};const result=await catalog.search(search);settings.engineSearch=search;await saveConfig(root,settings);return result}
-  if(req.action==='engine-inspect'){const item=await catalog.resolve(req.projectToken);return {inspection:item.kind==='media'?{supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:item.mime.startsWith('video/')?'当前选中的是视频，生成副本后直接播放。':'当前选中的是图片，可直接导入。'}:await inspectEngineProject(item.root,req.renderMode)}}
+  if(req.action==='engine-inspect'){const item=await catalog.resolve(req.projectToken);if(req.renderMode==='webwallgl'&&item.kind!=='media'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='scene',needsRealtime:true,mode:'webwallgl',label:project.type==='scene'?'WebWallGL 沙箱实时渲染':'当前网页不能用 WebGL 模式导入',reason:project.type==='scene'?'不启动 Wallpaper Engine 源窗口；执行场景脚本，效果兼容性取决于此项目。':'请改为原生实时模式，网页资源通道尚未通过验收。'}};}return {inspection:item.kind==='media'?{supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:item.mime.startsWith('video/')?'当前选中的是视频，生成副本后直接播放。':'当前选中的是图片，可直接导入。'}:await inspectEngineProject(item.root,req.renderMode)}}
   if(req.action==='engine-pick-folder'){const result=await promisify(execFile)(getPowerShell(),['-NoProfile','-STA','-File',fileURLToPath(new URL('../windows/Pick-WallpaperFolder.ps1',import.meta.url)),'-InitialPath',settings.engineSearch?.folder||''],{windowsHide:true,timeout:150000});return JSON.parse(result.stdout)}
   if(req.action==='delete'){
    const index=settings.library.findIndex(e=>e.id===req.selectedId);if(index<0)throw Error('壁纸不存在');
    const entry=settings.library[index],selected=settings.selectedId;settings.library.splice(index,1);
-   const wasActive=selected===entry.id;if(wasActive)settings.selectedId=settings.library.find(e=>e.mode!=='realtime')?.id||null;
+   const wasActive=selected===entry.id;if(wasActive)settings.selectedId=settings.library.find(e=>!['realtime','webwallgl'].includes(e.mode))?.id||null;
    try{if(wasActive)await apply();await saveConfig(root,settings)}catch(e){settings.library.splice(index,0,entry);settings.selectedId=selected;if(wasActive)await apply();throw e}
    for(const file of [entry.file,entry.sourceFile,entry.sourcePath])await removeManagedFile(root,settings,file);
    return {config:settings,message:'已从 Codex 删除并清理专属缓存；Wallpaper Engine 原文件不变。'};
   }
   if(req.action==='playback'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('当前壁纸不存在');
-   if(entry.mode==='realtime'){
+   if(['realtime','webwallgl'].includes(entry.mode)){
     const previous=entry.limits,oldProfile=settings.playback;entry.limits=realtimeProfile(req);settings.playback={maxWidth:entry.limits.maxWidth,fps:entry.limits.fps};
     try{await apply();await saveConfig(root,settings)}catch(error){entry.limits=previous;settings.playback=oldProfile;await apply();throw error}
     return {config:settings,message:'已更新实时输出分辨率与采集帧率；Wallpaper Engine 全局帧率未修改。'};
@@ -72,8 +74,8 @@ export function createActions(root,settings,apply,applyAppearance=apply){
    const resolved=req.projectToken?await catalog.resolve(req.projectToken):(!req.workshopId?await getCurrentEngineProject():null);
    const workshopId=resolved?.workshopId||req.workshopId;
    const projectRoot=resolved?.root||(workshopId?await findWorkshopProject(workshopId):null);
-   if(req.renderMode==='realtime'&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type))return requestRealtime(c,projectRoot,applyNow,req.profile)}
-   const existing=settings.library.find(e=>e.mode!=='realtime'&&((resolved&&e.sourceKey===resolved.sourceKey)||(workshopId&&e.workshopId===workshopId)));
+   if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type))return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native')}
+   const existing=settings.library.find(e=>!['realtime','webwallgl'].includes(e.mode)&&((resolved&&e.sourceKey===resolved.sourceKey)||(workshopId&&e.workshopId===workshopId)));
    if(existing){
     if(!applyNow)return {config:settings,message:'该壁纸已在“我的壁纸”中，未重复导入；当前背景保持不变。'};
     const previous=settings.selectedId;settings.selectedId=existing.id;
@@ -102,7 +104,7 @@ export function createActions(root,settings,apply,applyAppearance=apply){
   }
   if(req.action==='select'){
    const selected=settings.library.find(e=>e.id===req.selectedId);if(!selected)throw Error('壁纸不存在');
-   if(selected.mode==='realtime')return requestRealtime(c,selected.projectRoot,true,selected.limits);
+   if(['realtime','webwallgl'].includes(selected.mode))return requestRealtime(c,selected.projectRoot,true,selected.limits,selected.mode==='webwallgl'?'webwallgl':'native');
    const previous=settings.selectedId;settings.selectedId=req.selectedId;
    try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;await apply();throw e}return {config:settings};
   }

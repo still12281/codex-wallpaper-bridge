@@ -37,3 +37,7 @@ The development runtime was exercised with native capture, canvas playback, offs
 - Minimal vendored dependencies, synthetic tests, privacy allowlist and release documentation.
 
 Full native cold-start and taskbar integration for this portable candidate remain unverified. No public release or push has occurred during preparation.
+# 2026-10-24
+
+- Add an optional, separately prepared WebWallGL 3.0.0 Scene renderer with sandboxed scripts, bounded project reads, first-frame adoption, pointer and pause forwarding, and explicit native/WebGL selection.
+- Keep Web wallpapers on the existing native renderer pending a separate resource/script compatibility gate. Preserve third-party notices and record native vs synthetic acceptance separately in docs/WEBWALLGL.md.
