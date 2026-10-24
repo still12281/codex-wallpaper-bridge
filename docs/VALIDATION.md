@@ -1,6 +1,6 @@
 # Validation boundaries
 
-The realtime scene/web feature is implemented but has not undergone native capture, occlusion, performance or cleanup acceptance. The user explicitly owns those manual checks; see [REALTIME.md](REALTIME.md). Syntax and dependency loading are separate from those acceptance results. Earlier integration assertions expecting unsupported scenes to fail must be updated for the new confirmation flow before treating them as realtime coverage.
+The realtime scene/web feature has local native capture and canvas-playback evidence for one installed scene, with offscreen capture, profile switching and restoration to the original media background. Measured output remains below some requested FPS caps; see [REALTIME.md](REALTIME.md). This does not prove general GPU performance, every wallpaper or fresh-machine startup. Earlier integration assertions expecting unsupported scenes to fail must be updated for the confirmation flow before treating them as realtime coverage.
 
 The development implementation was visually checked in the official Windows Codex client version `26.1016.8622.0` for wallpaper rendering, in-app management, settings styling, separate composer space and hot 12/24 FPS application. Those private screenshots/logs are intentionally not distributed.
 

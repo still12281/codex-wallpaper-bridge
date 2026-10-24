@@ -1,4 +1,5 @@
-import {access,readFile,realpath} from 'node:fs/promises';
+import {access,readFile,realpath,writeFile} from 'node:fs/promises';
+import {StringDecoder} from 'node:string_decoder';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
@@ -29,7 +30,12 @@ async function executable(){
  for(const root of roots)for(const name of ['wallpaper64.exe','wallpaper32.exe']){const file=path.join(root,name);try{await access(file);return file}catch{}}
  throw Error('未找到 Wallpaper Engine，请先安装并启动，或配置 CODEX_WALLPAPER_ENGINE_EXE');
 }
+let latestDiagnosticId=0;
 export async function startRealtime(entry,dataRoot){
+ const diagnosticId=++latestDiagnosticId;
+ const diagnostic={startedAt:new Date().toISOString(),entryId:entry.id,events:[],phase:'preparing'};let saveQueue=Promise.resolve();
+ const report=(phase,detail={})=>{diagnostic.phase=phase;if(phase==='failed'||phase==='helper-error')diagnostic.lastFailure=detail;diagnostic.events.push({at:new Date().toISOString(),phase,...detail});diagnostic.events=diagnostic.events.slice(-40);const serialized=JSON.stringify(diagnostic,null,2);saveQueue=saveQueue.catch(()=>{}).then(()=>diagnosticId===latestDiagnosticId?writeFile(path.join(dataRoot,'realtime-diagnostic.json'),serialized):undefined);return saveQueue};
+ await report('prepare-project');
  const profile=realtimeProfile(entry.limits),project=await describeProject(entry.projectRoot);
  if(!['scene','web'].includes(project.type))throw Error('此项目不是实时场景或网页壁纸');
  const engine=await executable(),name='CodexWallpaperBridge-'+randomUUID();
@@ -43,29 +49,31 @@ export async function startRealtime(entry,dataRoot){
  // Resolve the prepared environment once per start, then own Python directly.
  // Killing uv alone would not guarantee its Python child exits on Windows.
  const interpreter=(await invoke(uv,['run','--offline','--frozen','--script',helper,'--runtime-path'],{windowsHide:true,timeout:20000,maxBuffer:8192,env:captureEnv}).catch(error=>{throw Error('实时采集依赖未准备好，请先运行 Prepare-Realtime.ps1：'+error.message)})).stdout.trim();
+ await report('interpreter-ready',{interpreter});
  if(!path.isAbsolute(interpreter)||path.basename(interpreter).toLowerCase()!=='python.exe')throw Error('实时采集解释器路径无效');await access(interpreter);
  runtime.stop=async()=>{
-  if(runtime.closed)return;runtime.closed=true;
+  if(runtime.closed)return;runtime.closed=true;await report('stopping');
   const child=runtime.helper;
   if(child&&child.exitCode===null){child.stdin.write('STOP\n',()=>{});await Promise.race([new Promise(resolve=>child.once('exit',resolve)),new Promise(resolve=>setTimeout(resolve,2000))]);if(child.exitCode===null)child.kill()}
-  await invoke(engine,['-control','closeWallpaper','-location',name],{windowsHide:true,timeout:8000}).catch(()=>{});runtime.frame=null;
+  await invoke(engine,['-control','closeWallpaper','-location',name],{windowsHide:true,timeout:8000}).catch(()=>{});runtime.frame=null;await report('stopped');
  };
  runtime.setPaused=paused=>{runtime.paused=paused;if(runtime.helper?.stdin.writable)runtime.helper.stdin.write(paused?'PAUSE\n':'RESUME\n',()=>{})};
  try{
-  await invoke(engine,['-control','openWallpaper','-file',path.join(project.root,'project.json'),'-playInWindow',name,'-width',String(profile.maxWidth),'-height',String(profile.maxHeight)],{windowsHide:true,timeout:15000});
+  await report('opening-engine-window',{window:name,profile});
+  await invoke(engine,['-control','openWallpaper','-file',path.join(project.root,'project.json'),'-playInWindow',name,'-width',String(profile.maxWidth),'-height',String(profile.maxHeight),'-x','-32000','-y','-32000','-borderless'],{windowsHide:true,timeout:15000});
   const child=runtime.helper=spawn(interpreter,[helper,'--window',name,'--fps',String(profile.fps),'--width',String(profile.maxWidth),'--height',String(profile.maxHeight),'--parent',String(process.pid)],{windowsHide:true,stdio:['pipe','pipe','pipe'],env:captureEnv});
-  let buffer=Buffer.alloc(0),stderr='';
+  await report('capture-process-started',{pid:child.pid});let buffer=Buffer.alloc(0),stderr='',stderrLine='';const decoder=new StringDecoder('utf8');
   child.stdout.on('data',chunk=>{
    buffer=Buffer.concat([buffer,chunk]);
    while(buffer.length>=4){const size=buffer.readUInt32LE(0);if(size<1||size>4*1024*1024){runtime.error='采集助手返回无效画面';child.kill();return}if(buffer.length<size+4)break;runtime.frame=Buffer.from(buffer.subarray(4,4+size));runtime.sequence++;runtime.lastFrameAt=Date.now();buffer=buffer.subarray(4+size)}
    if(buffer.length>4*1024*1024+4){runtime.error='采集画面缓存超限';child.kill()}
   });
-  child.stderr.on('data',chunk=>{stderr=(stderr+chunk.toString()).slice(-2400);for(const line of chunk.toString().split('\n')){try{const event=JSON.parse(line);if(event.event==='error')runtime.error=event.message;else if(event.event==='window')runtime.hwnd=event.hwnd}catch{}}});
+  child.stderr.on('data',chunk=>{const text=decoder.write(chunk);stderr=(stderr+text).slice(-6000);stderrLine+=text;let newline;while((newline=stderrLine.indexOf('\n'))>=0){const line=stderrLine.slice(0,newline);stderrLine=stderrLine.slice(newline+1);try{const event=JSON.parse(line);if(event.event==='error')runtime.error=event.message;else if(event.event==='window')runtime.hwnd=event.hwnd;report('helper-'+event.event,event).catch(()=>{})}catch{}}});
   child.on('error',e=>{runtime.error='采集助手启动失败：'+e.message});
-  child.on('exit',code=>{if(!runtime.closed)runtime.error=runtime.error||'采集助手已退出（'+code+'）：'+stderr.slice(-600)});
+  child.on('exit',(code,signal)=>{report('capture-process-exited',{code,signal,stderr}).catch(()=>{});if(!runtime.closed)runtime.error=runtime.error||'采集助手已退出（'+code+'）：'+stderr.slice(-600)});
   child.stdin.on('error',()=>{});
   const deadline=Date.now()+35000;
-  while(Date.now()<deadline){if(runtime.error)throw Error(runtime.error);if(runtime.frame)return runtime;await new Promise(resolve=>setTimeout(resolve,100))}
+  while(Date.now()<deadline){if(runtime.error)throw Error(runtime.error);if(runtime.frame){await report('first-frame',{sequence:runtime.sequence,hwnd:runtime.hwnd});return runtime}await new Promise(resolve=>setTimeout(resolve,100))}
   throw Error('实时场景未收到首帧，请检查专用渲染窗口是否正常显示');
- }catch(error){await runtime.stop();throw error}
+ }catch(error){await report('failed',{error:error.stack||error.message,stderr:diagnostic.events.findLast(e=>e.stderr)?.stderr});await runtime.stop();throw error}
 }

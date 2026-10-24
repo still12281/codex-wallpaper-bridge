@@ -33,7 +33,7 @@ async function ensureRealtime(entry){
 }
 async function stream(){
  if(stopped)return;
- if(streaming||busy||acting){streamTimer=setTimeout(stream,50);streamTimer.unref();return}streaming=true;
+ if(streaming||busy||acting){streamTimer=setTimeout(stream,8);streamTimer.unref();return}streaming=true;const cycleStart=Date.now();
  try{
   const source=realtime;if(!source)return;let anyActive=false;
   if(source.error&&!source.recoveryQueued){
@@ -50,16 +50,16 @@ async function stream(){
     finally{acting=false}
    });return;
   }
-  for(const c of sessions.values()){
-   if(!c.installed)continue;
-   const sample=await c.evaluate('window.__codexWallpaperBridge?.sample()').catch(()=>null);if(sample?.mode!=='realtime')continue;
-   if(source.error){if(!c.reportedCaptureError){await c.evaluate('(()=>{const text='+JSON.stringify(source.error)+';window.__codexWallpaperBridge.captureError=text;document.getElementById("codex-wallpaper-controls")?.__cwbRuntimeError?.(text);return true})()').catch(()=>{});c.reportedCaptureError=true}continue}
-   if(sample.paused)continue;anyActive=true;
-   if(source.frame&&c.captureSequence!==source.sequence){const encoded=source.frame.toString('base64');await evaluateAsync(c,'window.__codexWallpaperBridge?.draw?.('+JSON.stringify(encoded)+')');c.captureSequence=source.sequence}
-  }
+  await Promise.all([...sessions.values()].map(async c=>{
+   if(!c.installed||!c.isRealtime)return;
+   const now=Date.now(),sequence=source.sequence,frame=source.frame;
+   if(c.capturePaused||!frame||c.captureSequence===sequence){if(now<(c.nextCapturePoll||0)){if(!c.capturePaused)anyActive=true;return}c.nextCapturePoll=now+250;const sample=await c.evaluate('window.__codexWallpaperBridge?.sample()').catch(()=>null);c.capturePaused=sample?.paused!==false;if(!c.capturePaused)anyActive=true;return}
+   const called=await c.call('Runtime.callFunctionOn',{objectId:c.captureObjectId,functionDeclaration:'function(frame){return this.draw(frame)}',arguments:[{value:frame.toString('base64')}],awaitPromise:true,returnByValue:true});if(called.exceptionDetails)throw Error(called.exceptionDetails.exception?.description||called.exceptionDetails.text);const sample=called.result?.value;
+   c.captureSequence=sequence;c.capturePaused=sample?.paused!==false;if(!c.capturePaused)anyActive=true;
+  }));
   if(!source.error&&source.paused===anyActive)source.setPaused(!anyActive);
  }catch(error){status.streamError=error.message}
- finally{streaming=false;if(!stopped){streamTimer=setTimeout(stream,Math.max(16,Math.round(1000/(realtime?.profile.fps||24))));streamTimer.unref()}}
+ finally{streaming=false;if(!stopped){streamTimer=setTimeout(stream,Math.max(1,Math.round(1000/(realtime?.profile.fps||24))-(Date.now()-cycleStart)));streamTimer.unref()}}
 }
 streamTimer=setTimeout(stream,1000);
 async function applyAppearance(){
@@ -106,9 +106,11 @@ async function mount(c,target){
  if(entry.mode==='realtime'){
   const source=await ensureRealtime(entry);
   await evaluateAsync(c,'('+installRealtime.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(source.frame.toString('base64'))+','+JSON.stringify({name:source.name,fps:source.profile.fps})+')');
+  if(c.captureObjectId)await c.call('Runtime.releaseObject',{objectId:c.captureObjectId}).catch(()=>{});c.captureObjectId=(await c.call('Runtime.evaluate',{expression:'window.__codexWallpaperBridge',returnByValue:false})).result.objectId;
   settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(settings)+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');
-  c.captureSequence=source.sequence;c.reportedCaptureError=false;c.installed=true;return;
+  c.captureSequence=source.sequence;c.isRealtime=true;c.capturePaused=false;c.nextCapturePoll=0;c.reportedCaptureError=false;c.installed=true;return;
  }
+ c.isRealtime=false;
  const mediaPath=path.resolve(root,entry.file);const mediaLimit=Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024);if(!mediaPath.startsWith(root+path.sep)||(await stat(mediaPath)).size>mediaLimit)throw Error('Unsupported local media path or size');
  const media=await readFile(mediaPath);status.mediaBytes=media.length;
  status.phase='loading-lightweight-video';delete status.error;await save();

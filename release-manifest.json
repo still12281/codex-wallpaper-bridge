@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 2964,
-      "sha256": "4d74f885bbb09faefb182ad25daba29df76fcf957996b78066fcb573910e20ed"
+      "utf8Bytes": 3419,
+      "sha256": "db52aa1f0996d8b652fed46aff8cf4b4999079c3c5d5bccfc09bbc48a5da5487"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -74,8 +74,8 @@
     },
     {
       "path": "docs/REALTIME.md",
-      "utf8Bytes": 3775,
-      "sha256": "25269919270db23ee79992841f4b39ac7db768db0e97505ea8858f1218ec1bfe"
+      "utf8Bytes": 4332,
+      "sha256": "6a7460b1fa23621e1c0e423271b8722adafb21165e3928cef4b6bbaa910af694"
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
@@ -99,8 +99,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "utf8Bytes": 2328,
-      "sha256": "90008b8fc187cbccc208ec79eb4bf2b77ed77623b3824206fad38ea0e1f1f180"
+      "utf8Bytes": 2418,
+      "sha256": "7da955aa513e6e06b7e90f0f721a742532a105d58c7147376234da59aa6312b9"
     },
     {
       "path": "package.json",
@@ -114,8 +114,8 @@
     },
     {
       "path": "src/capture-scene.py",
-      "utf8Bytes": 6706,
-      "sha256": "ac24f7914b265606b3c510626b394e13f01213aa68f2d9f70950efd88567f278"
+      "utf8Bytes": 7262,
+      "sha256": "ca8a1e1213110ca8cc59af5afb923585d339a2de751607fe05a37292145830d9"
     },
     {
       "path": "src/capture-scene.py.lock",
@@ -144,23 +144,23 @@
     },
     {
       "path": "src/realtime-player.mjs",
-      "utf8Bytes": 2686,
-      "sha256": "0f1f4d1b11ee5a55904eee8f17259f6b5011feaf773aabe7da124142ffac2639"
+      "utf8Bytes": 2675,
+      "sha256": "fcd3c2c6d2238e87929169e66d2123510351ee9884bbda4837eb31056f4f3074"
     },
     {
       "path": "src/realtime-source.mjs",
-      "utf8Bytes": 6467,
-      "sha256": "28c94a73b15a96fb9cce348ff7772681f30b6033b080970aa9271b45e8db54fc"
+      "utf8Bytes": 7991,
+      "sha256": "4714cec13378f7ac5d66b23d05667c584f73d3752c66606066ed5efd026326f5"
     },
     {
       "path": "src/runtime-paths.mjs",
-      "utf8Bytes": 2621,
-      "sha256": "003a7ca6bcdd569d1d266e9a224258f4089db70e5ce7f6ad1af8699eaa0ef8f2"
+      "utf8Bytes": 2750,
+      "sha256": "ddca2fd4a85eaf54a7a456aaf87aca300d105d6f7715dded8b0d2244977ab3c6"
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 17576,
-      "sha256": "a5bfaa2e4a00403dcd0fe48cd4d4316f7833f68017b14916981b6fe0b725432e"
+      "utf8Bytes": 18150,
+      "sha256": "9973ccf84f89c2906ee28613cfdf852d75df0e2ac9e7810b62136ced04049cbf"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -174,8 +174,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 23474,
-      "sha256": "3205bb9584d128a5c7cdb6ee25255fe6ffce0b78a2de0e6e5f427a0b885107fd"
+      "utf8Bytes": 23441,
+      "sha256": "0d3310d1e91ee50b5b46eed962853aab8b17e8d055e280a2cb9452a6c76aa530"
     },
     {
       "path": "src/wallpaper-style.mjs",

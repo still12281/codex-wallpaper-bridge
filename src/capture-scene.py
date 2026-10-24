@@ -12,6 +12,7 @@ import struct
 import sys
 import threading
 import time
+import traceback
 
 if sys.argv[1:] == ["--runtime-path"]:
     print(sys.executable)
@@ -100,23 +101,31 @@ def main():
         # Keep it renderable, behind other windows. Do not hide or minimize it.
         style = user32.GetWindowLongW(hwnd, -16)
         user32.SetWindowLongW(hwnd, -16, style & ~0x00CF0000)
-        user32.SetWindowPos(hwnd, wintypes.HWND(1), 0, 0, args.width, args.height, 0x0032)
+        extended_style = user32.GetWindowLongW(hwnd, -20)
+        user32.SetWindowLongW(hwnd, -20, (extended_style & ~0x00040000) | 0x08000080)
+        user32.SetWindowPos(hwnd, wintypes.HWND(1), -32000, -32000, args.width, args.height, 0x0030)
         print(json.dumps({"event": "window", "hwnd": int(hwnd)}), file=sys.stderr, flush=True)
         capture = WindowsCapture(cursor_capture=False, draw_border=None, window_hwnd=int(hwnd))
-        last_encoded = 0.0
+        next_encoded = 0.0
 
         @capture.event
         def on_frame_arrived(frame: Frame, capture_control: InternalCaptureControl):
-            nonlocal latest, last_encoded
+            nonlocal latest, next_encoded
             now = time.monotonic()
             if stopped.is_set():
                 capture_control.stop()
                 return
-            if paused.is_set() or now - last_encoded < 1 / args.fps:
+            if paused.is_set() or now < next_encoded:
                 return
-            last_encoded = now
-            bgr = frame.convert_to_bgr().frame_buffer
-            ok, encoded = cv2.imencode(".jpg", bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 82])
+            next_encoded = max(next_encoded + 1 / args.fps, now - 1 / args.fps)
+            try:
+                bgr = frame.convert_to_bgr().frame_buffer
+                ok, encoded = cv2.imencode(".jpg", bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 78])
+            except Exception as error:
+                print(json.dumps({"event": "error", "message": str(error), "traceback": traceback.format_exc()}), file=sys.stderr, flush=True)
+                stopped.set()
+                changed.set()
+                return
             if ok:
                 data = encoded.tobytes()
                 if len(data) > 4 * 1024 * 1024:
@@ -150,6 +159,8 @@ def main():
         while not stopped.wait(0.5):
             if kernel32.WaitForSingleObject(parent, 0) != 0x102 or control.is_finished():
                 break
+        if control.is_finished():
+            control.wait()
     finally:
         stopped.set()
         changed.set()
