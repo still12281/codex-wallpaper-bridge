@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 2367,
-      "sha256": "047dcc4b9474258f1344da849d92df08b59cd80ed62266f50e38c9a559ed4540"
+      "utf8Bytes": 2517,
+      "sha256": "513357a4274e549423792790b006ebfab4b7e1724e3b48716bd855f6282533d6"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -164,8 +164,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 21343,
-      "sha256": "fc0456cc5b57441ccd28ab9a48c9cdbbe07a201dcd61e04dfea83505cf20156f"
+      "utf8Bytes": 23316,
+      "sha256": "88859984bb2b0d444a0f629dd0575a574060e5e7d2b878ee06a9523b63965aee"
     },
     {
       "path": "src/wallpaper-style.mjs",

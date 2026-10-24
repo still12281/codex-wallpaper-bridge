@@ -6,6 +6,7 @@
 - Inspect the selected project before import and display its actual realtime requirement; invalidate cached scene inspection when project/package metadata changes.
 - Separate deletion selection from active wallpaper selection; inactive deletion does not reload, and active deletion never silently starts a realtime neighbor.
 - Honor the chosen import resolution/FPS for newly converted local and Wallpaper Engine media.
+- Move wallpaper settings by dragging its title or using arrow keys; remember and clamp the panel position. Increase panel opacity for readable text.
 
 - Split selected import into import-and-apply and save-only; duplicate saves retain the active background.
 - Dismissible failure dialogs, selection locking and empty-selection handling.
