@@ -16,9 +16,23 @@ internal static class CodexEntry {
   if(File.Exists(standard))return standard;
   throw new FileNotFoundException("PowerShell 7 not found. Set CODEX_WALLPAPER_PWSH or add pwsh.exe to PATH.");
  }
+
+ [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr handle);
+ [DllImport("user32.dll")] static extern bool IsIconic(IntPtr handle);
+ [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr handle,int command);
+ static bool ActivateWallpaper(string root){
+  try{
+   var state=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,"supervisor-status.json")));
+   var client=Process.GetProcessById(Convert.ToInt32(state["debugRootPid"]));
+   if(!client.MainModule.FileName.Contains("\\WindowsApps\\OpenAI.Codex_")||client.MainWindowHandle==IntPtr.Zero)return false;
+   if(IsIconic(client.MainWindowHandle))ShowWindow(client.MainWindowHandle,9);SetForegroundWindow(client.MainWindowHandle);
+   var supervisor=Process.GetProcessById(Convert.ToInt32(state["pid"]));return !supervisor.HasExited&&supervisor.ProcessName=="WallpaperSupervisor";
+  }catch{return false;}
+ }
  [STAThread] private static void Main() {
   string dataRoot=AppDomain.CurrentDomain.BaseDirectory;
   try {
+   if(ActivateWallpaper(dataRoot))return;
    SetCurrentProcessExplicitAppUserModelID("OpenAI.Codex_2p2nqsd0c76g0!App");
    string script=File.ReadAllText(Path.Combine(dataRoot,"launch-script.txt")).Trim();
    if(!File.Exists(script))throw new FileNotFoundException("Launcher source moved; rebuild the launcher.");

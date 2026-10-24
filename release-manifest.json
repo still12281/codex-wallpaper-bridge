@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 2756,
-      "sha256": "c3e94eb65fac8af927b3d76915c86dc66f4579841c2b92cc1482dd0d86848a75"
+      "utf8Bytes": 2964,
+      "sha256": "4d74f885bbb09faefb182ad25daba29df76fcf957996b78066fcb573910e20ed"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -81,6 +81,11 @@
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
       "utf8Bytes": 2487,
       "sha256": "4ebbd3f5c234d1284c9de32a89ba97fecc0a3fc95ade59c7afda57757f364955"
+    },
+    {
+      "path": "docs/SINGLE-ENTRY.md",
+      "utf8Bytes": 1075,
+      "sha256": "eed651079966ee5c2497a360930ad144487b915f68da7a371d51d826c90223e8"
     },
     {
       "path": "docs/SURFACE-COVERAGE.md",
@@ -254,13 +259,13 @@
     },
     {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 1722,
-      "sha256": "ca9e1d1c900fe8cd26ce72f577ef27b6bab674c3ddd24c4e2375e48c2736f210"
+      "utf8Bytes": 1761,
+      "sha256": "f0a78b5e3e787c11cedf5832f7b2a292f9f4a4ef440f62fb73ad5bce859882d8"
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 1962,
-      "sha256": "7740f9081200e4336b2727af368051e7945ec74cd6b62167f1e7f32f03f43cce"
+      "utf8Bytes": 3002,
+      "sha256": "910f5aa5f7f89a496aeaed17825d9f03b3c4150585827d44f49c5554fd2ee48b"
     },
     {
       "path": "windows/Pick-WallpaperFolder.ps1",
@@ -284,8 +289,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 11514,
-      "sha256": "8f606ad6facfb9ee986d49fd5de6303b449247943ac09bba6eeebbf15e00eec0"
+      "utf8Bytes": 11538,
+      "sha256": "cce1e8e517632af22ecdf2d7c352da2747c8f6a7ac445b3d0d6fa1b52e46a805"
     },
     {
       "path": "windows/WallpaperSupervisor.cs",

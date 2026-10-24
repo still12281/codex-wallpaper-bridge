@@ -6,7 +6,7 @@ $buildDataRoot = Get-WallpaperDataRoot
 $buildRepoRoot = Split-Path -Parent $PSScriptRoot
 $buildCompiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 if (-not (Test-Path -LiteralPath $buildCompiler)) { throw '.NET Framework C# compiler not found' }
-$buildArguments = @('/nologo','/target:winexe','/platform:x64',('/out:' + (Join-Path $buildDataRoot 'CodexEntry.exe')))
+$buildArguments = @('/nologo','/target:winexe','/platform:x64','/reference:System.Web.Extensions.dll',('/out:' + (Join-Path $buildDataRoot 'CodexEntry.exe')))
 if (-not $NoIcon) {
   . (Join-Path $buildRepoRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
   $buildCodex = Get-DreamSkinCodexInstall

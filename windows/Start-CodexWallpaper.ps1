@@ -115,7 +115,7 @@ try {
       $taskInitial=@()
     }
     if($taskInitial.Count -gt 0) {
-      if(-not $RestartCurrent){throw '当前是普通 Codex 会话，需要首次带参数重启。'}
+      if(-not $RestartCurrent){$RestartCurrent=$true;Save-TaskPhase 'switching-ordinary-session-to-single-wallpaper-session'}
       Save-TaskPhase 'closing-existing-client-gracefully'
       Start-Sleep -Seconds 5
       Close-TaskSnapshot $taskInitial
