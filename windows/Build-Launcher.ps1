@@ -20,5 +20,7 @@ if (-not $NoIcon) {
 $buildArguments += (Join-Path $PSScriptRoot 'CodexEntry.cs')
 & $buildCompiler @buildArguments
 if ($LASTEXITCODE -ne 0) { throw 'Launcher compilation failed' }
+& $buildCompiler /nologo /target:winexe /platform:x64 /reference:System.Web.Extensions.dll ('/out:' + (Join-Path $buildDataRoot 'WallpaperSupervisor.exe')) (Join-Path $PSScriptRoot 'WallpaperSupervisor.cs')
+if ($LASTEXITCODE -ne 0) { throw 'Supervisor compilation failed' }
 [IO.File]::WriteAllText((Join-Path $buildDataRoot 'launch-script.txt'),(Join-Path $PSScriptRoot 'Start-CodexWallpaper.ps1'),[Text.UTF8Encoding]::new($false))
 Write-Output "Built launcher in $buildDataRoot. No shortcut was changed and no app was started."

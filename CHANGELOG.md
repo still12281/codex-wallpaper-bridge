@@ -2,6 +2,8 @@
 
 ## Unreleased — realtime native acceptance pending
 
+- Fix periodic helper restarts: parse only top-level JSON heartbeat rather than overwriting it with nested taskbar timestamps. Add adoption of an existing helper during supervisor upgrades.
+
 - Split selected import into import-and-apply and save-only; duplicate saves retain the active background.
 - Dismissible failure dialogs, selection locking and empty-selection handling.
 - Five independent wallpaper surface controls and current composer/menu styling updates.

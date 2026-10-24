@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 1756,
-      "sha256": "ab578c73ee81ed2e5dc5d186a50155c0d65e5c69d57be809eea5b91bdfeac173"
+      "utf8Bytes": 1947,
+      "sha256": "ec0ecfca507497a9f9a8b61fb7e3baf970162b2ebf347597bc31b3011964613e"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -244,8 +244,8 @@
     },
     {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 1448,
-      "sha256": "dd555f94befe496d92777547ca950195c81afcca8f67ed60cc6a87f2d8c1f179"
+      "utf8Bytes": 1722,
+      "sha256": "ca9e1d1c900fe8cd26ce72f577ef27b6bab674c3ddd24c4e2375e48c2736f210"
     },
     {
       "path": "windows/CodexEntry.cs",
@@ -276,6 +276,11 @@
       "path": "windows/Start-CodexWallpaper.ps1",
       "utf8Bytes": 11514,
       "sha256": "8f606ad6facfb9ee986d49fd5de6303b449247943ac09bba6eeebbf15e00eec0"
+    },
+    {
+      "path": "windows/WallpaperSupervisor.cs",
+      "utf8Bytes": 5525,
+      "sha256": "658dcc73731482329d53f552cac03690135bff638800dd0d8ccf75a3d19d1277"
     }
   ]
 }
