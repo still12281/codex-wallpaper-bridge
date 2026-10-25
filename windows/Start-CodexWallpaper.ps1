@@ -10,6 +10,8 @@ $taskNode = Get-WallpaperNode
 . (Join-Path $taskCodeRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
 $taskStatusPath = Join-Path $taskRoot 'launch-status.json'
 $taskStatus = [ordered]@{launchId=[guid]::NewGuid().ToString();startedAt=[DateTimeOffset]::Now.ToString('o');phase='preparing';helperPid=$PID;sessionId=(Get-Process -Id $PID).SessionId;appFilesModified=$false;configModified=$false}
+$taskStatus.helperStartedAtUtc=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o')
+$taskStatus.lifecycle='one-shot-no-supervisor'
 $taskOwnedRoot = $null
 $taskBootstrapLock=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridgeBootstrap')
 $taskLockOwned=$false
@@ -175,7 +177,7 @@ try {
     }catch{}
   }
   if(-not $taskHostAlreadyRunning){
-    $taskHost=Start-Process -FilePath $taskNode -ArgumentList @(('"{0}"' -f (Join-Path $taskCodeRoot 'src/video-cdp-host.mjs')),'--cdp-port',"$taskPort") -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $taskRoot 'video-output.log') -RedirectStandardError (Join-Path $taskRoot 'video-error.log') -ErrorAction Stop
+    $taskHost=Start-Process -FilePath $taskNode -ArgumentList @('--expose-gc','--max-old-space-size=64','--max-semi-space-size=4',('"{0}"' -f (Join-Path $taskCodeRoot 'src/video-cdp-host.mjs')),'--cdp-port',"$taskPort") -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $taskRoot 'video-output.log') -RedirectStandardError (Join-Path $taskRoot 'video-error.log') -ErrorAction Stop
     $taskStatus.hostPid=$taskHost.Id
   }
   else {$taskStatus.hostPid=[int]$taskPrevious.pid}

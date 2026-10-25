@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 6366,
-      "sha256": "f078a018e09b967d5c703f87630f180031d284bef88ab5b2def04e022a9cb436"
+      "utf8Bytes": 6596,
+      "sha256": "eb2b7b2b4f0ccfd68b7f3aaed804a959a01cf68a14e09bcab5ddaa1abc21540f"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -89,8 +89,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 2670,
-      "sha256": "2823088c97ed80dcd147e1c0ca1f2288274488e8691982598683fc82b9594ea3"
+      "utf8Bytes": 3918,
+      "sha256": "24a8be3017b637348cef2eb3f9f0a7ab095ace9b718c7f8e205b583e07f2e08e"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -219,8 +219,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 24311,
-      "sha256": "d32b281bc56e84243471dc34aa6bb0c990fa578e46a2c77fab237f1ec99ee012"
+      "utf8Bytes": 24853,
+      "sha256": "7807f9e90d6cfefaa1e7c0335b939934c96b05a9e4cb7b984bed2874c0feecf4"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -286,6 +286,11 @@
       "path": "test/launch-policy.ps1",
       "utf8Bytes": 1973,
       "sha256": "fda4f6c184d4331d7c9166b0c7bb1ca80591db0fcab1bbc3b340df15f170eefc"
+    },
+    {
+      "path": "test/lifetime-integration.mjs",
+      "utf8Bytes": 3329,
+      "sha256": "8b2a5f8209b8de6873c23a6ae0d656aa1f629231aafae2908255606ed6f1355f"
     },
     {
       "path": "test/media-power.test.mjs",
@@ -419,18 +424,23 @@
     },
     {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 2202,
-      "sha256": "ff293de06c68797bc6db790b1150c0cee618387cb696b4984658d505e34b1a86"
+      "utf8Bytes": 1694,
+      "sha256": "9c83a6bcaaf1e96158ee73b21bebb78d9b61e523a56ba1d7009d99e43b714e95"
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 5058,
-      "sha256": "041a571db0913d0ebfbf600387b93d271a6cc951ee98018399a7b6ca8ed9e9c4"
+      "utf8Bytes": 5638,
+      "sha256": "c9ea2745c129820c44cf3b5a22380a2f88a05111ce1e7191d442cbc34b814aa2"
     },
     {
       "path": "windows/LaunchPolicy.ps1",
       "utf8Bytes": 1745,
       "sha256": "88b7997136d6bc967b8dad4b9200022b7c14d053ee152c7181e038e51cffe326"
+    },
+    {
+      "path": "windows/Official-Icon.ps1",
+      "utf8Bytes": 883,
+      "sha256": "69f6a93fc92a548c4f0382290927ae93eb786c9d3c5d970cc83b493a9618c0a6"
     },
     {
       "path": "windows/Pick-WallpaperFolder.ps1",
@@ -444,8 +454,8 @@
     },
     {
       "path": "windows/Prepare-TaskbarEntry.ps1",
-      "utf8Bytes": 4044,
-      "sha256": "70002fd42a5303755bb9d242c38e328aa71ef5f20c0f02441c75cd55e129bacc"
+      "utf8Bytes": 3916,
+      "sha256": "1990adbf1976cb7e8266e7afb0c9d5a3f91b46b4e89f1d999054c68b19b470d9"
     },
     {
       "path": "windows/Runtime.ps1",
@@ -454,8 +464,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 13113,
-      "sha256": "356d84a5616926f952355188809e809ef091eafa08c957343390e9a38b9ae14e"
+      "utf8Bytes": 13322,
+      "sha256": "5c01d3c78504a53dac3519087ac52544b04cec87e1d727cce5dc5048d191058f"
     },
     {
       "path": "windows/TaskbarIdentity.cs",

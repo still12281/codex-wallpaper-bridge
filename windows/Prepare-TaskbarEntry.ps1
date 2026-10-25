@@ -9,11 +9,8 @@ $entryCodex=Get-DreamSkinCodexInstall
 if($null -eq $entryCodex){throw 'Official Codex package unavailable'}
 $entryLink=Join-Path $entryRoot 'Codex.lnk'
 $entryIcon=Join-Path $entryRoot 'Codex.ico'
-Add-Type -AssemblyName System.Drawing
-$entryIconObject=[Drawing.Icon]::ExtractAssociatedIcon($entryCodex.Executable)
-if($null -eq $entryIconObject){throw 'Codex icon unavailable'}
-$entryIconStream=[IO.File]::Create($entryIcon)
-try{$entryIconObject.Save($entryIconStream)}finally{$entryIconStream.Dispose();$entryIconObject.Dispose()}
+. (Join-Path $PSScriptRoot 'Official-Icon.ps1')
+$entryIconSource=Copy-WallpaperOfficialIcon $entryCodex $entryIcon
 $entryShell=New-Object -ComObject WScript.Shell
 $entryShortcut=$entryShell.CreateShortcut($entryLink)
 $entryShortcut.TargetPath=Join-Path $entryRoot 'CodexEntry.exe'
@@ -64,5 +61,5 @@ $entryAppId=$entryCodex.AppUserModelId
 $entryCommand='"'+$entryShortcut.TargetPath+'"'
 $entryActual=[CodexWallpaperEntry.LinkIdentity]::Set($entryLink,$entryAppId,$entryCommand,"$entryIcon,0")
 if($entryActual -cne $entryAppId){throw 'Shortcut AppUserModelID verification failed'}
-[ordered]@{shortcut=$entryLink;icon=$entryIcon;appUserModelId=$entryActual;target=$entryShortcut.TargetPath;arguments=$entryShortcut.Arguments;existingPinnedEntryModified=$false;taskbarGroupingVerified=$false;clientColdLaunchVerified=$false} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $entryRoot 'taskbar-entry-status.json') -Encoding utf8 -ErrorAction Stop
+[ordered]@{shortcut=$entryLink;icon=$entryIcon;officialIconSource=$entryIconSource;iconSha256=(Get-FileHash -LiteralPath $entryIcon).Hash;appUserModelId=$entryActual;target=$entryShortcut.TargetPath;arguments=$entryShortcut.Arguments;existingPinnedEntryModified=$false;taskbarGroupingVerified=$false;clientColdLaunchVerified=$false} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $entryRoot 'taskbar-entry-status.json') -Encoding utf8 -ErrorAction Stop
 Get-Content -LiteralPath (Join-Path $entryRoot 'taskbar-entry-status.json') -Raw

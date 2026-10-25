@@ -21,13 +21,16 @@ internal static class CodexEntry {
  [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr handle);
  [DllImport("user32.dll")] static extern bool IsIconic(IntPtr handle);
  [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr handle,int command);
- static bool Starting(string root){try{var s=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,"supervisor-status.json")));string phase=Convert.ToString(s["phase"]);if(phase!="reconnecting"&&phase!="bootstrapping")return false;if((DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)s["updatedAt"])).TotalSeconds>150)return false;using(var p=Process.GetProcessById(Convert.ToInt32(s["pid"])))return !p.HasExited&&String.Equals(p.MainModule.FileName,Path.Combine(root,"WallpaperSupervisor.exe"),StringComparison.OrdinalIgnoreCase)&&p.StartTime.ToUniversalTime().ToString("o")==(string)s["supervisorStartedAtUtc"];}catch{return false;}}
+ static System.Collections.Generic.Dictionary<string,object> Read(string root,string file){return new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,file)));}
+ static bool Starting(string root){try{var s=Read(root,"launch-status.json");string phase=Convert.ToString(s["phase"]);if(phase=="failed"||phase=="inspect-only"||phase=="background-rendered"||phase=="cdp-ready-background-not-yet-rendered")return false;double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)s["updatedAt"])).TotalSeconds;if(age<0||age>150)return false;using(var p=Process.GetProcessById(Convert.ToInt32(s["helperPid"])))return !p.HasExited&&String.Equals(p.MainModule.FileName,FindPowerShell(),StringComparison.OrdinalIgnoreCase)&&p.StartTime.ToUniversalTime().ToString("o")==(string)s["helperStartedAtUtc"];}catch{return false;}}
  static bool ActivateWallpaper(string root){
   try{
-   var state=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,"supervisor-status.json")));
-   if((DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)state["updatedAt"])).TotalSeconds>20)return false;
-   using(var supervisor=Process.GetProcessById(Convert.ToInt32(state["pid"])))using(var client=Process.GetProcessById(Convert.ToInt32(state["debugRootPid"]))){
-    if(supervisor.HasExited||!String.Equals(supervisor.MainModule.FileName,Path.Combine(root,"WallpaperSupervisor.exe"),StringComparison.OrdinalIgnoreCase)||supervisor.StartTime.ToUniversalTime().ToString("o")!=(string)state["supervisorStartedAtUtc"])return false;
+   var state=Read(root,"launch-status.json");var runtime=Read(root,"runtime-status.json");
+   double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)runtime["updatedAt"])).TotalSeconds;
+   if(age<0||age>20||Convert.ToString(runtime["browserId"])!=Convert.ToString(state["browserId"]))return false;
+   using(var bridge=Process.GetProcessById(Convert.ToInt32(runtime["pid"])))using(var client=Process.GetProcessById(Convert.ToInt32(state["debugRootPid"]))){
+    string node=Environment.GetEnvironmentVariable("CODEX_WALLPAPER_NODE")??Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),"nodejs","node.exe");
+    if(bridge.HasExited||!String.Equals(bridge.MainModule.FileName,node,StringComparison.OrdinalIgnoreCase))return false;
     if(!WallpaperIdentity.Matches(client,(string)state["rootStartedAtUtc"],(string)state["rootExecutable"])||WallpaperIdentity.PortOwner(9335)!=client.Id)return false;
     var windows=WallpaperIdentity.VisibleClients();IntPtr h;if(!windows.TryGetValue(client.Id,out h)||windows.Count!=1)return false;
     WallpaperIdentity.Apply(h,root);if(IsIconic(h))ShowWindow(h,9);if(!SetForegroundWindow(h))ShowWindow(h,5);return true;
@@ -35,6 +38,13 @@ internal static class CodexEntry {
   }catch{return false;}
  }
  [STAThread] private static void Main(string[] args) {
+  using(var entryLock=new System.Threading.Mutex(false,"Local\\CodexWallpaperBridge.Entry.9335")){
+   bool acquired=false;
+   try{try{acquired=entryLock.WaitOne(0);}catch(System.Threading.AbandonedMutexException){acquired=true;}if(!acquired)return;Run(args);}
+   finally{if(acquired)entryLock.ReleaseMutex();}
+  }
+ }
+ private static void Run(string[] args) {
   string dataRoot=AppDomain.CurrentDomain.BaseDirectory;
   try {
    SetCurrentProcessExplicitAppUserModelID(WallpaperIdentity.AppId);
@@ -44,8 +54,8 @@ internal static class CodexEntry {
    string script=File.ReadAllText(Path.Combine(dataRoot,"launch-script.txt")).Trim();
    if(!File.Exists(script))throw new FileNotFoundException("Launcher source moved; rebuild the launcher.");
    var info=new ProcessStartInfo {
-    FileName=Path.Combine(dataRoot,"WallpaperSupervisor.exe"),
-    Arguments="--reconnect true",
+    FileName=FindPowerShell(),
+    Arguments="-NoProfile -NonInteractive -File \""+script+"\" -RestartCurrent",
     WorkingDirectory=Path.GetDirectoryName(script),UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden
    };
    info.EnvironmentVariables["CODEX_WALLPAPER_DATA_DIR"]=dataRoot;

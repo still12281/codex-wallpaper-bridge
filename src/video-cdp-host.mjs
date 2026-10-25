@@ -26,11 +26,25 @@ const arg=process.argv.indexOf('--cdp-port'),port=Number(process.argv[arg+1]);
 if(arg<0||!Number.isInteger(port)||port<1024||port>65535)throw Error('Expected --cdp-port');
 const testArg=process.argv.indexOf('--test-url');const appUrl=testArg>=0?process.argv[testArg+1]:'app://-/index.html';
 const version=await(await fetch('http://127.0.0.1:'+port+'/json/version')).json();
+// The browser connection is a lifetime signal, not a process-scanning timer.
+const browserLifetime=await connectCdp(version.webSocketDebuggerUrl);
 const status={pid:process.pid,browserId:version.webSocketDebuggerUrl.split('/').pop(),source:'native-video-blob',phase:'connecting',cdpPort:port,wallpaperId:settings.wallpaperId,targets:[]};
-const save=async()=>{status.mediaPower=mediaPower.snapshot();status.memory=process.memoryUsage();status.updatedAt=new Date().toISOString();await writeFile(path.join(root,'runtime-status.json'),JSON.stringify(status,null,2))};
+const save=async()=>{status.mediaPower=mediaPower?.snapshot()??null;status.memory=process.memoryUsage();status.updatedAt=new Date().toISOString();await writeFile(path.join(root,'runtime-status.json'),JSON.stringify(status,null,2))};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const sessions=new Map(),embeddedSessions=new Map();let busy=false,stopped=false,acting=false,actionQueue=Promise.resolve();
-let realtime=null,realtimeKey=null,streamTimer=null,streaming=false;
+let realtime=null,realtimeKey=null,streamTimer=null,streaming=false,timer=null,rotationTimer=null,spectrumTimer=null,mediaPower=null;
+async function stop(){
+ if(stopped)return;stopped=true;
+ clearInterval(timer);clearInterval(rotationTimer);clearInterval(spectrumTimer);clearTimeout(streamTimer);
+ // Native capture cleanup can need 2s for Python plus 8s for its owned engine window.
+ const deadline=setTimeout(()=>process.exit(0),12000);deadline.unref();
+ const cleanups=[];
+ for(const c of [...sessions.values(),...embeddedSessions.values()]){try{cleanups.push(Promise.resolve(c.webPlayer?.dispose()));c.close()}catch{}}
+ browserLifetime.close();
+ try{await Promise.allSettled([...cleanups,stopRealtime(),mediaPower?.stop()]);status.phase='stopped';status.targets=[];await save();}finally{process.exit(0)}
+}
+browserLifetime.ws.addEventListener('close',()=>void stop(),{once:true});
+process.on('SIGINT',()=>void stop());process.on('SIGTERM',()=>void stop());
 const evaluateAsync=async(c,expression)=>{const result=await c.call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(result.exceptionDetails)throw Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text);return result.result?.value};
 async function stopRealtime(){const previous=realtime;realtime=null;realtimeKey=null;if(previous)await previous.stop()}
 async function ensureRealtime(entry){
@@ -74,7 +88,7 @@ async function applyAppearance(){
  for(const c of sessions.values())await c.evaluate('(()=>{const config='+JSON.stringify(settings)+';window.__codexWallpaperBridge?.setPauseOnBlur?.(config.pauseOnBlur);document.getElementById("codex-wallpaper-controls")?.__cwbRenderConfig?.(config);return ('+paintShell.toString()+')(config)})()');
 }
 async function applySelected(){for(const [id,c]of sessions){const key=JSON.stringify(settings.library.find(e=>e.id===settings.selectedId));if(c.activeKey===key&&await c.evaluate('!!window.__codexWallpaperBridge?.ready&&!window.__codexWallpaperBridge?.error')){c.installed=true;continue;}c.installed=false;try{await mount(c,{id});c.activeKey=key;}catch(error){await c.evaluate('window.__cwbPendingMedia?.dispose?.();document.getElementById("codex-wallpaper-bridge-pending")?.remove();delete window.__cwbPendingMedia;true').catch(()=>{});throw error;}}}
-const mediaPower=createMediaPower({start:options=>startSystemMedia(root,options),sessions:()=>sessions.values(),send:async(c,kind,payload)=>{const data=JSON.stringify(payload);if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');}});
+mediaPower=createMediaPower({start:options=>startSystemMedia(root,options),sessions:()=>sessions.values(),send:async(c,kind,payload)=>{const data=JSON.stringify(payload);if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');}});
 const configureMedia=options=>mediaPower.configure(options);
 async function reportMedia(c){await c.evaluate('('+installMediaActivity.toString()+')('+JSON.stringify(c.token)+');true');}
 const actions=createActions(root,settings,applySelected,applyAppearance,{configureMedia,controlMedia:async(command,sourceId)=>{if(!mediaPower.backend)throw Error('系统媒体未启用');await mediaPower.backend.control(command,{sourceId});}});
@@ -182,7 +196,7 @@ async function tick(){
  finally{busy=false}
 }
 let rotationAt=0,rotationKey='',rotating=false;
-const rotationTimer=setInterval(()=>{
+rotationTimer=setInterval(()=>{
  const key=JSON.stringify([settings.rotation,settings.selectedId]);
  if(rotationKey!==key){rotationKey=key;rotationAt=Date.now()+(settings.rotation.intervalSeconds||60)*1000;}
  if(!settings.rotation.enabled||rotating||Date.now()<rotationAt||busy||acting||streaming)return;
@@ -202,6 +216,5 @@ const rotationTimer=setInterval(()=>{
 },1000);rotationTimer.unref();
 await save();await tick();await configureMedia(settings.systemMedia).catch(()=>{});
 let spectrumBusy=false;
-const spectrumTimer=setInterval(async()=>{if(spectrumBusy||stopped||busy||acting||streaming)return;spectrumBusy=true;try{await mediaPower.tick();}catch(error){status.mediaDeliveryError=error.message;}finally{spectrumBusy=false;}},100);spectrumTimer.unref();
-const timer=setInterval(tick,5000);
- const stop=()=>{stopped=true;clearInterval(timer);clearInterval(rotationTimer);clearInterval(spectrumTimer);clearTimeout(streamTimer);Promise.all([...sessions.values()].map(async c=>{await c.evaluate('window.__cwbMediaActivity?.dispose();window.__cwbDecorations?.dispose();true').catch(()=>{});await c.webPlayer?.dispose();c.close();})).then(()=>Promise.all([stopRealtime(),mediaPower.stop()])).finally(()=>process.exit(0))};process.on('SIGINT',stop);process.on('SIGTERM',stop);
+spectrumTimer=setInterval(async()=>{if(spectrumBusy||stopped||busy||acting||streaming)return;spectrumBusy=true;try{await mediaPower.tick();}catch(error){status.mediaDeliveryError=error.message;}finally{spectrumBusy=false;}},100);spectrumTimer.unref();
+timer=setInterval(tick,5000);
