@@ -4,7 +4,9 @@
 
 - Use the official default Codex profile for future launches, scan main instances across Store versions, and stop rather than open a second root when identity or graceful exit cannot be confirmed. Rediscover the registered package before launch; preserve the original taskbar pin and document its cold-start limitation.
 - Replace the periodic process supervisor with a one-shot entry/bootstrap. Validate bootstrap/client identities on explicit clicks, and exit the wallpaper bridge on browser disconnect. Keep the necessary wallpaper/media connection while the client is running.
-- Copy the full original theme-specific icon from the official package instead of extracting its low-resolution associated EXE icon. Apply complete official taskbar relaunch properties only to verified owned windows.
+- Record actual portable PowerShell/Node paths during build, so native Explorer launches do not depend on an updated PATH. Verify the actual executable with empty PATH in an inspection mode that preserves existing clients.
+- Atomically overwrite existing launch status with a same-directory move; avoid PowerShell converting File.Replace's null backup argument into an invalid empty path on repeated starts.
+- Copy the complete original `icon-chatgpt.ico` from the official package instead of extracting a small icon or converting a transparent logo. Apply complete official taskbar relaunch properties only to verified owned windows.
 
 - Restore native embedded-browser mouse input by keeping the main application root at its native stacking level; a positive root z-index placed transparent panes above body-portaled browser guests and intercepted clicks/wheel input.
 

@@ -27,7 +27,9 @@ function Save-TaskPhase([string]$Phase) {
   $taskStatus.updatedAt = [DateTimeOffset]::Now.ToString('o')
   $taskTemp=$taskStatusPath+'.next'
   $taskStatus | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $taskTemp -Encoding utf8 -ErrorAction Stop
-  if(Test-Path -LiteralPath $taskStatusPath){[IO.File]::Replace($taskTemp,$taskStatusPath,$null)}else{[IO.File]::Move($taskTemp,$taskStatusPath)}
+  # PowerShell can marshal $null to an empty backup path for File.Replace.
+  # A same-directory overwrite move also handles both first and repeated starts.
+  [IO.File]::Move($taskTemp,$taskStatusPath,$true)
 }
 function Get-TaskSnapshot {
   @(Get-WallpaperCodexProcesses | ForEach-Object {

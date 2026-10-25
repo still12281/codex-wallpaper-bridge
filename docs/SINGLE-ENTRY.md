@@ -4,7 +4,9 @@ Use the generated CodexEntry shortcut as the unified wallpaper entry. Entry chec
 
 The wallpaper bridge stays connected while import, switching, detached-window support and optional system media are available. It retains page synchronization and media timers; it does not scan OS processes or restart Codex. A browser WebSocket disconnect triggers cleanup and bridge exit. There is no external five-second process supervisor or automatic restart loop. Existing installations should disable the legacy `CodexWallpaperBridge-Supervisor` scheduled task. A failed bridge can be reconnected on the next explicit entry click.
 
-Launcher and shortcut icons are byte-for-byte copies of the installed official `chatgpt-app-light.ico` or `chatgpt-app-dark.ico`, selected for the current application theme. They are not the small associated EXE icon, and no image is redrawn or bundled with the source.
+Launcher and shortcut icons are byte-for-byte copies of the installed official `app/resources/icon-chatgpt.ico`. They retain the original complete icon resource. No transparent logo is converted, and no image is redrawn or bundled with the source.
+
+The build records the PowerShell executable actually running it and the resolved Node executable in `launcher-runtime.json` beside the generated entry. Entry resolution checks explicit environment overrides, that file, PATH and standard install locations. This supports portable PowerShell and Explorer environments whose PATH was captured before runtime setup. The file is local installation state and must not be committed; rerun the build if a runtime moves.
 
 New wallpaper launches no longer set `--user-data-dir`: they use the official default profile. Existing dedicated profile data is retained without copying or deleting it. This removes the intentional profile separation between ordinary and wallpaper launches; native single-instance behavior across Store updates still needs live acceptance. An already running ordinary process cannot acquire a CDP port retroactively. This change does not edit the signed application package, the Start-menu package registration or Taskband registry bytes.
 
@@ -15,3 +17,5 @@ The bootstrap discovers the registered Store package after taking its lock, and 
 Run the isolated policy regression with PowerShell 7: `pwsh -NoProfile -File test/launch-policy.ps1`. It verifies old/new version detection, CDP-owner exceptions, hidden-main blocking, unknown-identity rejection and absence of a custom profile argument. It does not restart a real Codex client or prove native singleton behavior.
 
 Run `node test/lifetime-integration.mjs` to verify that a bridge attached to an isolated headless browser exits with status zero when that browser closes. It does not interact with the current Codex, taskbar or user browser profile.
+
+After building into an isolated data directory, run `pwsh -NoProfile -File test/launcher-runtime.ps1 -BuildDirectory <absolute-build-directory>`. This invokes the actual entry with empty PATH and cleared runtime overrides, executes bootstrap inspection only, and checks that existing client identities remain unchanged. It verifies dependency resolution without closing or starting a user client; a real wallpaper cold launch is a separate acceptance step.
