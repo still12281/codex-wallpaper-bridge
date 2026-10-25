@@ -2,6 +2,9 @@
 
 ## Unreleased — source candidate
 
+- Use the official default Codex profile for future launches, scan main instances across Store versions, and stop rather than open a second root when identity or graceful exit cannot be confirmed. Rediscover the registered package before launch; preserve the original taskbar pin and document its cold-start limitation.
+- Validate supervisor/client generations before warm activation, record bootstrap/root identities atomically, and route reconnect requests through one supervisor. Apply complete official taskbar relaunch properties only to verified owned windows.
+
 - Restore native embedded-browser mouse input by keeping the main application root at its native stacking level; a positive root z-index placed transparent panes above body-portaled browser guests and intercepted clicks/wheel input.
 
 - Capture system audio only while an eligible WebGL scene is active; stop capture in video/empty/background states, clear stale spectrum once, and coalesce unchanged media properties and closed-panel updates. Reuse scene media sources and separate five-second position corrections.

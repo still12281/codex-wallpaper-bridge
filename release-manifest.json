@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 5798,
-      "sha256": "dd1858a3ec747139856dc7726d5131ea812056324a3a1da3380b3d1194125b4f"
+      "utf8Bytes": 6366,
+      "sha256": "f078a018e09b967d5c703f87630f180031d284bef88ab5b2def04e022a9cb436"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -89,8 +89,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 1075,
-      "sha256": "eed651079966ee5c2497a360930ad144487b915f68da7a371d51d826c90223e8"
+      "utf8Bytes": 2670,
+      "sha256": "2823088c97ed80dcd147e1c0ca1f2288274488e8691982598683fc82b9594ea3"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -283,6 +283,11 @@
       "sha256": "d274805504d29d0bfc141299e4c2f2a69036627f66c3a17f037892c08e805f32"
     },
     {
+      "path": "test/launch-policy.ps1",
+      "utf8Bytes": 1973,
+      "sha256": "fda4f6c184d4331d7c9166b0c7bb1ca80591db0fcab1bbc3b340df15f170eefc"
+    },
+    {
       "path": "test/media-power.test.mjs",
       "utf8Bytes": 6754,
       "sha256": "9fe183754cbd025c910226a5ea92755f976f8760a89073b03f23d0f8045bf194"
@@ -408,14 +413,24 @@
       "sha256": "f01538108fbd07fe2cc220b6e0aab54c3746cc986b90d1295624d49b52ba7146"
     },
     {
+      "path": "windows/Align-Taskbar.cs",
+      "utf8Bytes": 885,
+      "sha256": "198412db5b60878f3d94d322d1c682efe69fa14478b3daa6f1a9296b4e073da7"
+    },
+    {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 1761,
-      "sha256": "f0a78b5e3e787c11cedf5832f7b2a292f9f4a4ef440f62fb73ad5bce859882d8"
+      "utf8Bytes": 2202,
+      "sha256": "ff293de06c68797bc6db790b1150c0cee618387cb696b4984658d505e34b1a86"
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 3002,
-      "sha256": "910f5aa5f7f89a496aeaed17825d9f03b3c4150585827d44f49c5554fd2ee48b"
+      "utf8Bytes": 5058,
+      "sha256": "041a571db0913d0ebfbf600387b93d271a6cc951ee98018399a7b6ca8ed9e9c4"
+    },
+    {
+      "path": "windows/LaunchPolicy.ps1",
+      "utf8Bytes": 1745,
+      "sha256": "88b7997136d6bc967b8dad4b9200022b7c14d053ee152c7181e038e51cffe326"
     },
     {
       "path": "windows/Pick-WallpaperFolder.ps1",
@@ -429,8 +444,8 @@
     },
     {
       "path": "windows/Prepare-TaskbarEntry.ps1",
-      "utf8Bytes": 3759,
-      "sha256": "a76c3a9a8b3dbc598a766d086b3d437c3b61f3997ee3a80eea63ea4363e4f499"
+      "utf8Bytes": 4044,
+      "sha256": "70002fd42a5303755bb9d242c38e328aa71ef5f20c0f02441c75cd55e129bacc"
     },
     {
       "path": "windows/Runtime.ps1",
@@ -439,13 +454,18 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 11538,
-      "sha256": "cce1e8e517632af22ecdf2d7c352da2747c8f6a7ac445b3d0d6fa1b52e46a805"
+      "utf8Bytes": 13113,
+      "sha256": "356d84a5616926f952355188809e809ef091eafa08c957343390e9a38b9ae14e"
+    },
+    {
+      "path": "windows/TaskbarIdentity.cs",
+      "utf8Bytes": 4627,
+      "sha256": "6c5d92fc889f58da6759900054ac9d8d57d3b99b48d57d90e1a35d033c8765ae"
     },
     {
       "path": "windows/WallpaperSupervisor.cs",
-      "utf8Bytes": 5525,
-      "sha256": "658dcc73731482329d53f552cac03690135bff638800dd0d8ccf75a3d19d1277"
+      "utf8Bytes": 9737,
+      "sha256": "5b45d45b4904134369635a2c7e76bac169e049cebb7f3c0040b2a410141329c1"
     }
   ]
 }
