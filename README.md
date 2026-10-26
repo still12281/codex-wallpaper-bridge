@@ -1,5 +1,7 @@
 # Codex Wallpaper Bridge
 
+Highest scene quality now prefers the installed Wallpaper Engine's native rendering after explicit confirmation. It preserves the original engine effects, scripts and audio processing, with window-proportional capture dimensions and the configured desktop frame-rate cap. Capture latency and compression remain measurable differences, and native mouse forwarding is not implemented. See [realtime mode](docs/REALTIME.md) and [local maintenance](docs/MAINTENANCE.zh-CN.md).
+
 [简体中文](README.zh-CN.md)
 
 An experimental, local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
@@ -61,7 +63,7 @@ Open **壁纸** in the client. The current UI is in Chinese.
 - Choose resolution and FPS, then apply. Conversion takes time; the host switches after decoding the new copy. Default: 1280-wide, 24 FPS, muted, pause in the background. High settings and large sources can still cost CPU/GPU time.
 - Delete removes app-owned records and unreferenced app copies, never Workshop or external source files.
 
-Auto mode first attempts embedded-video extraction. WebGL mode supports scene scripts with project-dependent compatibility. Web wallpapers use native capture; WebGL Web resource loading is not yet accepted. See the [feature migration status](docs/FEATURE-MIGRATION.md), including the remaining official pet API gap.
+Auto mode routes audio-processing scenes to native realtime confirmation; other extractable scenes can still use the video layer. WebGL mode supports sandboxed scene scripts with project-dependent compatibility. Web wallpapers use native capture; WebGL Web resource loading is not yet accepted. See the [feature migration status](docs/FEATURE-MIGRATION.md). Pet choreography remains excluded.
 
 ## Development
 

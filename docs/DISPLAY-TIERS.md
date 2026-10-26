@@ -8,10 +8,10 @@ Each wallpaper has its own display tier. Existing entries remain custom; install
 | Economy | 960 / 12 FPS | Low effect-target and particle budgets; spectrum, parallax and decorations temporarily disabled |
 | Balanced | 1280 / 24 FPS | Medium effects/particles; optional spectrum capped at 20 Hz |
 | Smooth | 1920 / 30 FPS | High effects/particles; optional spectrum capped at 30 Hz |
-| Full effects | Up to 3840 / 60 FPS | High effects/particles, video-texture scale 1; optional spectrum up to 60 Hz |
+| Highest | Native full project after confirmation | Window-proportional capture, desktop FPS cap, JPEG 92; plain media retains up to 3840 / 60 FPS |
 | Custom | User settings | Advanced parameters remain independently adjustable |
 
-Budgets are upper bounds. Video playback never invents resolution or frames. A renderer cannot provide an effect it does not support merely because Full is selected. The quality choice is separate from renderer choice. Native-engine full effects has a separate confirmation entry point; it may increase resource usage and capture latency. The WebGL audio toggle does not control Wallpaper Engine's own audio processing.
+Budgets are upper bounds. Video playback never invents resolution or frames. Lower tiers adjust the selected route's budgets; Highest now requests the native full-project route when available and retains its confirmation. It may increase resource usage and capture latency. WebGL quality cannot create unsupported effects, and its audio toggle does not control Wallpaper Engine's own audio processing.
 
 Entering a tier retains custom playback parameters and the user's audio/focus preferences. Returning to Custom restores those playback parameters. Static uses a saved frame of the currently displayed wallpaper, including original scene source identity. A later Static selection captures a new frame after returning to dynamic mode. The PNG remains an app-owned cache referenced by the entry; deleting the entry uses the existing bounded cache-cleanup mechanism. Missing capture or failed candidate application restores the old configuration and reports failure.
 
@@ -38,3 +38,9 @@ Transparent interface colors can follow the wallpaper or be explicitly Light/Dar
 Pausing takes an in-memory canvas copy once and retains it across backing-store or compositor changes. Resume releases the copy after rendering restarts. No per-frame readback, screenshot loop, background recorder or extra process is added. This is a defensive preservation fix; reproducing a native disappearance is a separate acceptance step.
 
 Critical effect-compilation/missing-shader diagnostics now reject a candidate instead of adopting its solid fallback. A synthetic failed-effect regression verifies retention of the old renderer. The original scene rendered without the reported white polygon in isolated audio-off, zero/nonzero spectrum, resize and pause/resume trials, including AMD ANGLE D3D11. These results do not identify the original Codex-only trigger or establish that it is eliminated. Native visual and resource acceptance remains pending after the user exits the current ordinary non-CDP client.
+
+## Native highest tier, 2026-10-26
+
+The previous non-CDP-client statement is historical. The current verified client supports CDP and has run the original project through native window capture without restarting Codex. Highest-tier scene/web selection now requests native confirmation, matches the current window aspect and configured desktop FPS, and uses JPEG quality 92. The original source effects, scripts, font/date/time and audio response remain in Wallpaper Engine. Existing lightweight entries are retained as return targets. Arbitrary 3840x2700 capture is no longer the highest-tier default.
+
+Per-window transmission permits at most two outstanding decodes, reuses one source base64 string and ignores out-of-order renderer results. A deliberately 500ms-delayed detached window did not block the main window. Native mouse forwarding remains unsupported. The original white-polygon trigger is still unknown; successful current native output is not proof that the earlier WebGL trigger was fixed.

@@ -17,5 +17,7 @@ Baseline: DSH Wallpaper Engine v1.4.0 at `3b0103bc1d5431840208966ce67155f392c409
 | Panel sizing | Embedded resize grip, keyboard sizing, persisted size and reset | Synthetic and installed Codex mouse drag, reopen persistence and reset accepted; no independent window |
 | DSH pet choreography | Excluded by user | No pet work in this follow-up; character assets are not copied |
 | Startup animation | Upstream first-frame fade and switch transitions inspected | See STARTUP-EFFECTS.md; no branded intro installed |
+| Highest native scene tier | Confirmed full native project, window-proportional size, desktop FPS cap, JPEG quality 92 and bounded per-window delivery | Actual Codex scene, font/time and original audio bars; short timing and failure/slow-window evidence; physical display latency and general parity remain unaccepted |
+| Library maintenance | Private settings and owned-media backup, hash-checked restore to empty directory, project-reference diagnosis/relocation | Local roundtrip; no external assets deleted or copied into Git |
 
 This is a feature migration, not a DSH client rebuild. The new controls use the existing Codex settings panel. The optional engine is prepared in private runtime data; no wallpaper images, character packages, font files or native helper binaries are added to Git.
