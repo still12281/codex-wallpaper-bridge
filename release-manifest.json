@@ -124,8 +124,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 3449,
-      "sha256": "fca199b5ed22e162f211308401f80f126d5626ff630ac83504316045f37f9d17"
+      "utf8Bytes": 6932,
+      "sha256": "154814946d8acae1ad119004db61fbb6202850fe40259fee8d40795f36f40e2d"
     },
     {
       "path": "package.json",
@@ -134,8 +134,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 3113,
-      "sha256": "caa602ee9662d911f9e1405e66319201c31541b47351751362e668bf5bf3f215"
+      "utf8Bytes": 5439,
+      "sha256": "c78a0b679e30b7ccff96c154a36901e1dba8677116fde0d8e11ab25f47e5a20a"
     },
     {
       "path": "settings.example.json",
@@ -259,8 +259,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 3501,
-      "sha256": "0e2b1833e9f054593b9d9d7959b878976814be316eddae8e96c9483ed0e75271"
+      "utf8Bytes": 12439,
+      "sha256": "70184fe8b403c5e9f1600a229e80a7ce24391e93aa79d4efe6256c86f0cf637a"
     },
     {
       "path": "test/appearance.test.mjs",

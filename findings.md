@@ -19,3 +19,23 @@
 - Media duplicate identity uses content hashes when available; an old external source path cannot establish the bytes originally imported, so historical mutable paths are not retroactively treated as content identity. Renderer versions remain distinct.
 - Preview review required format-constrained FFmpeg input/protocols, bounded caches, completed/inflight hits and coalescing saved previews to the latest selection.
 - Native current-player control exposed an actual Windows source switch after pause. API accepted does not imply observed state change. Restored the exact original music session; added source identity checks, explicit play/pause and mandatory readback. Full pinned-player control remains unsupported by the external helper.
+## 2026-10-25 display regression intake
+User screenshots show a large white diagonal area in the scene and an unreadable dark error dialog with dark text. Screenshot 2 reports a player-command confirmation failure, not proof of renderer failure. Suspected theme inheritance must be checked with computed styles. Existing current changes belong to earlier turns and must be retained. No screen control or client restart.
+
+Confirmed: adaptive post-processing reached off and exposed an audio-effect solid layer. Dialog computed dark background/dark text confirmed. autoQuality is now disabled; matched theme colors pass contrast checks. The old UI omitted audioFps in send/readback despite backend validation; corrected and covered by a headless UI test. Native JSON needs verbatim RAW payload; bounded source capture passed, but native Codex performance remains pending.
+
+Bounded native capture acceptance: raw command-line escaping was the first failure. Verbatim RAW JSON succeeded; 68 frames (about 12.27 captured FPS) and eight unique early frame hashes. Real frame shows original fonts and circular bars; it was not applied to Codex. Dedicated helper exited and desktop monitor selections were preserved. No raw workshop assets or screenshots were added to Git.
+## Reopened-client regression, 2026-10-25
+
+- The actual fixed taskbar item resolves to the Store package, not the generated wallpaper shortcut. The reopened official process has no CDP argument/listener. Window relaunch-property readback was insufficient evidence of replacing the fixed entry.
+- The generated entry/shortcut/owned windows now share an independent desktop identity while retaining the original official icon. Bootstrapping reports failure, checks fresh browser identity and ready targets, and does not restart an already running ordinary client. Inspection has its own status file.
+- Native restart/repinning is user-owned and still pending. No current client was closed or screen input sent.
+- Isolated original-scene trials (including real AMD ANGLE D3D11) did not reproduce the white polygon. Critical effect failure now preserves the old candidate, but this must not be reported as proof of eliminating the original trigger.
+
+## 2026-10-25：只读审计与原生最高档计划
+
+- 当前启动记录、存活进程和 loopback CDP 浏览器身份一致；主窗口视频实际播放，分离窗口失焦暂停。旧的“当前普通客户端没有 CDP”是历史状态，不能作为当前结论。任务栏分组/显示仍缺少真实验收。
+- 当前选择仍是工坊 3600630828 的视频层；音频偏好开启不意味着该视频拥有独立音频条。部署 src 的 25 个文件与源码一致，发布检查通过；这些不等于完整原生场景最高档已完成。
+- 既有原生路线使用 Wallpaper Engine 自身渲染，再通过 WGC/JPEG/Node/CDP/canvas 接入。效果和原生音频复用具有优势，但 JPEG 品质固定 78、额外延迟和总资源成本需要测量；原生鼠标交互当前未转发。
+- 新发现：runtime-status.targets 在遍历窗口时被当前项覆盖，导致文件可能只显示暂停的分离窗口；SECURITY、README 和发布清单也有过时描述。完整备份/恢复、素材重定位与停用卸载应纳入后续阶段。
+- 本轮用户要求先列计划、最高档优先、减少不重要测试并分阶段提交。详细顺序和验收门槛写入 task_plan.md 最新中文计划；没有开始新的运行时实现。
