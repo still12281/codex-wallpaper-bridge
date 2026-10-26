@@ -80,7 +80,7 @@ try {
   $taskPort=9335
   $taskInitial=@(Get-TaskSnapshot)
   $taskStatus.initialProcessIds=@($taskInitial.Id)
-  if($InspectOnly){Save-TaskPhase 'inspect-only';$taskStatus | ConvertTo-Json -Depth 8;exit 0}
+  if($InspectOnly){$taskStatus.phase='inspect-only';$taskStatus.updatedAt=[DateTimeOffset]::UtcNow.ToString('o');$taskStatus | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $taskRoot 'entry-inspect-status.json') -Encoding utf8 -ErrorAction Stop;$taskStatus | ConvertTo-Json -Depth 8;exit 0}
   $taskIdentity=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
   if($null -eq $taskIdentity) {
     if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '9335 已被其他进程占用，未更改该进程。'}
@@ -172,12 +172,16 @@ try {
   Save-TaskPhase 'cdp-verified-starting-wallpaper-host'
   $taskRuntime=Join-Path $taskRoot 'runtime-status.json'
   $taskHostAlreadyRunning=$false
+  $taskConflictingHost=$false
   if(Test-Path -LiteralPath $taskRuntime){
     try{$taskPrevious=Get-Content -LiteralPath $taskRuntime -Raw -ErrorAction Stop|ConvertFrom-Json
       $taskProcessInfo=Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$taskPrevious.pid)" -ErrorAction Stop
-      $taskHostAlreadyRunning=$taskProcessInfo -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and $taskProcessInfo.CommandLine.Contains((Join-Path $taskCodeRoot 'src/video-cdp-host.mjs'))
+      $taskHostAge=([DateTimeOffset]::UtcNow-([DateTimeOffset]$taskPrevious.updatedAt)).TotalSeconds
+      $taskHostAlreadyRunning=$taskProcessInfo -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and $taskProcessInfo.CommandLine.Contains((Join-Path $taskCodeRoot 'src/video-cdp-host.mjs')) -and $taskPrevious.browserId -eq $taskIdentity.BrowserId -and $taskHostAge -ge 0 -and $taskHostAge -lt 12
+      $taskConflictingHost=$taskProcessInfo -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and -not $taskHostAlreadyRunning
     }catch{}
   }
+  if($taskConflictingHost){throw '已有壁纸宿主仍在运行，但状态过期或身份不匹配；已停止重复启动。请检查 runtime-status.json 和日志，当前 Codex 已保留。'}
   if(-not $taskHostAlreadyRunning){
     $taskHost=Start-Process -FilePath $taskNode -ArgumentList @('--expose-gc','--max-old-space-size=64','--max-semi-space-size=4',('"{0}"' -f (Join-Path $taskCodeRoot 'src/video-cdp-host.mjs')),'--cdp-port',"$taskPort") -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $taskRoot 'video-output.log') -RedirectStandardError (Join-Path $taskRoot 'video-error.log') -ErrorAction Stop
     $taskStatus.hostPid=$taskHost.Id
@@ -190,15 +194,19 @@ try {
       try{$taskRuntimeState=Get-Content -LiteralPath $taskRuntime -Raw -ErrorAction Stop|ConvertFrom-Json
         $taskAge=([DateTimeOffset]::UtcNow-([DateTimeOffset]$taskRuntimeState.updatedAt)).TotalSeconds
         $taskFresh=$taskAge -ge 0 -and $taskAge -lt 12
-        if($taskRuntimeState.phase -in @('background-rendered','background-disabled') -and $taskRuntimeState.pid -eq $taskStatus.hostPid -and $taskRuntimeState.browserId -eq $taskIdentity.BrowserId -and $taskFresh){$taskRendered=$true;break}
+        $taskGoodPhase=$taskRuntimeState.phase -in @('background-rendered','background-disabled','realtime-capture-active','realtime-capture-paused')
+        $taskReadyTargets=@($taskRuntimeState.targets | Where-Object {$_.installed -and ($_.ready -or $_.disabled) -and ($_.mode -ne 'realtime' -or $_.frames -gt 0)})
+        if($taskGoodPhase -and $taskReadyTargets.Count -gt 0 -and $taskRuntimeState.pid -eq $taskStatus.hostPid -and $taskRuntimeState.browserId -eq $taskIdentity.BrowserId -and $taskFresh){$taskRendered=$true;break}
       }catch{}
     }
     Start-Sleep -Milliseconds 500
   }while([DateTimeOffset]::UtcNow -lt $taskDeadline)
   Save-TaskPhase $(if($taskRendered){'background-rendered'}else{'cdp-ready-background-not-yet-rendered'})
+  if(-not $taskRendered){$taskOwnedRoot=$null;throw 'Codex 已打开，但壁纸首帧未就绪；客户端已保留，请检查壁纸宿主日志。'}
   if($taskLockOwned){$taskBootstrapLock.ReleaseMutex();$taskLockOwned=$false}
   if($TaskName -and $taskRendered -and $taskStatus.hostPid){Wait-Process -Id $taskStatus.hostPid -ErrorAction SilentlyContinue}
 }catch {
+  if($InspectOnly){Write-Error -Message $_.Exception.Message -ErrorAction Continue;exit 1}
   $taskStatus.error=$_.Exception.Message
   Save-TaskPhase 'failed'
   try {
@@ -211,6 +219,7 @@ try {
     }else{$taskStatus.recovery='existing-client-preserved'}
   }catch{$taskStatus.recovery='client-left-available-or-close-not-confirmed';$taskStatus.recoveryError=$_.Exception.Message}
   Save-TaskPhase 'failed'
+  exit 1
 }finally {
   if($taskLockOwned){$taskBootstrapLock.ReleaseMutex()}
   $taskBootstrapLock.Dispose()

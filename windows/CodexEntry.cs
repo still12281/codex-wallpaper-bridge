@@ -30,6 +30,7 @@ internal static class CodexEntry {
    var state=Read(root,"launch-status.json");var runtime=Read(root,"runtime-status.json");
    double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)runtime["updatedAt"])).TotalSeconds;
    if(age<0||age>20||Convert.ToString(runtime["browserId"])!=Convert.ToString(state["browserId"]))return false;
+   string phase=Convert.ToString(runtime["phase"]);if(phase!="background-rendered"&&phase!="background-disabled"&&phase!="realtime-capture-active"&&phase!="realtime-capture-paused")return false;
    using(var bridge=Process.GetProcessById(Convert.ToInt32(runtime["pid"])))using(var client=Process.GetProcessById(Convert.ToInt32(state["debugRootPid"]))){
     string node=FindNode();
     if(bridge.HasExited||!String.Equals(bridge.MainModule.FileName,node,StringComparison.OrdinalIgnoreCase))return false;
@@ -54,13 +55,14 @@ internal static class CodexEntry {
    SetCurrentProcessExplicitAppUserModelID(WallpaperIdentity.AppId);
    if(Starting(dataRoot))return;
    if(ActivateWallpaper(dataRoot))return;
-   if(Array.IndexOf(args,"--repair")<0&&WallpaperIdentity.VisibleClients().Count>0&&MessageBox.Show("当前 Codex 窗口尚未连接壁纸，或存在需要切换的旧会话。是否正常退出后，通过壁纸入口重新打开？未能正常退出时会停止，不会强制结束。","Codex 壁纸",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+   // Bootstrap verifies CDP ownership and preserves ordinary clients. A visible
+   // debug client may only need its disconnected wallpaper host reattached.
    }
    string script=File.ReadAllText(Path.Combine(dataRoot,"launch-script.txt")).Trim();
    if(!File.Exists(script))throw new FileNotFoundException("Launcher source moved; rebuild the launcher.");
    var info=new ProcessStartInfo {
     FileName=FindPowerShell(),
-    Arguments="-NoProfile -NonInteractive -File \""+script+"\""+(inspect?" -InspectOnly":" -RestartCurrent"),
+    Arguments="-NoProfile -NonInteractive -File \""+script+"\""+(inspect?" -InspectOnly":""),
     WorkingDirectory=Path.GetDirectoryName(script),UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden
    };
    info.EnvironmentVariables["CODEX_WALLPAPER_DATA_DIR"]=dataRoot;
@@ -68,6 +70,14 @@ internal static class CodexEntry {
    string node=FindNode();info.EnvironmentVariables["CODEX_WALLPAPER_NODE"]=node;
    if(inspect){info.RedirectStandardOutput=true;info.RedirectStandardError=true;}
    using(var process=Process.Start(info)) {
+    if(!inspect){
+     if(!process.WaitForExit(180000))throw new IOException("壁纸启动尚未完成，请查看 launch-status.json；现有 Codex 已保留。");
+     var launch=Read(dataRoot,"launch-status.json");
+     if(Convert.ToInt32(launch["helperPid"])!=process.Id)throw new IOException("壁纸启动结果身份不匹配，请查看 launch-status.json。");
+     string phase=Convert.ToString(launch["phase"]);
+     if(process.ExitCode!=0||phase=="failed")throw new IOException(launch.ContainsKey("error")?Convert.ToString(launch["error"]):"壁纸启动失败，请查看 launch-status.json。");
+     if(phase!="background-rendered")throw new IOException("Codex 已打开，但壁纸首帧尚未确认。请查看 launch-status.json 和 video-error.log。");
+    }
     if(inspect){
      if(!process.WaitForExit(45000)){process.Kill();throw new IOException("运行环境自检超时，已停止本次自检进程。");}
      string output=process.StandardOutput.ReadToEnd(),error=process.StandardError.ReadToEnd();

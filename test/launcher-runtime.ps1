@@ -9,6 +9,8 @@ function Get-RootIdentities {
     ForEach-Object {"$($_.ProcessId):$($_.CreationDate.ToUniversalTime().Ticks)"})
 }
 $before=@(Get-RootIdentities)
+$launchPath=Join-Path $testRoot 'launch-status.json'
+$launchBefore=if(Test-Path -LiteralPath $launchPath){[IO.File]::ReadAllText($launchPath)}else{$null}
 $testStarted=[DateTimeOffset]::UtcNow
 $info=[Diagnostics.ProcessStartInfo]::new()
 $info.FileName=Join-Path $testRoot 'CodexEntry.exe'
@@ -28,8 +30,10 @@ try {
 $result=Get-Content -LiteralPath (Join-Path $testRoot 'entry-runtime-check.json') -Raw -ErrorAction Stop | ConvertFrom-Json
 if(([DateTimeOffset]$result.checkedAt) -lt $testStarted){throw 'Diagnostic result is stale'}
 if($result.powerShell -ine $testConfig.powerShell -or $result.node -ine $testConfig.node -or $result.exitCode -ne 0 -or -not $result.inspectOnly){throw 'Recorded runtime was not used'}
-$phase=Get-Content -LiteralPath (Join-Path $testRoot 'launch-status.json') -Raw -ErrorAction Stop | ConvertFrom-Json
+$phase=Get-Content -LiteralPath (Join-Path $testRoot 'entry-inspect-status.json') -Raw -ErrorAction Stop | ConvertFrom-Json
 if($phase.phase -ne 'inspect-only'){throw 'Unexpected bootstrap action'}
+$launchAfter=if(Test-Path -LiteralPath $launchPath){[IO.File]::ReadAllText($launchPath)}else{$null}
+if($launchBefore -cne $launchAfter){throw 'Inspection overwrote active launch identity'}
 $after=@(Get-RootIdentities)
 if((@($before | Sort-Object) -join ';') -cne (@($after | Sort-Object) -join ';')){throw 'User client identity changed during inspection'}
 Write-Output 'PASS: native entry invokes the recorded runtime with empty PATH; bootstrap remains inspect-only; user clients unchanged.'
