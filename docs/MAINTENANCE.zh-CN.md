@@ -31,3 +31,9 @@ node tools/library-maintenance.mjs relocate "DATA_DIR" "ENTRY_ID" "NEW_PROJECT_D
 不再使用时取消固定壁纸入口，保留官方入口；若历史安装仍有 `CodexWallpaperBridge-Supervisor` 计划任务，单独停用该精确任务。完成备份、确认本项目的源窗口/采集助手已退出后，数据目录和本地编译入口可按需由用户清理。不要删除 Wallpaper Engine 安装、工坊原项目或官方 Codex 包。源码不会自动递归删除数据。
 
 数据空间由 media/staging 副本、静态图、可选引擎、capture-cache 环境和历史备份组成。诊断先区分可重建缓存与唯一素材；当前尚无自动总容量清理策略。不要仅按文件日期或扩展名清理整个数据目录。
+
+## 场景切换缓存
+
+GPU 场景使用 Codex 自身 profile 内的专用 CacheStorage `codex-wallpaper-resources-v1`，总量最多 512 MiB、最多四项，单个资源最多 256 MiB；素材文件变化后重新加载。它是可重建的播放资源缓存，不是原素材，也不包含在 DATA_DIR 库备份中。
+
+控制页“管理我的壁纸 → 清理切换缓存”仅清除此专用缓存，不删除 Wallpaper Engine 项目、不删除当前库记录、不改变当前画面。清理后下一次切换需重新填充。不要为清理它删除整个 Codex profile 或其它应用缓存。

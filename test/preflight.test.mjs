@@ -37,3 +37,11 @@ test('deleting an inactive item does not apply; deleting current never starts an
  await actions({}, {action:'delete',selectedId:'inactive'});assert.equal(calls,0);assert.equal(config.selectedId,'active');
  await actions({}, {action:'delete',selectedId:'active'});assert.equal(calls,1);assert.equal(config.selectedId,null);assert.equal(config.library[0].id,'rt');
 });
+
+test('saved realtime selections apply without importing again; selecting the current item is a no-op',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-select-')),settings=defaultSettings();settings.library=[{id:'gpu',mode:'webwallgl',projectRoot:'saved-project',scripts:true},{id:'native',mode:'realtime',projectRoot:'saved-native'}];settings.selectedId='gpu';let calls=0;const actions=createActions(root,settings,async()=>calls++);
+ const current=await actions({}, {action:'select',selectedId:'gpu'});assert.equal(calls,0);assert(!current.confirmation);
+ const native=await actions({}, {action:'select',selectedId:'native'});assert.equal(calls,1);assert(!native.confirmation);assert.equal(settings.selectedId,'native');
+ const gpu=await actions({}, {action:'select',selectedId:'gpu'});assert.equal(calls,2);assert(!gpu.confirmation);assert.equal(settings.selectedId,'gpu');
+ const retry=createActions(root,settings,async()=>calls++,undefined,{isSelectedHealthy:async()=>false});await retry({}, {action:'select',selectedId:'gpu'});assert.equal(calls,3);
+});

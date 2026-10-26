@@ -196,7 +196,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   }
   if(req.action==='select'){
    const selected=settings.library.find(e=>e.id===req.selectedId);if(!selected)throw Error('壁纸不存在');
-   if(['realtime','webwallgl'].includes(selected.mode))return requestRealtime(c,selected.projectRoot,true,selected.limits,selected.mode==='webwallgl'?'webwallgl':'native','use');
+   if(settings.selectedId===req.selectedId&&(!services.isSelectedHealthy||await services.isSelectedHealthy(c)))return {config:settings,message:'当前已使用此壁纸。'};
    const previous=settings.selectedId;settings.selectedId=req.selectedId;
    try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;await apply();throw e}return {config:settings};
   }

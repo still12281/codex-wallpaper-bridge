@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===10){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===11){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=10;let features=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=11;let features=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
@@ -26,7 +26,7 @@ export function installPanel(config,token){
  quality.before(surfaces);extraStyle.textContent+=' #surface-options{margin-top:20px}#surface-options summary{cursor:pointer}#surface-options label{margin-top:12px}#engine-picker label{margin-top:10px}';
  const remove=document.createElement('button');remove.id='delete';remove.textContent='删除所选壁纸（仅 Codex）';remove.style.cssText='width:100%;margin-top:8px';s.querySelector('label').after(remove);
  const deletePicker=document.createElement('label');deletePicker.innerHTML='选择要删除的壁纸<select id="delete-target" aria-label="选择要删除的壁纸"></select>';remove.before(deletePicker);
- const management=document.createElement('details');management.className='cwb-feature';management.innerHTML='<summary>管理我的壁纸</summary>';deletePicker.before(management);management.append(deletePicker,remove);
+ const management=document.createElement('details');management.className='cwb-feature';management.innerHTML='<summary>管理我的壁纸</summary>';deletePicker.before(management);management.append(deletePicker,remove);const clearSwitchCache=document.createElement('button');clearSwitchCache.id='clear-switch-cache';clearSwitchCache.textContent='清理切换缓存';clearSwitchCache.title='最多 512 MB；不删除壁纸原素材或当前画面';clearSwitchCache.onclick=()=>busy(async()=>{const cache=await caches.open('codex-wallpaper-resources-v1');for(const key of await cache.keys())await cache.delete(key);return {message:'已清理切换缓存，原素材和当前壁纸保持不变。'};});management.append(clearSwitchCache);
  const browse=document.createElement('button');browse.id='browse';browse.textContent='搜索 Wallpaper 壁纸 / 图片 / 视频';browse.style.cssText='width:100%;margin-top:8px';engine.after(browse);
  const picker=document.createElement('div');picker.id='engine-picker';picker.hidden=true;picker.innerHTML='<label>搜索范围<select id="engine-scope"><option value="global">全局 · 所有磁盘已发现的壁纸库</option><option value="folder">自选文件夹</option></select></label><div id="folder-options" hidden><label>文件夹路径<input id="engine-folder" type="text" placeholder="选择或粘贴文件夹完整路径"></label><button id="choose-folder">选择文件夹…</button></div><button id="engine-scan">搜索壁纸</button><details id="engine-roots"><summary>搜索位置</summary><p id="engine-locations"></p></details><label>筛选壁纸<input id="engine-search" type="search" placeholder="名称或工坊 ID"></label><select id="engine-library" size="5" aria-label="已下载的 Wallpaper Engine 壁纸"></select><p id="engine-selection"></p><p>选择缩略图后，下方会显示这张壁纸的具体检查结果。导入不会改动桌面壁纸。</p><div id="engine-import-actions"><button id="engine-import">导入并应用</button><button id="engine-save">仅保存到我的壁纸</button></div>';browse.after(picker);s.querySelector('#library').parentElement.after(browse);browse.after(picker);picker.append(engine);
  extraStyle.textContent+=' #engine-import-actions{display:flex;flex-wrap:wrap;gap:8px}#engine-import-actions button{flex:1 1 auto;min-height:40px}#error-dialog p{white-space:pre-wrap;overflow-wrap:anywhere}#error-dialog button{min-height:40px}';
