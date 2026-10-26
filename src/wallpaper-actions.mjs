@@ -151,7 +151,9 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   if(req.action==='playback'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('当前壁纸不存在');
    if(['realtime','webwallgl'].includes(entry.mode)){
-    const previous=entry.limits,oldProfile=settings.playback,previousTier=entry.displayTier,previousCustom=entry.customDisplay;entry.limits=realtimeProfile(req);entry.displayTier='custom';delete entry.customDisplay;settings.playback={maxWidth:entry.limits.maxWidth,fps:entry.limits.fps};
+    const previous=entry.limits,oldProfile=settings.playback,previousTier=entry.displayTier,previousCustom=entry.customDisplay;
+    const profile=entry.mode==='realtime'?{...req,...(previous?.maxHeight?{maxHeight:Math.floor(Number(req.maxWidth)*previous.maxHeight/previous.maxWidth/2)*2}:{}),...(previous?.jpegQuality?{jpegQuality:previous.jpegQuality}:{})}:req;
+    entry.limits=realtimeProfile(profile);entry.displayTier='custom';delete entry.customDisplay;settings.playback={maxWidth:entry.limits.maxWidth,fps:entry.limits.fps};
     try{await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings)}catch(error){entry.limits=previous;entry.displayTier=previousTier;if(previousCustom)entry.customDisplay=previousCustom;settings.playback=oldProfile;await apply();await services.configureMedia?.(effectiveMediaSettings(settings));throw error}
     return {config:settings,message:'已更新实时输出分辨率与采集帧率；Wallpaper Engine 全局帧率未修改。'};
    }

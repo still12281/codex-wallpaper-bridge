@@ -36,6 +36,10 @@ test('manual playback edits replace old custom restore values',async()=>{
  const action=createActions(root,s,async()=>{},undefined,{configureMedia:async()=>{}});await action(null,{action:'display-tier',tier:'economy'});assert(s.library[0].customDisplay);
  await action(null,{action:'playback',maxWidth:1920,fps:30});assert.equal(s.library[0].customDisplay,undefined);await action(null,{action:'display-tier',tier:'custom'});assert.equal(s.library[0].limits.maxWidth,1920);
 });
+test('native FPS and width edits preserve capture quality and the selected aspect ratio',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-native-profile-')),s=defaultSettings();s.library=[{id:'native',mode:'realtime',limits:{maxWidth:1920,maxHeight:1320,fps:30,jpegQuality:92}}];s.selectedId='native';const action=createActions(root,s,async()=>{});
+ await action(null,{action:'playback',maxWidth:1920,fps:24});assert.deepEqual(s.library[0].limits,{maxWidth:1920,maxHeight:1320,fps:24,jpegQuality:92});await action(null,{action:'playback',maxWidth:1280,fps:30});assert.equal(s.library[0].limits.maxHeight,880);assert.equal(s.library[0].limits.jpegQuality,92);
+});
 test('native full-effects confirmation exits an existing static native entry',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-native-static-')),project=path.join(root,'project');await mkdir(project);await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene',title:'Fixture'}));
  const s=defaultSettings();s.library=[{id:'native',mode:'realtime',projectRoot:project,sourceKey:(await describeProject(project)).sourceKey,displayTier:'static',staticFile:'media/still.png',limits:{maxWidth:1280,fps:30}}];s.selectedId='native';

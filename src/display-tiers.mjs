@@ -1,11 +1,11 @@
 import {appearancePalette} from './appearance-model.mjs';
-// Quality budgets and renderer choice are independent. Never label WebGL as native parity.
+// Lower tiers adjust budgets. Full projects can request native rendering after confirmation.
 export const DISPLAY_TIERS={
  static:{name:'静态',description:'保存当前画面；停止视频、场景渲染和频谱采集',audioFps:0},
  economy:{name:'省电',maxWidth:960,fps:12,postProcessing:'low',particles:'low',videoTexScale:.5,audioFps:0,description:'960 / 12 FPS；保留基础动画，停用频谱、视差与互动装饰'},
  balanced:{name:'均衡',maxWidth:1280,fps:24,postProcessing:'medium',particles:'medium',videoTexScale:.5,audioFps:20,description:'1280 / 24 FPS；保留效果链，频谱最多 20 次/秒'},
  smooth:{name:'高画质',maxWidth:1920,fps:30,postProcessing:'high',particles:'high',videoTexScale:.75,audioFps:30,description:'1920 / 30 FPS；保留效果链，频谱最多 30 次/秒'},
- full:{name:'最高画质',maxWidth:3840,fps:60,postProcessing:'high',particles:'high',videoTexScale:1,audioFps:60,description:'3840 / 60 FPS 上限；不主动削减已支持的场景效果，音频仍由独立开关控制'},
+ full:{name:'最高画质',maxWidth:3840,fps:60,postProcessing:'high',particles:'high',videoTexScale:1,audioFps:60,description:'完整项目经确认使用原生效果与音频；普通媒体最高 3840 / 60 FPS，不补帧'},
  custom:{name:'自定义',audioFps:60,description:'保留当前具体参数，在高级设置中分别调整'}
 };
 export const selectedEntry=settings=>settings.library?.find(e=>e.id===settings.selectedId);
