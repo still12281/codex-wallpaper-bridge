@@ -24,5 +24,10 @@
   "surfaceSync": {
     "code": true,
     "embedded": true
+  },
+  "systemMedia": {
+    "enabled": false,
+    "audio": false,
+    "audioFps": 30
   }
 }

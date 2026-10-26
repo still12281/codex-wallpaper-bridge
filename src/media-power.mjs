@@ -1,3 +1,4 @@
+import {normalizeAudioFps} from './system-media.mjs';
 // This function runs in the Codex page. Events replace a permanent CDP polling loop.
 export function installMediaActivity(token){
  if(window.__cwbMediaActivity?.token===token){window.__cwbMediaActivity.report();return;}
@@ -19,7 +20,7 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
  let options={enabled:false,audio:false},backend=null,key='',wanted='',changedAt=0,retryAt=0,error=null,closed=false,queue=Promise.resolve();
  const delivery=new WeakMap();const stats={starts:0,stops:0,spectrumSent:0,metadataSent:0,panelUpdates:0};
  const active=c=>!!(c.mediaActivity?.active&&c.mediaActivity?.webgl);
- const desired=()=>JSON.stringify([!!options.enabled,!!(options.enabled&&options.audio&&[...sessions()].some(c=>active(c)&&c.mediaActivity.audio!==false))]);
+ const desired=()=>{const audio=!!(options.audio&&[...sessions()].some(c=>active(c)&&c.mediaActivity.audio!==false));return JSON.stringify([!!options.enabled||audio,audio,audio?normalizeAudioFps(options.audioFps):0]);};
  const reconcile=async(force=false)=>{
   if(closed)return;
   const nextKey=desired();if(wanted!==nextKey){wanted=nextKey;changedAt=now();}
@@ -27,9 +28,9 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
   if(!force&&(now()-changedAt<debounceMs||now()<retryAt))return;
   const old=backend;backend=null;key='';if(old){stats.stops++;await old.stop();}
   if(closed||nextKey!==desired())return;
-  const [enabled,audio]=JSON.parse(nextKey);
+  const [enabled,audio,audioFps]=JSON.parse(nextKey);
   try{
-   const next=enabled?await start({audio}):null;
+   const next=enabled?await start({audio,audioFps}):null;
    if(closed||nextKey!==desired()){await next?.stop();return;}
    backend=next;key=nextKey;error=null;retryAt=0;if(next)stats.starts++;
   }catch(e){error=e.message;retryAt=now()+30000;if(force)throw e;}
@@ -39,7 +40,8 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
  const pump=async()=>{
   await reconcile();if(closed)return;
   const clients=[...sessions()],needed=clients.some(c=>active(c)||c.mediaActivity?.panel);
-  const payload=(needed&&backend?.payload())||empty();
+  const raw=(needed&&backend?.payload())||empty();
+  const payload=options.enabled?raw:{...empty(),audioAvailable:raw.audioAvailable,audioReason:raw.audioReason,bands:raw.bands,sources:raw.sources,error:raw.error};
   const {bands,position,...metadata}=payload;
   // Position is a separate correction; frequency frames never invalidate metadata.
   const signature=JSON.stringify(metadata),frame=backend?.state.spectrumFrames||0;
@@ -59,7 +61,7 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
   configure(next){options={...next};return serial(()=>reconcile(true));},
   tick(){return serial(pump);},
   get backend(){return backend;},
-  snapshot(){return {...stats,audioRequested:!!options.audio,audioRunning:!!backend&&JSON.parse(key||'[false,false]')[1],pid:backend?.state.pid||null,spectrumFrames:backend?.state.spectrumFrames||0,error};},
+  snapshot(){return {...stats,audioRequested:!!options.audio,audioFpsRequested:normalizeAudioFps(options.audioFps),audioRunning:!!backend&&JSON.parse(key||'[false,false]')[1],audioFps:backend?JSON.parse(key)[2]||0:0,pid:backend?.state.pid||null,spectrumFrames:backend?.state.spectrumFrames||0,error};},
   stop(){closed=true;return serial(async()=>{const old=backend;backend=null;await old?.stop();});}
  };
 }

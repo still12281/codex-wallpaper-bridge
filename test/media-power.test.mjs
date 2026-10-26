@@ -47,3 +47,12 @@ test('async audio startup is discarded when last consumer leaves; stop awaits st
  const configuring=p.configure({enabled:true,audio:true});await new Promise(r=>setImmediate(r));clients[0].mediaActivity.active=false;release();await configuring;assert.equal(p.backend,null);assert.equal(stopped,1);
  const second=p.tick();await new Promise(r=>setImmediate(r));const stopping=p.stop();release();await Promise.all([second,stopping]);assert.equal(p.backend,null);assert.equal(stopped,2);
 });
+
+test('audio-only mode works without exposing song metadata and rate changes restart only capture',async()=>{
+ const f=fixture();Object.assign(f.clients[0].mediaActivity,{webgl:true,active:true});
+ await f.power.configure({enabled:false,audio:true,audioFps:10});assert.equal(f.starts[0].options.audioFps,10);
+ f.payload().audioAvailable=true;f.payload().bands=[150];f.starts[0].state.spectrumFrames=1;await f.power.tick();
+ assert.equal(f.calls.find(c=>c.kind==='metadata').payload.title,'');assert.equal(f.calls.find(c=>c.kind==='spectrum').payload.bands[0],150);
+ await f.power.configure({enabled:false,audio:true,audioFps:60});assert(f.starts[0].stopped);assert.equal(f.starts.at(-1).options.audioFps,60);
+ assert.equal(f.power.snapshot().audioFps,60);await f.power.configure({enabled:false,audio:false,audioFps:60});await f.power.tick();assert.equal(f.power.backend,null);assert.equal(f.power.snapshot().audioRunning,false);await f.power.stop();
+});

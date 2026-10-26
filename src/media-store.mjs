@@ -1,6 +1,6 @@
 import {realpath,unlink,rename} from 'node:fs/promises';
 import path from 'node:path';
-function references(root,settings,file){const absolute=path.resolve(root,file).toLowerCase();return settings.library.some(e=>[e.file,e.sourceFile,e.sourcePath].filter(Boolean).some(p=>path.resolve(root,p).toLowerCase()===absolute))}
+function references(root,settings,file){const absolute=path.resolve(root,file).toLowerCase();return settings.library.some(e=>[e.file,e.sourceFile,e.sourcePath,e.staticFile].filter(Boolean).some(p=>path.resolve(root,p).toLowerCase()===absolute))}
 export async function removeManagedFile(root,settings,file){
  if(!file||references(root,settings,file))return false;
  const absolute=path.resolve(root,file),relative=path.relative(root,absolute);

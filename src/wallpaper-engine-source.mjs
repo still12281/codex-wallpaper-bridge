@@ -1,5 +1,5 @@
 import {readFile,open,stat,mkdir,readdir,realpath} from 'node:fs/promises';
-import {projectKey} from './engine-library.mjs';
+import {projectKey,discoverEngineRoots} from './engine-library.mjs';
 import {createReadStream,createWriteStream} from 'node:fs';
 import {pipeline} from 'node:stream/promises';
 import path from 'node:path';
@@ -40,6 +40,7 @@ export async function inspectEngineProject(projectDirectory,renderMode='auto'){
  if(['image','video'].includes(type)){const input=await realpath(path.resolve(root,project.file||''));if(!input.toLowerCase().startsWith((root+path.sep).toLowerCase()))throw Error('壁纸素材路径不受支持');await stat(input);return {supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:type==='video'?'当前选中的是视频，生成播放副本后直接播放。':'当前选中的是图片，直接生成显示副本。'}}
  if(!['scene','web'].includes(type))return {supported:false,needsRealtime:null,mode:'unsupported',label:'此项目暂不支持',reason:'无法识别的项目类型：'+type};
  if(type==='web'||renderMode==='realtime')return {supported:true,needsRealtime:true,mode:'realtime',label:'需要实时渲染',reason:type==='web'?'当前选中的是网页壁纸，需要 Wallpaper Engine 持续运行。':'已选择完整场景模式，此项目由 Wallpaper Engine 实时运行。'};
+ if(renderMode==='auto'&&project.general?.supportsaudioprocessing===true)return {supported:true,needsRealtime:true,mode:'realtime',label:'音频响应场景 · 需要完整实时渲染',reason:'此项目声明支持音频响应。视频层不包含独立音频条、场景特效或脚本；自动模式保留完整场景。若只要背景视频，可明确选择“仅视频层”。'};
  const pkgPath=await realpath(path.join(root,'scene.pkg'));if(!pkgPath.toLowerCase().startsWith((root+path.sep).toLowerCase()))throw Error('场景包路径不受支持');const pkgStat=await stat(pkgPath),key=[root,projectStat.mtimeMs,projectStat.size,pkgStat.mtimeMs,pkgStat.size].join('|');
  if(inspectionCache.has(key))return inspectionCache.get(key);
  const result=await probeSceneVideo(pkgPath),verdict=result.candidate?{supported:true,needsRealtime:false,mode:'video-layer',label:'当前轻量模式不需要实时渲染',reason:'已检查此项目，可提取单一视频层。该方式不包含场景独立特效或脚本；需要完整效果时改选完整实时。'}:{supported:true,needsRealtime:true,mode:'realtime',label:'需要实时渲染',reason:`已检查此项目，${result.videoCount?'包含多个视频资源，不能直接作为单一背景视频。':'没有可提取的独立背景视频。'}将由 Wallpaper Engine 运行完整场景。`};

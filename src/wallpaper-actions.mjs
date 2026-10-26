@@ -12,6 +12,8 @@ import {currentEngineSource,getCurrentEngineProject,inspectEngineProject} from '
 import {commitConverted,removeManagedFile} from './media-store.mjs';
 import {describeProject,realtimeProfile,findWorkshopProject} from './realtime-source.mjs';
 import {sanitizeVisual,appearanceSnapshot,parsePreset,nextRotation} from './appearance-model.mjs';
+import {AUDIO_FPS_OPTIONS,normalizeAudioFps} from './system-media.mjs';
+import {DISPLAY_TIERS,effectiveMediaSettings} from './display-tiers.mjs';
 const types={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','video/mp4':'mp4','video/webm':'webm'};
 export async function saveConfig(root,settings){const temp=path.join(root,'settings.next.json');await writeFile(temp,JSON.stringify(settings,null,2));await rename(temp,path.join(root,'settings.json'))}
 export function normalizeLibrary(settings){
@@ -20,27 +22,66 @@ export function normalizeLibrary(settings){
  settings.surfaceSync={code:settings.surfaceSync?.code!==false,embedded:settings.surfaceSync?.embedded!==false};
  settings.visual=sanitizeVisual(settings.visual);settings.presets??=[];settings.hiddenWallpaperIds??=[];settings.rotation??={enabled:false,intervalSeconds:60,order:'sequential',ids:[]};
  settings.systemMedia??={enabled:false,audio:false};
+ settings.systemMedia.audioFps=normalizeAudioFps(settings.systemMedia.audioFps);
 }
 export function createActions(root,settings,apply,applyAppearance=apply,services={}){
  const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map();
  const populateHashes=async()=>{for(const entry of settings.library){if(entry.contentHash||['realtime','webwallgl'].includes(entry.mode))continue;const source=entry.sourceFile;if(!source)continue;try{entry.contentHash=await hashMedia(path.resolve(root,source));}catch{}}};
  const duplicate=(entry,applyNow,policy)=>policy==='skip'?{config:settings,duplicateSkipped:entry.name,message:'已跳过重复壁纸：'+entry.name}:{duplicate:{existingId:entry.id,name:entry.name,apply:applyNow},message:'该壁纸已在我的壁纸中。'};
- const requestRealtime=async(c,projectRoot,applyNow,profile,renderer='native',duplicatePolicy)=>{
+ const requestRealtime=async(c,projectRoot,applyNow,profile,renderer='native',duplicatePolicy,nativeFull=false)=>{
   const project=await describeProject(projectRoot);
   if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
   if(renderer==='webwallgl'&&project.type!=='scene')throw Error('网页 WebWallGL 资源通道尚未通过验收，请选择原生实时模式');
   const limits=realtimeProfile(profile||settings.playback),token=randomUUID();
   for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
-  confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer,duplicatePolicy});
+  confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer,duplicatePolicy,nativeFull});
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
  return async function action(c,req){
+  if(req.action==='display-native'){
+   const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');
+   const projectRoot=entry.projectRoot||(entry.workshopId?await findWorkshopProject(entry.workshopId):null);if(!projectRoot)throw Error('当前素材没有完整场景引用；请从 Wallpaper Engine 项目导入');
+   return requestRealtime(c,projectRoot,true,entry.limits||settings.playback,'native','use',true);
+  }
+  if(req.action==='scene-quality'){
+   const entry=settings.library.find(e=>e.id===settings.selectedId);if(entry?.mode!=='webwallgl'||entry.displayTier==='static')throw Error('请先启用 WebGL 动态场景，再调整场景画质');
+   const {particles,postProcessing,antiAliasing,videoTexScale}=req;
+   if(!['low','medium','high'].includes(particles)||!['low','medium','high'].includes(postProcessing)||!['off','fxaa','msaa2','msaa4'].includes(antiAliasing)||![.5,.75,1].includes(videoTexScale))throw Error('场景画质参数无效');
+   const previous=structuredClone(entry);entry.quality={particles,postProcessing,antiAliasing};entry.videoTexScale=videoTexScale;entry.displayTier='custom';delete entry.customDisplay;
+   try{await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings)}catch(error){Object.keys(entry).forEach(k=>delete entry[k]);Object.assign(entry,previous);await apply();await services.configureMedia?.(effectiveMediaSettings(settings));throw error;}
+   return {config:settings,message:'已应用自定义场景画质；效果链保持开启。'};
+  }
+  if(req.action==='display-tier'){
+   const tier=DISPLAY_TIERS[req.tier],entry=settings.library.find(e=>e.id===settings.selectedId);if(!tier||!entry)throw Error('请选择壁纸和有效显示档位');
+   const previous=structuredClone(entry);let created;
+   try{
+    const customKeys=['limits','quality','videoTexScale','file','mime'];
+    if(req.tier!=='custom'&&(!entry.displayTier||entry.displayTier==='custom'))entry.customDisplay=Object.fromEntries(customKeys.filter(k=>entry[k]!==undefined).map(k=>[k,structuredClone(entry[k])]));
+    if(req.tier==='custom'&&entry.customDisplay){for(const k of customKeys){if(k in entry.customDisplay)entry[k]=entry.customDisplay[k];else delete entry[k];}delete entry.customDisplay;}
+    if(req.tier==='static'){
+     if(!entry.staticFile||entry.displayTier!=='static'){if(typeof services.captureStatic!=='function')throw Error('当前环境不支持生成静态画面');created=await services.captureStatic(entry);entry.staticFile=created;}
+    }else if(req.tier!=='custom'){
+     const limits=realtimeProfile(tier);
+     if(['webwallgl','realtime'].includes(entry.mode)){entry.limits=limits;entry.quality={antiAliasing:req.tier==='full'?(entry.customDisplay?.quality?.antiAliasing||entry.quality?.antiAliasing||'fxaa'):'off',particles:tier.particles,postProcessing:tier.postProcessing};entry.videoTexScale=tier.videoTexScale;}
+     else if(entry.mime?.startsWith('video/')||entry.mime==='image/gif'){
+      const converted=await convertMedia(root,entry.sourcePath||path.join(root,entry.sourceFile||entry.file),entry.sourceMime||entry.mime,entry.id,limits);
+      created='media/variant-'+randomUUID()+'.mp4';await rename(path.join(root,converted.file),path.join(root,created));entry.file=created;entry.mime=converted.mime;entry.limits=converted.limits;
+     }
+    }
+    entry.displayTier=req.tier;await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings);
+   }catch(error){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previous);await services.configureMedia?.(effectiveMediaSettings(settings));await apply();if(created)await removeManagedFile(root,settings,created);throw error;}
+   return {config:settings,message:'已应用“'+tier.name+'”。'+tier.description+'；渲染器兼容范围不因档位改变。'};
+  }
   if(req.action==='library-preview'){const entry=settings.library.find(e=>e.id===req.selectedId);if(!entry)throw Error('壁纸不存在');return libraryPreview(root,entry);}
   if(req.action==='duplicate-use'){
    const entry=settings.library.find(e=>e.id===req.existingId);if(!entry||typeof req.apply!=='boolean')throw Error('已有壁纸不存在');if(!req.apply)return {config:settings,message:'已保留已有壁纸，未重复导入。'};return action(c,{action:'select',selectedId:entry.id});
   }
   if(req.action==='system-media-config'){
-   if(typeof req.enabled!=='boolean'||typeof req.audio!=='boolean'||typeof services.configureMedia!=='function')throw Error('系统媒体配置不可用');const previous=settings.systemMedia;settings.systemMedia={enabled:req.enabled,audio:req.audio};try{await services.configureMedia(settings.systemMedia);await saveConfig(root,settings);}catch(error){settings.systemMedia=previous;await services.configureMedia(previous);throw error;}return {config:settings,message:req.enabled?'系统媒体联动已启用，采集状态以面板显示为准。':'系统媒体联动已关闭。'};
+   if(typeof req.enabled!=='boolean'||typeof req.audio!=='boolean'||typeof services.configureMedia!=='function')throw Error('系统媒体配置不可用');
+   const audioFps=req.audioFps===undefined?normalizeAudioFps(settings.systemMedia?.audioFps):Number(req.audioFps);if(!AUDIO_FPS_OPTIONS.includes(audioFps))throw Error('音频响应档位无效');
+   const previous=settings.systemMedia;settings.systemMedia={enabled:req.enabled,audio:req.audio,audioFps};
+   try{await services.configureMedia(effectiveMediaSettings(settings));if(previous?.audio!==req.audio)await apply();await saveConfig(root,settings);}catch(error){settings.systemMedia=previous;await services.configureMedia(effectiveMediaSettings(settings));if(previous?.audio!==req.audio)await apply();throw error;}
+   return {config:settings,message:req.audio?'音频响应已开启，频谱更新上限 '+audioFps+' 次/秒；实际响应受渲染帧率和音频组件限制。':'音频响应已关闭；歌曲信息按独立开关设置。'};
   }
   if(req.action==='system-media-control'){if(typeof services.controlMedia!=='function')throw Error('系统媒体未启用');if(typeof req.sourceId!=='string'||!req.sourceId||req.sourceId.length>200)throw Error('播放器身份已失效，请等待媒体信息刷新');await services.controlMedia(req.command,req.sourceId);return {message:'已向当前播放器执行操作。'};}
   if(req.action==='visual'){
@@ -75,8 +116,8 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey);
    if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
    const entry=existing||{id:randomUUID(),name:project.name+(mode==='webwallgl'?' · WebGL':' · 实时'),mode,scripts:mode==='webwallgl',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
-   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId;if(existing)entry.limits=pending.limits;if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
-   try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
+   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='custom';delete entry.customDisplay;}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
+   try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
   if(req.action==='engine-list'){const search={scope:req.scope||'global',folder:req.folder||'',kind:req.kind||'engine'};const result=await catalog.search(search);settings.engineSearch=search;await saveConfig(root,settings);return result}
@@ -87,7 +128,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const entry=settings.library[index],selected=settings.selectedId;settings.library.splice(index,1);
    const wasActive=selected===entry.id;if(wasActive)settings.selectedId=settings.library.find(e=>!['realtime','webwallgl'].includes(e.mode))?.id||null;
    try{if(wasActive)await apply();await saveConfig(root,settings)}catch(e){settings.library.splice(index,0,entry);settings.selectedId=selected;if(wasActive)await apply();throw e}
-   for(const file of [entry.file,entry.sourceFile,entry.sourcePath])await removeManagedFile(root,settings,file);
+   for(const file of [entry.file,entry.sourceFile,entry.sourcePath,entry.staticFile])await removeManagedFile(root,settings,file);
    return {config:settings,message:'已从 Codex 删除并清理专属缓存；Wallpaper Engine 原文件不变。'};
   }
   if(req.action==='power-saving'){
@@ -105,16 +146,16 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   if(req.action==='playback'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('当前壁纸不存在');
    if(['realtime','webwallgl'].includes(entry.mode)){
-    const previous=entry.limits,oldProfile=settings.playback;entry.limits=realtimeProfile(req);settings.playback={maxWidth:entry.limits.maxWidth,fps:entry.limits.fps};
-    try{await apply();await saveConfig(root,settings)}catch(error){entry.limits=previous;settings.playback=oldProfile;await apply();throw error}
+    const previous=entry.limits,oldProfile=settings.playback,previousTier=entry.displayTier,previousCustom=entry.customDisplay;entry.limits=realtimeProfile(req);entry.displayTier='custom';delete entry.customDisplay;settings.playback={maxWidth:entry.limits.maxWidth,fps:entry.limits.fps};
+    try{await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings)}catch(error){entry.limits=previous;entry.displayTier=previousTier;if(previousCustom)entry.customDisplay=previousCustom;settings.playback=oldProfile;await apply();await services.configureMedia?.(effectiveMediaSettings(settings));throw error}
     return {config:settings,message:'已更新实时输出分辨率与采集帧率；Wallpaper Engine 全局帧率未修改。'};
    }
    const input=entry.sourcePath||path.join(root,entry.sourceFile||entry.file);
    try{await stat(input)}catch{throw Error('原素材不可用，请重新导入后调整规格')}
    const profile={maxWidth:Number(req.maxWidth),fps:Number(req.fps)};
-   if(entry.limits?.maxWidth===profile.maxWidth&&(!entry.mime.startsWith('video/')||entry.limits?.fps===profile.fps))return {config:settings,message:'当前已是所选规格，无需重新生成。'};
+   if(entry.displayTier!=='static'&&entry.limits?.maxWidth===profile.maxWidth&&(!entry.mime.startsWith('video/')||entry.limits?.fps===profile.fps))return {config:settings,message:'当前已是所选规格，无需重新生成。'};
    const converted=await convertMedia(root,input,entry.sourceMime||entry.mime,entry.id,profile);
-   const previous={...entry},oldProfile=settings.playback;settings.playback=profile;
+   const previous={...entry},oldProfile=settings.playback;settings.playback=profile;entry.displayTier='custom';delete entry.customDisplay;
    try{await commitConverted(root,settings,entry,converted,previous,apply,saveConfig)}catch(e){settings.playback=oldProfile;throw e}return {config:settings};
   }
   if(req.action==='wallpaper-engine'){
@@ -122,6 +163,10 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const resolved=req.projectToken?await catalog.resolve(req.projectToken):(!req.workshopId?await getCurrentEngineProject():null);
    const workshopId=resolved?.workshopId||req.workshopId;
    const projectRoot=resolved?.root||(workshopId?await findWorkshopProject(workshopId):null);
+   if((req.renderMode||'auto')==='auto'&&projectRoot&&resolved?.kind!=='media'){
+    const inspection=await inspectEngineProject(projectRoot);
+    if(inspection.needsRealtime){const project=await describeProject(projectRoot),existing=duplicateEntry(settings,{mode:'realtime',sourceKey:project.sourceKey});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,'native',req.duplicatePolicy)}
+   }
    if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type)){const existing=duplicateEntry(settings,{mode:req.renderMode,sourceKey:project.sourceKey});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native',req.duplicatePolicy)}}
    let contentHash;if(resolved?.kind==='media'){contentHash=await hashMedia(resolved.file);await populateHashes();}const existing=duplicateEntry(settings,{sourceKey:resolved?.sourceKey,workshopId,contentHash});
    if(existing){
