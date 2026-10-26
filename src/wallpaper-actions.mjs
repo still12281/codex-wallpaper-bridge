@@ -41,7 +41,8 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   if(req.action==='display-native'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');
    const projectRoot=entry.projectRoot||(entry.workshopId?await findWorkshopProject(entry.workshopId):null);if(!projectRoot)throw Error('当前素材没有完整场景引用；请从 Wallpaper Engine 项目导入');
-   return requestRealtime(c,projectRoot,true,entry.limits||settings.playback,'native','use',true);
+   const profile=services.nativeProfile?await services.nativeProfile(c,projectRoot):{maxWidth:3840,maxHeight:2160,fps:30,jpegQuality:92};
+   return requestRealtime(c,projectRoot,true,profile,'native','use',true);
   }
   if(req.action==='scene-quality'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(entry?.mode!=='webwallgl'||entry.displayTier==='static')throw Error('请先启用 WebGL 动态场景，再调整场景画质');
@@ -53,6 +54,10 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   }
   if(req.action==='display-tier'){
    const tier=DISPLAY_TIERS[req.tier],entry=settings.library.find(e=>e.id===settings.selectedId);if(!tier||!entry)throw Error('请选择壁纸和有效显示档位');
+   if(req.tier==='full'&&(entry.projectRoot||entry.workshopId)){
+    const projectRoot=entry.projectRoot||await findWorkshopProject(entry.workshopId),project=await describeProject(projectRoot);
+    if(['scene','web'].includes(project.type))return action(c,{action:'display-native'});
+   }
    const previous=structuredClone(entry);let created;
    try{
     const customKeys=['limits','quality','videoTexScale','file','mime'];
@@ -116,7 +121,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey);
    if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
    const entry=existing||{id:randomUUID(),name:project.name+(mode==='webwallgl'?' · WebGL':' · 实时'),mode,scripts:mode==='webwallgl',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
-   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='custom';delete entry.customDisplay;}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
+   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
    try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }

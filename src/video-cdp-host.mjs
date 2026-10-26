@@ -9,7 +9,7 @@ import {normalizeLibrary,createActions,saveConfig} from './wallpaper-actions.mjs
 import {randomUUID} from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {startRealtime} from './realtime-source.mjs';
+import {startRealtime,nativeFullProfile} from './realtime-source.mjs';
 import {installRealtime} from './realtime-player.mjs';
 import {installFrameFreeze} from './freeze-frame.mjs';
 import {mountWebWallGL} from './webwallgl-player.mjs';
@@ -35,6 +35,7 @@ const save=async()=>{status.mediaPower=mediaPower?.snapshot()??null;status.memor
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const sessions=new Map(),embeddedSessions=new Map();let busy=false,stopped=false,acting=false,actionQueue=Promise.resolve();
 let realtime=null,realtimeKey=null,streamTimer=null,streaming=false,timer=null,rotationTimer=null,spectrumTimer=null,mediaPower=null;
+function scheduleStream(delay){clearTimeout(streamTimer);if(stopped)return;streamTimer=setTimeout(stream,delay);streamTimer.unref();}
 async function stop(){
  if(stopped)return;stopped=true;
  clearInterval(timer);clearInterval(rotationTimer);clearInterval(spectrumTimer);clearTimeout(streamTimer);
@@ -55,9 +56,10 @@ async function ensureRealtime(entry){
 }
 async function stream(){
  if(stopped)return;
- if(streaming||busy||acting){streamTimer=setTimeout(stream,8);streamTimer.unref();return}streaming=true;const cycleStart=Date.now();
+ if(streaming||busy||acting){scheduleStream(8);return}streaming=true;const cycleStart=Date.now();
  try{
   const source=realtime;if(!source)return;let anyActive=false;
+  if(!source.paused&&Date.now()-Math.max(source.lastFrameAt,source.resumedAt||0)>10000)source.error='原生采集活动期间超过 10 秒没有新画面';
   if(source.error&&!source.recoveryQueued){
    source.recoveryQueued=true;const failure=source.error;
    actionQueue=actionQueue.then(async()=>{
@@ -74,14 +76,16 @@ async function stream(){
   }
   await Promise.all([...sessions.values()].map(async c=>{
    if(!c.installed||!c.isRealtime)return;
+   if(c.drawInFlight>=2){if(!c.capturePaused)anyActive=true;return;}
    const now=Date.now(),sequence=source.sequence,frame=source.frame;
-   if(c.capturePaused||!frame||c.captureSequence===sequence){if(now<(c.nextCapturePoll||0)){if(!c.capturePaused)anyActive=true;return}c.nextCapturePoll=now+250;const sample=await c.evaluate('window.__codexWallpaperBridge?.sample()').catch(()=>null);c.capturePaused=sample?.paused!==false;if(!c.capturePaused)anyActive=true;return}
-   const called=await c.call('Runtime.callFunctionOn',{objectId:c.captureObjectId,functionDeclaration:'function(frame){return this.draw(frame)}',arguments:[{value:frame.toString('base64')}],awaitPromise:true,returnByValue:true});if(called.exceptionDetails)throw Error(called.exceptionDetails.exception?.description||called.exceptionDetails.text);const sample=called.result?.value;
-   c.captureSequence=sequence;c.capturePaused=sample?.paused!==false;if(!c.capturePaused)anyActive=true;
+   if(c.capturePaused||!frame||c.captureSequence===sequence||c.captureSentSequence===sequence){if(now<(c.nextCapturePoll||0)){if(!c.capturePaused)anyActive=true;return}c.nextCapturePoll=now+250;const sample=await c.evaluate('window.__codexWallpaperBridge?.sample()').catch(()=>null);c.capturePaused=sample?.paused!==false;if(!c.capturePaused)anyActive=true;return}
+   if(source.base64Sequence!==sequence){source.base64=frame.toString('base64');source.base64Sequence=sequence;}
+   const objectId=c.captureObjectId,started=Date.now();c.drawInFlight=(c.drawInFlight||0)+1;c.captureSentSequence=sequence;anyActive=true;
+   c.call('Runtime.callFunctionOn',{objectId,functionDeclaration:'function(frame,info){return this.draw(frame,info)}',arguments:[{value:source.base64},{value:{...source.frameInfo,sequence}}],awaitPromise:true,returnByValue:true},undefined,1500).then(called=>{if(called.exceptionDetails)throw Error(called.exceptionDetails.exception?.description||called.exceptionDetails.text);if(c.captureObjectId!==objectId)return;const sample=called.result?.value;c.captureSequence=Math.max(c.captureSequence||0,sequence);c.capturePaused=sample?.paused!==false;c.captureTiming={roundtripMs:Date.now()-started,...sample?.timing};delete c.captureError;}).catch(error=>{c.captureError=error.message;}).finally(()=>{c.drawInFlight=Math.max(0,(c.drawInFlight||1)-1);if(source===realtime&&!c.capturePaused&&source.sequence!==c.captureSentSequence)scheduleStream(0);});
   }));
   if(!source.error&&source.paused===anyActive)source.setPaused(!anyActive);
  }catch(error){status.streamError=error.message}
- finally{streaming=false;if(!stopped){streamTimer=setTimeout(stream,Math.max(1,Math.round(1000/(realtime?.profile.fps||24))-(Date.now()-cycleStart)));streamTimer.unref()}}
+ finally{streaming=false;const interval=!realtime?1000:realtime.paused?250:1000/realtime.profile.fps;scheduleStream(Math.max(1,interval-(Date.now()-cycleStart)));}
 }
 streamTimer=setTimeout(stream,1000);
 async function applyAppearance(){
@@ -100,7 +104,7 @@ async function captureStatic(entry){
  if(!data?.startsWith('data:image/png;base64,'))throw Error('静态画面生成失败，当前背景保持不变');const bytes=Buffer.from(data.split(',')[1],'base64');if(bytes.length<64||bytes.length>32*1024*1024)throw Error('静态画面大小异常');
  const file='media/still-'+entry.id+'-'+randomUUID()+'.png';await writeFile(path.join(root,file),bytes,{flag:'wx'});return file;
 }
-const actions=createActions(root,settings,applySelected,applyAppearance,{configureMedia,captureStatic,controlMedia:async(command,sourceId)=>{if(!settings.systemMedia.enabled||!mediaPower.backend)throw Error('歌曲信息与播放控制未启用');await mediaPower.backend.control(command,{sourceId});}});
+const actions=createActions(root,settings,applySelected,applyAppearance,{configureMedia,captureStatic,nativeProfile:async(c,projectRoot)=>{c||=[...sessions.values()].find(s=>s.installed);const viewport=c?await c.evaluate('({width:innerWidth*devicePixelRatio,height:innerHeight*devicePixelRatio})'):undefined;return nativeFullProfile(projectRoot,viewport);},controlMedia:async(command,sourceId)=>{if(!settings.systemMedia.enabled||!mediaPower.backend)throw Error('歌曲信息与播放控制未启用');await mediaPower.backend.control(command,{sourceId});}});
 async function alignTaskbar(){if(appUrl!=='app://-/index.html'||process.platform!=='win32')return;try{await stat(path.join(root,'Align-Taskbar.exe'))}catch{return}try{const r=await promisify(execFile)(path.join(root,'Align-Taskbar.exe'),['--apply'],{windowsHide:true,timeout:8000});status.taskbar={updatedAt:new Date().toISOString(),result:r.stdout.trim()};}catch(e){status.taskbar={error:e.message}}}
 
 function prepareLayer(size,mime){
@@ -145,7 +149,7 @@ async function mount(c,target){
   try{
   await evaluateAsync(c,'('+installRealtime.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(source.frame.toString('base64'))+','+JSON.stringify({name:source.name,fps:source.profile.fps})+')');
   }catch(error){if(source!==realtime)await source.stop();throw error;}
-  if(source!==realtime){const previous=realtime;realtime=source;realtimeKey=source.key;if(previous)await previous.stop();}
+  if(source!==realtime){const previous=realtime;realtime=source;realtimeKey=source.key;source.onFrame=()=>{if(source===realtime)scheduleStream(0);};if(previous)await previous.stop();}
   if(c.webPlayer){await c.webPlayer.dispose();c.webPlayer=null;}
   if(c.captureObjectId)await c.call('Runtime.releaseObject',{objectId:c.captureObjectId}).catch(()=>{});c.captureObjectId=(await c.call('Runtime.evaluate',{expression:'window.__codexWallpaperBridge',returnByValue:false})).result.objectId;
   settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');
@@ -197,7 +201,7 @@ async function tick(){
     if(!c.installed){await mount(c,target);c.activeKey=activeWallpaperKey();}
     await reportMedia(c);const observed=await c.evaluate('window.__codexWallpaperBridge?.sample()');
     if(!observed){c.installed=false;continue}
-    targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':realtime?.paused?'realtime-capture-paused':Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed});
+    targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':observed.paused?'realtime-capture-paused':Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed,...(c.isRealtime?{delivery:c.captureTiming,deliveryError:c.captureError}:{} )});
     if(observed.mode==='realtime'){
      const age=Math.max(0,Math.floor((Date.now()-(realtime?.lastFrameAt||Date.now()))/1000));
      const note=`实时输出：${observed.width} × ${observed.height}，采集上限 ${observed.captureFps} FPS，已绘制 ${observed.frames} 帧。`+(observed.paused?'当前暂停采集/绘制，源引擎仍可能运行。':age>10?`已 ${age} 秒没有新画面，请检查源窗口或 Wallpaper Engine 暂停规则。`:'');
@@ -206,7 +210,7 @@ async function tick(){
     c.failures=0;c.retryAt=0;delete status.error;
    }catch(error){c.installed=false;c.failures=(c.failures||0)+1;c.retryAt=Date.now()+Math.min(30000,1000*2**Math.min(c.failures-1,5));c.lastError=error.message;Object.assign(targetState,{phase:'background-retrying',error:error.message,retryAt:new Date(c.retryAt).toISOString()});}
   }
-  status.targets=observations;const usable=observations.filter(t=>t.installed);status.phase=usable.some(t=>t.phase==='realtime-capture-active')?'realtime-capture-active':usable.find(t=>t.phase==='background-rendered')?.phase||usable[0]?.phase||(observations.length?'background-retrying':'waiting-for-target');status.targetErrors=observations.filter(t=>t.error).map(t=>({targetId:t.targetId,error:t.error}));status.realtime=realtime?{sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile}:null;await save();
+  status.targets=observations;const usable=observations.filter(t=>t.installed);status.phase=usable.some(t=>t.phase==='realtime-capture-active')?'realtime-capture-active':usable.find(t=>t.phase==='background-rendered')?.phase||usable[0]?.phase||(observations.length?'background-retrying':'waiting-for-target');status.targetErrors=observations.filter(t=>t.error).map(t=>({targetId:t.targetId,error:t.error}));status.selectedId=settings.selectedId;status.source=realtime?'native-window-capture-jpeg':usable.some(t=>t.mode==='webwallgl')?'sandboxed-webwallgl':'native-media-blob';status.realtime=realtime?{sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile,desktop:realtime.desktop}:null;await save();
  }catch(error){status.phase='waiting-for-cdp';status.error=error.message;await save()}
  finally{busy=false}
 }

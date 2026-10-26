@@ -154,8 +154,8 @@
     },
     {
       "path": "src/capture-scene.py",
-      "utf8Bytes": 7262,
-      "sha256": "ca8a1e1213110ca8cc59af5afb923585d339a2de751607fe05a37292145830d9"
+      "utf8Bytes": 7940,
+      "sha256": "05a71cd8495f5877b6f74a030960c5b8387a3e5dea3bc5a01ffa262ee7c784c4"
     },
     {
       "path": "src/capture-scene.py.lock",
@@ -164,8 +164,8 @@
     },
     {
       "path": "src/cdp-client.mjs",
-      "utf8Bytes": 1653,
-      "sha256": "7a58d651ac895697819e5b3913c469b47870cb0bc42cc02b98f130ae8cdd02a0"
+      "utf8Bytes": 1673,
+      "sha256": "ea1feb1e2e5d06dafadd3f6eadd55ad38335f4b454c8340168b7ac7bbb44107f"
     },
     {
       "path": "src/display-tiers.mjs",
@@ -179,8 +179,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 31935,
-      "sha256": "842dd7361e3d45f81d89de53741acf5882f5fd5c7c30f9766f53fe7119845cf0"
+      "utf8Bytes": 32252,
+      "sha256": "dd03a2d5d78b132cf5cb7b49697cd50467c4ad8d7b9855e3fb7722c5f1163ac9"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -209,13 +209,13 @@
     },
     {
       "path": "src/realtime-player.mjs",
-      "utf8Bytes": 2675,
-      "sha256": "fcd3c2c6d2238e87929169e66d2123510351ee9884bbda4837eb31056f4f3074"
+      "utf8Bytes": 3186,
+      "sha256": "eb21e23eadbf1f2ed7def4b54159426b38e9a779f2b599872ad6bf55425384a5"
     },
     {
       "path": "src/realtime-source.mjs",
-      "utf8Bytes": 7991,
-      "sha256": "4714cec13378f7ac5d66b23d05667c584f73d3752c66606066ed5efd026326f5"
+      "utf8Bytes": 10548,
+      "sha256": "5a32e0499fd177afe514be99f47683c6a3b31b861090a0eb65209dca14b1ec44"
     },
     {
       "path": "src/runtime-paths.mjs",
@@ -234,13 +234,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 28036,
-      "sha256": "083e57a5079902f89374f7ecbdcb8e48b5898f5ba1bd594d1573f9357ed4c743"
+      "utf8Bytes": 29604,
+      "sha256": "ac39658cc129a60d62168edbaf7d5f90739cb5a323f38e66b17d19ae660bf3e9"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 26953,
-      "sha256": "c6131ea631b750731b20bcdf3e04417a4294607040c855ead763b448dce97c90"
+      "utf8Bytes": 27354,
+      "sha256": "d5e4a16db4515afccb1ef3a569824b56063837c08b649e9839bde877198b4b0c"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -294,8 +294,8 @@
     },
     {
       "path": "test/display-tiers.test.mjs",
-      "utf8Bytes": 5812,
-      "sha256": "c2b02858854a74d5d1ae1967d50d5bdc94581ee1b877d31ab452566d9156ccb0"
+      "utf8Bytes": 5859,
+      "sha256": "fdf6022b0ae462256478ed30c2c449c4dda4c5bcc961bf4b4074b5ad09340c55"
     },
     {
       "path": "test/import-followup.test.mjs",

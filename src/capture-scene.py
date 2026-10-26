@@ -29,8 +29,10 @@ def main():
     parser.add_argument("--parent", type=int, required=True)
     parser.add_argument("--width", type=int, required=True)
     parser.add_argument("--height", type=int, required=True)
+    parser.add_argument("--quality", type=int, default=78)
+    parser.add_argument("--telemetry", action="store_true")
     args = parser.parse_args()
-    if not args.window.startswith("CodexWallpaperBridge-") or args.fps not in (12, 24, 30, 60):
+    if not args.window.startswith("CodexWallpaperBridge-") or args.fps not in (12, 24, 30, 60) or not 60 <= args.quality <= 96:
         raise ValueError("Invalid capture arguments")
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -119,8 +121,13 @@ def main():
                 return
             next_encoded = max(next_encoded + 1 / args.fps, now - 1 / args.fps)
             try:
-                bgr = frame.convert_to_bgr().frame_buffer
-                ok, encoded = cv2.imencode(".jpg", bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 78])
+                callback_at = time.time() * 1000
+                encode_start = time.perf_counter()
+                # The three-channel NumPy view has a four-byte pixel stride.
+                # OpenCV can encode contiguous BGRA directly; avoid its slow
+                # generic copy of that strided view. JPEG output is identical.
+                ok, encoded = cv2.imencode(".jpg", frame.frame_buffer, [int(cv2.IMWRITE_JPEG_QUALITY), args.quality])
+                encode_ms = (time.perf_counter() - encode_start) * 1000
             except Exception as error:
                 print(json.dumps({"event": "error", "message": str(error), "traceback": traceback.format_exc()}), file=sys.stderr, flush=True)
                 stopped.set()
@@ -128,6 +135,8 @@ def main():
                 return
             if ok:
                 data = encoded.tobytes()
+                if args.telemetry:
+                    data = struct.pack('<4sdfI', b'CWB1', callback_at, encode_ms, int(now * args.fps) % (2**32)) + data
                 if len(data) > 4 * 1024 * 1024:
                     raise RuntimeError("实时画面超过单帧大小限制，请降低分辨率")
                 with frame_lock:
