@@ -59,8 +59,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "utf8Bytes": 3476,
-      "sha256": "ddf1d1093b79b68116f07f68b0a320de8ce81e0b003f66015abd6e0a7d83f096"
+      "utf8Bytes": 3815,
+      "sha256": "e41bff20ce13a3d111b1e5da23128361a53834bae291633e09467703b0386fd3"
     },
     {
       "path": "docs/ARCHITECTURE.md",
@@ -119,8 +119,8 @@
     },
     {
       "path": "docs/UPSTREAM-SOURCES.json",
-      "utf8Bytes": 6064,
-      "sha256": "7ba80e4bfd3e7776e00c6483008d60389a918c15753ee6a779003ff5866ae123"
+      "utf8Bytes": 6571,
+      "sha256": "4ededf80bf8b3342972943e9f3298ebcdccad3b98b2f17b78ce4be22f33544b2"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -164,8 +164,8 @@
     },
     {
       "path": "src/capture-scene.py",
-      "utf8Bytes": 7940,
-      "sha256": "05a71cd8495f5877b6f74a030960c5b8387a3e5dea3bc5a01ffa262ee7c784c4"
+      "utf8Bytes": 8477,
+      "sha256": "a75e98ced674f5f362b2268a0af08a2a0afdd149f3a4bef38bd506d1bb11425b"
     },
     {
       "path": "src/capture-scene.py.lock",
@@ -179,8 +179,8 @@
     },
     {
       "path": "src/display-tiers.mjs",
-      "utf8Bytes": 2277,
-      "sha256": "3d6010e4559f52a54dd7b0a4a62b8af11aa92635e18c6da821ac5418db916ce6"
+      "utf8Bytes": 2275,
+      "sha256": "1f0dfd3a721a013cb7f1391d2a2a2b2411a43a914ec1742d620c329edb4bda7b"
     },
     {
       "path": "src/engine-library.mjs",
@@ -189,8 +189,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 32231,
-      "sha256": "27994f7b4d44de10d32faf747a2d1967e11b523c2bd7d825b137f09b2940867c"
+      "utf8Bytes": 31766,
+      "sha256": "859ca6955b0af728cfae5feaefe009a9efcaf7aa800949e7ddd064d77e188088"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -218,14 +218,19 @@
       "sha256": "9f1003a090e28d194ec59bb6c28c27a79bb16371e4dea19b2445218c852ac82c"
     },
     {
+      "path": "src/panel-window.mjs",
+      "utf8Bytes": 7628,
+      "sha256": "7741184133b073ee1c6ecc7a22034eb4da2dd16e3913cff8db201d98018a7953"
+    },
+    {
       "path": "src/realtime-player.mjs",
-      "utf8Bytes": 3186,
-      "sha256": "eb21e23eadbf1f2ed7def4b54159426b38e9a779f2b599872ad6bf55425384a5"
+      "utf8Bytes": 3422,
+      "sha256": "9e2cdd1c3ad05d9ba0a58833bceae3015596ca29f36c30be8504d9ebc287eb78"
     },
     {
       "path": "src/realtime-source.mjs",
-      "utf8Bytes": 10548,
-      "sha256": "5a32e0499fd177afe514be99f47683c6a3b31b861090a0eb65209dca14b1ec44"
+      "utf8Bytes": 10640,
+      "sha256": "2bc6032a7e71a58dba235fc3b6c90206437d10218b95506bf49d11c2ad0de4e7"
     },
     {
       "path": "src/runtime-paths.mjs",
@@ -244,23 +249,23 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 30665,
-      "sha256": "733543e04e928cd48ab284251e45acdd165797748103bb82b094758f7d469347"
+      "utf8Bytes": 31023,
+      "sha256": "5313cc5b290e0b571fd00d1837678d0688eaa8148f4c92c5d5567e612a132143"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 27598,
-      "sha256": "ca485b921666564a872b5d72dc3096c96fb52b967a1f344b81a398e2aeaaaedc"
+      "utf8Bytes": 28047,
+      "sha256": "f9f5c1e516d02dbad7f0cc7e12b4d58fb8777e82e66626f8e5584568b8d02836"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
-      "utf8Bytes": 8146,
-      "sha256": "9c144be1a8b67cb24e552989f506fb37c6775faf2be29d486b38191e17f867bf"
+      "utf8Bytes": 4561,
+      "sha256": "de9d1f192935405e4aa00489ca033985989c43b73831c94ba14e137d3009e059"
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 32612,
-      "sha256": "945c335805f772019db169a9432f1f33b57d40aa9a5d6cfce0393731c237d598"
+      "utf8Bytes": 25761,
+      "sha256": "4973ab18bcd0d2b8b96cd2eb39217a76510280ebcaea7f7518610e1cb56b2750"
     },
     {
       "path": "src/wallpaper-style.mjs",
@@ -274,8 +279,8 @@
     },
     {
       "path": "src/webwallgl-player.mjs",
-      "utf8Bytes": 17023,
-      "sha256": "364cb45d4bff5ab8ad6b789d9ca18db6240a6f45756686e120d6f43d1fc61282"
+      "utf8Bytes": 18149,
+      "sha256": "7f3aa553e3edc2fdc4516d093c05d6b242a8e7c1b35095ed4c999192ba102e38"
     },
     {
       "path": "src/webwallgl-source.mjs",
@@ -314,8 +319,8 @@
     },
     {
       "path": "test/integration.mjs",
-      "utf8Bytes": 21059,
-      "sha256": "d274805504d29d0bfc141299e4c2f2a69036627f66c3a17f037892c08e805f32"
+      "utf8Bytes": 21148,
+      "sha256": "8c247d4566eac46ef1c2f68fb7f387c11e576719b8a62087669b13ffe8063146"
     },
     {
       "path": "test/launch-policy.ps1",
@@ -344,18 +349,13 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 9089,
-      "sha256": "3b56c888cd0a6e4349435208afbe44b5e13fcb558b21b56c01ed4ee32daf4bc3"
-    },
-    {
-      "path": "test/power-saving.test.mjs",
-      "utf8Bytes": 1386,
-      "sha256": "02af53af6037858c3eca5dcbf6bf4945c41c974f96a472bc91e3cf942e610e10"
+      "utf8Bytes": 11808,
+      "sha256": "d4f823a0e586f15381d0ffbbad5df76efc7bb5da3ca28eaa932611d5dae67593"
     },
     {
       "path": "test/preflight.test.mjs",
-      "utf8Bytes": 3699,
-      "sha256": "a1e0b1ec09c75fc925935df87e600d4b43d8206a6a03b7022065318c2b804abc"
+      "utf8Bytes": 3662,
+      "sha256": "345ba52981e668bf1e99d9bec3cb95bc70aa42147f37d42dae5a525648b4de5f"
     },
     {
       "path": "test/surfaces.test.mjs",
@@ -369,8 +369,8 @@
     },
     {
       "path": "test/webwallgl-integration.mjs",
-      "utf8Bytes": 8369,
-      "sha256": "31eca1a6d26673cbf9572951ac3923de97f57ec1ba574b18975cdf50da48fbc4"
+      "utf8Bytes": 8376,
+      "sha256": "fd943e91a0e2629d038d2d862d6350f845a2cac57d57b51492b3eb1770b63a02"
     },
     {
       "path": "test/webwallgl-source.test.mjs",
@@ -441,6 +441,11 @@
       "path": "vendor/dsh-wallpaper/picker-model.js",
       "utf8Bytes": 10493,
       "sha256": "c89954a4f212dc147cf5274292ddab789bdb0491ca23b67ed4d4e53caa0a4e7d"
+    },
+    {
+      "path": "vendor/dsh-wallpaper/renderer.js",
+      "utf8Bytes": 10575,
+      "sha256": "ccad8776a6593e05305c723aa377466fd8f87b3d35a2606a2308e014544886f7"
     },
     {
       "path": "vendor/webwallgl/LICENSE",

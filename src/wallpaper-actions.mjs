@@ -32,7 +32,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   const project=await describeProject(projectRoot);
   if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
   if(renderer==='webwallgl'&&project.type!=='scene')throw Error('网页 WebWallGL 资源通道尚未通过验收，请选择原生实时模式');
-  const limits=realtimeProfile(profile||settings.playback),token=randomUUID();
+  const limits={...realtimeProfile(profile||settings.playback),...(profile?.exactResolution?{exactResolution:true}:{})},token=randomUUID();
   for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
   confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer,duplicatePolicy,nativeFull});
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
@@ -44,6 +44,13 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const profile=services.nativeProfile?await services.nativeProfile(c,projectRoot):{maxWidth:3840,maxHeight:2160,fps:30,jpegQuality:92};
    return requestRealtime(c,projectRoot,true,profile,'native','use',true);
   }
+  if(req.action==='display-renderer'){
+   if(!['native','webwallgl'].includes(req.renderMode))throw Error('请选择渲染方式');
+   const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');const projectRoot=entry.projectRoot||(entry.workshopId?await findWorkshopProject(entry.workshopId):null);if(!projectRoot)throw Error('此素材没有完整场景');
+   const profile=entry.displayTier==='full'?(services.nativeProfile?await services.nativeProfile(c,projectRoot):{maxWidth:3840,maxHeight:2160,fps:30,jpegQuality:92}):{...(entry.limits||settings.playback)};
+   if(req.renderMode==='webwallgl'){delete profile.jpegQuality;if(entry.displayTier==='full')profile.exactResolution=true;}
+   return requestRealtime(c,projectRoot,true,profile,req.renderMode,'use',entry.displayTier==='full');
+  }
   if(req.action==='scene-quality'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(entry?.mode!=='webwallgl'||entry.displayTier==='static')throw Error('请先启用 WebGL 动态场景，再调整场景画质');
    const {particles,postProcessing,antiAliasing,videoTexScale}=req;
@@ -54,7 +61,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   }
   if(req.action==='display-tier'){
    const tier=DISPLAY_TIERS[req.tier],entry=settings.library.find(e=>e.id===settings.selectedId);if(!tier||!entry)throw Error('请选择壁纸和有效显示档位');
-   if(req.tier==='full'&&(entry.projectRoot||entry.workshopId)){
+   if(req.tier==='full'&&entry.mode!=='webwallgl'&&(entry.projectRoot||entry.workshopId)){
     const projectRoot=entry.projectRoot||await findWorkshopProject(entry.workshopId),project=await describeProject(projectRoot);
     if(['scene','web'].includes(project.type))return action(c,{action:'display-native'});
    }
@@ -66,7 +73,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
     if(req.tier==='static'){
      if(!entry.staticFile||entry.displayTier!=='static'){if(typeof services.captureStatic!=='function')throw Error('当前环境不支持生成静态画面');created=await services.captureStatic(entry);entry.staticFile=created;}
     }else if(req.tier!=='custom'){
-     const limits=realtimeProfile(tier);
+     const limits=realtimeProfile(req.tier==='full'?{...tier,maxHeight:2160}:tier);if(req.tier==='full'&&entry.mode==='webwallgl')limits.exactResolution=true;
      if(['webwallgl','realtime'].includes(entry.mode)){entry.limits=limits;entry.quality={antiAliasing:req.tier==='full'?(entry.customDisplay?.quality?.antiAliasing||entry.quality?.antiAliasing||'fxaa'):'off',particles:tier.particles,postProcessing:tier.postProcessing};entry.videoTexScale=tier.videoTexScale;}
      else if(entry.mime?.startsWith('video/')||entry.mime==='image/gif'){
       const converted=await convertMedia(root,entry.sourcePath||path.join(root,entry.sourceFile||entry.file),entry.sourceMime||entry.mime,entry.id,limits);
@@ -121,7 +128,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey);
    if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
    const entry=existing||{id:randomUUID(),name:project.name+(mode==='webwallgl'?' · WebGL':' · 实时'),mode,scripts:mode==='webwallgl',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
-   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
+   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
    try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
@@ -135,18 +142,6 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    try{if(wasActive)await apply();await saveConfig(root,settings)}catch(e){settings.library.splice(index,0,entry);settings.selectedId=selected;if(wasActive)await apply();throw e}
    for(const file of [entry.file,entry.sourceFile,entry.sourcePath,entry.staticFile])await removeManagedFile(root,settings,file);
    return {config:settings,message:'已从 Codex 删除并清理专属缓存；Wallpaper Engine 原文件不变。'};
-  }
-  if(req.action==='power-saving'){
-   const previous={pause:settings.pauseOnBlur,playback:settings.playback};
-   settings.pauseOnBlur=true;
-   try{
-    await applyAppearance();
-    const entry=settings.library.find(e=>e.id===settings.selectedId);
-    const needsPlayback=entry&&(['realtime','webwallgl'].includes(entry.mode)||entry.limits?.maxWidth!==960||(entry.mime?.startsWith('video/')&&entry.limits?.fps!==12));
-    if(entry)await action(c,{action:'playback',maxWidth:960,fps:12});
-    if(!needsPlayback){settings.playback={maxWidth:960,fps:12};await saveConfig(root,settings);}
-   }catch(error){settings.pauseOnBlur=previous.pause;settings.playback=previous.playback;await applyAppearance();throw error;}
-   return {config:settings,message:'已应用省电设置：960 / 12 FPS，失去焦点时暂停。'};
   }
   if(req.action==='playback'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('当前壁纸不存在');
@@ -172,7 +167,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const projectRoot=resolved?.root||(workshopId?await findWorkshopProject(workshopId):null);
    if((req.renderMode||'auto')==='auto'&&projectRoot&&resolved?.kind!=='media'){
     const inspection=await inspectEngineProject(projectRoot);
-    if(inspection.needsRealtime){const project=await describeProject(projectRoot),existing=duplicateEntry(settings,{mode:'realtime',sourceKey:project.sourceKey});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,'native',req.duplicatePolicy)}
+    if(inspection.needsRealtime){const project=await describeProject(projectRoot),renderer=inspection.mode==='webwallgl'?'webwallgl':'native',existing=duplicateEntry(settings,{mode:renderer==='webwallgl'?'webwallgl':'realtime',sourceKey:project.sourceKey});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,renderer,req.duplicatePolicy)}
    }
    if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type)){const existing=duplicateEntry(settings,{mode:req.renderMode,sourceKey:project.sourceKey});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native',req.duplicatePolicy)}}
    let contentHash;if(resolved?.kind==='media'){contentHash=await hashMedia(resolved.file);await populateHashes();}const existing=duplicateEntry(settings,{sourceKey:resolved?.sourceKey,workshopId,contentHash});

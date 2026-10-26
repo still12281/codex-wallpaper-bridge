@@ -39,9 +39,9 @@ async function desktopSettings(engine,projectRoot){
  return {fps:Number.isFinite(fps)?fps:30,properties};
  }catch{return {fps:30,properties:{}};}
 }
-export async function nativeFullProfile(projectRoot,viewport={width:1920,height:1080}){
- const desktop=await desktopSettings(await executable(),projectRoot),width=[960,1280,1920,2560,3840].find(w=>w>=Math.min(3840,Math.max(960,Number(viewport.width)||1920)))||3840,ratio=Math.max(.5,Math.min(3,(Number(viewport.width)||1920)/(Number(viewport.height)||1080)));
- return realtimeProfile({maxWidth:width,maxHeight:Math.min(4320,Math.floor(width/ratio/2)*2),fps:[60,30,24,12].find(f=>f<=desktop.fps)||12,jpegQuality:92});
+export async function nativeFullProfile(projectRoot){
+ const desktop=await desktopSettings(await executable(),projectRoot);
+ return realtimeProfile({maxWidth:3840,maxHeight:2160,fps:[60,30,24,12].find(f=>f<=desktop.fps)||12,jpegQuality:92});
 }
 let latestDiagnosticId=0;
 export async function startRealtime(entry,dataRoot){
@@ -72,11 +72,6 @@ export async function startRealtime(entry,dataRoot){
  };
  runtime.setPaused=paused=>{runtime.paused=paused;if(!paused)runtime.resumedAt=Date.now();if(runtime.helper?.stdin.writable)runtime.helper.stdin.write(paused?'PAUSE\n':'RESUME\n',()=>{})};
  try{
-  await report('opening-engine-window',{window:name,profile});
-  await invoke(engine,['-control','openWallpaper','-file',path.join(project.root,'project.json'),'-playInWindow',name,'-width',String(profile.maxWidth),'-height',String(profile.maxHeight),'-x','-32000','-y','-32000','-borderless'],{windowsHide:true,timeout:15000});
-  const desktop=await desktopSettings(engine,project.root);
-  if(Object.keys(desktop.properties).length)await invoke(engine,['-control','applyProperties','-properties','RAW~('+JSON.stringify(desktop.properties)+')~END','-location',name],{windowsHide:true,windowsVerbatimArguments:true,timeout:8000});
-  runtime.desktop={configuredFps:desktop.fps,propertyCount:Object.keys(desktop.properties).length};
   const child=runtime.helper=spawn(interpreter,[helper,'--window',name,'--fps',String(profile.fps),'--width',String(profile.maxWidth),'--height',String(profile.maxHeight),'--quality',String(profile.jpegQuality||78),'--telemetry','--parent',String(process.pid)],{windowsHide:true,stdio:['pipe','pipe','pipe'],env:captureEnv});
   await report('capture-process-started',{pid:child.pid});let buffer=Buffer.alloc(0),stderr='',stderrLine='';const decoder=new StringDecoder('utf8');
   child.stdout.on('data',chunk=>{
@@ -88,6 +83,14 @@ export async function startRealtime(entry,dataRoot){
   child.on('error',e=>{runtime.error='采集助手启动失败：'+e.message});
   child.on('exit',(code,signal)=>{report('capture-process-exited',{code,signal,stderr}).catch(()=>{});if(!runtime.closed)runtime.error=runtime.error||'采集助手已退出（'+code+'）：'+stderr.slice(-600)});
   child.stdin.on('error',()=>{});
+  // Prepare the capture interpreter before asking WE to create any window.
+  const waitingDeadline=Date.now()+10000;
+  while(!diagnostic.events.some(e=>e.phase==='helper-waiting')){if(runtime.error)throw Error(runtime.error);if(Date.now()>waitingDeadline)throw Error('采集助手未进入窗口隔离准备态');await new Promise(resolve=>setTimeout(resolve,10));}
+  await report('opening-engine-window',{window:name,profile});
+  await invoke(engine,['-control','openWallpaper','-file',path.join(project.root,'project.json'),'-playInWindow',name,'-width',String(profile.maxWidth),'-height',String(profile.maxHeight),'-x','-32000','-y','-32000','-borderless'],{windowsHide:true,timeout:15000});
+  const desktop=await desktopSettings(engine,project.root);
+  if(Object.keys(desktop.properties).length)await invoke(engine,['-control','applyProperties','-properties','RAW~('+JSON.stringify(desktop.properties)+')~END','-location',name],{windowsHide:true,windowsVerbatimArguments:true,timeout:8000});
+  runtime.desktop={configuredFps:desktop.fps,propertyCount:Object.keys(desktop.properties).length};
   const deadline=Date.now()+35000;
   while(Date.now()<deadline){if(runtime.error)throw Error(runtime.error);if(runtime.frame){await report('first-frame',{sequence:runtime.sequence,hwnd:runtime.hwnd});return runtime}await new Promise(resolve=>setTimeout(resolve,100))}
   throw Error('实时场景未收到首帧，请检查专用渲染窗口是否正常显示');

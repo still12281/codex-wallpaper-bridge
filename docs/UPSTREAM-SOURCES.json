@@ -120,6 +120,16 @@
       "originalSha256": "7e9b1369d6e6a9da5c088ff73cf1bd1ed0c0b0ea3a64cce3d5caccff95df34ea",
       "canonicalSha256": "7e9b1369d6e6a9da5c088ff73cf1bd1ed0c0b0ea3a64cce3d5caccff95df34ea",
       "modified": false
+    },
+    {
+      "component": "dsh-wallpaper-engine",
+      "repository": "https://github.com/elysia395/dsh-wallpaper-engine",
+      "commit": "3b0103bc1d5431840208966ce67155f392c4095c",
+      "originalPath": "lib/webwallgl/renderer.js",
+      "vendoredPath": "vendor/dsh-wallpaper/renderer.js",
+      "originalSha256": "ccad8776a6593e05305c723aa377466fd8f87b3d35a2606a2308e014544886f7",
+      "canonicalSha256": "ccad8776a6593e05305c723aa377466fd8f87b3d35a2606a2308e014544886f7",
+      "modified": false
     }
   ]
 }

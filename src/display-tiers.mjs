@@ -5,7 +5,7 @@ export const DISPLAY_TIERS={
  economy:{name:'省电',maxWidth:960,fps:12,postProcessing:'low',particles:'low',videoTexScale:.5,audioFps:0,description:'960 / 12 FPS；保留基础动画，停用频谱、视差与互动装饰'},
  balanced:{name:'均衡',maxWidth:1280,fps:24,postProcessing:'medium',particles:'medium',videoTexScale:.5,audioFps:20,description:'1280 / 24 FPS；保留效果链，频谱最多 20 次/秒'},
  smooth:{name:'高画质',maxWidth:1920,fps:30,postProcessing:'high',particles:'high',videoTexScale:.75,audioFps:30,description:'1920 / 30 FPS；保留效果链，频谱最多 30 次/秒'},
- full:{name:'最高画质',maxWidth:3840,fps:60,postProcessing:'high',particles:'high',videoTexScale:1,audioFps:60,description:'完整项目经确认使用原生效果与音频；普通媒体最高 3840 / 60 FPS，不补帧'},
+ full:{name:'最高画质',maxWidth:3840,fps:60,postProcessing:'high',particles:'high',videoTexScale:1,audioFps:60,description:'3840 × 2160 渲染；可选择 GPU 场景或原版兼容，按窗口缩放显示，不补帧'},
  custom:{name:'自定义',audioFps:60,description:'保留当前具体参数，在高级设置中分别调整'}
 };
 export const selectedEntry=settings=>settings.library?.find(e=>e.id===settings.selectedId);

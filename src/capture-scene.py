@@ -43,6 +43,8 @@ def main():
     user32.GetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int]
     user32.GetWindowLongW.restype = wintypes.LONG
     user32.SetWindowLongW.argtypes = [wintypes.HWND, ctypes.c_int, wintypes.LONG]
+    user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+    user32.GetWindowRect.restype = wintypes.BOOL
     callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
     user32.EnumWindows.argtypes = [callback_type, wintypes.LPARAM]
     kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
@@ -76,6 +78,7 @@ def main():
 
     threading.Thread(target=commands, daemon=True).start()
     try:
+        print(json.dumps({"event": "waiting"}), file=sys.stderr, flush=True)
         deadline = time.monotonic() + 25
         while not stopped.is_set() and time.monotonic() < deadline:
             matches = []
@@ -97,7 +100,7 @@ def main():
             if kernel32.WaitForSingleObject(parent, 0) != 0x102:
                 stopped.set()
                 break
-            stopped.wait(0.15)
+            stopped.wait(0.005)
         if not hwnd:
             raise RuntimeError("没有找到 Wallpaper Engine 专用渲染窗口，请检查 Wallpaper Engine 是否正常运行")
         # Keep it renderable, behind other windows. Do not hide or minimize it.
@@ -105,8 +108,12 @@ def main():
         user32.SetWindowLongW(hwnd, -16, style & ~0x00CF0000)
         extended_style = user32.GetWindowLongW(hwnd, -20)
         user32.SetWindowLongW(hwnd, -20, (extended_style & ~0x00040000) | 0x08000080)
-        user32.SetWindowPos(hwnd, wintypes.HWND(1), -32000, -32000, args.width, args.height, 0x0030)
-        print(json.dumps({"event": "window", "hwnd": int(hwnd)}), file=sys.stderr, flush=True)
+        if not user32.SetWindowPos(hwnd, wintypes.HWND(1), -32000, -32000, args.width, args.height, 0x0030):
+            raise ctypes.WinError(ctypes.get_last_error())
+        rect = wintypes.RECT()
+        if not user32.GetWindowRect(hwnd, ctypes.byref(rect)) or rect.left != -32000 or rect.top != -32000:
+            raise RuntimeError("专用壁纸窗口隔离失败")
+        print(json.dumps({"event": "window", "hwnd": int(hwnd), "rect": [rect.left, rect.top, rect.right, rect.bottom]}), file=sys.stderr, flush=True)
         capture = WindowsCapture(cursor_capture=False, draw_border=None, window_hwnd=int(hwnd))
         next_encoded = 0.0
 
