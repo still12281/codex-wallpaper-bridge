@@ -234,8 +234,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 27193,
-      "sha256": "fc28ae153d6499fb915c886886ff7c31ef150b9d484647c451b0ae079e9646c5"
+      "utf8Bytes": 28036,
+      "sha256": "083e57a5079902f89374f7ecbdcb8e48b5898f5ba1bd594d1573f9357ed4c743"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -319,8 +319,8 @@
     },
     {
       "path": "test/lifetime-integration.mjs",
-      "utf8Bytes": 3329,
-      "sha256": "8b2a5f8209b8de6873c23a6ae0d656aa1f629231aafae2908255606ed6f1355f"
+      "utf8Bytes": 3732,
+      "sha256": "01733e6cd71ce22314ba282577c4bc59f4c5420b7f3466d22097f83939be05db"
     },
     {
       "path": "test/media-power.test.mjs",

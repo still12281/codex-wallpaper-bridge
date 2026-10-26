@@ -51,8 +51,7 @@ const evaluateAsync=async(c,expression)=>{const result=await c.call('Runtime.eva
 async function stopRealtime(){const previous=realtime;realtime=null;realtimeKey=null;if(previous)await previous.stop()}
 async function ensureRealtime(entry){
  const key=JSON.stringify([entry.id,entry.projectRoot,entry.limits]);if(realtimeKey===key&&realtime&&!realtime.error&&!realtime.closed)return realtime;
- const next=await startRealtime(entry,root),previous=realtime;realtime=next;realtimeKey=key;
- if(previous)await previous.stop();return next;
+ const next=await startRealtime(entry,root);next.key=key;return next;
 }
 async function stream(){
  if(stopped)return;
@@ -143,7 +142,10 @@ async function mount(c,target){
  if(!entry){await stopRealtime();await c.evaluate('window.__cwbDecorations?.dispose();window.__cwbWidgets?.dispose?.();delete window.__cwbWidgets;window.__codexWallpaperBridge?.dispose?.();window.__cwbLayout?.dispose?.();delete window.__cwbLayout;document.getElementById("codex-wallpaper-bridge-layer")?.remove();document.getElementById("codex-wallpaper-bridge-style")?.remove();window.__codexWallpaperBridge={disabled:true,sample:()=>({ready:false,disabled:true,paused:true})};true');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;setImmediate(()=>global.gc?.());return}
  if(entry.mode==='realtime'){
   const source=await ensureRealtime(entry);
+  try{
   await evaluateAsync(c,'('+installRealtime.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(source.frame.toString('base64'))+','+JSON.stringify({name:source.name,fps:source.profile.fps})+')');
+  }catch(error){if(source!==realtime)await source.stop();throw error;}
+  if(source!==realtime){const previous=realtime;realtime=source;realtimeKey=source.key;if(previous)await previous.stop();}
   if(c.webPlayer){await c.webPlayer.dispose();c.webPlayer=null;}
   if(c.captureObjectId)await c.call('Runtime.releaseObject',{objectId:c.captureObjectId}).catch(()=>{});c.captureObjectId=(await c.call('Runtime.evaluate',{expression:'window.__codexWallpaperBridge',returnByValue:false})).result.objectId;
   settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');
@@ -174,18 +176,20 @@ async function tick(){
  try{
   const list=await(await fetch('http://127.0.0.1:'+port+'/json/list',{signal:AbortSignal.timeout(2000)})).json();
   const targets=list.filter(t=>t.type==='page'&&(t.url===appUrl||(appUrl==='app://-/index.html'&&t.url.startsWith('app://-/detached-window.html'))));
+  const observations=[];
   const webTargets=list.filter(t=>t.type==='webview'&&t.url.startsWith('https://chatgpt.com/'));
   for(const [id,c]of embeddedSessions)if(!webTargets.some(t=>t.id===id)){c.close();embeddedSessions.delete(id)}
   for(const target of webTargets){try{let c=embeddedSessions.get(target.id);if(!c||c.ws.readyState!==1){c=await connectCdp(target.webSocketDebuggerUrl);embeddedSessions.set(target.id,c)}await c.call('Emulation.setDefaultBackgroundColorOverride',settings.surfaceSync?.embedded===false?{}:{color:{r:0,g:0,b:0,a:0}});await c.evaluate('('+paintEmbedded.toString()+')('+JSON.stringify(displaySettings(settings))+')')}catch(error){status.embeddedError=error.message}}
   if(!targets.length){await stopRealtime();status.phase='waiting-for-target';status.targets=[];await save()}
   for(const [id,c]of sessions)if(!targets.some(t=>t.id===id)){c.close();sessions.delete(id)}
   for(const target of targets){
+   const targetState={targetId:target.id,url:target.url,installed:false,ready:false,phase:'waiting-for-shell'};observations.push(targetState);
    if(!new RegExp('^ws://127\\.0\\.0\\.1:'+port+'/devtools/page/[A-Za-z0-9-]+$').test(target.webSocketDebuggerUrl))continue;
    let c=sessions.get(target.id);if(!c||c.ws.readyState!==1){c=await connectCdp(target.webSocketDebuggerUrl);sessions.set(target.id,c);c.token=randomUUID();await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});c.ws.addEventListener('message',event=>{let e;try{e=JSON.parse(event.data)}catch{return}if(e.method!=='Runtime.bindingCalled')return;if(e.params.name==='__cwbMediaActivitySend'){try{const a=JSON.parse(e.params.payload);if(a.token===c.token)c.mediaActivity=a;}catch{}return;}if(e.params.name!=='__codexWallpaperSend')return;let req;try{req=JSON.parse(e.params.payload)}catch{return}if(req.token!==c.token)return;actionQueue=actionQueue.then(async()=>{while(busy||streaming)await sleep(25);acting=true;try{const result=await actions(c,req);await c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:true,...result})+')')}catch(error){await c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:false,error:error.message})+')').catch(()=>{})}finally{await reportMedia(c).catch(()=>{});acting=false}})})}
    if(!await c.evaluate(target.url.startsWith('app://-/detached-window.html')?'!!document.body':'!!document.querySelector("aside.app-shell-left-panel")&&!!document.querySelector("main[data-app-shell-main-surface],main[class*=\\"_MainContentSurface_\\"],main.main-surface")'))continue;
    const tree=await c.call('Page.getFrameTree');
    if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.failed=false;c.retryAt=0;c.failures=0;c.mediaActivity=null;await c.call('Runtime.addBinding',{name:'__cwbMediaActivitySend'});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});await alignTaskbar()}
-   if(c.retryAt&&Date.now()<c.retryAt)continue;
+   if(c.retryAt&&Date.now()<c.retryAt){Object.assign(targetState,{phase:'background-retrying',error:c.lastError,retryAt:new Date(c.retryAt).toISOString()});continue;}
    try{
     if(c.webPlayer&&c.installed){const failure=await c.evaluate('window.__codexWallpaperBridge?.error');if(failure){const fallback=settings.library.find(e=>e.id===settings.realtimeFallbackId&&!['webwallgl','realtime'].includes(e.mode));settings.selectedId=fallback?.id||null;await mount(c,target);await configureMedia(settings.systemMedia);await saveConfig(root,settings);await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbRuntimeError?.('+JSON.stringify('WebGL 场景错误：'+failure+'；已恢复可用背景。')+');true');}}
     const healthy=await c.evaluate('(()=>{const s=window.__codexWallpaperBridge,controls=document.getElementById("codex-wallpaper-controls");if(!s||s.error||!controls?.isConnected)return false;if(s.disabled)return true;const layer=document.getElementById("codex-wallpaper-bridge-layer");return !!(layer?.isConnected&&layer.shadowRoot?.firstElementChild?.isConnected&&document.getElementById("codex-wallpaper-bridge-style")?.isConnected)})()');
@@ -193,15 +197,16 @@ async function tick(){
     if(!c.installed){await mount(c,target);c.activeKey=activeWallpaperKey();}
     await reportMedia(c);const observed=await c.evaluate('window.__codexWallpaperBridge?.sample()');
     if(!observed){c.installed=false;continue}
-    status.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':realtime?.paused?'realtime-capture-paused':Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';status.targets=[{targetId:target.id,installed:true,...observed}];status.realtime=realtime?{sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile}:null;await save();
+    targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':realtime?.paused?'realtime-capture-paused':Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed});
     if(observed.mode==='realtime'){
      const age=Math.max(0,Math.floor((Date.now()-(realtime?.lastFrameAt||Date.now()))/1000));
      const note=`实时输出：${observed.width} × ${observed.height}，采集上限 ${observed.captureFps} FPS，已绘制 ${observed.frames} 帧。`+(observed.paused?'当前暂停采集/绘制，源引擎仍可能运行。':age>10?`已 ${age} 秒没有新画面，请检查源窗口或 Wallpaper Engine 暂停规则。`:'');
      await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbCaptureStats?.('+JSON.stringify(note)+');true');
     }
     c.failures=0;c.retryAt=0;delete status.error;
-   }catch(error){c.installed=false;c.failures=(c.failures||0)+1;c.retryAt=Date.now()+Math.min(30000,1000*2**Math.min(c.failures-1,5));status.phase='background-retrying';status.error=error.message;status.retryAt=new Date(c.retryAt).toISOString();await save()}
+   }catch(error){c.installed=false;c.failures=(c.failures||0)+1;c.retryAt=Date.now()+Math.min(30000,1000*2**Math.min(c.failures-1,5));c.lastError=error.message;Object.assign(targetState,{phase:'background-retrying',error:error.message,retryAt:new Date(c.retryAt).toISOString()});}
   }
+  status.targets=observations;const usable=observations.filter(t=>t.installed);status.phase=usable.some(t=>t.phase==='realtime-capture-active')?'realtime-capture-active':usable.find(t=>t.phase==='background-rendered')?.phase||usable[0]?.phase||(observations.length?'background-retrying':'waiting-for-target');status.targetErrors=observations.filter(t=>t.error).map(t=>({targetId:t.targetId,error:t.error}));status.realtime=realtime?{sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile}:null;await save();
  }catch(error){status.phase='waiting-for-cdp';status.error=error.message;await save()}
  finally{busy=false}
 }

@@ -21,6 +21,9 @@ try{
  const version=await until(async()=>{const r=await fetch('http://127.0.0.1:'+port+'/json/version');return r.json()});connection=await connectCdp(version.webSocketDebuggerUrl);
  host=spawn(process.execPath,[path.resolve('src/video-cdp-host.mjs'),'--cdp-port',String(port),'--test-url',url],{env:{...process.env,CODEX_WALLPAPER_DATA_DIR:data},windowsHide:true,stdio:['ignore','ignore','pipe']});host.stderr.on('data',b=>errors+=b.toString());
  await until(async()=>JSON.parse(await readFile(path.join(data,'runtime-status.json'),'utf8')).phase==='background-disabled');
+ const second=await connection.call('Target.createTarget',{url,background:true});
+ const observed=await until(async()=>{const s=JSON.parse(await readFile(path.join(data,'runtime-status.json'),'utf8'));return s.targets.length===2&&s.targets.every(t=>t.installed)&&s;});
+ assert.ok(observed.targets.some(t=>t.targetId===second.targetId));assert.equal(new Set(observed.targets.map(t=>t.targetId)).size,2);
  const exited=new Promise(resolve=>host.once('exit',(code,signal)=>resolve({code,signal})));
  await connection.call('Browser.close').catch(()=>{});
  const result=await Promise.race([exited,pause(5000).then(()=>{throw Error('Wallpaper host stayed alive after browser disconnect')})]);
