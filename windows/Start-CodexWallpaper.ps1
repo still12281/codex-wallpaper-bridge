@@ -82,6 +82,7 @@ try {
   $taskStatus.initialProcessIds=@($taskInitial.Id)
   if($InspectOnly){$taskStatus.phase='inspect-only';$taskStatus.updatedAt=[DateTimeOffset]::UtcNow.ToString('o');$taskStatus | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $taskRoot 'entry-inspect-status.json') -Encoding utf8 -ErrorAction Stop;$taskStatus | ConvertTo-Json -Depth 8;exit 0}
   $taskIdentity=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
+  $taskReuseExisting=$null -ne $taskIdentity
   if($null -eq $taskIdentity) {
     if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '9335 已被其他进程占用，未更改该进程。'}
     if($taskInitial.Count -gt 0 -and $WaitForClientExit) {
@@ -169,6 +170,19 @@ try {
   $taskVerifiedRoot=Get-Process -Id $taskStatus.debugRootPid -ErrorAction Stop
   $taskStatus.rootStartedAtUtc=$taskVerifiedRoot.StartTime.ToUniversalTime().ToString('o')
   $taskStatus.rootExecutable=$taskVerifiedRoot.MainModule.FileName
+  if($taskReuseExisting){
+    if(-not (Test-DreamSkinPathEqual -Left $taskStatus.rootExecutable -Right "$($taskCodex.Executable)")){throw '现有客户端与已注册包版本不同，保留现有客户端并停止跨版本激活。'}
+    $taskStatus.reactivationPid=Start-DreamSkinCodex -Codex $taskCodex -Arguments @()
+    Start-Sleep -Milliseconds 500
+    $taskAfterActivation=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
+    $taskSameRoot=Get-Process -Id $taskStatus.debugRootPid -ErrorAction Stop
+    if($null -eq $taskAfterActivation -or $taskAfterActivation.BrowserId -ne $taskIdentity.BrowserId -or $taskSameRoot.StartTime.ToUniversalTime().ToString('o') -ne $taskStatus.rootStartedAtUtc){throw '唤回时客户端身份发生变化，未关闭或替换任何客户端。'}
+    $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId
+    if($LASTEXITCODE -ne 0){throw '未能唤回 Codex 主窗口，已有客户端已保留。'}
+    $taskStatus.mainTargetId=($taskActivationResult | ConvertFrom-Json).mainTarget
+    Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses) $taskStatus.debugRootPid
+    $taskStatus.existingMainWindowReopened=$true
+  }
   Save-TaskPhase 'cdp-verified-starting-wallpaper-host'
   $taskRuntime=Join-Path $taskRoot 'runtime-status.json'
   $taskHostAlreadyRunning=$false
@@ -177,8 +191,9 @@ try {
     try{$taskPrevious=Get-Content -LiteralPath $taskRuntime -Raw -ErrorAction Stop|ConvertFrom-Json
       $taskProcessInfo=Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$taskPrevious.pid)" -ErrorAction Stop
       $taskHostAge=([DateTimeOffset]::UtcNow-([DateTimeOffset]$taskPrevious.updatedAt)).TotalSeconds
-      $taskHostAlreadyRunning=$taskProcessInfo -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and $taskProcessInfo.CommandLine.Contains((Join-Path $taskCodeRoot 'src/video-cdp-host.mjs')) -and $taskPrevious.browserId -eq $taskIdentity.BrowserId -and $taskHostAge -ge 0 -and $taskHostAge -lt 12
-      $taskConflictingHost=$taskProcessInfo -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and -not $taskHostAlreadyRunning
+      $taskKnownScript=$taskProcessInfo -and (@((Join-Path $taskCodeRoot 'src/video-cdp-host.mjs'),(Join-Path $taskRoot 'app/src/video-cdp-host.mjs'),(Join-Path $taskRoot 'video-cdp-host.mjs')) | Where-Object {$taskProcessInfo.CommandLine.Replace('/','\').Contains($_.Replace('/','\'))}).Count -gt 0
+      $taskHostAlreadyRunning=$taskKnownScript -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and $taskPrevious.browserId -eq $taskIdentity.BrowserId -and $taskHostAge -ge 0 -and $taskHostAge -lt 12
+      $taskConflictingHost=$taskKnownScript -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and -not $taskHostAlreadyRunning
     }catch{}
   }
   if($taskConflictingHost){throw '已有壁纸宿主仍在运行，但状态过期或身份不匹配；已停止重复启动。请检查 runtime-status.json 和日志，当前 Codex 已保留。'}
@@ -195,7 +210,7 @@ try {
         $taskAge=([DateTimeOffset]::UtcNow-([DateTimeOffset]$taskRuntimeState.updatedAt)).TotalSeconds
         $taskFresh=$taskAge -ge 0 -and $taskAge -lt 12
         $taskGoodPhase=$taskRuntimeState.phase -in @('background-rendered','background-disabled','realtime-capture-active','realtime-capture-paused')
-        $taskReadyTargets=@($taskRuntimeState.targets | Where-Object {$_.installed -and ($_.ready -or $_.disabled) -and ($_.mode -ne 'realtime' -or $_.frames -gt 0)})
+        $taskReadyTargets=@($taskRuntimeState.targets | Where-Object {$_.installed -and ($_.ready -or $_.disabled) -and ($_.mode -ne 'realtime' -or $_.frames -gt 0) -and ($(if($taskStatus.mainTargetId){$_.targetId -eq $taskStatus.mainTargetId}else{$_.url -eq 'app://-/index.html'}))})
         if($taskGoodPhase -and $taskReadyTargets.Count -gt 0 -and $taskRuntimeState.pid -eq $taskStatus.hostPid -and $taskRuntimeState.browserId -eq $taskIdentity.BrowserId -and $taskFresh){$taskRendered=$true;break}
       }catch{}
     }

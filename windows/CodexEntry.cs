@@ -5,6 +5,9 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 internal static class CodexEntry {
+ [ComImport,Guid("45BA127D-10A8-46EA-8AB7-56EA9078943C")] private class PackageActivator {}
+ [ComImport,Guid("2E941141-7F97-4756-BA1D-9DECDE894A3D"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+ private interface IPackageActivator {[PreserveSig]int ActivateApplication([MarshalAs(UnmanagedType.LPWStr)]string app,[MarshalAs(UnmanagedType.LPWStr)]string arguments,uint options,out uint processId);}
  [DllImport("shell32.dll", CharSet=CharSet.Unicode)]
  private static extern int SetCurrentProcessExplicitAppUserModelID(string id);
  private static string FindRuntime(string environmentName,string setting,string executable,string standard) {
@@ -20,23 +23,21 @@ internal static class CodexEntry {
  private static string FindPowerShell(){return FindRuntime("CODEX_WALLPAPER_PWSH","powerShell","pwsh.exe",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),"PowerShell","7","pwsh.exe"));}
  private static string FindNode(){return FindRuntime("CODEX_WALLPAPER_NODE","node","node.exe",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),"nodejs","node.exe"));}
 
- [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr handle);
- [DllImport("user32.dll")] static extern bool IsIconic(IntPtr handle);
- [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr handle,int command);
  static System.Collections.Generic.Dictionary<string,object> Read(string root,string file){return new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,file)));}
  static bool Starting(string root){try{var s=Read(root,"launch-status.json");string phase=Convert.ToString(s["phase"]);if(phase=="failed"||phase=="inspect-only"||phase=="background-rendered"||phase=="cdp-ready-background-not-yet-rendered")return false;double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)s["updatedAt"])).TotalSeconds;if(age<0||age>150)return false;using(var p=Process.GetProcessById(Convert.ToInt32(s["helperPid"])))return !p.HasExited&&String.Equals(p.MainModule.FileName,FindPowerShell(),StringComparison.OrdinalIgnoreCase)&&p.StartTime.ToUniversalTime().ToString("o")==(string)s["helperStartedAtUtc"];}catch{return false;}}
- static bool ActivateWallpaper(string root){
+ static bool ReopenVerifiedClient(string root){
   try{
-   var state=Read(root,"launch-status.json");var runtime=Read(root,"runtime-status.json");
-   double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)runtime["updatedAt"])).TotalSeconds;
-   if(age<0||age>20||Convert.ToString(runtime["browserId"])!=Convert.ToString(state["browserId"]))return false;
-   string phase=Convert.ToString(runtime["phase"]);if(phase!="background-rendered"&&phase!="background-disabled"&&phase!="realtime-capture-active"&&phase!="realtime-capture-paused")return false;
-   using(var bridge=Process.GetProcessById(Convert.ToInt32(runtime["pid"])))using(var client=Process.GetProcessById(Convert.ToInt32(state["debugRootPid"]))){
-    string node=FindNode();
-    if(bridge.HasExited||!String.Equals(bridge.MainModule.FileName,node,StringComparison.OrdinalIgnoreCase))return false;
-    if(!WallpaperIdentity.Matches(client,(string)state["rootStartedAtUtc"],(string)state["rootExecutable"])||WallpaperIdentity.PortOwner(9335)!=client.Id)return false;
-    var windows=WallpaperIdentity.VisibleClients();IntPtr h;if(!windows.TryGetValue(client.Id,out h)||windows.Count!=1)return false;
-    WallpaperIdentity.Apply(h,root);if(IsIconic(h))ShowWindow(h,9);if(!SetForegroundWindow(h))ShowWindow(h,5);return true;
+   var launch=Read(root,"launch-status.json");var status=Read(root,"runtime-status.json");Guid browser;
+   if(!Guid.TryParse(Convert.ToString(launch["browserId"]),out browser)||Convert.ToString(status["browserId"])!=browser.ToString("D"))return false;
+   double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)status["updatedAt"])).TotalSeconds;if(age<0||age>20)return false;
+   using(var client=Process.GetProcessById(Convert.ToInt32(launch["debugRootPid"])))using(var host=Process.GetProcessById(Convert.ToInt32(status["pid"]))){
+    if(!WallpaperIdentity.Matches(client,Convert.ToString(launch["rootStartedAtUtc"]),Convert.ToString(launch["rootExecutable"]))||WallpaperIdentity.PortOwner(9335)!=client.Id||!String.Equals(host.MainModule.FileName,FindNode(),StringComparison.OrdinalIgnoreCase))return false;
+    var activator=(IPackageActivator)new PackageActivator();try{uint activated;Marshal.ThrowExceptionForHR(activator.ActivateApplication("OpenAI.Codex_2p2nqsd0c76g0!App","",0,out activated));}finally{Marshal.FinalReleaseComObject(activator);}
+    var helper=Path.Combine(root,"app","src","activate-client.mjs");if(!File.Exists(helper))return false;
+    var info=new ProcessStartInfo{FileName=FindNode(),Arguments="\""+helper+"\" --cdp-port 9335 --browser-id "+browser.ToString("D"),UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,RedirectStandardOutput=true,RedirectStandardError=true};
+    using(var process=Process.Start(info)){if(!process.WaitForExit(10000)){process.Kill();return false;}string output=process.StandardOutput.ReadToEnd();if(process.ExitCode!=0)return false;
+     if(!WallpaperIdentity.Matches(client,Convert.ToString(launch["rootStartedAtUtc"]),Convert.ToString(launch["rootExecutable"]))||WallpaperIdentity.PortOwner(9335)!=client.Id)return false;
+     File.WriteAllText(Path.Combine(root,"activation-status.json"),"{\"sameClient\":true,\"rootPid\":"+client.Id+",\"main\":"+output.Trim()+"}");return true;}
    }
   }catch{return false;}
  }
@@ -54,7 +55,7 @@ internal static class CodexEntry {
    if(!inspect){
    SetCurrentProcessExplicitAppUserModelID(WallpaperIdentity.AppId);
    if(Starting(dataRoot))return;
-   if(ActivateWallpaper(dataRoot))return;
+   if(ReopenVerifiedClient(dataRoot))return;
    // Bootstrap verifies CDP ownership and preserves ordinary clients. A visible
    // debug client may only need its disconnected wallpaper host reattached.
    }

@@ -153,6 +153,11 @@
       "sha256": "fcc78012becfbd0a04b48eee6c6532eeabcdaf7ee877db2b10ab1371f76c5980"
     },
     {
+      "path": "src/activate-client.mjs",
+      "utf8Bytes": 1133,
+      "sha256": "99b672fd51d8ca18ce33a7b60edd41d632954f0d4fe1beed8c747cfa45766f79"
+    },
+    {
       "path": "src/appearance-model.mjs",
       "utf8Bytes": 3996,
       "sha256": "c01a9550775496f468991b7987a01a65883957bc13c4b2f4ad8d0f1d340c0c30"
@@ -479,8 +484,8 @@
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 7868,
-      "sha256": "a7a541202d1584ed478d6fff47f9899ca5c019e0481ec242affc9189db66dc8f"
+      "utf8Bytes": 8786,
+      "sha256": "c01d0fafbc50999dd78a8ecc49481db5d0f75a2cc46573f224e1d33d6a3388d7"
     },
     {
       "path": "windows/LaunchPolicy.ps1",
@@ -519,8 +524,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 14703,
-      "sha256": "d3180a384f92359ae887ee60ab4b34ad7f4425a51a818ebba490e8f31293e8eb"
+      "utf8Bytes": 16344,
+      "sha256": "722b8798aa391b3ea67857d988d65c58c5ed044b748317e639aa9543b3f5ca25"
     },
     {
       "path": "windows/TaskbarIdentity.cs",
