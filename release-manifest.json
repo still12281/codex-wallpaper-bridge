@@ -83,6 +83,11 @@
       "sha256": "06fe2ebfd19f80436f448a2b1ad28bbed892420f17f7763eeaf0cf53216021fc"
     },
     {
+      "path": "docs/MAINTENANCE.zh-CN.md",
+      "utf8Bytes": 3000,
+      "sha256": "67a00869c7ffc0d1d3a9d429e71057e3dedcfb874a9e6691451a896c232fcff6"
+    },
+    {
       "path": "docs/REALTIME.md",
       "utf8Bytes": 4498,
       "sha256": "9568a8c97cc5868cc60cbecd98a24b54c9f25956da7afa1e9cb687b29f9df5ee"
@@ -323,6 +328,11 @@
       "sha256": "01733e6cd71ce22314ba282577c4bc59f4c5420b7f3466d22097f83939be05db"
     },
     {
+      "path": "test/maintenance.test.mjs",
+      "utf8Bytes": 2364,
+      "sha256": "9e542bb3d2ebe257bb8c301922724f09c0c4f5efd70cfa75342f79a9e20c2038"
+    },
+    {
       "path": "test/media-power.test.mjs",
       "utf8Bytes": 7708,
       "sha256": "7461f10e919e5dca8b862f31f4e74862732306dca17ef269e37e71f234c0a015"
@@ -376,6 +386,11 @@
       "path": "tools/create-manifest.mjs",
       "utf8Bytes": 526,
       "sha256": "dea71409299d82b8aa25d529ace1c95c9923bfeac3a2764a200ccde1593c8dcd"
+    },
+    {
+      "path": "tools/library-maintenance.mjs",
+      "utf8Bytes": 8088,
+      "sha256": "024ac65505cb0a44a49fcd1cb1934e989325981ef51376b7404aba405d2efc13"
     },
     {
       "path": "tools/prepare-media-bridge.mjs",
