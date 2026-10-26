@@ -99,8 +99,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 6054,
-      "sha256": "0fc07993952836a4673d2199bbf48b0aec24c911beacd8ab7b0c248cd573c2ab"
+      "utf8Bytes": 6798,
+      "sha256": "8ac1a0f79c6f6d8556cf9b061553fd26d3c112ab946dcd229587956cfb37d843"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -536,11 +536,6 @@
       "path": "windows/TaskbarIdentity.cs",
       "utf8Bytes": 5142,
       "sha256": "b331ed0d6482e39dc833a0e30f86777baa2557607207d3aafd6f76fbf170637c"
-    },
-    {
-      "path": "windows/WallpaperSupervisor.cs",
-      "utf8Bytes": 9737,
-      "sha256": "5b45d45b4904134369635a2c7e76bac169e049cebb7f3c0040b2a410141329c1"
     }
   ]
 }

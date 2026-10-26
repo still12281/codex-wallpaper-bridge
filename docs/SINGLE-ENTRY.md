@@ -23,3 +23,9 @@ Run the isolated policy regression with PowerShell 7: `pwsh -NoProfile -File tes
 Run `node test/lifetime-integration.mjs` to verify that a bridge attached to an isolated headless browser exits with status zero when that browser closes. It does not interact with the current Codex, taskbar or user browser profile.
 
 After building into an isolated data directory, run `pwsh -NoProfile -File test/launcher-runtime.ps1 -BuildDirectory <absolute-build-directory>`. This invokes the actual entry with empty PATH and cleared runtime overrides, executes bootstrap inspection only, and checks that existing client identities remain unchanged. It verifies dependency resolution without closing or starting a user client; a real wallpaper cold launch is a separate acceptance step.
+
+## Existing-client activation, 2026-10-26
+
+An already verified browser/root is reactivated through the official package activation API, then the exact main CDP page is brought forward. Detached pages cannot substitute for the main page. The deployed app/src host path is recognized as the existing host. Real activation retained the same client/browser/main target and took approximately 1.25 seconds in the latest bounded check. Closing the real main window and cold-start acceptance remain pending; the current Codex was never force-closed or restarted.
+
+The unused supervisor source and its deployed executables were retired; the exact disabled legacy scheduled task was removed. No new resident supervisor or monitoring service was added.
