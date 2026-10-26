@@ -1,6 +1,6 @@
 # Codex Wallpaper Bridge
 
-Highest scene quality now prefers the installed Wallpaper Engine's native rendering after explicit confirmation. It preserves the original engine effects, scripts and audio processing, with window-proportional capture dimensions and the configured desktop frame-rate cap. Capture latency and compression remain measurable differences, and native mouse forwarding is not implemented. See [realtime mode](docs/REALTIME.md) and [local maintenance](docs/MAINTENANCE.zh-CN.md).
+The 4K tier renders at 3840×2160. Scene projects can use the DSH v1.4.0 renderer control source with WebWallGL directly inside a sandboxed iframe, or the installed Wallpaper Engine through native capture after confirmation. Native capture preserves original engine effects, scripts and audio processing and follows the desktop frame-rate cap. Capture latency and compression remain measurable differences, and native mouse forwarding is not implemented. See [realtime mode](docs/REALTIME.md) and [local maintenance](docs/MAINTENANCE.zh-CN.md).
 
 [简体中文](README.zh-CN.md)
 

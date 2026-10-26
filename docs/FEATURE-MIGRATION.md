@@ -1,5 +1,7 @@
 # Feature migration status
 
+Current follow-up: [4K, DSH source reuse, resource and flashing evidence](USABILITY-20261026.md). Earlier measurements below retain their original scope and do not describe the new 4K profile.
+
 Baseline: DSH Wallpaper Engine v1.4.0 at `3b0103bc1d5431840208966ce67155f392c4095c`. The Codex bridge keeps its own host, local settings, launcher and native surface mappings.
 
 | Feature | Implementation | Acceptance |

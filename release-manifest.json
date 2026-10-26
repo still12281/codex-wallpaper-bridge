@@ -44,13 +44,13 @@
     },
     {
       "path": "README.md",
-      "utf8Bytes": 7468,
-      "sha256": "c86478b860e3f38490c5bc5d6c3aa33872b84f579f6efbad55e46def480b0603"
+      "utf8Bytes": 7540,
+      "sha256": "bb064c47b4f1af472f0e8cfe713ade998b904eee88d16b4a98e1ce55871de2e5"
     },
     {
       "path": "README.zh-CN.md",
-      "utf8Bytes": 6231,
-      "sha256": "1a64438f20584b37fcddb954e25c12bf4dd8f491c5d36a3ca7ab5d3adcbd4cfb"
+      "utf8Bytes": 6213,
+      "sha256": "b1cd8a417882737e184d33781a46c4e463391ef823accfb07b725bae018bd811"
     },
     {
       "path": "SECURITY.md",
@@ -74,13 +74,13 @@
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
-      "utf8Bytes": 7107,
-      "sha256": "98e1a866186f08d1620d19f63eec46988a2351834a04d3d3de91c85d9e6172cf"
+      "utf8Bytes": 7277,
+      "sha256": "ef9fb2e956d81b5922c86a8898716fd4b70c6b65a13a25e8e92d758a5b33c96d"
     },
     {
       "path": "docs/FEATURE-MIGRATION.md",
-      "utf8Bytes": 3560,
-      "sha256": "b77c9c1813dfbe9b975c86be6d0f1987bc1f32ea089d5b28b15ee59a23cbfaa4"
+      "utf8Bytes": 3754,
+      "sha256": "4634083b845544974341f4a595b9b693a5600f2083465931199640961a3d5877"
     },
     {
       "path": "docs/MAINTENANCE.zh-CN.md",
@@ -89,8 +89,8 @@
     },
     {
       "path": "docs/REALTIME.md",
-      "utf8Bytes": 5206,
-      "sha256": "af116db796f4319dcf160db8121b33e54589e79a558d0eeb331a1700878ad29f"
+      "utf8Bytes": 5109,
+      "sha256": "6019b70ec9d6a019c850ecb6855c6ed20a61f96c274e24688a1ec310640ec529"
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
@@ -123,14 +123,19 @@
       "sha256": "4ededf80bf8b3342972943e9f3298ebcdccad3b98b2f17b78ce4be22f33544b2"
     },
     {
+      "path": "docs/USABILITY-20261026.md",
+      "utf8Bytes": 4891,
+      "sha256": "9476ec93922c026ed9c60ff41ca1abcb4bf793bff55daa4c60304f4c7f7c4aea"
+    },
+    {
       "path": "docs/VALIDATION.md",
-      "utf8Bytes": 8559,
-      "sha256": "07ab9cad10c6095c1532acec9f3cd1a5c1f4ce666a86bed16591117878e465e6"
+      "utf8Bytes": 8753,
+      "sha256": "cf6838c0a44deb1035c1090377ee09b0f59e36437725de0c1b267a1efbae8f3a"
     },
     {
       "path": "docs/WEBWALLGL.md",
-      "utf8Bytes": 3165,
-      "sha256": "fcfb31e21fea6feb5f3b6d2497f662492342e91f76a19289a36ee49ca27ed5ec"
+      "utf8Bytes": 3587,
+      "sha256": "a2acb19d59b91055b7ab9eeeedcaf7dfc95892d8ce6772f899356c0b85744c27"
     },
     {
       "path": "findings.md",
@@ -144,8 +149,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 6830,
-      "sha256": "3211e5f4ee01ea0c818be461c2c1c1ea3b284b179e81141a700209ed0d62ef63"
+      "utf8Bytes": 7155,
+      "sha256": "22ed4463544af8e2f3684eb9919520a4dd5c8c7fa6984cec02b5099459bb4ed8"
     },
     {
       "path": "settings.example.json",
@@ -289,8 +294,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 16074,
-      "sha256": "5df013893814c7fbc193e2571bbcc4fcaaff04b6b0804d7abced31d976ff90f0"
+      "utf8Bytes": 17687,
+      "sha256": "f3addf045878056af490284e9f73fda9918c1ab7e10c148fb1a214cd92359d32"
     },
     {
       "path": "test/appearance.test.mjs",

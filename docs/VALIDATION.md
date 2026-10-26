@@ -1,5 +1,7 @@
 # Validation boundaries
 
+Current follow-up: [4K, DSH source reuse, resource and flashing evidence](USABILITY-20261026.md). Earlier measurements below retain their original scope and do not describe the new 4K profile.
+
 ## Native highest-tier follow-up, 2026-10-26
 
 In the existing verified Codex session, the original complete scene ran at 1920x1320 with a 30 FPS capture cap and JPEG quality 92, without restarting Codex or changing desktop engine settings. Native fonts/date/time and effects were visible; a quiet, owned four-second system-audio fixture produced the original circular bars. No user-player queue or playback controls were invoked. This accepts one scene's native route, not universal wallpaper parity.
