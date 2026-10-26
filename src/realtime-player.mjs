@@ -1,6 +1,7 @@
 // Functions are serialized into the renderer. Keep browser code dependency-free.
 export async function installRealtime(config,base64,info){
  const image=new Image();image.decoding='async';image.src='data:image/jpeg;base64,'+base64;await image.decode();
+ if(info.selectionStamp&&(window.__cwbSelectionStamp!==info.selectionStamp||window.__cwbDesiredWallpaperId!==info.entryId)){image.src='';return {superseded:true};}
  const layer=document.createElement('div');layer.id='codex-wallpaper-bridge-layer';layer.setAttribute('aria-hidden','true');layer.style.cssText='position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0';
  const shadow=layer.attachShadow({mode:'open'}),canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;canvas.style.cssText='width:100%;height:100%;object-fit:cover;display:block';shadow.append(canvas);
  const context=canvas.getContext('2d',{alpha:false});context.drawImage(image,0,0);image.src='';

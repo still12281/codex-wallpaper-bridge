@@ -69,8 +69,8 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 2648,
-      "sha256": "b4179360344fd4128722e6d42d954e414724aa2f4b67eb51970657819fc4f2b7"
+      "utf8Bytes": 2579,
+      "sha256": "ebd5e1e3b38c4862d334c3231b281f5bc9f1d038c967d21320f5bebd35b6afe8"
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
@@ -84,8 +84,8 @@
     },
     {
       "path": "docs/MAINTENANCE.zh-CN.md",
-      "utf8Bytes": 3605,
-      "sha256": "6202aecdc27e51cf55325c8a64639d4ce58a9c995085119baf51a29aa9057c0b"
+      "utf8Bytes": 3878,
+      "sha256": "07c57d89c8f06f85fba2930f06b2b0fdd1ac1054505daab4498648140b612a30"
     },
     {
       "path": "docs/REALTIME.md",
@@ -134,8 +134,8 @@
     },
     {
       "path": "docs/WEBWALLGL.md",
-      "utf8Bytes": 5548,
-      "sha256": "075db8a805dd955fd4798e28307d4074bb8f114385fee7b840458b35899e0c23"
+      "utf8Bytes": 7260,
+      "sha256": "fbd4a58603c54dbe060cabab080f10c1e2baf04cc67586eb617642c6cf896586"
     },
     {
       "path": "findings.md",
@@ -149,8 +149,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 7372,
-      "sha256": "a615d030c44549abab2a7b21f619ecb5982b0107376d158a4649468e5718a7a6"
+      "utf8Bytes": 7622,
+      "sha256": "98b09a463526757b5bb2eeb03022ce5127e9b58082ec533812e1b9e1c83f4364"
     },
     {
       "path": "settings.example.json",
@@ -194,8 +194,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 31766,
-      "sha256": "859ca6955b0af728cfae5feaefe009a9efcaf7aa800949e7ddd064d77e188088"
+      "utf8Bytes": 31865,
+      "sha256": "4a185746d748478b496ff6120906074117d6ba7ddb2997cd4de1c5d6d3343bc3"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -203,9 +203,14 @@
       "sha256": "90cf10d0203b2fee4051dd5046834a62e15580e30f0e88b71102861566e6d165"
     },
     {
+      "path": "src/library-model.mjs",
+      "utf8Bytes": 1421,
+      "sha256": "d951c40ae062d836dce0c8263f8cd596463a3fb3d5f2ca036f10c6d418647709"
+    },
+    {
       "path": "src/library-preview.mjs",
-      "utf8Bytes": 3161,
-      "sha256": "7f94f6c64403a4d01bfde3e862d8a0a124225b80595e5a8ba7fb7ec85d601160"
+      "utf8Bytes": 3183,
+      "sha256": "8259287943b2876bb2d5dfc09f22746a71a450c914715371c08da875a377e40a"
     },
     {
       "path": "src/media-converter.mjs",
@@ -229,13 +234,13 @@
     },
     {
       "path": "src/realtime-player.mjs",
-      "utf8Bytes": 3422,
-      "sha256": "9e2cdd1c3ad05d9ba0a58833bceae3015596ca29f36c30be8504d9ebc287eb78"
+      "utf8Bytes": 3586,
+      "sha256": "212653ba52f467752fb0e988ae2e3fa5ed6e872e472990382c579ad0ab58585c"
     },
     {
       "path": "src/realtime-source.mjs",
-      "utf8Bytes": 10640,
-      "sha256": "2bc6032a7e71a58dba235fc3b6c90206437d10218b95506bf49d11c2ad0de4e7"
+      "utf8Bytes": 10862,
+      "sha256": "9a285772c66f0c597a9244c0a853af577f6c5aade013ae09fc6c2612081dd336"
     },
     {
       "path": "src/runtime-paths.mjs",
@@ -244,8 +249,8 @@
     },
     {
       "path": "src/scene-resource-cache.mjs",
-      "utf8Bytes": 3242,
-      "sha256": "4e563c132c22394687c2b216bbaaff69d6cd901b3e440433f4918f94cc7fc110"
+      "utf8Bytes": 4148,
+      "sha256": "9d2e0e6bb63172cbec0e11769c6a6c24bb4540d5212dccff8883b36ec945e161"
     },
     {
       "path": "src/system-media.mjs",
@@ -259,13 +264,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 31247,
-      "sha256": "07247c2249a892d893e8ea1624e7be74f58984ed972d8cb355e8e2ae3285f220"
+      "utf8Bytes": 34233,
+      "sha256": "d24af7646fb44c55a5510f6e8af728d0e31241e6ace68887a4c6b020d0187436"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 28043,
-      "sha256": "a8ca30b65a4ab94007f2c1cefe7468550cbab14e6722d1fb64dab5f5ac354ff4"
+      "utf8Bytes": 29200,
+      "sha256": "2c163348a2b5571eb9f66f4fd8ffab23ff6cbba3aae65b277a67ae2f21f2fe7e"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -274,8 +279,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 26277,
-      "sha256": "0ff780b1e7041fcfefbe8c3a06a184c39c8b11106fb7d2b6a97fa44f2fdb3dd9"
+      "utf8Bytes": 28586,
+      "sha256": "ae0ddb06b56b09d5de646797410a56afcb58f9ea4910317af0aba820ee701543"
     },
     {
       "path": "src/wallpaper-style.mjs",
@@ -289,8 +294,8 @@
     },
     {
       "path": "src/webwallgl-player.mjs",
-      "utf8Bytes": 19447,
-      "sha256": "645519085181b3a28c2ece05c3e81bc094ff78f6634b58d8bdc93c01e5ad775b"
+      "utf8Bytes": 20111,
+      "sha256": "1f0dab6292c435bd5a41310f7c2c477e4e8d1ca3c818d1aaf45d5e4f9e5388c9"
     },
     {
       "path": "src/webwallgl-source.mjs",
@@ -299,8 +304,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 18496,
-      "sha256": "2abc219b863888375d91dd14d60f1413eab8470c0968f724cd3a28af04a2061b"
+      "utf8Bytes": 19446,
+      "sha256": "be6539152d2399a45361162e225f4e23ea2046110945314c63e9e692e96c6e26"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -324,13 +329,13 @@
     },
     {
       "path": "test/import-followup.test.mjs",
-      "utf8Bytes": 3338,
-      "sha256": "c3ea8d59779dd7a9489f664e4eafcf61dbc0b29938998b1f5c6c23d2666658c2"
+      "utf8Bytes": 3202,
+      "sha256": "eb1329820b0feb43cf3f3402fbb7760b477b37bb14890b440fc14a6970a6f0a6"
     },
     {
       "path": "test/integration.mjs",
-      "utf8Bytes": 21148,
-      "sha256": "8c247d4566eac46ef1c2f68fb7f387c11e576719b8a62087669b13ffe8063146"
+      "utf8Bytes": 22492,
+      "sha256": "082c77bc5b031bd37d254eb78defdb8a4c1db5dce6f858a51b51b319cfc5db8f"
     },
     {
       "path": "test/launch-policy.ps1",
@@ -341,6 +346,11 @@
       "path": "test/launcher-runtime.ps1",
       "utf8Bytes": 2632,
       "sha256": "17782c6766420f612a6533229b4248a2f9c15ba8bc55dfabce3d0cf3ebd957d8"
+    },
+    {
+      "path": "test/library-model.test.mjs",
+      "utf8Bytes": 2845,
+      "sha256": "a8f5f077396b1885ba4253c67003a9a7352d37909ea244d848d87a629a9b0049"
     },
     {
       "path": "test/lifetime-integration.mjs",
@@ -359,13 +369,13 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 11808,
-      "sha256": "d4f823a0e586f15381d0ffbbad5df76efc7bb5da3ca28eaa932611d5dae67593"
+      "utf8Bytes": 13122,
+      "sha256": "523dfce2cb783ec91d780f6d4d0c594bc785d28f98eb2da56b2f9f693066e753"
     },
     {
       "path": "test/preflight.test.mjs",
-      "utf8Bytes": 4736,
-      "sha256": "72cd43ce51fcec85b966848fc45d4f07e4d6c019d9e9badda13993f5b6d99e02"
+      "utf8Bytes": 4713,
+      "sha256": "739d6ee95d257287f09ac8158313ceca28208a22c14defb6905c0e8bac89b1e6"
     },
     {
       "path": "test/surfaces.test.mjs",

@@ -14,6 +14,7 @@ import {describeProject,realtimeProfile,findWorkshopProject} from './realtime-so
 import {sanitizeVisual,appearanceSnapshot,parsePreset,nextRotation} from './appearance-model.mjs';
 import {AUDIO_FPS_OPTIONS,normalizeAudioFps} from './system-media.mjs';
 import {DISPLAY_TIERS,effectiveMediaSettings} from './display-tiers.mjs';
+import {libraryGroups} from './library-model.mjs';
 const types={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','video/mp4':'mp4','video/webm':'webm'};
 export async function saveConfig(root,settings){const temp=path.join(root,'settings.next.json');await writeFile(temp,JSON.stringify(settings,null,2));await rename(temp,path.join(root,'settings.json'))}
 export function normalizeLibrary(settings){
@@ -45,6 +46,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    return requestRealtime(c,projectRoot,true,profile,'native','use',true);
   }
   if(req.action==='display-renderer'){
+   if(req.renderMode==='media'){const current=settings.library.find(e=>e.id===settings.selectedId),group=libraryGroups(settings.library,settings.selectedId).find(g=>g.entries.some(e=>e.id===current?.id)),media=group?.entries.find(e=>!['realtime','webwallgl'].includes(e.mode));if(!media)throw Error('这张壁纸没有保存的视频或图片版本');return action(c,{action:'select',selectedId:media.id});}
    if(!['native','webwallgl'].includes(req.renderMode))throw Error('请选择渲染方式');
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');const projectRoot=entry.projectRoot||(entry.workshopId?await findWorkshopProject(entry.workshopId):null);if(!projectRoot)throw Error('此素材没有完整场景');
    const profile=entry.displayTier==='full'?(services.nativeProfile?await services.nativeProfile(c,projectRoot):{maxWidth:3840,maxHeight:2160,fps:30,jpegQuality:92}):{...(entry.limits||settings.playback)};
@@ -136,12 +138,15 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   if(req.action==='engine-inspect'){const item=await catalog.resolve(req.projectToken);if(req.renderMode==='webwallgl'&&item.kind!=='media'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='scene',needsRealtime:true,mode:'webwallgl',label:project.type==='scene'?'WebWallGL 沙箱实时渲染':'当前网页不能用 WebGL 模式导入',reason:project.type==='scene'?'不启动 Wallpaper Engine 源窗口；执行场景脚本，效果兼容性取决于此项目。':'请改为原生实时模式，网页资源通道尚未通过验收。'}};}return {inspection:item.kind==='media'?{supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:item.mime.startsWith('video/')?'当前选中的是视频，生成副本后直接播放。':'当前选中的是图片，可直接导入。'}:await inspectEngineProject(item.root,req.renderMode)}}
   if(req.action==='engine-pick-folder'){const result=await promisify(execFile)(getPowerShell(),['-NoProfile','-STA','-File',fileURLToPath(new URL('../windows/Pick-WallpaperFolder.ps1',import.meta.url)),'-InitialPath',settings.engineSearch?.folder||''],{windowsHide:true,timeout:150000});return JSON.parse(result.stdout)}
   if(req.action==='delete'){
-   const index=settings.library.findIndex(e=>e.id===req.selectedId);if(index<0)throw Error('壁纸不存在');
-   const entry=settings.library[index],selected=settings.selectedId;settings.library.splice(index,1);
-   const wasActive=selected===entry.id;if(wasActive)settings.selectedId=settings.library.find(e=>!['realtime','webwallgl'].includes(e.mode))?.id||null;
-   try{if(wasActive)await apply();await saveConfig(root,settings)}catch(e){settings.library.splice(index,0,entry);settings.selectedId=selected;if(wasActive)await apply();throw e}
-   for(const file of [entry.file,entry.sourceFile,entry.sourcePath,entry.staticFile])await removeManagedFile(root,settings,file);
-   return {config:settings,message:'已从 Codex 删除并清理专属缓存；Wallpaper Engine 原文件不变。'};
+   const entry=settings.library.find(e=>e.id===req.selectedId);if(!entry)throw Error('壁纸不存在');
+   const targets=req.allVersions===true?libraryGroups(settings.library,settings.selectedId).find(g=>g.entries.some(e=>e.id===entry.id)).entries:[entry],ids=new Set(targets.map(e=>e.id));
+   const previous={library:settings.library,selectedId:settings.selectedId,fallback:settings.realtimeFallbackId,rotation:settings.rotation};
+   settings.library=settings.library.filter(e=>!ids.has(e.id));const wasActive=ids.has(settings.selectedId);if(wasActive)settings.selectedId=settings.library.find(e=>!['realtime','webwallgl'].includes(e.mode))?.id||null;
+   if(ids.has(settings.realtimeFallbackId))delete settings.realtimeFallbackId;
+   if(settings.rotation)settings.rotation={...settings.rotation,ids:(settings.rotation.ids||[]).filter(id=>!ids.has(id))};
+   try{if(wasActive)await apply();await saveConfig(root,settings)}catch(error){settings.library=previous.library;settings.selectedId=previous.selectedId;settings.realtimeFallbackId=previous.fallback;settings.rotation=previous.rotation;if(wasActive)await apply();throw error;}
+   for(const removed of targets)for(const file of [removed.file,removed.sourceFile,removed.sourcePath,removed.staticFile])await removeManagedFile(root,settings,file);
+   return {config:settings,message:'已从 Codex 删除壁纸；原素材保持不变。'};
   }
   if(req.action==='playback'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('当前壁纸不存在');
@@ -167,9 +172,9 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const projectRoot=resolved?.root||(workshopId?await findWorkshopProject(workshopId):null);
    if((req.renderMode||'auto')==='auto'&&projectRoot&&resolved?.kind!=='media'){
     const inspection=await inspectEngineProject(projectRoot);
-    if(inspection.needsRealtime){const project=await describeProject(projectRoot),renderer=inspection.mode==='webwallgl'?'webwallgl':'native',existing=duplicateEntry(settings,{mode:renderer==='webwallgl'?'webwallgl':'realtime',sourceKey:project.sourceKey});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,renderer,req.duplicatePolicy)}
+    if(inspection.needsRealtime){const project=await describeProject(projectRoot),renderer=inspection.mode==='webwallgl'?'webwallgl':'native',existing=duplicateEntry(settings,{mode:renderer==='webwallgl'?'webwallgl':'realtime',sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,renderer,req.duplicatePolicy)}
    }
-   if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type)){const existing=duplicateEntry(settings,{mode:req.renderMode,sourceKey:project.sourceKey});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native',req.duplicatePolicy)}}
+   if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type)){const existing=duplicateEntry(settings,{mode:req.renderMode,sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native',req.duplicatePolicy)}}
    let contentHash;if(resolved?.kind==='media'){contentHash=await hashMedia(resolved.file);await populateHashes();}const existing=duplicateEntry(settings,{sourceKey:resolved?.sourceKey,workshopId,contentHash});
    if(existing){
     return duplicate(existing,applyNow,req.duplicatePolicy);
@@ -198,7 +203,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const selected=settings.library.find(e=>e.id===req.selectedId);if(!selected)throw Error('壁纸不存在');
    if(settings.selectedId===req.selectedId&&(!services.isSelectedHealthy||await services.isSelectedHealthy(c)))return {config:settings,message:'当前已使用此壁纸。'};
    const previous=settings.selectedId;settings.selectedId=req.selectedId;
-   try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;await apply();throw e}return {config:settings};
+   try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;if(e.code!=='CWB_SELECTION_SUPERSEDED')await apply();throw e}return {config:settings};
   }
   if(req.action==='import-start'){
    if(!types[req.mime]||!Number.isInteger(req.size)||req.size<1||req.size>250*1024*1024)throw Error('仅支持250MB以内的图片或视频');

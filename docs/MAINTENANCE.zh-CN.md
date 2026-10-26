@@ -37,3 +37,5 @@ node tools/library-maintenance.mjs relocate "DATA_DIR" "ENTRY_ID" "NEW_PROJECT_D
 GPU 场景使用 Codex 自身 profile 内的专用 CacheStorage `codex-wallpaper-resources-v1`，总量最多 512 MiB、最多四项，单个资源最多 256 MiB；素材文件变化后重新加载。它是可重建的播放资源缓存，不是原素材，也不包含在 DATA_DIR 库备份中。
 
 控制页“管理我的壁纸 → 清理切换缓存”仅清除此专用缓存，不删除 Wallpaper Engine 项目、不删除当前库记录、不改变当前画面。清理后下一次切换需重新填充。不要为清理它删除整个 Codex profile 或其它应用缓存。
+
+“我的壁纸”按项目合并显示旧的视频/GPU/原版版本。合并显示不删除库记录或素材；用户在控制页确认删除某张壁纸时，删除其 Codex 播放版本，并清理失效的回退/轮播引用，原始 Wallpaper Engine 项目保留。

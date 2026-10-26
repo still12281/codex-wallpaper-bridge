@@ -23,7 +23,7 @@ test('scene inspection keeps the complete project instead of stripping a video l
 test('auto scene uses GPU rendering and preserves old video records until confirmation',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-audio-import-')),project=path.join(root,'project');await mkdir(project);
  await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene',general:{supportsaudioprocessing:true},title:'Audio scene'}));
- const settings=defaultSettings();settings.library=[{id:'video',sourceKey:(await describeProject(project)).sourceKey}];settings.selectedId='video';let applied=0;
+ const settings=defaultSettings();settings.library=[{id:'video',sourceKey:'unrelated-project'}];settings.selectedId='video';let applied=0;
  const actions=createActions(root,settings,async()=>applied++),client={};
  const list=await actions(client,{action:'engine-list',scope:'folder',folder:project});
  const pending=await actions(client,{action:'wallpaper-engine',projectToken:list.wallpapers[0].token,apply:false});

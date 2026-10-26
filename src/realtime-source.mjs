@@ -44,7 +44,8 @@ export async function nativeFullProfile(projectRoot){
  return realtimeProfile({maxWidth:3840,maxHeight:2160,fps:[60,30,24,12].find(f=>f<=desktop.fps)||12,jpegQuality:92});
 }
 let latestDiagnosticId=0;
-export async function startRealtime(entry,dataRoot){
+export async function startRealtime(entry,dataRoot,{isCurrent=()=>true}={}){
+ const assertCurrent=()=>{if(!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
  const diagnosticId=++latestDiagnosticId;
  const diagnostic={startedAt:new Date().toISOString(),entryId:entry.id,events:[],phase:'preparing'};let saveQueue=Promise.resolve();
  const report=(phase,detail={})=>{diagnostic.phase=phase;if(phase==='failed'||phase==='helper-error')diagnostic.lastFailure=detail;diagnostic.events.push({at:new Date().toISOString(),phase,...detail});diagnostic.events=diagnostic.events.slice(-40);const serialized=JSON.stringify(diagnostic,null,2);saveQueue=saveQueue.catch(()=>{}).then(()=>diagnosticId===latestDiagnosticId?writeFile(path.join(dataRoot,'realtime-diagnostic.json'),serialized):undefined);return saveQueue};
@@ -85,14 +86,14 @@ export async function startRealtime(entry,dataRoot){
   child.stdin.on('error',()=>{});
   // Prepare the capture interpreter before asking WE to create any window.
   const waitingDeadline=Date.now()+10000;
-  while(!diagnostic.events.some(e=>e.phase==='helper-waiting')){if(runtime.error)throw Error(runtime.error);if(Date.now()>waitingDeadline)throw Error('采集助手未进入窗口隔离准备态');await new Promise(resolve=>setTimeout(resolve,10));}
-  await report('opening-engine-window',{window:name,profile});
+  while(!diagnostic.events.some(e=>e.phase==='helper-waiting')){assertCurrent();if(runtime.error)throw Error(runtime.error);if(Date.now()>waitingDeadline)throw Error('采集助手未进入窗口隔离准备态');await new Promise(resolve=>setTimeout(resolve,10));}
+  assertCurrent();await report('opening-engine-window',{window:name,profile});
   await invoke(engine,['-control','openWallpaper','-file',path.join(project.root,'project.json'),'-playInWindow',name,'-width',String(profile.maxWidth),'-height',String(profile.maxHeight),'-x','-32000','-y','-32000','-borderless'],{windowsHide:true,timeout:15000});
   const desktop=await desktopSettings(engine,project.root);
   if(Object.keys(desktop.properties).length)await invoke(engine,['-control','applyProperties','-properties','RAW~('+JSON.stringify(desktop.properties)+')~END','-location',name],{windowsHide:true,windowsVerbatimArguments:true,timeout:8000});
   runtime.desktop={configuredFps:desktop.fps,propertyCount:Object.keys(desktop.properties).length};
   const deadline=Date.now()+35000;
-  while(Date.now()<deadline){if(runtime.error)throw Error(runtime.error);if(runtime.frame){await report('first-frame',{sequence:runtime.sequence,hwnd:runtime.hwnd});return runtime}await new Promise(resolve=>setTimeout(resolve,100))}
+  while(Date.now()<deadline){assertCurrent();if(runtime.error)throw Error(runtime.error);if(runtime.frame){await report('first-frame',{sequence:runtime.sequence,hwnd:runtime.hwnd});return runtime}await new Promise(resolve=>setTimeout(resolve,100))}
   throw Error('实时场景未收到首帧，请检查专用渲染窗口是否正常显示');
  }catch(error){await report('failed',{error:error.stack||error.message,stderr:diagnostic.events.findLast(e=>e.stderr)?.stderr});await runtime.stop();throw error}
 }

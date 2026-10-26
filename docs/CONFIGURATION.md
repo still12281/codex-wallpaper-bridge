@@ -14,7 +14,7 @@ All overrides are optional and evaluated locally. Do not publish real environmen
 
 Media imports are limited to 250 MiB. Default playback copies are limited to 32 MiB; higher profiles allow up to 128 MiB. Allowed widths: 960/1280/1920/2560/3840. FPS caps: 12/24/30/60. These are output caps; the converter does not upscale small sources or synthesize higher source frame rates.
 
-The **应用省电设置** button in **播放规格** applies a 960px width cap, 12 FPS cap and pause-on-blur to the current wallpaper, and saves that playback profile for future imports. It works with an empty library. Existing appearance and media preferences are preserved. Video conversion is skipped when the current copy already matches the profile; still images only use the width cap. This preset is optional and is never applied automatically during upgrades.
+The former hidden power-saving button was retired. The explicit Economy display tier applies its documented budgets to the selected wallpaper while preserving saved audio/focus preferences. Video conversion is skipped when the current copy already matches the requested playback profile. Saved selection switches immediately; rendering versions of the same project are grouped into one visible item.
 
 Folder search skips symbolic links/junctions and has limits: 6,000 directories, 3,000 results, depth 12 and approximately 15 seconds. Reaching a cap is reported. Global discovery reads installed/registered Steam libraries, selected engine configuration paths and a limited local-drive probe. Arbitrarily named, unregistered libraries can be supplied through folder search; a complete recursive scan of every drive is not performed.
 

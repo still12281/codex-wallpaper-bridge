@@ -3,7 +3,7 @@ import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {installFrameFreeze} from './freeze-frame.mjs';
 import {createProjectReader} from './webwallgl-source.mjs';
-import {installSceneResourceCache} from './scene-resource-cache.mjs';
+import {installSceneResourceCache,callSceneResourceCache} from './scene-resource-cache.mjs';
 
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 // Browser functions are serialized into a sandbox execution world, not the Codex world.
@@ -43,7 +43,8 @@ function createCandidate(id,limits){
  const resize=()=>{if(limits.exactResolution){const width=limits.maxWidth,height=limits.maxHeight,scale=Math.max(innerWidth/width,innerHeight/height);frame.style.width=width+'px';frame.style.height=height+'px';frame.style.left=(innerWidth-width*scale)/2+'px';frame.style.top=(innerHeight-height*scale)/2+'px';frame.style.transformOrigin='top left';frame.style.transform='scale('+scale+')';return;}const scale=Math.min(1,(limits.maxWidth||1280)/innerWidth,(limits.maxHeight||900)/innerHeight),width=Math.max(1,Math.floor(innerWidth*scale)),height=Math.max(1,Math.floor(innerHeight*scale));frame.style.width=width+'px';frame.style.height=height+'px';frame.style.transformOrigin='top left';frame.style.transform='scale('+1/scale+')';};resize();const observer=new ResizeObserver(resize);observer.observe(layer);layer.__cwbCandidateDispose=()=>observer.disconnect();return {url};
 }
 
-export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false}){
+export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurrent=()=>true,selectionStamp}){
+ let adopted=false;const assertCurrent=()=>{if(!adopted&&!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
  const reader=await createProjectReader(entry.projectRoot);
  await c.evaluate('('+installSceneResourceCache.toString()+')();true');
  if(reader.project.type==='web')throw Error('当前沙箱资源通道尚未通过网页脚本验收，请选择原生实时模式');
@@ -53,8 +54,8 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false}){
  const id='cwb-webgl-'+randomUUID(),binding='cwbAsset'+randomUUID().replaceAll('-',''),controlToken=randomUUID(),candidate=await c.evaluate('('+createCandidate.toString()+')('+JSON.stringify(id)+','+JSON.stringify(entry.limits||{})+')');
  let contextId,sessionId,closed=false,listener,transferQueue=Promise.resolve();const pending=new Set();
  const evaluate=expression=>c.evaluate(expression,contextId,sessionId);
- const cacheCall=async(method,args)=>{const r=await c.call('Runtime.evaluate',{expression:'window.__cwbSceneResources['+JSON.stringify(method)+'](...'+JSON.stringify(args)+')',awaitPromise:true,returnByValue:true},undefined,60000);if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;};
- const cleanup=async()=>{if(closed)return;closed=true;if(listener)c.ws.removeEventListener('message',listener);for(const requestId of pending)await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(binding+'-'+requestId)+');true').catch(()=>{});await evaluate('globalThis.__cwbWebGL?.dispose();true').catch(()=>{});await c.evaluate('(()=>{const s=window.__codexWallpaperBridge;if(s?.rendererId==='+JSON.stringify(id)+'){s.dispose?.();delete window.__codexWallpaperBridge}const layer=document.querySelector('+JSON.stringify('[data-cwb-renderer-id="'+id+'"]')+');layer?.__cwbCandidateDispose?.();layer?.remove();URL.revokeObjectURL('+JSON.stringify(candidate.url)+');return true})()').catch(()=>{});};
+ const cacheCall=(method,args)=>callSceneResourceCache(c,method,args,{isCurrent:()=>adopted||isCurrent()});
+ const cleanup=async()=>{if(closed)return;closed=true;if(listener)c.ws.removeEventListener('message',listener);for(const requestId of pending)await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(binding+'-'+requestId)+');true').catch(()=>{});const connected=await c.evaluate('!!document.querySelector('+JSON.stringify('[data-cwb-renderer-id="'+id+'"]')+')').catch(()=>false);if(connected)await c.call('Runtime.evaluate',{expression:'globalThis.__cwbWebGL?.dispose();true',contextId,returnByValue:true},sessionId,1000).catch(()=>{});if(sessionId)await c.call('Target.detachFromTarget',{sessionId},undefined,1000).catch(()=>{});await c.evaluate('(()=>{const s=window.__codexWallpaperBridge;if(s?.rendererId==='+JSON.stringify(id)+'){s.dispose?.();delete window.__codexWallpaperBridge}const layer=document.querySelector('+JSON.stringify('[data-cwb-renderer-id="'+id+'"]')+');layer?.__cwbCandidateDispose?.();layer?.remove();URL.revokeObjectURL('+JSON.stringify(candidate.url)+');return true})()').catch(()=>{});};
  try{
   let frame;
   for(let i=0;i<40;i++){
@@ -68,23 +69,24 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false}){
   listener=event=>{let msg;try{msg=JSON.parse(event.data);}catch{return;}if(msg.method!=='Runtime.bindingCalled'||msg.params.name!==binding||msg.sessionId!==sessionId||msg.params.executionContextId!==contextId)return;
    let request;try{request=JSON.parse(msg.params.payload);}catch{return;}if(!Number.isInteger(request.id)||pending.has(request.id))return;if(pending.size>=512){evaluate('__cwbWebGL.complete('+request.id+',"壁纸资源请求过多");true').catch(()=>{});return;}pending.add(request.id);
    transferQueue=transferQueue.then(async()=>{let bytes;const handle=binding+'-'+request.id;try{
-    if(closed)return;const metadata=await reader.metadata(request.name);if(!metadata){await evaluate('__cwbWebGL.complete('+request.id+',null,null);true');return;}
+    if(closed)return;assertCurrent();const metadata=await reader.metadata(request.name);if(!metadata){await evaluate('__cwbWebGL.complete('+request.id+',null,null);true');return;}
     const key=createHash('sha256').update(JSON.stringify([reader.root,request.name,metadata.etag])).digest('hex'),info={rendererId:id,token:controlToken,id:request.id};
     if(await cacheCall('cached',[key,metadata.size,info]))return;
     if(closed)return;bytes=await reader.read(request.name);if(closed)return;if(!bytes||bytes.length!==metadata.size||(await reader.metadata(request.name))?.etag!==metadata.etag)throw Error('壁纸资源在加载时改变，请重试');
     await c.evaluate('window.__cwbSceneResources.begin('+JSON.stringify(handle)+','+JSON.stringify(key)+','+bytes.length+');true');
-    for(let offset=0;offset<bytes.length;offset+=4*1024*1024){if(closed)return;await c.evaluate('window.__cwbSceneResources.receive('+JSON.stringify(handle)+','+JSON.stringify(bytes.subarray(offset,offset+4*1024*1024).toString('base64'))+','+offset+');true');}
+    for(let offset=0;offset<bytes.length;offset+=4*1024*1024){if(closed)return;assertCurrent();await c.evaluate('window.__cwbSceneResources.receive('+JSON.stringify(handle)+','+JSON.stringify(bytes.subarray(offset,offset+4*1024*1024).toString('base64'))+','+offset+');true');}
     if(!closed)await cacheCall('complete',[handle,info]);
    }catch(error){await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(handle)+');true').catch(()=>{});if(!closed)await evaluate('__cwbWebGL.complete('+request.id+','+JSON.stringify(error.message)+');true').catch(()=>{});}finally{bytes=null;pending.delete(request.id);if(!pending.size)setImmediate(()=>global.gc?.());}}).catch(()=>{});
   };c.ws.addEventListener('message',listener);
   await evaluate(engine);await evaluate('globalThis.__cwbFrameFreeze='+installFrameFreeze.toString()+';true');await evaluate('('+initializeRenderer.toString()+')('+JSON.stringify(reader.project)+','+JSON.stringify({fps:entry.limits?.fps||24,maxWidth:entry.limits?.maxWidth||1280,scripts:entry.scripts===true,quality:entry.quality,videoTexScale:entry.videoTexScale,audioResponse:config.systemMedia?.audio===true,key:entry.workshopId||entry.id,controlToken})+','+JSON.stringify(binding)+','+JSON.stringify(dshSource)+')');
   const end=Date.now()+90000;let sample;
-  while(Date.now()<end){sample=await evaluate('__cwbWebGL.sample()');if(sample.error)throw Error(sample.error);if(sample.ready&&sample.width>0)break;await sleep(200);}
+  while(Date.now()<end){assertCurrent();sample=await evaluate('__cwbWebGL.sample()');if(sample.error)throw Error(sample.error);if(sample.ready&&sample.width>0)break;await sleep(200);}
   if(!sample?.ready||!sample.width)throw Error('WebWallGL 等待首帧超时');
  const player={id,reader,async assetStats(){return c.evaluate('({...window.__cwbSceneResources.stats})');},async sample(){return evaluate('__cwbWebGL.sample()');},async graphics(){return evaluate('(()=>{const canvas=document.querySelector("#wp canvas"),gl=canvas.getContext("webgl2")||canvas.getContext("webgl"),ext=gl?.getExtension("WEBGL_debug_renderer_info");return {vendor:ext?gl.getParameter(ext.UNMASKED_VENDOR_WEBGL):null,renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):null,lost:gl?.isContextLost()}})()');},async setSystemSpectrum(payload){const systemSpectrum={audioAvailable:payload.audioAvailable===true,bands:(payload.bands||[]).slice(0,64).map(n=>Math.max(0,Math.min(255,Number(n)||0)))};return c.evaluate('document.querySelector('+JSON.stringify('[data-cwb-renderer-id="'+id+'"]')+').shadowRoot.querySelector("iframe").contentWindow.postMessage('+JSON.stringify({token:controlToken,systemSpectrum})+',"*");true');},async signature(){const result=await c.call('Runtime.evaluate',{expression:'new Promise(resolve=>requestAnimationFrame(()=>resolve(document.querySelector("#wp canvas").toDataURL())))',awaitPromise:true,returnByValue:true,contextId},sessionId);return result.result?.value;},async pause(value){return evaluate('__cwbWebGL.pause('+!!value+');true');},async pointer(u,v,buttons=0){return evaluate('__cwbWebGL.instance.pushPointer('+u+','+v+','+buttons+');true');},dispose:cleanup};
   if(probe)return player;
   const palette=await evaluate('(()=>{try{const tiny=document.createElement("canvas");tiny.width=tiny.height=8;const ctx=tiny.getContext("2d");ctx.drawImage(document.querySelector("#wp canvas"),0,0,8,8);const d=ctx.getImageData(0,0,8,8).data;let r=0,g=0,b=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}r/=64;g/=64;b/=64;const dark=.2126*r+.7152*g+.0722*b<145,t=v=>Math.round(dark?v*.18:220+v*.12);return {r:t(r),g:t(g),b:t(b),dark}}catch{return null}})()');
-  await c.evaluate('('+adoptRenderer.toString()+')('+JSON.stringify({id,url:candidate.url,controlToken,palette:palette||config.palette,pauseOnBlur:!!config.pauseOnBlur,supportsAudio:reader.project.general?.supportsaudioprocessing!==false})+')');
+  assertCurrent();const accepted=await c.evaluate('('+adoptRenderer.toString()+')('+JSON.stringify({selectionStamp,entryId:entry.id,id,url:candidate.url,controlToken,palette:palette||config.palette,pauseOnBlur:!!config.pauseOnBlur,supportsAudio:reader.project.general?.supportsaudioprocessing!==false})+')');
+  if(!accepted)throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});adopted=true;
   // cleanup must target the adopted layer after a successful swap.
   player.dispose=cleanup;
   return player;
@@ -92,6 +94,7 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false}){
 }
 
 function adoptRenderer(info){
+ if(info.selectionStamp&&(window.__cwbSelectionStamp!==info.selectionStamp||window.__cwbDesiredWallpaperId!==info.entryId))return false;
  const layer=document.getElementById(info.id),frame=layer.shadowRoot.querySelector('iframe');window.__codexWallpaperBridge?.dispose?.();document.getElementById('codex-wallpaper-bridge-layer')?.remove();layer.id='codex-wallpaper-bridge-layer';layer.style.opacity='1';
  const state=window.__codexWallpaperBridge={rendererId:info.id,ready:true,mode:'webwallgl',supportsAudio:info.supportsAudio,transport:'sandbox-webgl',palette:info.palette,pauseOnBlur:info.pauseOnBlur,receivedAt:Date.now(),detail:{}};
  const reduced=matchMedia('(prefers-reduced-motion: reduce)'),send=message=>frame.contentWindow?.postMessage({token:info.controlToken,...message},'*');
