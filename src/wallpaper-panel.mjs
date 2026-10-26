@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===12){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===13){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=12;let features=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=13;let features=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
@@ -68,7 +68,7 @@ export function installPanel(config,token){
  };
  const deleteWallpaper=async id=>{const group=groups(config).find(g=>g.entries.some(e=>e.id===id));if(!group)throw Error('壁纸不存在');if(!await askChoice('删除壁纸',group.name+'\n从 Codex 删除此壁纸的全部播放版本，原素材保持不变。','删除'))return {config,message:'已取消删除。'};return send({action:'delete',selectedId:id,allVersions:true});};
  $('toggle').onclick=()=>{dialog.showModal();window.__cwbMediaActivity?.report();restorePanelPosition();const r=dialog.getBoundingClientRect();placePanel(r.left,r.top)};$('close').onclick=$('done').onclick=()=>dialog.close();
- $('library').onchange=()=>{const id=$('library').value;features?.selectSaved(id);applyLive(id);};
+ $('library').onchange=()=>features?.selectSaved($('library').value,true);
  $('shade').oninput=()=>{$('opacity').value=$('shade').value+'%';const tint=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot?.querySelector('[data-cwb-shade]');if(tint){const p=config.palette||{r:20,g:22,b:28};tint.style.background=`rgba(${p.r},${p.g},${p.b},${Number($('shade').value)/100})`}};
  $('shade').onchange=$('pause').onchange=()=>busy(()=>send({action:'appearance',darkOverlay:Number($('shade').value)/100,pauseOnBlur:$('pause').checked}));
  $('import').onclick=()=>$('file').click();

@@ -134,8 +134,8 @@
     },
     {
       "path": "docs/WEBWALLGL.md",
-      "utf8Bytes": 7260,
-      "sha256": "fbd4a58603c54dbe060cabab080f10c1e2baf04cc67586eb617642c6cf896586"
+      "utf8Bytes": 7694,
+      "sha256": "25a8e1afe5c242475e28387830eb87aad62a59e6af7f44cae5b6bcbb11eaa4f1"
     },
     {
       "path": "findings.md",
@@ -149,8 +149,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 7622,
-      "sha256": "98b09a463526757b5bb2eeb03022ce5127e9b58082ec533812e1b9e1c83f4364"
+      "utf8Bytes": 7761,
+      "sha256": "181a59ef3fe8ceceb78effa913c072442250d36d252e966d44cfaad8157ae735"
     },
     {
       "path": "settings.example.json",
@@ -194,8 +194,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 31865,
-      "sha256": "4a185746d748478b496ff6120906074117d6ba7ddb2997cd4de1c5d6d3343bc3"
+      "utf8Bytes": 32339,
+      "sha256": "584e9e5b8ff705ecdd5e2ee3f2e7e7c8b1ddf19b2c1f156c1b408ac319ab6b40"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -279,8 +279,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 28586,
-      "sha256": "ae0ddb06b56b09d5de646797410a56afcb58f9ea4910317af0aba820ee701543"
+      "utf8Bytes": 28562,
+      "sha256": "9e6396723faeb4372d1178302cc2d9bb86a536ef3a028603e3fc302e23eebbf5"
     },
     {
       "path": "src/wallpaper-style.mjs",
@@ -304,8 +304,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 19446,
-      "sha256": "be6539152d2399a45361162e225f4e23ea2046110945314c63e9e692e96c6e26"
+      "utf8Bytes": 19795,
+      "sha256": "61a33164f514f565df2932118ca4b71719e406bdb2fc17e4db0efda1494e5d44"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -334,8 +334,8 @@
     },
     {
       "path": "test/integration.mjs",
-      "utf8Bytes": 22492,
-      "sha256": "082c77bc5b031bd37d254eb78defdb8a4c1db5dce6f858a51b51b319cfc5db8f"
+      "utf8Bytes": 22698,
+      "sha256": "30c00124e6f0b60a266c18a4000efaf475e3a30d00a1ea92e26338881b8ff34f"
     },
     {
       "path": "test/launch-policy.ps1",
