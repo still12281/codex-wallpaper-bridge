@@ -89,8 +89,8 @@
     },
     {
       "path": "docs/FOLLOWUP-20261027.zh-CN.md",
-      "utf8Bytes": 5008,
-      "sha256": "fadc4500d46bbabda8ddbe5c2f3d740b7db4791053b304caeef32d1299fee3cf"
+      "utf8Bytes": 7058,
+      "sha256": "ba0b777382fdd270e34db293cac582137699eab84d3c9ac29e01ef8902cb34ca"
     },
     {
       "path": "docs/MAINTENANCE.zh-CN.md",
@@ -119,8 +119,8 @@
     },
     {
       "path": "docs/PACKAGE-E-20261027.zh-CN.md",
-      "utf8Bytes": 6418,
-      "sha256": "0a3ab8db3ff0f7bfa8e76223be62efb9ac7535a840d3ea7e863927fae978cc81"
+      "utf8Bytes": 7080,
+      "sha256": "e9f28d511df097884050fe5865ad01a8236fea3700c7cddf431cc438d2011db8"
     },
     {
       "path": "docs/PAUSED-20261026.zh-CN.md",
@@ -189,8 +189,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 13632,
-      "sha256": "bdc652d2006d42e3b5bdd168237e5e7ec9962e58b5c5afec59cea2ad40fe9f18"
+      "utf8Bytes": 13857,
+      "sha256": "c82d8033fc03b373d109bf5a74137120c4fda631d0897f72134f50303748799b"
     },
     {
       "path": "settings.example.json",
@@ -384,8 +384,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 26166,
-      "sha256": "bc4b458491a4cd6ad0619decefa6b1f0321c03602c5219f95b473757251d0e2c"
+      "utf8Bytes": 26520,
+      "sha256": "5dbd2d97b4206b18918696ee6f3de02375bd4d150bcbb1cccb15f864525068c1"
     },
     {
       "path": "test/appearance.test.mjs",
