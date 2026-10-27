@@ -79,8 +79,8 @@
     },
     {
       "path": "docs/EXECUTION-PLAN-20261026.zh-CN.md",
-      "utf8Bytes": 20346,
-      "sha256": "2b9f2d0a16106980eac32f846f868c8eb65eca28967c85a4e55d96977677fba4"
+      "utf8Bytes": 20289,
+      "sha256": "b051471776cc453260d71934638b769367e31df5066f110c6d0a7d624f264afd"
     },
     {
       "path": "docs/FEATURE-MIGRATION.md",
@@ -101,6 +101,11 @@
       "path": "docs/PACKAGE-B-20261026.zh-CN.md",
       "utf8Bytes": 5486,
       "sha256": "5c434317ee6a87197f7fcb86b614c50ff7608b051ebec56fbd058b6fe4db3f94"
+    },
+    {
+      "path": "docs/PACKAGE-C-20261027.zh-CN.md",
+      "utf8Bytes": 3369,
+      "sha256": "b0831c11bf7665b6295f2fd360cad7111876a760394893ce1421f679bb66038f"
     },
     {
       "path": "docs/PAUSED-20261026.zh-CN.md",
@@ -169,8 +174,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 11276,
-      "sha256": "67d25859f3dda11fb3a5d5e96c2bf3598fa2c8463529e46ffa15d597b9b3efdb"
+      "utf8Bytes": 11672,
+      "sha256": "97c43c409393c24d793a594bbb01649c46b8a2c188e2e785ce1cbfafbdab5621"
     },
     {
       "path": "settings.example.json",
@@ -319,8 +324,8 @@
     },
     {
       "path": "src/wallpaper-pointer.mjs",
-      "utf8Bytes": 2556,
-      "sha256": "e42d4a940ca9de2f8d4a46bb3d186b6e1532dce8db3e078f9756bf44159f6faf"
+      "utf8Bytes": 2916,
+      "sha256": "c02140a9c17a92b23f93c0477e1d04a215b5a48494f67cdecfd85904ea8677fa"
     },
     {
       "path": "src/wallpaper-properties.mjs",
@@ -349,8 +354,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 23683,
-      "sha256": "d34e76a7a833a0506e4727ff1ca02701b72c906f0a286b74535acada5868c1d8"
+      "utf8Bytes": 23827,
+      "sha256": "b1251b3a68563b3a311603d3fbbbb62e52af3baacb0679fc262fe7647f6af5b5"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -459,8 +464,8 @@
     },
     {
       "path": "test/webwallgl-integration.mjs",
-      "utf8Bytes": 10289,
-      "sha256": "90e6d4733dad158d6b9f526b9bdceaaeec45b6d9eea1431bd5ee1eb78c9c1384"
+      "utf8Bytes": 10603,
+      "sha256": "6622ced6fc5cb0390d9fad688591fd12c8eb5107d869c1721f578be7477af0a4"
     },
     {
       "path": "test/webwallgl-source.test.mjs",

@@ -79,3 +79,7 @@ Readonly review corrections accepted: media reconciliation on all apply/fallback
 - 当前自有宿主PID19556、主/分离页均ready且无报告错误（暂停前只读确认）；保留其正常运行，不停壁纸、不重启Codex。所有子代理已完成，无继续任务。
 - C2虚拟资源URL候选在复制当前Codex CSP的隔离试验中被connect-src拒绝，拦截请求数0；没有放宽CSP或开放Web通道。C3/D/E和真实场景属性/输入视觉验收仍未完成。
 - 续接入口 docs/PAUSED-20261026.zh-CN.md。不得凭旧计划自动恢复，等用户明确继续。
+
+## 2026-10-27 恢复执行 C
+
+用户明确继续；从干净ab1aa58恢复，保留暂停后新增库记录与当前选择。C指针控件起拖越界问题已修，属性/隔离WebGL/面板定向通过，真实AMD工坊隐藏候选检查通过。C九文件备份部署v16，当前配置全部字段一致、Codex未重启。C2/C3与可见作者效果边界见docs/PACKAGE-C-20261027.zh-CN.md。
