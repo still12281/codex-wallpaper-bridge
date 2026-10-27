@@ -1,7 +1,50 @@
 // Serialized into the client. Desktop-style window chrome without an OS window.
 export function installPanelWindow(host,shadow,dialog){
  const $=id=>shadow.getElementById(id),positionKey='codex-wallpaper-panel-position-v1',sizeKey='codex-wallpaper-panel-size-v1';
- const style=document.createElement('style');style.textContent=`dialog[aria-labelledby="title"]{position:fixed;box-sizing:border-box;padding:0;min-width:0;min-height:0;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:hidden;border-radius:10px}dialog[aria-labelledby="title"][open]{display:flex;flex-direction:column}.cwb-titlebar{display:flex;align-items:center;flex:0 0 44px;gap:8px;padding:0 8px 0 16px;touch-action:none;user-select:none;border-bottom:1px solid #8195a430}.cwb-titlebar h2{font-size:14px;font-weight:600;margin:0;flex:1;padding:0}.cwb-titlebar button{position:static!important;float:none!important;padding:0!important;width:36px;height:30px;border:0;border-radius:4px;background:transparent!important}.cwb-titlebar button:hover{background:#8195a430!important}.cwb-titlebar #close:hover{background:#b52d36!important;color:white!important}.cwb-window-body{min-height:0;flex:1;overflow:auto;padding:4px 20px 18px;overscroll-behavior:contain}.cwb-window-body label{margin-top:12px}.cwb-window-body p{margin:8px 0;font-size:12px}#status{min-height:18px;margin:8px 0}.cwb-resize{position:absolute;touch-action:none;z-index:8}dialog[data-maximized="true"] .cwb-resize{display:none}`;shadow.append(style);
+ const style=document.createElement('style');style.textContent=`dialog[aria-labelledby="title"]{position:fixed;box-sizing:border-box;padding:0;min-width:0;min-height:0;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:hidden;border-radius:10px}dialog[aria-labelledby="title"][open]{display:flex;flex-direction:column}.cwb-titlebar{display:flex;align-items:center;flex:0 0 44px;gap:8px;padding:0 8px 0 16px;touch-action:none;user-select:none;border-bottom:1px solid #8195a430}.cwb-titlebar h2{font-size:14px;font-weight:600;margin:0;flex:1;padding:0}.cwb-titlebar button{position:static!important;float:none!important;padding:0!important;width:36px;height:30px;border:0;border-radius:4px;background:transparent!important}.cwb-titlebar button:hover{background:#8195a430!important}.cwb-titlebar #close:hover{background:#b52d36!important;color:white!important}.cwb-window-body{min-height:0;flex:1;overflow:auto;padding:4px 20px 18px;overscroll-behavior:contain}.cwb-window-body label{margin-top:12px}.cwb-window-body p{margin:8px 0;font-size:12px}#status{min-height:18px;margin:8px 0}.cwb-resize{position:absolute;touch-action:none;z-index:8}dialog[data-maximized="true"] .cwb-resize{display:none}`;style.textContent+=`
+ .cwb-window-body{container:cwb-panel / inline-size;min-width:0;scroll-padding:12px;scrollbar-gutter:stable;padding:4px 16px 18px}
+ .cwb-window-body *,dialog *{box-sizing:border-box}
+ .cwb-titlebar{min-width:0}.cwb-titlebar h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cwb-titlebar button{flex-shrink:0}
+ .cwb-window-body section,#cwb-visual{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cwb-window-body :is(label,select,input,details,section,.cwb-preview){min-width:0;max-width:100%}
+ .cwb-window-body :is(p,strong,summary,button,label){overflow-wrap:anywhere}
+ .cwb-window-body input[type=checkbox]{width:16px!important;height:16px;margin:0 6px 0 0!important;vertical-align:middle;flex-shrink:0}
+ .cwb-row{gap:8px;align-items:center}.cwb-row>*{flex:1 1 140px;min-width:0}
+ .cwb-library-filters>label{flex-basis:120px}.cwb-pagination{justify-content:space-between}.cwb-pagination>*{flex:0 1 auto}.cwb-pagination #cwb-page{min-width:60px}
+ .cwb-card{display:flex;flex-direction:column}.cwb-card label{display:flex;align-items:center;gap:4px;margin-top:auto}.cwb-card span:not(.cwb-badge){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;max-height:none;overflow:hidden}.cwb-preview-head strong{min-width:0;flex:1}
+ #engine-import-actions button{flex:1 1 140px}#cwb-batch-status{flex-basis:100%}
+ dialog:not([aria-labelledby=title]){box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);overflow:auto}
+ @container cwb-panel (max-width:360px){.cwb-window-body section,#cwb-visual{grid-template-columns:minmax(0,1fr)}.cwb-preview-head{flex-wrap:wrap}.cwb-row>button{flex-basis:100%}.cwb-pagination>button{flex-basis:auto}}
+
+ :host{--cwb-radius:8px;--cwb-control-height:34px}
+ :host button{min-height:var(--cwb-control-height);padding:7px 12px;border:1px solid var(--cwb-border);border-radius:var(--cwb-radius);line-height:1.4;font-weight:500;background:var(--cwb-field);color:var(--cwb-ink);transition:background-color 100ms,border-color 100ms;white-space:normal}
+ :host button:not(:disabled):hover{background:color-mix(in srgb,var(--cwb-field),var(--cwb-ink) 8%)}
+ :host button:not(:disabled):active{background:color-mix(in srgb,var(--cwb-field),var(--cwb-ink) 15%)}
+ :host button:disabled{opacity:.48;cursor:default}
+ :host :is(button,input,select,summary,.cwb-titlebar):focus-visible{outline:2px solid var(--cwb-accent);outline-offset:2px}
+ :host button[data-cwb-variant=primary]{background:var(--cwb-accent);color:var(--cwb-on-accent);border-color:transparent}
+ :host button[data-cwb-variant=primary]:not(:disabled):hover{background:color-mix(in srgb,var(--cwb-accent),var(--cwb-ink) 12%)}
+ :host button[data-cwb-variant=primary]:not(:disabled):active{background:color-mix(in srgb,var(--cwb-accent),var(--cwb-ink) 20%)}
+ :host button[data-cwb-variant=danger]{color:var(--cwb-danger);background:var(--cwb-danger-bg);border-color:currentColor}
+ :host button[data-cwb-variant=danger]:not(:disabled):hover{background:color-mix(in srgb,var(--cwb-danger-bg),var(--cwb-danger) 12%)}
+ :host button[data-cwb-variant=danger]:not(:disabled):active{background:color-mix(in srgb,var(--cwb-danger-bg),var(--cwb-danger) 20%)}
+ :host :is(select,input:not([type=checkbox]):not([type=range]):not([type=file])),:host #engine-picker input:not([type=checkbox]){min-height:var(--cwb-control-height);border:1px solid var(--cwb-border);border-radius:var(--cwb-radius);background:var(--cwb-field);color:var(--cwb-ink);padding:7px 10px;font:inherit}
+ :host :is(input[type=checkbox],input[type=range]){accent-color:var(--cwb-accent)}
+ :host input[type=color]{padding:3px!important;min-width:48px}
+ :host .cwb-window-body p{opacity:1;color:var(--cwb-muted);line-height:1.55}
+ :host .cwb-window-body details{border-color:var(--cwb-border)}:host summary{padding:4px 0;line-height:1.6;border-radius:4px}
+ :host .cwb-preview,:host #cwb-display-options{border:1px solid var(--cwb-border);border-radius:var(--cwb-radius);padding:12px;background:var(--cwb-confirm-bg)}
+ :host .cwb-preview img{background:var(--cwb-field)}:host .cwb-card img{background:color-mix(in srgb,var(--cwb-field),var(--cwb-ink) 8%)}:host .cwb-card{border-color:var(--cwb-border)}
+ :host .cwb-card button{background:transparent;border:0;padding:0;border-radius:0}
+ :host .cwb-card button[aria-pressed=true]{outline-color:var(--cwb-accent)}
+ :host #cwb-display-options h3{font-size:14px;margin:0}:host #cwb-display-options{margin:12px 0;gap:12px}
+ :host .cwb-titlebar button{min-height:30px;border:0}:host #toggle{min-height:28px}
+ :host dialog[aria-busy=true] #status{color:var(--cwb-accent)}
+ @media(prefers-reduced-motion:reduce){:host *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+ @media(forced-colors:active){:host button{border:1px solid ButtonText}:host :is(button,input,select,summary):focus-visible{outline-color:Highlight}}
+ `;shadow.append(style);
+ for(const id of ['library-apply','engine-import','cwb-batch-import','cwb-display-apply','cwb-renderer-apply','apply','cwb-quality-save','cwb-choice-confirm','realtime-accept','done'])if($(id))$(id).dataset.cwbVariant='primary';
+ for(const id of ['library-delete','delete','cwb-preset-delete'])if($(id))$(id).dataset.cwbVariant='danger';
  let maximized=false,restoreRect=null,dragging=null,sizing=null;
  const titlebar=document.createElement('header');titlebar.className='cwb-titlebar';titlebar.tabIndex=0;titlebar.title='拖动移动；双击最大化；方向键移动，Shift+方向键缩放';
  const maximize=document.createElement('button');maximize.id='panel-maximize';maximize.type='button';maximize.setAttribute('aria-label','最大化');maximize.title='最大化';maximize.innerHTML='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" fill="none" stroke="currentColor"/></svg>';

@@ -57,3 +57,11 @@ Bounded native capture acceptance: raw command-line escaping was the first failu
 
 - 诊断中一次整幅 PNG 导出发生 CDP 连接断开，但客户端和宿主存活；具体原因未确认，改为 960px JPEG 预览后成功。未将其误记为渲染器崩溃。
 - 最终只读复核发现并修复 FPS 编辑丢失比例/品质、超时未取消远端解码导致继续积压两项边界。1900ms 超时隔离与显式重试的真实窗口检查通过；原生交互和物理呈现延迟仍未接受。
+# 2026-10-26 执行包 A
+
+- 当前源码基线 052338f，初始无未提交改动。实际客户端主/分离页均有 v13 面板，当前是 1280×720 媒体，不能恢复历史 GPU/原生选择。
+- 图库仍用 viewport `@media(max-width:520px)`；导入预览 sticky/top:-24px 会遮挡小面板；两单项按钮按勾选数量改成同一批量流程，另有第三个批量入口。
+- 当前只读 DOM 中引用栏已透明、utility rail 为配色 .48；tooltip/popover/额度卡片未打开，不能声称已实际验收。先按当前语义选择器与材质变量补齐，隔离样例覆盖，真实未出现项如实留存。
+- 设计：Fluent 的语义色/中性色/交互状态作主规范，借鉴 shadcn 的 primary/secondary/destructive 分类及 DSH 的轻量 token/图库结构；保留原生控件、dialog、Shadow DOM，不引入 React/Tailwind。仅参考公开规范，无复制第三方组件源码。
+- 诊断发现 runtime-status.json 为空且未发现旧 video-cdp-host 进程；客户端页内背景仍 ready。当前阶段只更新 UI，保留客户端/媒体层；不将旧运行日志当当前宿主运行证据。
+- 读取不存在的 native-surfaces.mjs 失败后，已用 rg 确认实际实现位于 wallpaper-style / wallpaper-widgets / upstream-adapters；Windows rg 不展开 windows/*.ps1，后续使用 --glob。

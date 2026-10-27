@@ -79,8 +79,8 @@
     },
     {
       "path": "docs/EXECUTION-PLAN-20261026.zh-CN.md",
-      "utf8Bytes": 20081,
-      "sha256": "18133f50ad8a364a3e30d0ee0a837c90e396436d174df242b00e55acf869657b"
+      "utf8Bytes": 20312,
+      "sha256": "d582548b261fa4105444291998829efd6bfd82e4c7ed95ed83327aca17ac83b3"
     },
     {
       "path": "docs/FEATURE-MIGRATION.md",
@@ -91,6 +91,11 @@
       "path": "docs/MAINTENANCE.zh-CN.md",
       "utf8Bytes": 3878,
       "sha256": "07c57d89c8f06f85fba2930f06b2b0fdd1ac1054505daab4498648140b612a30"
+    },
+    {
+      "path": "docs/PACKAGE-A-20261026.zh-CN.md",
+      "utf8Bytes": 6402,
+      "sha256": "199f7ebdfc779cfbb56c464ea28541a863412aab92ddb66b9d5ad4f4b1324c34"
     },
     {
       "path": "docs/REALTIME.md",
@@ -144,8 +149,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 9333,
-      "sha256": "318ba33d42f08c448a80f26177de88b4bf634360f245b7d57c87914acf5153ec"
+      "utf8Bytes": 10688,
+      "sha256": "d53b872e927750e506a5a84112f07b982bc523afaf54be399a9e098eaa8bc65a"
     },
     {
       "path": "package.json",
@@ -154,8 +159,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 8427,
-      "sha256": "caace8507909b4671c417b1697879af607e18fcbe1752b5c7a75bb5b35c62c3e"
+      "utf8Bytes": 9375,
+      "sha256": "b962eea93289502fd4bc5644b766f189cdef0ce6697260204f4665ec79e76b8d"
     },
     {
       "path": "settings.example.json",
@@ -199,8 +204,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 32339,
-      "sha256": "584e9e5b8ff705ecdd5e2ee3f2e7e7c8b1ddf19b2c1f156c1b408ac319ab6b40"
+      "utf8Bytes": 32772,
+      "sha256": "ebf948b1e19064645f1e79763bf46b458bf5873d52a31a0838c97758e01a758c"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -234,8 +239,8 @@
     },
     {
       "path": "src/panel-window.mjs",
-      "utf8Bytes": 7628,
-      "sha256": "7741184133b073ee1c6ecc7a22034eb4da2dd16e3913cff8db201d98018a7953"
+      "utf8Bytes": 12882,
+      "sha256": "dece90e0e5d214c910fe81a209215608406ecbbb0b236f627816880ad19d2085"
     },
     {
       "path": "src/realtime-player.mjs",
@@ -264,8 +269,8 @@
     },
     {
       "path": "src/upstream-adapters.mjs",
-      "utf8Bytes": 5062,
-      "sha256": "de7be2d6fad41f52002279279f8b75e6624ff4a71222bc689aa0e047d9bd5492"
+      "utf8Bytes": 5488,
+      "sha256": "1286b108fba359fd70c5d7013085f293500b6a7a7da84cc7ffcb433b8244688a"
     },
     {
       "path": "src/video-cdp-host.mjs",
@@ -284,13 +289,13 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 28562,
-      "sha256": "9e6396723faeb4372d1178302cc2d9bb86a536ef3a028603e3fc302e23eebbf5"
+      "utf8Bytes": 29236,
+      "sha256": "e86e3e0f753c1da4736e3609bbf9ff50513534cce10b95ff1b804d1619f68f9c"
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 11216,
-      "sha256": "417697621e185c4ff5d34d614c8a2108fd4ce41733598ae5a31763cf2847a84b"
+      "utf8Bytes": 11909,
+      "sha256": "47b96283200ee60dac6ebf720f06b63446703c31bcd6e32b82d3fd1c6bb8cf91"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -309,8 +314,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 20332,
-      "sha256": "13da1a58e6698becf528572e8d573813e97c448e29e31f669d2adc1c1ff11aff"
+      "utf8Bytes": 21421,
+      "sha256": "f15065ff7b2046e5ca90fda1331b5d0865a5ed5912ce7f762c7b7c3afdcf4673"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -339,8 +344,8 @@
     },
     {
       "path": "test/integration.mjs",
-      "utf8Bytes": 22698,
-      "sha256": "30c00124e6f0b60a266c18a4000efaf475e3a30d00a1ea92e26338881b8ff34f"
+      "utf8Bytes": 22701,
+      "sha256": "e6750efb22473d2cacfb055f2d17f89f50cc5ac7f2cd7637cdb639d3e70f1c3a"
     },
     {
       "path": "test/launch-policy.ps1",
@@ -374,8 +379,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 13122,
-      "sha256": "523dfce2cb783ec91d780f6d4d0c594bc785d28f98eb2da56b2f9f693066e753"
+      "utf8Bytes": 21716,
+      "sha256": "d80f7fe420f9f4440b3cb96b3a6de5c4be6d0e8c549608120b281c8302eb211c"
     },
     {
       "path": "test/preflight.test.mjs",
