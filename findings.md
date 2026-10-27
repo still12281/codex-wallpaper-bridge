@@ -99,3 +99,7 @@ Bounded native capture acceptance: raw command-line escaping was the first failu
 - 独立复核问题已修：切换作者属性key即清空旧字段并捕获目标ID；busy结束同步新出现控件；默认wire保留原始JSON而非把未知类型对象转字符串；保存不顺带删除原有未支持覆盖；延迟up释放最新坐标。属性单元和作者面板竞态/类型检查通过。C源码未部署，当前实际客户端仍B面板v15。
 - C2有界试验：只读取得当前客户端CSP，复制到独立headless页面；对虚拟项目URL的fetch被connect-src阻断，Fetch拦截请求数0。结果在仓库外package-b-work/web-csp-result.json。没有尝试伪装成可信OpenAI域、放宽CSP或开放Web入口。
 - D只读：上游FrameGate可接正FPS，本项目当前限制12/24/30/60；若续做，GPU高刷应独立于媒体/原生限制，60Hz环境不能验收120/144实际呈现。E的冷启、睡眠、正常退出清理及任务栏/闪屏需用户正常操作；未实施这些新功能。
+
+## 2026-10-27 当前续接结果
+
+C属性/输入与内嵌字体、D真实口径/高刷/4K R=1/有界缓存、E逻辑轮播/失败恢复/备份已部署v18。运行34个src模块一致，9条库与配置保留，官方客户端未重启。30分钟隔离资源结果结束，内存早末private commit497→533MiB且末段26MiB跃升未完全归因；不能宣称无泄漏。具体T01—T14未完成项与证据见docs/PACKAGE-E-20261027.zh-CN.md；Web不绕CSP，正常冷启/睡眠/任务栏等留用户正常操作。
