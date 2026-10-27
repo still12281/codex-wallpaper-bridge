@@ -9,7 +9,7 @@ export function playbackMetrics(entry,sample,previous,now=Date.now()){
  if(entry.mime?.startsWith('image/')&&entry.mime!=='image/gif'&&mode==='media')parts.push('静态图片');
  else parts.push(metric+' '+(Number.isFinite(measured)?measured.toFixed(1):'待采样')+' FPS');
  if(mode==='media')parts.push('原素材 '+(entry.importInfo?.sourceFps?entry.importInfo.sourceFps.toFixed(2)+' FPS':'帧率未知'));
- if(mode==='webwallgl'){if(sample.videoTexScale!==undefined)parts.push('视频纹理 '+Math.round(sample.videoTexScale*100)+'%');if(sample.qualityEffective)parts.push('实际画质 '+Object.entries(sample.qualityEffective).map(([k,v])=>k+'='+v).join('/'));}
+ if(mode==='webwallgl'){if(sample.videoTexScale!==undefined)parts.push('视频纹理 '+Math.round(sample.videoTexScale*100)+'%');if(sample.qualityEffective)parts.push('实际画质 '+Object.entries(sample.qualityEffective).map(([k,v])=>k+'='+v).join('/'));if(sample.fontsLoaded)parts.push('已载内嵌字体 '+sample.fontsLoaded);if(sample.fontAdapterExpected&&sample.fontBufferAdapter===false)parts.push('当前引擎字体适配未匹配');}
  if(sample.paused)parts.push('已暂停');else if(sample.stats?.idle)parts.push('静止待命');else if(sample.hidden)parts.push('后台');
  return {reading:{identity,count,at:now},data:{metric,fps:Number.isFinite(measured)?measured:null,configuredFps:sample.configuredFps||entry.limits?.fps,measurement:'renderer/decoder/canvas submissions; not physical presentation'},text:parts.join(' · ')+'；非屏幕呈现帧率'};
 }

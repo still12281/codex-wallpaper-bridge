@@ -1,9 +1,9 @@
 // Serialized into the host document; passive observation never consumes Codex input.
-export function installWallpaperPointer(send,{fps=24,type='scene'}={}){
+export function installWallpaperPointer(send,{fps=24,type='scene',bounds}={}){
  let frame=0,release=0,last=[.5,.5,0,0],held=0,until=0;const suppressed=new Set();
  const mods=e=>(e.ctrlKey?1:0)|(e.shiftKey?2:0)|(e.altKey?4:0)|(e.metaKey?8:0);
  const blocked=e=>e.composedPath().some(n=>n?.matches?.('button,input,select,textarea,a,[role="button"],[role="textbox"],[contenteditable]:not([contenteditable="false"]),[data-app-action-timeline-scroll],[data-message-author-role],[data-transcript-role],pre,code,#codex-wallpaper-controls'))||!!getSelection()?.toString();
- const position=e=>[Math.max(0,Math.min(1,e.clientX/Math.max(1,innerWidth))),Math.max(0,Math.min(1,e.clientY/Math.max(1,innerHeight)))];
+ const position=e=>{const box=bounds?.()||{left:0,top:0,width:innerWidth,height:innerHeight};return [Math.max(0,Math.min(1,(e.clientX-box.left)/Math.max(1,box.width))),Math.max(0,Math.min(1,(e.clientY-box.top)/Math.max(1,box.height)))];};
  const move=e=>{const excluded=blocked(e);if(excluded&&e.buttons)suppressed.add(e.pointerId);last=[...position(e),excluded||suppressed.has(e.pointerId)?0:performance.now()<until?held:e.buttons,mods(e)];if(!frame)frame=requestAnimationFrame(()=>{frame=0;send({pointer:last});});};
  const down=e=>{clearTimeout(release);if(blocked(e))suppressed.add(e.pointerId);held=suppressed.has(e.pointerId)?0:e.buttons;until=held?performance.now()+Math.max(20,Math.min(100,1000/fps+1)):0;last=[...position(e),held,mods(e)];send({pointer:last});};
  const up=e=>{clearTimeout(release);if(suppressed.has(e.pointerId)){if(!e.buttons)suppressed.delete(e.pointerId);held=0;until=0;}last=[...position(e),last[2],mods(e)];const finish=()=>{held=e.buttons;last=[last[0],last[1],suppressed.has(e.pointerId)?0:e.buttons,mods(e)];send({pointer:last});};if(held&&!e.buttons&&performance.now()<until)release=setTimeout(finish,until-performance.now());else finish();};

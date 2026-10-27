@@ -87,3 +87,7 @@ Readonly review corrections accepted: media reconciliation on all apply/fallback
 ## 2026-10-27 D源码阶段
 
 D指标口径/GPU独立高刷/4K R=1/128条目且512MiB有界缓存已实现，相关12项和面板检查通过。真实工坊在隔离AMD Chromium对照发现并证明小资源误淘汰；大包冷读仍7秒级，不宣称普遍提速。源码阶段提交后继续E，再联合部署，当前客户端仍C/v16。
+
+## 2026-10-27 E源码与C3字体
+
+E轮播逻辑分组、GPU/原版保存引用、坏项跳过/保存与恢复失败停止、manual ticket优先已实施并复核；4项单元、隔离真实宿主自动/手动竞态、已有端到端及生命周期通过。完整备份补上customDisplay副本，往返/遗漏拒绝通过。C3实际CSP字体根因已复现并用固定引擎内存FontFace二进制适配修复，原件/CSP不变；真实隐藏文字场景和隔离回归通过，crop指针反算也通过。D/E将联合部署；30分钟临时资源采样仍进行，不预判结果。

@@ -11,7 +11,7 @@ An experimental, local wallpaper layer for the Codex desktop app on Windows. Pic
 ## Features
 
 - Optional sandboxed WebGL scenes and native scene/web capture, with confirmation, save-only references and failure recovery. Native sample acceptance and limits: [WebGL](docs/WEBWALLGL.md), [realtime](docs/REALTIME.md).
-- Paged thumbnails, type/rating filters, hide/restore, portable appearance presets, image/video rotation, glass, fonts, parallax and click/trail FX.
+- Paged thumbnails, type/rating filters, hide/restore, portable appearance presets, saved media/GPU/native-project rotation, glass, fonts, parallax and click/trail FX.
 - Optional [system media](docs/SYSTEM-MEDIA.md), off by default.
 - Resize the embedded settings panel from its lower-right grip; drag its title, remember its size, or reset it. No separate window.
 

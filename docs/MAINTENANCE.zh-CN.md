@@ -10,7 +10,7 @@ node tools/library-maintenance.mjs backup "DATA_DIR" "BACKUP_DIR"
 node tools/library-maintenance.mjs restore "BACKUP_DIR" "NEW_DATA_DIR"
 ```
 
-备份包含 settings、库记录、当前选择、用户偏好和所有被引用的应用内 media/staging 素材，包括静态保帧。应用内绝对素材路径转换为相对路径，恢复后可以迁移数据目录。外部图片/视频和 Wallpaper Engine 工坊项目只保存引用，需另外保留其原件。外观预设不包含这些数据。
+备份包含 settings、库记录、当前选择、用户偏好和所有被引用的应用内 media/staging 素材，包括静态保帧和 customDisplay 中待恢复的原播放副本。应用内绝对素材路径转换为相对路径，恢复后可以迁移数据目录。外部图片/视频和 Wallpaper Engine 工坊项目只保存引用，需另外保留其原件。外观预设不包含这些数据。
 
 备份/恢复目标必须为空，已有数据不会被覆盖；不删除原数据。恢复前验证相对路径、必需素材和 SHA-256；失败的目录不作为完成品，不直接启用。恢复到新目录后，设置 `CODEX_WALLPAPER_DATA_DIR`，重新构建入口，再正常退出并从新入口启动。工具不会替换当前运行会话。配置损坏时也采用最近有效备份恢复到新目录，保留损坏文件以供诊断。
 

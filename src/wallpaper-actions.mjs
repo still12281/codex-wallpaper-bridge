@@ -136,11 +136,16 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    if(!Array.isArray(req.ids)||req.ids.length>3000||req.ids.some(id=>typeof id!=='string'||id.length>128)||typeof req.hidden!=='boolean')throw Error('隐藏项目无效');const previous=settings.hiddenWallpaperIds,ids=new Set(previous);for(const id of req.ids)req.hidden?ids.add(id):ids.delete(id);if(ids.size>6000)throw Error('隐藏记录达到上限');settings.hiddenWallpaperIds=[...ids];try{await saveConfig(root,settings);}catch(error){settings.hiddenWallpaperIds=previous;throw error;}return {config:settings,message:req.hidden?'已隐藏所选壁纸，原文件保持不变。':'已恢复所选壁纸。'};
   }
   if(req.action==='rotation-config'){
-   if(typeof req.enabled!=='boolean'||!Number.isInteger(req.intervalSeconds)||req.intervalSeconds<10||req.intervalSeconds>86400||!['sequential','shuffle'].includes(req.order)||!Array.isArray(req.ids)||req.ids.length>3000||req.ids.some(id=>!settings.library.some(e=>e.id===id&&!['realtime','webwallgl'].includes(e.mode))))throw Error('轮播参数无效');
-   const previous=settings.rotation;settings.rotation={enabled:req.enabled,intervalSeconds:req.intervalSeconds,order:req.order,ids:[...new Set(req.ids)]};try{await saveConfig(root,settings);}catch(error){settings.rotation=previous;throw error;}return {config:settings,message:'轮播设置已保存；仅轮播已导入的图片和视频，后台自动等待。'};
+   if(typeof req.enabled!=='boolean'||!Number.isInteger(req.intervalSeconds)||req.intervalSeconds<10||req.intervalSeconds>86400||!['sequential','shuffle'].includes(req.order)||!Array.isArray(req.ids)||req.ids.length>3000||req.ids.some(id=>!settings.library.some(e=>e.id===id&&(['realtime','webwallgl'].includes(e.mode)?!!e.projectRoot:!!e.file))))throw Error('轮播参数无效');
+   const previous=settings.rotation;settings.rotation={enabled:req.enabled,intervalSeconds:req.intervalSeconds,order:req.order,ids:[...new Set(req.ids)]};try{await saveConfig(root,settings);}catch(error){settings.rotation=previous;throw error;}return {config:settings,message:'轮播设置已保存；轮播已保存的图片、视频和GPU/原版场景；后台等待，失败项跳过。'};
   }
   if(req.action==='rotation-next'){
-   const next=nextRotation(settings);if(!next)return {config:settings,message:'至少需要两张未隐藏的图片或视频。'};const previous=settings.selectedId;settings.selectedId=next.id;try{await apply();await saveConfig(root,settings);}catch(error){settings.selectedId=previous;await apply();throw error;}return {config:settings};
+   const tried=new Set(),skipped=[];let next;
+   while((next=nextRotation(settings,Math.random,tried))){
+    try{const result=await action(c,{action:'select',selectedId:next.id});return {...result,rotation:{skipped},message:skipped.length?'已切换，跳过 '+skipped.length+' 个失败项目。':'已切换到下一张壁纸。'};}
+    catch(error){if(['CWB_SELECTION_SUPERSEDED','CWB_SELECTION_SAVE_FAILED','CWB_SELECTION_RESTORE_FAILED'].includes(error.code))throw error;const group=libraryGroups(settings.library,settings.selectedId).find(g=>g.entries.some(e=>e.id===next.id));for(const entry of group?.entries||[next])tried.add(entry.id);skipped.push({id:next.id,name:next.name,error:error.message});}
+   }
+   return {config:settings,rotation:{skipped,allFailed:skipped.length>0},message:skipped.length?'所有候选都未成功，保留当前背景；失败 '+skipped.length+' 项。':'至少需要两个未隐藏的逻辑壁纸项目。'};
   }
   if(req.action==='engine-preview')return {preview:await catalog.preview(req.projectToken)};
   if(req.action==='wallpaper-engine-confirm'){
@@ -229,7 +234,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const selected=settings.library.find(e=>e.id===req.selectedId);if(!selected)throw Error('壁纸不存在');
    if(settings.selectedId===req.selectedId&&(!services.isSelectedHealthy||await services.isSelectedHealthy(c)))return {config:settings,message:'当前已使用此壁纸。'};
    const previous=settings.selectedId;settings.selectedId=req.selectedId;
-   try{await apply();await saveConfig(root,settings)}catch(e){settings.selectedId=previous;if(e.code!=='CWB_SELECTION_SUPERSEDED')await apply();throw e}return {config:settings};
+   let prepared=false;try{await apply();prepared=true;await saveConfig(root,settings)}catch(error){settings.selectedId=previous;if(error.code!=='CWB_SELECTION_SUPERSEDED')try{await apply();}catch(restoreError){throw Object.assign(Error(error.message+'；旧背景恢复未确认：'+restoreError.message,{cause:error}),{code:restoreError.code==='CWB_SELECTION_SUPERSEDED'?restoreError.code:'CWB_SELECTION_RESTORE_FAILED'});}if(prepared&&error.code!=='CWB_SELECTION_SUPERSEDED')throw Object.assign(Error('壁纸设置保存失败：'+error.message,{cause:error}),{code:'CWB_SELECTION_SAVE_FAILED'});throw error;}return {config:settings};
   }
   if(req.action==='import-start'){
    if(!types[req.mime]||!Number.isInteger(req.size)||req.size<1||req.size>250*1024*1024)throw Error('仅支持250MB以内的图片或视频');

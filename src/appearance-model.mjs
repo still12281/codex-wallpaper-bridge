@@ -1,3 +1,4 @@
+import {libraryGroups} from './library-model.mjs';
 export const visualDefaults={theme:'auto',glassBlur:0,glassOpacity:.5,wallpaperBlur:0,brightness:1,flip:false,speed:1,transitionMs:250,fontFamily:'inherit',codeFontFamily:'inherit',fontSize:14,parallax:0,volume:0,fxEnabled:false,fxClick:true,fxTrail:true,fxClickStyle:'ripple',fxTrailStyle:'comet',fxColorMode:'accent',fxColor:'#6cd9e8',fxClickSize:140,fxClickGlow:60,fxTrailLength:420,fxTrailWidth:3,fxTrailGlow:60,fxOpacity:85,fxBlend:'screen'};
 const ranges={glassBlur:[0,24],glassOpacity:[.2,1],wallpaperBlur:[0,20],brightness:[.25,1.5],speed:[.25,2],transitionMs:[0,1000],fontSize:[12,22],parallax:[0,30],volume:[0,1],fxClickSize:[40,400],fxClickGlow:[0,100],fxTrailLength:[80,2000],fxTrailWidth:[1,12],fxTrailGlow:[0,100],fxOpacity:[10,100]};
 const choices={theme:['auto','light','dark'],fontFamily:['inherit','system-ui','Microsoft YaHei','KaiTi','SimSun'],codeFontFamily:['inherit','Consolas','Cascadia Code','monospace'],fxClickStyle:['ripple','spark','both'],fxTrailStyle:['comet','dust'],fxColorMode:['accent','rainbow','custom'],fxBlend:['screen','normal','lighten']};
@@ -17,7 +18,18 @@ export function parsePreset(input){
  const p=value.appearance;if(!p||!Number.isFinite(p.darkOverlay)||p.darkOverlay<.25||p.darkOverlay>.85||!Number.isFinite(p.lightOverlay)||p.lightOverlay<.25||p.lightOverlay>.85||typeof p.pauseOnBlur!=='boolean')throw Error('预设中的遮罩或播放设置无效');
  return {name:value.name.trim(),appearance:{visual:sanitizeVisual(p.visual),darkOverlay:p.darkOverlay,lightOverlay:p.lightOverlay,pauseOnBlur:p.pauseOnBlur,surfaceSync:{code:p.surfaceSync?.code!==false,embedded:p.surfaceSync?.embedded!==false}}};
 }
-export function nextRotation(settings,random=Math.random){
- const rotation=settings.rotation||{},hidden=new Set(settings.hiddenWallpaperIds||[]),ids=new Set(rotation.ids||[]),candidates=settings.library.filter(e=>!['realtime','webwallgl'].includes(e.mode)&&e.file&&!hidden.has(e.workshopId||e.sourceKey||e.id)&&(!ids.size||ids.has(e.id)));
- if(candidates.length<2)return null;const available=candidates.filter(e=>e.id!==settings.selectedId);if(rotation.order==='shuffle')return available[Math.min(available.length-1,Math.floor(random()*available.length))];const index=candidates.findIndex(e=>e.id===settings.selectedId);return candidates[(index+1)%candidates.length];
+export function rotationCandidates(settings){
+ const rotation=settings.rotation||{},hidden=new Set(settings.hiddenWallpaperIds||[]),ids=new Set(rotation.ids||[]);
+ return libraryGroups(settings.library,settings.selectedId).filter(group=>!group.entries.some(e=>[e.workshopId,e.sourceKey,e.id].some(key=>hidden.has(key)))).map(group=>{
+  const valid=group.entries.filter(e=>['webwallgl','realtime'].includes(e.mode)?!!e.projectRoot:!!e.file);
+  const explicit=valid.find(e=>ids.has(e.id)),entry=explicit||valid.find(e=>e.id===group.id)||valid[0];
+  return {...group,entry,id:entry?.id};
+ }).filter(group=>group.entry&&(!ids.size||group.entries.some(e=>ids.has(e.id))));
+}
+export function nextRotation(settings,random=Math.random,tried=new Set()){
+ const candidates=rotationCandidates(settings);if(candidates.length<2)return null;
+ const index=candidates.findIndex(g=>g.entries.some(e=>e.id===settings.selectedId));
+ const available=candidates.filter((g,i)=>i!==index&&!g.entries.some(e=>tried.has(e.id)));if(!available.length)return null;
+ if(settings.rotation?.order==='shuffle')return available[Math.min(available.length-1,Math.floor(random()*available.length))].entry;
+ for(let step=1;step<=candidates.length;step++){const group=candidates[(index+step)%candidates.length];if(available.includes(group))return group.entry;}return null;
 }

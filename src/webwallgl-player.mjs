@@ -4,6 +4,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import {installFrameFreeze} from './freeze-frame.mjs';
 import {installWallpaperPointer} from './wallpaper-pointer.mjs';
 import {effectivePropertyValues} from './wallpaper-properties.mjs';
+import {codexRuntimeSource} from './webwallgl-runtime.mjs';
 import {createProjectReader} from './webwallgl-source.mjs';
 import {installSceneResourceCache,callSceneResourceCache} from './scene-resource-cache.mjs';
 
@@ -14,7 +15,7 @@ function initializeRenderer(project,options,binding,dshSource){
  // in-memory project before asset/script preparation; MountOptions alone is reset.
  if(project.general?.properties)for(const [name,value]of Object.entries(options.properties||{}))if(Object.hasOwn(project.general.properties,name))project.general.properties[name]={...project.general.properties[name],value};
  const state=globalThis.__cwbWebGL={ready:false,paused:false,diagnostics:[],requests:new Map(),sequence:0};
- state.complete=(id,error,bytes)=>{const pending=state.requests.get(id);if(!pending)return;clearTimeout(pending.timer);state.requests.delete(id);error?pending.reject(Error(error)):pending.resolve(bytes||null);};
+ if(options.fontAdapterExpected&&!options.fontBuffers)state.diagnostics.push({message:'当前引擎未匹配字体字节适配；内嵌字体可能受宿主限制',level:'warn'});state.complete=(id,error,bytes)=>{const pending=state.requests.get(id);if(!pending)return;clearTimeout(pending.timer);state.requests.delete(id);error?pending.reject(Error(error)):pending.resolve(bytes||null);};
  const inFlight=new Map(),read=name=>{if(inFlight.has(name))return inFlight.get(name);const promise=new Promise((resolve,reject)=>{const id=++state.sequence,timer=setTimeout(()=>state.complete(id,'壁纸资源读取超时'),60000);state.requests.set(id,{resolve,reject,timer});globalThis[binding](JSON.stringify({id,name}));});inFlight.set(name,promise);promise.finally(()=>inFlight.delete(name)).catch(()=>{});return promise;};
  try{void globalThis.caches}catch{Object.defineProperty(globalThis,'caches',{value:undefined,configurable:true});}
  const zeros=new Float32Array(64),silentSource={snapshot:()=>({left:zeros,right:zeros})};state.audioResponseEnabled=options.audioResponse===true;
@@ -24,7 +25,7 @@ function initializeRenderer(project,options,binding,dshSource){
  const getFreeze=()=>freeze||(freeze=globalThis.__cwbFrameFreeze(host.querySelector('canvas'),host));
  const source={key:options.key,project:async()=>project,sceneDir:async()=>{if(!/\.json$/i.test(project.file||''))return null;return await read(project.file)?{entry:project.file,read}:null;},scenePkg:async()=>{for(const name of [...(/\.pkg$/i.test(project.file||'')?[project.file]:[]),'scene.pkg','scenes/scene.pkg','gifscene.pkg']){const bytes=await read(name);if(bytes)return bytes;}throw Error('项目没有可读取的场景包');}};
  host.addEventListener('webglcontextlost',()=>{state.error='壁纸图形上下文丢失，已停止采用此场景';},true);
- state.sample=()=>{const canvas=host.querySelector('canvas');return {ready:state.ready,error:state.error,paused:state.paused,width:canvas?.width||0,height:canvas?.height||0,backend:'dsh-v1.4.0',configuredFps:state.configuredFps||options.fps,videoTexScale:instance.getVideoTexScale?.(),qualityEffective:instance.getQuality?.(),audioResponseEnabled:state.audioResponseEnabled,systemAudioActive:!!state.externalAudio,spectrumUpdates:state.spectrumUpdates||0,lastSpectrumAt:state.lastSpectrumAt||0,stats:{...instance.stats},diagnostics:state.diagnostics};};
+ state.sample=()=>{const canvas=host.querySelector('canvas');return {ready:state.ready,error:state.error,paused:state.paused,width:canvas?.width||0,height:canvas?.height||0,backend:'dsh-v1.4.0',configuredFps:state.configuredFps||options.fps,fontBufferAdapter:options.fontBuffers===true,fontAdapterExpected:options.fontAdapterExpected,fontsLoaded:[...document.fonts].filter(f=>f.family.startsWith('wefont_')&&f.status==='loaded').length,videoTexScale:instance.getVideoTexScale?.(),qualityEffective:instance.getQuality?.(),audioResponseEnabled:state.audioResponseEnabled,systemAudioActive:!!state.externalAudio,spectrumUpdates:state.spectrumUpdates||0,lastSpectrumAt:state.lastSpectrumAt||0,stats:{...instance.stats},diagnostics:state.diagnostics};};
  state.pause=value=>{state.paused=!!value;if(value){getFreeze().hold();instance.pause();}else{instance.resume();freeze?.release();}};
  // DSH's renderer control plane uses the already configured scene and our
  // project capability instead of a network httpSource. Its source is vendored
@@ -84,7 +85,7 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurr
     if(!closed)await cacheCall('complete',[handle,info]);
    }catch(error){await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(handle)+');true').catch(()=>{});if(!closed)await evaluate('__cwbWebGL.complete('+request.id+','+JSON.stringify(error.message)+');true').catch(()=>{});}finally{bytes=null;pending.delete(request.id);if(!pending.size)setImmediate(()=>global.gc?.());}}).catch(()=>{});
   };c.ws.addEventListener('message',listener);
-  await evaluate(engine);await evaluate('globalThis.__cwbFrameFreeze='+installFrameFreeze.toString()+';true');await evaluate('('+initializeRenderer.toString()+')('+JSON.stringify(reader.project)+','+JSON.stringify({fps:entry.limits?.fps||24,maxWidth:entry.limits?.maxWidth||1280,renderDpr:entry.limits?.exactResolution?2:undefined,scripts:entry.scripts===true,quality:entry.quality,properties,videoTexScale:entry.videoTexScale,audioResponse:config.systemMedia?.audio===true,key:entry.workshopId||entry.id,controlToken})+','+JSON.stringify(binding)+','+JSON.stringify(dshSource)+')');
+  const runtimeSource=codexRuntimeSource(engine);await evaluate(runtimeSource.source);await evaluate('globalThis.__cwbFrameFreeze='+installFrameFreeze.toString()+';true');await evaluate('('+initializeRenderer.toString()+')('+JSON.stringify(reader.project)+','+JSON.stringify({fps:entry.limits?.fps||24,maxWidth:entry.limits?.maxWidth||1280,renderDpr:entry.limits?.exactResolution?2:undefined,fontBuffers:runtimeSource.fontBuffers,fontAdapterExpected:engine.includes('new FontFace('),scripts:entry.scripts===true,quality:entry.quality,properties,videoTexScale:entry.videoTexScale,audioResponse:config.systemMedia?.audio===true,key:entry.workshopId||entry.id,controlToken})+','+JSON.stringify(binding)+','+JSON.stringify(dshSource)+')');
   const end=Date.now()+90000;let sample;
   while(Date.now()<end){assertCurrent();sample=await evaluate('__cwbWebGL.sample()');if(sample.error)throw Error(sample.error);if(sample.ready&&sample.width>0)break;await sleep(200);}
   if(!sample?.ready||!sample.width)throw Error('WebWallGL 等待首帧超时');
@@ -108,7 +109,7 @@ function adoptRenderer(info){
  const visibility=()=>{state.paused=manualPause===null?(document.hidden||(state.pauseOnBlur&&!document.hasFocus())||reduced.matches):manualPause;send({paused:state.paused});if(state.paused)send({systemSpectrum:{audioAvailable:false,bands:[]}});window.__cwbMediaActivity?.report();};
  state.pause=value=>{manualPause=typeof value==='boolean'?value:null;visibility();};
  const receive=event=>{if(event.source===frame.contentWindow&&event.data?.token===info.controlToken&&event.data.sample){state.detail=event.data.sample;state.error=state.detail.error;state.ready=state.detail.ready&&!state.error;state.receivedAt=Date.now();window.__cwbMediaActivity?.report();}};
- const disposePointer=window.__cwbInstallWallpaperPointer(send,{fps:info.fps,type:info.type});
+ const disposePointer=window.__cwbInstallWallpaperPointer(send,{fps:info.fps,type:info.type,bounds:()=>frame.getBoundingClientRect()});
  addEventListener('message',receive);document.addEventListener('visibilitychange',visibility);addEventListener('focus',visibility);addEventListener('blur',visibility);reduced.addEventListener('change',visibility);
  state.setPauseOnBlur=value=>{state.pauseOnBlur=!!value;visibility();};state.setVolume=value=>send({volume:value});state.setProperties=properties=>send({properties});state.setSystemMedia=systemMedia=>send({systemMedia});state.setSystemSpectrum=systemSpectrum=>send({systemSpectrum});state.setSystemPosition=systemPosition=>send({systemPosition});
  state.sample=()=>({...state.detail,ready:state.ready,error:state.error,mode:'webwallgl',transport:'sandbox-webgl',paused:state.paused,hidden:document.hidden,focused:document.hasFocus()});
