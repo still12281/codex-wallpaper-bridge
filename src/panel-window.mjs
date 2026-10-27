@@ -13,8 +13,22 @@ export function installPanelWindow(host,shadow,dialog){
  .cwb-library-filters>label{flex-basis:120px}.cwb-pagination{justify-content:space-between}.cwb-pagination>*{flex:0 1 auto}.cwb-pagination #cwb-page{min-width:60px}
  .cwb-card{display:flex;flex-direction:column}.cwb-card label{display:flex;align-items:center;gap:4px;margin-top:auto}.cwb-card span:not(.cwb-badge){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;max-height:none;overflow:hidden}.cwb-preview-head strong{min-width:0;flex:1}
  #engine-import-actions button{flex:1 1 140px}#cwb-batch-status{flex-basis:100%}
+ #cwb-import-preview{display:flex;flex-direction:column;gap:12px}
+ #cwb-import-preview>:is(p,label,div){margin:0}
+ #cwb-import-preview>label{display:flex;flex-direction:column;gap:8px}
+ #cwb-import-preview>label select{display:block;margin:0}
+ #engine-import-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #cwb-import-preview>.cwb-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:12px;border-top:1px solid var(--cwb-border)}
+ #cwb-batch-status{grid-column:1/-1;line-height:1.6}
+ #cwb-import-preview button,.cwb-preview .cwb-row button{min-height:40px}
+ .cwb-library-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
+ .cwb-library-filters>label{margin:0}.cwb-library-filters select{display:block;margin-top:6px}
+ .cwb-card .cwb-import-state{font-size:11px;opacity:.8;padding-top:0}
+ .cwb-feature>.cwb-row,.cwb-feature>button{margin-top:12px}
+ .cwb-window-body section{row-gap:12px}
  dialog:not([aria-labelledby=title]){box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);overflow:auto}
  @container cwb-panel (max-width:360px){.cwb-window-body section,#cwb-visual{grid-template-columns:minmax(0,1fr)}.cwb-preview-head{flex-wrap:wrap}.cwb-row>button{flex-basis:100%}.cwb-pagination>button{flex-basis:auto}}
+ @container cwb-panel (max-width:360px){#engine-import-actions,#cwb-import-preview>.cwb-row{grid-template-columns:minmax(0,1fr)}}
 
  :host{--cwb-radius:8px;--cwb-control-height:34px}
  :host button{min-height:var(--cwb-control-height);padding:7px 12px;border:1px solid var(--cwb-border);border-radius:var(--cwb-radius);line-height:1.4;font-weight:500;background:var(--cwb-field);color:var(--cwb-ink);transition:background-color 100ms,border-color 100ms;white-space:normal}

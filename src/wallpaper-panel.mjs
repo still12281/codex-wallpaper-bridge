@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===18){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===19){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=18;let features=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=19;let features=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
@@ -74,7 +74,7 @@ export function installPanel(config,token){
  $('shade').oninput=()=>{$('opacity').value=$('shade').value+'%';const tint=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot?.querySelector('[data-cwb-shade]');if(tint){const p=config.palette||{r:20,g:22,b:28};tint.style.background=`rgba(${p.r},${p.g},${p.b},${Number($('shade').value)/100})`}};
  $('shade').onchange=$('pause').onchange=()=>busy(()=>send({action:'appearance',darkOverlay:Number($('shade').value)/100,pauseOnBlur:$('pause').checked}));
  $('import').onclick=()=>$('file').click();
- function syncImportProfileNote(){const high=Number($('fps').value)>60,profile=high?(config.playback||{maxWidth:1280,fps:24}):{maxWidth:Number($('resolution').value),fps:Number($('fps').value)};$('cwb-import-profile-note').textContent=(high?'GPU高刷独立保存；':'')+'新导入素材规格：最大宽度 '+profile.maxWidth+' / '+profile.fps+' FPS。';}$('fps').addEventListener('change',syncImportProfileNote);$('resolution').addEventListener('change',syncImportProfileNote);const chosenProfile=()=>Number($('fps').value)>60?{...(config.playback||{maxWidth:1280,fps:24})}:{maxWidth:Number($('resolution').value),fps:Number($('fps').value)};
+ function syncImportProfileNote(){const high=Number($('fps').value)>60,profile=high?(config.playback||{maxWidth:1280,fps:24}):{maxWidth:Number($('resolution').value),fps:Number($('fps').value)},capacity=profile.maxWidth<=1280&&profile.fps<=30?32:128;$('cwb-import-profile-note').textContent=(high?'GPU高刷独立保存；':'')+'新导入素材规格：最大宽度 '+profile.maxWidth+' / '+profile.fps+' FPS。媒体副本容量保护 '+capacity+' MiB，用于限制加载内存；这不是电脑或 Wallpaper Engine 的上限，也不限制 GPU / 原版场景包。';}$('fps').addEventListener('change',syncImportProfileNote);$('resolution').addEventListener('change',syncImportProfileNote);const chosenProfile=()=>Number($('fps').value)>60?{...(config.playback||{maxWidth:1280,fps:24})}:{maxWidth:Number($('resolution').value),fps:Number($('fps').value)};
  $('engine').onclick=()=>busy(()=>{message('正在读取 Wallpaper Engine 当前壁纸…');return send({action:'wallpaper-engine',renderMode:$('engine-render-mode').value,profile:chosenProfile()})},'壁纸导入失败',true);
  $('apply').onclick=()=>busy(()=>{message('正在按所选规格生成播放副本…');return send({action:'playback',maxWidth:Number($('resolution').value),fps:Number($('fps').value)})});
  $('delete').onclick=()=>busy(()=>deleteWallpaper($('delete-target').value));

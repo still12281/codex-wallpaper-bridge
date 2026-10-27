@@ -158,6 +158,11 @@
       "sha256": "30b0d57111c75a97e3b89d93889224903f045a1f2d15579ea7551147660ae377"
     },
     {
+      "path": "docs/UI-WEB-20261027.zh-CN.md",
+      "utf8Bytes": 4930,
+      "sha256": "e22dc098cd301b3429ec77af3084985277d245a9ba988eae37407245a9f843f5"
+    },
+    {
       "path": "docs/UPSTREAM-SOURCES.json",
       "utf8Bytes": 7563,
       "sha256": "6cd7cd22bdc0e66eedf239e54a64b0528dc89ed53267ee075f9ac575397dc375"
@@ -239,8 +244,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 38594,
-      "sha256": "dc2cdf0079d188e893222e4c60e9eee10ae9409e2d38b8778601494b3837bb5c"
+      "utf8Bytes": 40485,
+      "sha256": "9815140057467f6bb6c9be960ba6cdaba2ff47e25f89e7c29cb83e9000a745ba"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -284,8 +289,8 @@
     },
     {
       "path": "src/panel-window.mjs",
-      "utf8Bytes": 12882,
-      "sha256": "dece90e0e5d214c910fe81a209215608406ecbbb0b236f627816880ad19d2085"
+      "utf8Bytes": 14000,
+      "sha256": "371bfd22607bf40ec0a941fd28562a17d753334d6c9e1947a8de7869881e9a65"
     },
     {
       "path": "src/playback-metrics.mjs",
@@ -344,8 +349,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 32346,
-      "sha256": "4ac0e07d732e42887e5d1f471e1ab93921c1267783c42f34cb4d71f1bd6e3cdf"
+      "utf8Bytes": 32558,
+      "sha256": "8d4ef0bd70a5b4e513b9f39367c967a03c6f1ba2f179b0cda4b7dbe600228855"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -384,8 +389,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 26520,
-      "sha256": "5dbd2d97b4206b18918696ee6f3de02375bd4d150bcbb1cccb15f864525068c1"
+      "utf8Bytes": 26852,
+      "sha256": "3b5b7495b5fdf23a08c994372857344256d8dfc9c0d55ce06782f8fa4d900f5d"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -469,8 +474,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 24991,
-      "sha256": "78e02a7ff79d8da835e35f3a5dc8d6d8a217a9e9e94df1ac83900d3f5e46c6ab"
+      "utf8Bytes": 28027,
+      "sha256": "9b4c74360c5014a12cf0be47dd690ff22d621e2d4e067d6c70b8a42f9fd20c9a"
     },
     {
       "path": "test/playback-metrics.test.mjs",
