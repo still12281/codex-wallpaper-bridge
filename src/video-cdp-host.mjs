@@ -22,6 +22,7 @@ import {displaySettings,effectiveEntry,effectiveMediaSettings} from './display-t
 import {libraryGroups} from './library-model.mjs';
 import {playbackMetrics} from './playback-metrics.mjs';
 import {installSceneResourceCache,callSceneResourceCache} from './scene-resource-cache.mjs';
+import {bindMediaFile} from './media-file-source.mjs';
 
 const codeRoot=path.dirname(fileURLToPath(import.meta.url));
 const root=getDataRoot();
@@ -131,13 +132,14 @@ function prepareLayer(size,mime,candidateId){
  const video=document.createElement(mime.startsWith('video/')?'video':'img');if(video.tagName==='VIDEO'){video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.disablePictureInPicture=true}video.tabIndex=-1;
  video.style.cssText='width:100%;height:100%;object-fit:cover;display:block;pointer-events:none';shadow.append(video);document.body.prepend(layer);
  const state=window.__cwbPendingMedia={installed:true,ready:false,mime,candidateId,transport:'native-media-blob',bytes:null};
- state.sample=()=>{const q=video.getVideoPlaybackQuality?.();return {ready:state.ready,paused:video.paused,time:video.currentTime,width:video.videoWidth||video.naturalWidth,height:video.videoHeight||video.naturalHeight,quality:q?{total:q.totalVideoFrames,dropped:q.droppedVideoFrames}:null,hidden:document.hidden,focused:document.hasFocus()}};
+ state.dispose=()=>{if(state.blobUrl)URL.revokeObjectURL(state.blobUrl);};
+ state.sample=()=>{const q=video.getVideoPlaybackQuality?.();return {transport:state.transport,ready:state.ready,paused:video.paused,time:video.currentTime,width:video.videoWidth||video.naturalWidth,height:video.videoHeight||video.naturalHeight,quality:q?{total:q.totalVideoFrames,dropped:q.droppedVideoFrames}:null,hidden:document.hidden,focused:document.hasFocus()}};
  return true;
 }
 
 function startVideo(config){
  const state=window.__cwbPendingMedia,video=document.getElementById('codex-wallpaper-bridge-pending').shadowRoot.firstElementChild;
- state.blobUrl=URL.createObjectURL(new Blob([state.bytes],{type:state.mime}));delete state.bytes;
+ state.blobUrl??=URL.createObjectURL(new Blob([state.bytes],{type:state.mime}));delete state.bytes;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)'),freeze=window.__cwbFrameFreeze(video,video.parentNode);
  const visibility=()=>{if(video.tagName!=='VIDEO')return;if(document.hidden||(config.pauseOnBlur&&!document.hasFocus())||reduced.matches){freeze.hold();video.pause();}else{freeze.release();video.play().catch(e=>{state.error=String(e)})}};
  state.setPauseOnBlur=value=>{config.pauseOnBlur=!!value;visibility()};
@@ -177,12 +179,13 @@ async function mount(c,target){c.playbackReading=null;
   c.captureGeneration=(c.captureGeneration||0)+1;c.drawInFlight=0;c.captureBlocked=false;delete c.captureError;c.captureSentSequence=source.sequence;c.captureSequence=source.sequence;c.isRealtime=true;c.capturePaused=false;c.nextCapturePoll=0;c.reportedCaptureError=false;c.installed=true;return;
  }
  c.isRealtime=false;
- const mediaPath=path.resolve(root,entry.file),mediaLimit=Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024),info=await stat(mediaPath);
+ const mediaPath=path.resolve(root,entry.file),fileBacked=entry.mime?.startsWith('video/'),mediaLimit=fileBacked?Number.MAX_SAFE_INTEGER:Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024),info=await stat(mediaPath);
  if(!mediaPath.startsWith(root+path.sep)||info.size>mediaLimit)throw Error('Unsupported local media path or size');
  status.mediaBytes=info.size;status.phase='loading-lightweight-video';delete status.error;await save();assertCurrent();
  const candidateId='media-'+randomUUID();await c.evaluate('('+prepareLayer.toString()+')('+info.size+','+JSON.stringify(entry.mime)+','+JSON.stringify(candidateId)+')');
  const key=createHash('sha256').update(JSON.stringify([mediaPath,info.size,info.mtimeMs,info.ctimeMs])).digest('hex');
- if(!await callSceneResourceCache(c,'cached',[key,info.size,{media:true,candidateId}],{isCurrent})){
+ if(fileBacked){await bindMediaFile(c,root,entry.file,candidateId,{isCurrent});}
+ else if(!await callSceneResourceCache(c,'cached',[key,info.size,{media:true,candidateId}],{isCurrent})){
   const handle=candidateId;let bytes;
   try{assertCurrent();bytes=await readFile(mediaPath);if(bytes.length!==info.size)throw Error('壁纸素材在加载时改变，请重试');await c.evaluate('window.__cwbSceneResources.begin('+JSON.stringify(handle)+','+JSON.stringify(key)+','+bytes.length+');true');
    for(let offset=0;offset<bytes.length;offset+=4*1024*1024){assertCurrent();await c.evaluate('window.__cwbSceneResources.receive('+JSON.stringify(handle)+','+JSON.stringify(bytes.subarray(offset,offset+4*1024*1024).toString('base64'))+','+offset+');true');}
@@ -237,7 +240,7 @@ async function tick(){
     c.failures=0;c.retryAt=0;delete status.error;
    }catch(error){c.installed=false;if(error.code==='CWB_SELECTION_SUPERSEDED'){c.retryAt=0;Object.assign(targetState,{phase:'selection-superseded'});continue;}c.failures=(c.failures||0)+1;c.retryAt=Date.now()+Math.min(30000,1000*2**Math.min(c.failures-1,5));c.lastError=error.message;Object.assign(targetState,{phase:'background-retrying',error:error.message,retryAt:new Date(c.retryAt).toISOString()});}
   }
-  status.targets=observations;const usable=observations.filter(t=>t.installed);status.phase=usable.some(t=>t.phase==='realtime-capture-active')?'realtime-capture-active':usable.find(t=>t.phase==='background-rendered')?.phase||usable[0]?.phase||(observations.length?'background-retrying':'waiting-for-target');status.targetErrors=observations.filter(t=>t.error).map(t=>({targetId:t.targetId,error:t.error}));status.selectedId=settings.selectedId;status.source=realtime?'native-window-capture-jpeg':usable.some(t=>t.mode==='webwallgl')?'sandboxed-webwallgl':'native-media-blob';status.realtime=realtime?{sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile,desktop:realtime.desktop}:null;await save();
+  status.targets=observations;const usable=observations.filter(t=>t.installed);status.phase=usable.some(t=>t.phase==='realtime-capture-active')?'realtime-capture-active':usable.find(t=>t.phase==='background-rendered')?.phase||usable[0]?.phase||(observations.length?'background-retrying':'waiting-for-target');status.targetErrors=observations.filter(t=>t.error).map(t=>({targetId:t.targetId,error:t.error}));status.selectedId=settings.selectedId;status.source=realtime?'native-window-capture-jpeg':usable.some(t=>t.mode==='webwallgl')?'sandboxed-webwallgl':usable.some(t=>t.transport==='native-media-file')?'native-media-file':'native-media-blob';status.realtime=realtime?{sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile,desktop:realtime.desktop}:null;await save();
  }catch(error){status.phase='waiting-for-cdp';status.error=error.message;await save()}
  finally{busy=false}
 }

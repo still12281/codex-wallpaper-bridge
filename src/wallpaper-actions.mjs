@@ -165,6 +165,14 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   if(req.action==='engine-list'){const search={scope:req.scope||'global',folder:req.folder||'',kind:req.kind||'engine'};const result=await catalog.search(search);settings.engineSearch=search;await saveConfig(root,settings);return result}
   if(req.action==='engine-inspect'){const item=await catalog.resolve(req.projectToken);if(req.renderMode==='webwallgl'&&item.kind!=='media'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='scene',needsRealtime:true,mode:'webwallgl',label:project.type==='scene'?'WebWallGL 沙箱实时渲染':'当前网页不能用 WebGL 模式导入',reason:project.type==='scene'?'不启动 Wallpaper Engine 源窗口；执行场景脚本，效果兼容性取决于此项目。':'请改为原生实时模式，网页资源通道尚未通过验收。'}};}return {inspection:item.kind==='media'?{supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:item.mime.startsWith('video/')?'当前选中的是视频，生成副本后直接播放。':'当前选中的是图片，可直接导入。'}:await inspectEngineProject(item.root,req.renderMode)}}
   if(req.action==='engine-pick-folder'){const result=await promisify(execFile)(getPowerShell(),['-NoProfile','-STA','-File',fileURLToPath(new URL('../windows/Pick-WallpaperFolder.ps1',import.meta.url)),'-InitialPath',settings.engineSearch?.folder||''],{windowsHide:true,timeout:150000});return JSON.parse(result.stdout)}
+  if(req.action==='media-pick'){
+   const signal=options(c,req).signal;
+   try{
+    const picked=services.pickMediaFile?await services.pickMediaFile({signal}):JSON.parse((await promisify(execFile)(getPowerShell(),['-NoProfile','-STA','-File',fileURLToPath(new URL('../windows/Pick-MediaFile.ps1',import.meta.url))],{windowsHide:true,timeout:150000,signal})).stdout);
+    signal?.throwIfAborted();if(c?.ws&&c.ws.readyState!==1)throw Object.assign(Error('导入窗口已断开'),{code:'IMPORT_CANCELLED'});if(picked.cancelled)return {cancelled:true};
+    const selected=await catalog.registerMedia(picked.file,c);signal?.throwIfAborted();if(c?.ws&&c.ws.readyState!==1)throw Object.assign(Error('导入窗口已断开'),{code:'IMPORT_CANCELLED'});return selected;
+   }catch(error){catalog.releaseOwner(c);throw error;}
+  }
   if(req.action==='delete'){
    const entry=settings.library.find(e=>e.id===req.selectedId);if(!entry)throw Error('壁纸不存在');
    const targets=req.allVersions===true?libraryGroups(settings.library,settings.selectedId).find(g=>g.entries.some(e=>e.id===entry.id)).entries:[entry],ids=new Set(targets.map(e=>e.id));
@@ -198,7 +206,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   }
   if(req.action==='wallpaper-engine'){
    const applyNow=req.apply!==false;
-   const resolved=req.projectToken?await catalog.resolve(req.projectToken):(!req.workshopId?await getCurrentEngineProject():null);
+   const resolved=req.projectToken?await catalog.resolve(req.projectToken,c):(!req.workshopId?await getCurrentEngineProject():null);
    const workshopId=resolved?.workshopId||req.workshopId;
    const projectRoot=resolved?.root||(workshopId?await findWorkshopProject(workshopId):null);
    if((req.renderMode||'auto')==='auto'&&projectRoot&&resolved?.kind!=='media'){
@@ -268,7 +276,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   const job=jobs.get(c,req.operationId)||jobs.begin(c,req);let retain=false;
   try{
    job?.controller.signal.throwIfAborted();if(job){job.inFlight=true;if(req.name)job.item=String(req.name).slice(0,120);jobs.report(job,{phase:'准备'});services.setImportPreparing?.(true);}
-   const result=await execute(c,req);if(job?.controller.signal.aborted&&job.phase!=='committing'){for(const pending of [...uploads.values()])if(pending.owner===c&&pending.operationId===job.id)await clearUpload(pending);throw job.controller.signal.reason;}retain=!!(result.confirmation||result.mediaReview)||['import-start','import-chunk'].includes(req.action);return result;
+   const result=await execute(c,req);if(job?.controller.signal.aborted&&job.phase!=='committing'){for(const pending of [...uploads.values()])if(pending.owner===c&&pending.operationId===job.id)await clearUpload(pending);throw job.controller.signal.reason;}retain=!!(result.confirmation||result.mediaReview)||(req.action==='media-pick'&&!!result.projectToken)||['import-start','import-chunk'].includes(req.action);return result;
   }catch(error){
    if(job?.controller.signal.aborted){for(const pending of [...uploads.values()])if(pending.owner===c&&pending.operationId===job.id)await clearUpload(pending);throw job.controller.signal.reason;}
    if(error.code==='IMPORT_SIZE_REVIEW'){retain=true;return {mediaReview:{...error.review,retry:req},message:error.message};}
@@ -278,6 +286,6 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   }finally{services.setImportPreparing?.(false);if(job)job.inFlight=false;if(job&&!retain)jobs.end(job);}
  };
  action.beginImport=(c,req)=>jobs.begin(c,req);
- action.disposeOwner=async c=>{for(const [token,pending]of confirmations)if(pending.owner===c)confirmations.delete(token);for(const job of jobs.ownerJobs(c)){jobs.cancel(c,job.id);jobs.end(job);}for(const u of [...uploads.values()])if(u.owner===c)await clearUpload(u);};
+ action.disposeOwner=async c=>{catalog.releaseOwner(c);for(const [token,pending]of confirmations)if(pending.owner===c)confirmations.delete(token);for(const job of jobs.ownerJobs(c)){jobs.cancel(c,job.id);jobs.end(job);}for(const u of [...uploads.values()])if(u.owner===c)await clearUpload(u);};
  return action;
 }

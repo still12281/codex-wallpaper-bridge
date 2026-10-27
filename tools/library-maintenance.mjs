@@ -4,6 +4,7 @@ import {constants} from 'node:fs';
 import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import {describeProject} from '../src/realtime-source.mjs';
+import {hashMedia} from '../src/library-preview.mjs';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const absolute=p=>{if(!p||!path.isAbsolute(p))throw Error('Provide explicit absolute directories.');return path.resolve(p);};
 const inside=(root,file)=>{const relative=path.relative(root,file);return relative&&!relative.startsWith('..')&&!path.isAbsolute(relative);};
@@ -17,7 +18,7 @@ async function backup(dataRoot,destination){
  const original=await configAt(dataRoot),settings=structuredClone(original.settings),files=new Map();
  for(const entry of settings.library)for(const holder of [entry,entry.customDisplay].filter(Boolean))for(const key of ['file','sourceFile','sourcePath','staticFile']){const value=holder[key];if(!value)continue;let resolved=path.resolve(dataRoot,value);try{resolved=await realpath(resolved);}catch(error){if(error.code!=='ENOENT'||!path.isAbsolute(value)||inside(dataRoot,resolved))throw error;}if(!inside(dataRoot,resolved)){if(!path.isAbsolute(value))throw Error('Invalid relative media reference.');continue;}const relative=path.relative(dataRoot,resolved).replaceAll('\\','/');if(!owned(relative))throw Error('Unsupported owned asset reference: '+relative);files.set(relative,await canonicalFile(dataRoot,relative));holder[key]=relative;}
  await emptyDestination(destination);const records=[];
- for(const [relative,source]of files){const bytes=await readFile(source),target=path.join(destination,relative);await copyExclusive(source,target);if(hash(await readFile(target))!==hash(bytes))throw Error('Asset changed during backup: '+relative);records.push({path:relative,bytes:bytes.length,sha256:hash(bytes)});}
+ for(const [relative,source]of files){const info=await stat(source),sha256=await hashMedia(source),target=path.join(destination,relative);await copyExclusive(source,target);const after=await stat(source);if(after.size!==info.size||after.mtimeMs!==info.mtimeMs||after.ctimeMs!==info.ctimeMs||(await stat(target)).size!==info.size||await hashMedia(target)!==sha256)throw Error('Asset changed during backup: '+relative);records.push({path:relative,bytes:info.size,sha256});}
  if(hash((await configAt(dataRoot)).bytes)!==hash(original.bytes))throw Error('Settings changed during backup; this partial snapshot is not accepted. Retry into a new directory.');
  const bytes=Buffer.from(JSON.stringify(settings,null,2)+'\n');await writeFile(path.join(destination,'settings.json'),bytes,{flag:'wx'});records.push({path:'settings.json',bytes:bytes.length,sha256:hash(bytes)});
  await writeFile(path.join(destination,'backup-manifest.json'),JSON.stringify({format:'codex-wallpaper-backup',version:1,createdAt:new Date().toISOString(),externalProjects:'references-only',files:records},null,2),{flag:'wx'});
@@ -27,10 +28,10 @@ async function restore(snapshot,destination){
  snapshot=await realpath(absolute(snapshot));destination=absolute(destination);if(destination===snapshot||inside(snapshot,destination))throw Error('Restore must use a separate empty directory.');
  const manifest=JSON.parse(await readFile(path.join(snapshot,'backup-manifest.json'),'utf8'));if(manifest.format!=='codex-wallpaper-backup'||manifest.version!==1||!Array.isArray(manifest.files)||manifest.files.length>12001)throw Error('Unsupported backup.');
  const seen=new Set(),verified=[];
- for(const row of manifest.files){if(typeof row.path!=='string'||(row.path!=='settings.json'&&!owned(row.path))||seen.has(row.path))throw Error('Invalid or duplicate backup path.');seen.add(row.path);const source=await canonicalFile(snapshot,row.path),bytes=await readFile(source);if(bytes.length!==row.bytes||hash(bytes)!==row.sha256)throw Error('Backup checksum mismatch: '+row.path);verified.push({path:row.path,source});}
+ for(const row of manifest.files){if(typeof row.path!=='string'||(row.path!=='settings.json'&&!owned(row.path))||seen.has(row.path))throw Error('Invalid or duplicate backup path.');seen.add(row.path);const source=await canonicalFile(snapshot,row.path);if((await stat(source)).size!==row.bytes||await hashMedia(source)!==row.sha256)throw Error('Backup checksum mismatch: '+row.path);verified.push({path:row.path,source});}
  if(!seen.has('settings.json'))throw Error('Backup has no settings.');const {settings}=await configAt(snapshot);
  for(const entry of settings.library)for(const holder of [entry,entry.customDisplay].filter(Boolean))for(const key of ['file','sourceFile','sourcePath','staticFile']){const value=holder[key];if(value&&!path.isAbsolute(value)&&!seen.has(value.replaceAll('\\','/')))throw Error('Backup omits referenced asset: '+value);}
- await emptyDestination(destination);for(const row of verified.filter(f=>f.path!=='settings.json')){const target=path.join(destination,row.path);await copyExclusive(row.source,target);if(hash(await readFile(target))!==manifest.files.find(f=>f.path===row.path).sha256)throw Error('Asset changed during restore: '+row.path);}await copyExclusive(path.join(snapshot,'settings.json'),path.join(destination,'settings.json'));
+ await emptyDestination(destination);for(const row of verified.filter(f=>f.path!=='settings.json')){const target=path.join(destination,row.path);await copyExclusive(row.source,target);if(await hashMedia(target)!==manifest.files.find(f=>f.path===row.path).sha256)throw Error('Asset changed during restore: '+row.path);}await copyExclusive(path.join(snapshot,'settings.json'),path.join(destination,'settings.json'));
  return {restored:destination,files:verified.length,activation:'Set CODEX_WALLPAPER_DATA_DIR and rebuild the launcher; current session was not changed.'};
 }
 async function diagnose(dataRoot){

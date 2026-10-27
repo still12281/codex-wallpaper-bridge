@@ -28,10 +28,10 @@ test('corrupt uploads are cleaned without creating library records or touching t
  const {uploadId}=await actions(owner,{action:'import-start',name:'bad.png',mime:'image/png',size:bytes.length});await actions(owner,{action:'import-chunk',uploadId,data:bytes.toString('base64')});await assert.rejects(actions(owner,{action:'import-end',uploadId}),/预检失败|图像/);assert.deepEqual(await readdir(path.join(root,'media')),[]);assert.deepEqual(config.library,[]);assert.equal(applies,0);
  const next=await actions(owner,{action:'import-start',name:'next.png',mime:'image/png',size:10});await actions(owner,{action:'import-cancel',uploadId:next.uploadId});assert.deepEqual(await readdir(path.join(root,'media')),[]);
 });
-test('capacity uncertainty is surfaced before encoding, while direct sources and cancelled work remain intact',async()=>{
+test('long videos use disk budgets instead of RAM file limits, while cancellation preserves sources',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-media-risk-'));await mkdir(path.join(root,'media'));const ffmpeg=await findFFmpeg(),source=path.join(root,'long.webm');
  await run(ffmpeg,['-v','error','-nostdin','-f','lavfi','-i','color=blue:s=16x16:r=1','-frames:v','2','-vf','setpts=120*PTS','-fps_mode','vfr','-c:v','libvpx','-threads','1',source],{windowsHide:true});
- await assert.rejects(planMedia(root,source,'video/webm',profile),e=>e.code==='IMPORT_SIZE_REVIEW'&&e.review.estimatedMiB>32);assert.deepEqual(await readdir(path.join(root,'media')),[]);
+ const planned=await planMedia(root,source,'video/webm',profile);assert(planned.estimatedBytes>32*1024*1024);assert(planned.limits.fileBacked);assert(planned.limits.maxBytes>=planned.estimatedBytes);assert.deepEqual(await readdir(path.join(root,'media')),[]);
  assert.equal((await planMedia(root,source,'video/webm',profile,{acceptSizeRisk:true})).route,'transcode');
  const abort=new AbortController();abort.abort(Error('cancelled fixture'));await assert.rejects(convertMedia(root,source,'video/webm','a5',profile,{signal:abort.signal}),/cancelled fixture/);await stat(source);assert.deepEqual(await readdir(path.join(root,'media')),[]);
 });

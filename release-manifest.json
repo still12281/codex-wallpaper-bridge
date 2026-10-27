@@ -69,8 +69,8 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 2579,
-      "sha256": "ebd5e1e3b38c4862d334c3231b281f5bc9f1d038c967d21320f5bebd35b6afe8"
+      "utf8Bytes": 3051,
+      "sha256": "6d782b499a47163aedc1f8369cbcdfea7c79a7695af3532ecc9786f5c7354c79"
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
@@ -91,6 +91,11 @@
       "path": "docs/FOLLOWUP-20261027.zh-CN.md",
       "utf8Bytes": 7058,
       "sha256": "ba0b777382fdd270e34db293cac582137699eab84d3c9ac29e01ef8902cb34ca"
+    },
+    {
+      "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
+      "utf8Bytes": 4715,
+      "sha256": "116e910183b5e677639f0f642090b16883105a4f52a1c3c000358dca6cd94ad1"
     },
     {
       "path": "docs/MAINTENANCE.zh-CN.md",
@@ -159,8 +164,8 @@
     },
     {
       "path": "docs/UI-WEB-20261027.zh-CN.md",
-      "utf8Bytes": 4930,
-      "sha256": "e22dc098cd301b3429ec77af3084985277d245a9ba988eae37407245a9f843f5"
+      "utf8Bytes": 5012,
+      "sha256": "af2155e6a1f5147719b1f2d50944f3531e1806705dac51404ba8113a0a4a6f38"
     },
     {
       "path": "docs/UPSTREAM-SOURCES.json",
@@ -179,8 +184,8 @@
     },
     {
       "path": "docs/WEBWALLGL.md",
-      "utf8Bytes": 7796,
-      "sha256": "d657de299c820fbef9e15196b468833938854939ccb35cfcf2da82ae2246faa6"
+      "utf8Bytes": 7933,
+      "sha256": "2ac2631b4e28fc13508f2a2b7a033efa56f5b591dd7ff27aacdb786bfb8d21ee"
     },
     {
       "path": "findings.md",
@@ -229,8 +234,8 @@
     },
     {
       "path": "src/conversion-cache.mjs",
-      "utf8Bytes": 2418,
-      "sha256": "067d60d09eb9e3ec787a001e6b71eef272815c34ea72067af292f543715fef6c"
+      "utf8Bytes": 2484,
+      "sha256": "e4a4e2c3ffbba2cbecbeac4515c823cdfbcd3d182171e1dd840453b15a37e3ea"
     },
     {
       "path": "src/display-tiers.mjs",
@@ -239,8 +244,8 @@
     },
     {
       "path": "src/engine-library.mjs",
-      "utf8Bytes": 7814,
-      "sha256": "1cc40e4e299d7ccf7acd88483a6dcd7a8c53610d123a9f075d499d1627be2222"
+      "utf8Bytes": 8787,
+      "sha256": "7f22c9e811b2305ff503d1e2305609f23e9b9a05ce295d6d8223bfaa3ea30b90"
     },
     {
       "path": "src/feature-panel.mjs",
@@ -254,8 +259,8 @@
     },
     {
       "path": "src/import-jobs.mjs",
-      "utf8Bytes": 2259,
-      "sha256": "e8a6b0a2ef44711bb3db405294c98a6dc0dc7667ed5d0f129df4a210bab0a8d1"
+      "utf8Bytes": 2272,
+      "sha256": "d411c0983a4538e92c35193bc74e90170c7b602f5c4f4a5b475d1df4ea8ce7c1"
     },
     {
       "path": "src/library-model.mjs",
@@ -269,8 +274,13 @@
     },
     {
       "path": "src/media-converter.mjs",
-      "utf8Bytes": 4534,
-      "sha256": "f5a5f7a6b521194b815370debd343cbce95e45c7c1d51663ef2dbb1c0d6a8d42"
+      "utf8Bytes": 5426,
+      "sha256": "9369654f60e78defad0b47db19500c4ea4f5cd0399c829897bbf77e1d5a753ad"
+    },
+    {
+      "path": "src/media-file-source.mjs",
+      "utf8Bytes": 2348,
+      "sha256": "5c84aa2b25473f5559bc37f1a9c1c4ee92bc9ba43aa427888d1cb164c3ecf605"
     },
     {
       "path": "src/media-power.mjs",
@@ -279,8 +289,8 @@
     },
     {
       "path": "src/media-preflight.mjs",
-      "utf8Bytes": 4899,
-      "sha256": "8b6f30a1b6c6a9d328cc8659620f46714dee0c7052ab850f8b8a2a84e380bad3"
+      "utf8Bytes": 5136,
+      "sha256": "485fa7f5e0ce52e6a503c6dd9faac14adeb1784e3de6a26a443a0298b261d4a1"
     },
     {
       "path": "src/media-store.mjs",
@@ -334,13 +344,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 36934,
-      "sha256": "5c57c7e050f7d007be06aa305b332687d2c90a5869dbeb3b2c974df63b89f66c"
+      "utf8Bytes": 37327,
+      "sha256": "dc32b693879a9963a37f458897c228f00bfd90a30795cc6d09161bc197e1eb5f"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 38200,
-      "sha256": "20e3c38c0785fe055093bdd11f21bb2cf95e14828772a2e904943ae8067d929d"
+      "utf8Bytes": 39098,
+      "sha256": "19805328766d6f4504753c36c35e957f02d5cd6d159fcb0e1f77c016d1d9f720"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -349,8 +359,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 32558,
-      "sha256": "8d4ef0bd70a5b4e513b9f39367c967a03c6f1ba2f179b0cda4b7dbe600228855"
+      "utf8Bytes": 32888,
+      "sha256": "ded5ac11d0a81d1f57eb0dfa96648d2fbb60ff293558b297b7da3c2ad63c002a"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -389,8 +399,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 26852,
-      "sha256": "3b5b7495b5fdf23a08c994372857344256d8dfc9c0d55ce06782f8fa4d900f5d"
+      "utf8Bytes": 27003,
+      "sha256": "ff825c3bcdf8a53cb0ee70d4f362a8e4802545a6f916d2598cf4f01c756f45e8"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -463,14 +473,19 @@
       "sha256": "c72485abd5a4b58fc798d1c88ed78139410e8a3479b5421100ceede8e2766e93"
     },
     {
+      "path": "test/media-picker.test.mjs",
+      "utf8Bytes": 2138,
+      "sha256": "5fa28068c676d648148f97468202585a4c2b63a033722273aeac8c67d9e1ab1c"
+    },
+    {
       "path": "test/media-power.test.mjs",
       "utf8Bytes": 7708,
       "sha256": "7461f10e919e5dca8b862f31f4e74862732306dca17ef269e37e71f234c0a015"
     },
     {
       "path": "test/media-preparation.test.mjs",
-      "utf8Bytes": 4866,
-      "sha256": "07d1ea0db859a8e3efa1e7952678650c26500d4d3fd427ec6b270705e7242e0c"
+      "utf8Bytes": 4929,
+      "sha256": "28778c38e7eabaa69bd84abc01e37cbcd2c3aea9a196768ac9d7288aaf7def9c"
     },
     {
       "path": "test/panel-controls-integration.mjs",
@@ -534,8 +549,8 @@
     },
     {
       "path": "tools/library-maintenance.mjs",
-      "utf8Bytes": 8323,
-      "sha256": "ce08b20a60354fd48eb74b1054bf1d3483e17d57287bbd8bb533c08b6b9cc86c"
+      "utf8Bytes": 8523,
+      "sha256": "66aea38e54801867c9b85952b97b75921d19ae3f20c700393e3bc33cbd865474"
     },
     {
       "path": "tools/prepare-media-bridge.mjs",
@@ -656,6 +671,11 @@
       "path": "windows/Official-Icon.ps1",
       "utf8Bytes": 2730,
       "sha256": "2ca9d556f8d02a7b8777501b4c7592ca4feeae72ae8860f78e0045df27e3876e"
+    },
+    {
+      "path": "windows/Pick-MediaFile.ps1",
+      "utf8Bytes": 619,
+      "sha256": "bc16126e6902febb1b132f91e736cdf0161855aa0ac549b5d2c28fb10a3c9b1f"
     },
     {
       "path": "windows/Pick-WallpaperFolder.ps1",

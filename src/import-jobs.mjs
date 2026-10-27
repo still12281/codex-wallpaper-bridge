@@ -5,7 +5,7 @@ export function createImportJobs({progress=()=>{}}={}){
  const jobs=new Map(),cancelled=[];
  const key=(owner,id)=>[...jobs.values()].find(j=>j.owner===owner&&j.id===id);
  const begin=(owner,req)=>{
-  if(!['import-start','import-end','wallpaper-engine','wallpaper-engine-confirm'].includes(req.action))return null;
+  if(!['media-pick','import-start','import-end','wallpaper-engine','wallpaper-engine-confirm'].includes(req.action))return null;
   req.operationId??='import-'+randomUUID();if(!/^[a-zA-Z0-9_-]{1,96}$/.test(req.operationId))throw Error('导入任务标识无效');
   for(let i=cancelled.length-1;i>=0;i--)if(cancelled[i].expires<Date.now())cancelled.splice(i,1);
   let job=key(owner,req.operationId)||cancelled.find(j=>j.owner===owner&&j.id===req.operationId);if(job)return job;

@@ -25,6 +25,15 @@ export async function discoverEngineRoots(){
 export function createEngineCatalog(){
  const tokens=new Map();let generation=0;
  return {
+  async registerMedia(file,owner){
+   if(typeof file!=='string'||!path.isAbsolute(file)||/^(?:\\\\|\/\/)/.test(file))throw Error('请选择本机媒体文件');
+   const canonical=await realpath(file),info=await stat(canonical),mime=mediaTypes[path.extname(canonical).toLowerCase()];
+   if(path.parse(canonical).root.startsWith(path.sep+path.sep))throw Error('请选择本机媒体文件');
+   if(!mime||!info.isFile()||!Number.isSafeInteger(info.size)||info.size<1)throw Error('媒体文件无效');
+   for(const [key,value]of tokens)if(value.picked&&value.owner===owner)tokens.delete(key);
+   const token=randomUUID(),sourceKey=projectKey(canonical);tokens.set(token,{root:path.dirname(canonical),file:canonical,mime,sourceKey,kind:'media',owner,picked:true});return {projectToken:token,name:path.basename(canonical)};
+  },
+  releaseOwner(owner){for(const [key,value]of tokens)if(value.owner===owner)tokens.delete(key);},
   async search({scope='global',folder='',kind='engine',roots:givenRoots}={}){
    if(!['engine','media'].includes(kind))throw Error('搜索类型无效');if(kind==='media'&&scope!=='folder')throw Error('图片/视频搜索请指定文件夹');
    let roots,warnings=[];if(givenRoots)roots=givenRoots;else if(scope==='folder'){if(typeof folder!=='string'||!path.isAbsolute(folder)||folder.startsWith('\\\\'))throw Error('请选择本地文件夹，或填写完整路径');if(!await exists(folder))throw Error('文件夹不存在或无法读取');roots=[await realpath(folder)]}else if(scope==='global'){({roots,warnings}=await discoverEngineRoots())}else throw Error('搜索范围无效');
@@ -32,13 +41,13 @@ export function createEngineCatalog(){
    for(let i=0;i<queue.length;i++){if(directories>=6000||items.length>=3000||Date.now()-start>15000){truncated=true;break}const {p,depth}=queue[i];let canonical;try{canonical=await realpath(p)}catch{continue}if(visited.has(key(canonical)))continue;visited.add(key(canonical));directories++;
     let project;if(kind==='engine')try{const file=path.join(canonical,'project.json');if((await stat(file)).size>1024*1024)continue;project=JSON.parse(await readFile(file,'utf8'))}catch{}
     if(project){const type=String(project.type||'unknown').toLowerCase(),sourceKey=projectKey(canonical),workshopId=canonical.replace(/\\/g,'/').match(/\/workshop\/content\/431960\/(\d+)$/i)?.[1],token=randomUUID();nextTokens.set(token,{root:canonical,sourceKey,workshopId,kind:'engine',preview:project.preview});items.push({id:workshopId||sourceKey,token,title:String(project.title||path.basename(canonical)).slice(0,160),contentrating:String(project.contentrating||'').slice(0,40),type,location:canonical});continue}
-    try{for(const e of await readdir(canonical,{withFileTypes:true})){if(e.isSymbolicLink())continue;if(e.isDirectory()&&!/^(node_modules|\.git|Windows|\$Recycle\.Bin|System Volume Information)$/i.test(e.name)){if(depth>=12){truncated=true;continue}queue.push({p:path.join(canonical,e.name),depth:depth+1})}else if(kind==='media'&&e.isFile()&&mediaTypes[path.extname(e.name).toLowerCase()]){const file=path.join(canonical,e.name),size=(await stat(file)).size;if(!size||size>250*1024*1024)continue;const mime=mediaTypes[path.extname(e.name).toLowerCase()],sourceKey=projectKey(file),token=randomUUID();nextTokens.set(token,{root:canonical,file,mime,sourceKey,kind:'media'});items.push({id:sourceKey,token,title:e.name,type:mime.startsWith('video/')||mime==='image/gif'?'video':'image',location:file});if(items.length>=3000){truncated=true;break}}}}catch{warnings.push('无法读取 '+canonical)}
+    try{for(const e of await readdir(canonical,{withFileTypes:true})){if(e.isSymbolicLink())continue;if(e.isDirectory()&&!/^(node_modules|\.git|Windows|\$Recycle\.Bin|System Volume Information)$/i.test(e.name)){if(depth>=12){truncated=true;continue}queue.push({p:path.join(canonical,e.name),depth:depth+1})}else if(kind==='media'&&e.isFile()&&mediaTypes[path.extname(e.name).toLowerCase()]){const file=path.join(canonical,e.name),size=(await stat(file)).size;if(!Number.isSafeInteger(size)||size<1)continue;const mime=mediaTypes[path.extname(e.name).toLowerCase()],sourceKey=projectKey(file),token=randomUUID();nextTokens.set(token,{root:canonical,file,mime,sourceKey,kind:'media'});items.push({id:sourceKey,token,title:e.name,type:mime.startsWith('video/')||mime==='image/gif'?'video':'image',location:file});if(items.length>=3000){truncated=true;break}}}}catch{warnings.push('无法读取 '+canonical)}
    }
    // Keep the previous search valid for another open window, with a fixed memory bound.
    if(++generation%4===0||tokens.size>12000)tokens.clear();for(const [t,value]of nextTokens)tokens.set(t,value);
    items.sort((a,b)=>a.title.localeCompare(b.title,'zh-CN'));return {wallpapers:items,roots,warnings:[...new Set(warnings)].slice(0,8),truncated,directories};
   },
-  async resolve(token){const item=tokens.get(token);if(!item)throw Error('搜索结果已过期，请重新搜索');if(key(await realpath(item.file||item.root))!==key(item.file||item.root))throw Error('素材路径已改变，请重新搜索');return item},
+  async resolve(token,owner){const item=tokens.get(token);if(!item||item.picked&&item.owner!==owner)throw Error('搜索结果已过期，请重新搜索');if(key(await realpath(item.file||item.root))!==key(item.file||item.root))throw Error('素材路径已改变，请重新搜索');return item},
   async preview(token){const item=await this.resolve(token);let file;if(item.kind==='media')file=item.file;else{if(typeof item.preview!=='string'||path.isAbsolute(item.preview))return null;file=path.join(item.root,item.preview);}const extension=path.extname(file).toLowerCase(),mime={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.gif':'image/gif'}[extension];if(!mime)return null;try{const canonical=await realpath(file),relative=path.relative(item.root,canonical);if(relative.startsWith('..')||path.isAbsolute(relative)||(await stat(canonical)).size>1024*1024)return null;return 'data:'+mime+';base64,'+(await readFile(canonical)).toString('base64');}catch{return null;}},
  };
 }

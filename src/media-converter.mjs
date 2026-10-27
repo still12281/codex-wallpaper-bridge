@@ -1,7 +1,10 @@
 import {findFFmpeg} from './runtime-paths.mjs';
 import {planMedia} from './media-preflight.mjs';
 import {spawn} from 'node:child_process';
-import {stat,unlink,copyFile} from 'node:fs/promises';
+import {stat,statfs,unlink} from 'node:fs/promises';
+import {createReadStream,createWriteStream} from 'node:fs';
+import {pipeline} from 'node:stream/promises';
+import {Transform} from 'node:stream';
 import path from 'node:path';
 import {setPriority,constants} from 'node:os';
 import {randomUUID} from 'node:crypto';
@@ -13,7 +16,10 @@ export async function convertMedia(root,input,mime,id,profile={maxWidth:1280,fps
  let conversionMs=0;
  try{
   onProgress({phase:route==='cache'?'复用转换结果':route==='copy'?'直接复用':route==='remux'?'快速封装':'转换',route,duration:source.duration});const prepared=performance.now();
-  if(route==='copy'||route==='cache'){await copyFile(cached||input,output);signal?.throwIfAborted();}
+  if(route==='copy'||route==='cache'){
+   let copied=0,checkedAt=0;const guard=new Transform({transform(chunk,encoding,done){const accept=()=>{copied+=chunk.length;onProgress({phase:route==='cache'?'复用转换结果':'复制播放文件',processedBytes:copied,totalBytes:source.bytes});done(null,chunk);};if(Date.now()-checkedAt<250){accept();return;}checkedAt=Date.now();statfs(root).then(space=>{if(space.bavail*space.bsize<64*1024*1024)done(Error('剩余磁盘空间不足，已停止复制并清理'));else accept();},done);}});
+   await pipeline(createReadStream(cached||input,{highWaterMark:1024*1024}),guard,createWriteStream(output,{flags:'wx'}),{signal});signal?.throwIfAborted();
+  }
   else{
    const ffmpeg=await findFFmpeg();
    const args=['-hide_banner','-nostdin','-n','-threads','2','-protocol_whitelist','file,pipe',...(mime==='image/gif'?['-ignore_loop','1']:[]),'-i',input,'-map','0:v:0','-an'];
@@ -28,7 +34,7 @@ export async function convertMedia(root,input,mime,id,profile={maxWidth:1280,fps
    await new Promise((resolve,reject)=>{
     let log='',failure,lastProgress=Date.now(),checking=false,finished=false;const child=spawn(ffmpeg,args,{windowsHide:true,stdio:['ignore','pipe','pipe']});try{setPriority(child.pid,constants.priority.PRIORITY_BELOW_NORMAL)}catch{}
     const stop=error=>{failure??=error;child.kill();};const abort=()=>stop(signal.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
-    const timer=setInterval(async()=>{if(checking||finished)return;checking=true;try{if((await stat(output)).size>limits.maxBytes)stop(Error('输出已达到 '+limits.maxBytes/1048576+' MiB 上限，已停止并清理；请返回选择其他规格，不会采用截短视频'));}catch{}finally{checking=false;}if(!finished&&Date.now()-lastProgress>45000)stop(Error('转换超过45秒无进展，已停止；可检查素材或重试'));},250);
+    const timer=setInterval(async()=>{if(checking||finished)return;checking=true;try{const space=await statfs(root);if(space.bavail*space.bsize<64*1024*1024)stop(Error('剩余磁盘空间不足，已停止并清理；原素材不变'));if((await stat(output)).size>limits.maxBytes)stop(Error(limits.fileBacked?'输出超过本次可用磁盘预算，已停止并清理':'图片播放副本超过容量保护，已停止并清理'));}catch{}finally{checking=false;}if(!finished&&Date.now()-lastProgress>45000)stop(Error('转换超过45秒无进展，已停止；可检查素材或重试'));},250);
     const deadline=setTimeout(()=>stop(Error('本次转换达到15分钟上限，已停止并保留原素材')),900000);
     child.stdout.on('data',b=>{lastProgress=Date.now();const time=String(b).match(/out_time_us=(\d+)/)?.[1];if(time)onProgress({phase:route==='remux'?'快速封装':'转换',route,processedSeconds:Number(time)/1e6,duration:source.duration});});
     child.stderr.on('data',b=>{log=(log+b).slice(-1600)});

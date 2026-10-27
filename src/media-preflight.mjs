@@ -29,13 +29,15 @@ export async function planMedia(root,input,mime,profile,options={}){
  const squarePixels=!source.sar||['0:1','1:1','N/A'].includes(source.sar),unrotated=source.rotation===0;
  const image=!motion&&({'image/png':'png','image/jpeg':'mjpeg','image/webp':'webp'})[mime]===source.codec;
  const video=mime==='video/mp4'&&source.format.includes('mp4')&&source.codec==='h264'&&source.pixelFormat==='yuv420p'&&squarePixels&&unrotated;
- let route=fits&&source.bytes<=limits.maxBytes&&(image||video)?(video&&source.audio?'remux':'copy'):'transcode';
+ let route=fits&&(motion||source.bytes<=limits.maxBytes)&&(image||video)?(video&&source.audio?'remux':'copy'):'transcode';
  const extension=route==='copy'?({'image/png':'.png','image/jpeg':'.jpg','image/webp':'.webp','video/mp4':'.mp4'})[mime]:motion?'.mp4':'.webp';
- const cacheKey=createHash('sha256').update(JSON.stringify(['media-preparation-v1',source.key,mime,limits])).digest('hex');
+ const cacheKey=createHash('sha256').update(JSON.stringify(['media-preparation-v2',source.key,mime,{...limits,maxBytes:motion?'file-backed':limits.maxBytes}])).digest('hex');
  const cached=await cachedConversion(root,cacheKey,extension);if(cached)route='cache';
  const rateMbps=Math.max(2,Math.round(3*Math.pow(limits.maxWidth/1280,1.5)*limits.fps/24));
  const estimatedBytes=motion&&route==='transcode'&&source.duration?Math.ceil(source.duration*rateMbps*1e6/8*1.03):source.bytes;
- const space=await statfs(root),requiredBytes=Math.max(source.bytes,Math.min(estimatedBytes,limits.maxBytes))+16*1024*1024;
+ const space=await statfs(root),reserve=64*1024*1024,available=space.bavail*space.bsize;
+ if(motion){limits.fileBacked=true;limits.maxBytes=Math.max(0,Math.floor(available-reserve));}
+ const requiredBytes=Math.max(source.bytes,motion?estimatedBytes:Math.min(estimatedBytes,limits.maxBytes))+reserve;
  if(space.bavail*space.bsize<requiredBytes)throw Error('保存空间不足，请先释放空间或更换素材；原素材保持不变');
  const risk=motion&&route==='transcode'&&source.duration&&estimatedBytes>limits.maxBytes;
  if(risk&&!options.acceptSizeRisk)throw Object.assign(Error('按当前规格估算可能超过播放容量；估算不是保证。可返回选择较低规格，或确认按原规格尝试。'),{code:'IMPORT_SIZE_REVIEW',review:{duration:source.duration,estimatedMiB:Math.round(estimatedBytes/1048576),maxMiB:limits.maxBytes/1048576}});

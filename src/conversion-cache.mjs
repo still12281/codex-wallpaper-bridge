@@ -9,6 +9,7 @@ export async function cachedConversion(root,key,ext){
 }
 export async function rememberConversion(root,key,file){
  if(!key)return;const ext=path.extname(file),destination=target(root,key,ext),directory=path.dirname(destination);await mkdir(directory,{recursive:true});
+ if((await stat(path.join(root,file))).size>256*1024*1024)return;
  await boundary(root);access.set(destination,Date.now());while(access.size>32)access.delete(access.keys().next().value);
  try{await link(path.join(root,file),destination);}catch(error){if(error.code!=='EEXIST')await copyFile(path.join(root,file),destination,constants.COPYFILE_EXCL).catch(e=>{if(e.code!=='EEXIST')throw e;});}
  const files=[];for(const item of await readdir(directory,{withFileTypes:true})){if(!item.isFile()||!pattern.test(item.name))continue;const absolute=path.join(directory,item.name),info=await stat(absolute);files.push({absolute,size:info.size,last:access.get(absolute)||info.mtimeMs});}
