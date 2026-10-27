@@ -83,3 +83,7 @@ Readonly review corrections accepted: media reconciliation on all apply/fallback
 ## 2026-10-27 恢复执行 C
 
 用户明确继续；从干净ab1aa58恢复，保留暂停后新增库记录与当前选择。C指针控件起拖越界问题已修，属性/隔离WebGL/面板定向通过，真实AMD工坊隐藏候选检查通过。C九文件备份部署v16，当前配置全部字段一致、Codex未重启。C2/C3与可见作者效果边界见docs/PACKAGE-C-20261027.zh-CN.md。
+
+## 2026-10-27 D源码阶段
+
+D指标口径/GPU独立高刷/4K R=1/128条目且512MiB有界缓存已实现，相关12项和面板检查通过。真实工坊在隔离AMD Chromium对照发现并证明小资源误淘汰；大包冷读仍7秒级，不宣称普遍提速。源码阶段提交后继续E，再联合部署，当前客户端仍C/v16。

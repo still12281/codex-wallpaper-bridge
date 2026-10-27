@@ -36,6 +36,17 @@ test('manual playback edits replace old custom restore values',async()=>{
  const action=createActions(root,s,async()=>{},undefined,{configureMedia:async()=>{}});await action(null,{action:'display-tier',tier:'economy'});assert(s.library[0].customDisplay);
  await action(null,{action:'playback',maxWidth:1920,fps:30});assert.equal(s.library[0].customDisplay,undefined);await action(null,{action:'display-tier',tier:'custom'});assert.equal(s.library[0].limits.maxWidth,1920);
 });
+test('GPU FPS updates keep exact dimensions and media defaults, and roll back hot-update errors',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-gpu-fps-')),s=defaultSettings();s.library=[{id:'scene',mode:'webwallgl',limits:{maxWidth:3840,maxHeight:2160,fps:60,exactResolution:true}}];s.selectedId='scene';const mediaDefaults=structuredClone(s.playback);let remounts=0,fail=false,last;
+ const action=createActions(root,s,async()=>remounts++,undefined,{updateFrameRate:async fps=>{last=fps;if(fail){fail=false;throw Error('hot update failed');}return true;}});
+ await action(null,{action:'playback',maxWidth:3840,fps:144});assert.equal(last,144);assert.equal(remounts,0);assert.equal(s.library[0].limits.maxHeight,2160);assert.equal(s.library[0].limits.exactResolution,true);assert.deepEqual(s.playback,mediaDefaults);
+ fail=true;await assert.rejects(action(null,{action:'playback',maxWidth:3840,fps:120}),/hot update failed/);assert.equal(last,144);assert.equal(s.library[0].limits.fps,144);assert.equal(remounts,0);
+ const brokenHot=createActions(root,s,async()=>remounts++,undefined,{updateFrameRate:async()=>{throw Error('setter unavailable');}});await assert.rejects(brokenHot(null,{action:'playback',maxWidth:3840,fps:120}),/setter unavailable/);assert.equal(s.library[0].limits.fps,144);assert.equal(remounts,1);
+});
+test('switching a high-refresh GPU project to native uses a separate confirmed native FPS',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-high-native-')),project=path.join(root,'project');await mkdir(project);await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene'}));const s=defaultSettings();s.library=[{id:'gpu',mode:'webwallgl',projectRoot:project,limits:{maxWidth:1280,fps:144}}];s.selectedId='gpu';s.playback.fps=30;
+ const action=createActions(root,s,async()=>{}),r=await action({}, {action:'display-renderer',renderMode:'native'});assert.equal(r.confirmation.renderer,'native');assert.equal(r.confirmation.limits.fps,30);assert.equal(s.library[0].limits.fps,144);
+});
 test('native FPS and width edits preserve capture quality and the selected aspect ratio',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-native-profile-')),s=defaultSettings();s.library=[{id:'native',mode:'realtime',limits:{maxWidth:1920,maxHeight:1320,fps:30,jpegQuality:92}}];s.selectedId='native';const action=createActions(root,s,async()=>{});
  await action(null,{action:'playback',maxWidth:1920,fps:24});assert.deepEqual(s.library[0].limits,{maxWidth:1920,maxHeight:1320,fps:24,jpegQuality:92});await action(null,{action:'playback',maxWidth:1280,fps:30});assert.equal(s.library[0].limits.maxHeight,880);assert.equal(s.library[0].limits.jpegQuality,92);

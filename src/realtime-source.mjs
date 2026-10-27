@@ -7,9 +7,12 @@ import {spawn,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {discoverEngineRoots,projectKey} from './engine-library.mjs';
 
-export function realtimeProfile(profile){
+export const GPU_FPS_OPTIONS=[12,24,30,60,120,144];
+export const gpuProfile=profile=>({...normalizeProfile(profile,GPU_FPS_OPTIONS),...(profile?.exactResolution?{exactResolution:true}:{})});
+export const realtimeProfile=profile=>normalizeProfile(profile,[12,24,30,60]);
+function normalizeProfile(profile,frameRates){
  const maxWidth=Number(profile?.maxWidth),fps=Number(profile?.fps);
- if(![960,1280,1920,2560,3840].includes(maxWidth)||![12,24,30,60].includes(fps))throw Error('实时播放规格无效');
+ if(![960,1280,1920,2560,3840].includes(maxWidth)||!frameRates.includes(fps))throw Error('播放规格无效；120/144 FPS仅支持GPU场景，媒体与原版兼容最高60 FPS');
  const maxHeight=profile?.maxHeight===undefined?Math.floor(maxWidth*900/1280/2)*2:Number(profile.maxHeight);
  if(!Number.isInteger(maxHeight)||maxHeight<64||maxHeight>4320||maxHeight%2)throw Error('实时输出高度无效');
  const result={maxWidth,maxHeight,fps};if(profile?.jpegQuality!==undefined){const quality=Number(profile.jpegQuality);if(!Number.isInteger(quality)||quality<60||quality>96)throw Error('实时画面质量无效');result.jpegQuality=quality;}return result;

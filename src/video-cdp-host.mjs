@@ -20,6 +20,7 @@ import {startSystemMedia,spectrumInterval} from './system-media.mjs';
 import {createMediaPower,installMediaActivity} from './media-power.mjs';
 import {displaySettings,effectiveEntry,effectiveMediaSettings} from './display-tiers.mjs';
 import {libraryGroups} from './library-model.mjs';
+import {playbackMetrics} from './playback-metrics.mjs';
 import {installSceneResourceCache,callSceneResourceCache} from './scene-resource-cache.mjs';
 
 const codeRoot=path.dirname(fileURLToPath(import.meta.url));
@@ -98,7 +99,17 @@ async function applyAppearance(){
  for(const c of sessions.values())await c.evaluate('(()=>{const config='+JSON.stringify(settings)+';window.__codexWallpaperBridge?.setPauseOnBlur?.(config.pauseOnBlur);document.getElementById("codex-wallpaper-controls")?.__cwbRenderConfig?.(config);return ('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')})()');
 }
 function activeWallpaperKey(){const entry=settings.library.find(e=>e.id===settings.selectedId);return JSON.stringify([entry,entry?.mode==='webwallgl'?!!settings.systemMedia?.audio:null]);}
-async function applySelected(){for(const [id,c]of sessions){if(effectiveEntry(settings.library.find(e=>e.id===settings.selectedId))?.mode==='webwallgl'&&await c.evaluate('document.hidden')){c.installed=false;c.activeKey=null;continue;}const key=activeWallpaperKey();if(!c.captureBlocked&&c.activeKey===key&&await c.evaluate('!!window.__codexWallpaperBridge?.ready&&!window.__codexWallpaperBridge?.error')){c.installed=true;continue;}c.installed=false;try{await mount(c,{id});c.activeKey=key;}catch(error){await c.evaluate('window.__cwbPendingMedia?.dispose?.();document.getElementById("codex-wallpaper-bridge-pending")?.remove();delete window.__cwbPendingMedia;true').catch(()=>{});throw error;}}await configureMedia(settings.systemMedia);}
+async function applySelected(){
+ const started=performance.now(),timing=status.lastSwitch={selectedId:settings.selectedId,startedAt:new Date().toISOString(),targets:[]};
+ for(const [id,c]of sessions){
+  if(effectiveEntry(settings.library.find(e=>e.id===settings.selectedId))?.mode==='webwallgl'&&await c.evaluate('document.hidden')){c.installed=false;c.activeKey=null;timing.targets.push({targetId:id,waitingForVisible:true});continue;}
+  const key=activeWallpaperKey();
+  if(!c.captureBlocked&&c.activeKey===key&&await c.evaluate('!!window.__codexWallpaperBridge?.ready&&!window.__codexWallpaperBridge?.error')){c.installed=true;timing.targets.push({targetId:id,reused:true,readyAfterMs:performance.now()-started});continue;}
+  c.installed=false;try{await mount(c,{id});c.activeKey=key;timing.targets.push({targetId:id,readyAfterMs:performance.now()-started});}
+  catch(error){timing.error=error.message;await c.evaluate('window.__cwbPendingMedia?.dispose?.();document.getElementById("codex-wallpaper-bridge-pending")?.remove();delete window.__cwbPendingMedia;true').catch(()=>{});throw error;}
+ }
+ timing.completedMs=performance.now()-started;timing.measurement='candidate readiness by target; not physical screen presentation';await configureMedia(settings.systemMedia);
+}
 mediaPower=createMediaPower({start:options=>startSystemMedia(root,options),sessions:()=>sessions.values(),send:async(c,kind,payload)=>{const data=JSON.stringify(payload);if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');}});
 const configureMedia=async options=>{const effective=effectiveMediaSettings({...settings,systemMedia:options});await mediaPower.configure(effective);if(spectrumTimer){clearInterval(spectrumTimer);spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(effective.audioFps));spectrumTimer.unref();}};
 async function reportMedia(c){await c.evaluate('('+installMediaActivity.toString()+')('+JSON.stringify(c.token)+');true');}
@@ -109,7 +120,7 @@ async function captureStatic(entry){
  if(!data?.startsWith('data:image/png;base64,'))throw Error('静态画面生成失败，当前背景保持不变');const bytes=Buffer.from(data.split(',')[1],'base64');if(bytes.length<64||bytes.length>32*1024*1024)throw Error('静态画面大小异常');
  const file='media/still-'+entry.id+'-'+randomUUID()+'.png';await writeFile(path.join(root,file),bytes,{flag:'wx'});return file;
 }
-const actions=createActions(root,settings,applySelected,applyAppearance,{configureMedia,captureStatic,updateProperties:async values=>{let applied=false;for(const page of sessions.values())if(page.webPlayer?.entryId===settings.selectedId&&page.installed){await page.webPlayer.setProperties(values);page.activeKey=activeWallpaperKey();applied=true;}return applied;},setImportPreparing:value=>{importPreparing=value;},onImportProgress:async(c,progress)=>{if(c?.ws?.readyState===1)await c.evaluate('window.__cwbPanelHost?.__cwbImportProgress?.('+JSON.stringify(progress)+');true');},isSelectedHealthy:async c=>!!c?.installed&&!c.captureBlocked&&(!c.isRealtime||!!realtime&&!realtime.error&&!realtime.closed)&&await c.evaluate('!!window.__codexWallpaperBridge?.ready&&!window.__codexWallpaperBridge?.error'),nativeProfile:async(c,projectRoot)=>nativeFullProfile(projectRoot),controlMedia:async(command,sourceId)=>{if(!settings.systemMedia.enabled||!mediaPower.backend)throw Error('歌曲信息与播放控制未启用');await mediaPower.backend.control(command,{sourceId});}});
+const actions=createActions(root,settings,applySelected,applyAppearance,{configureMedia,captureStatic,updateFrameRate:async fps=>{let applied=false;for(const page of sessions.values())if(page.webPlayer?.entryId===settings.selectedId&&page.installed){await page.webPlayer.setFps(fps);page.activeKey=activeWallpaperKey();applied=true;}return applied;},updateProperties:async values=>{let applied=false;for(const page of sessions.values())if(page.webPlayer?.entryId===settings.selectedId&&page.installed){await page.webPlayer.setProperties(values);page.activeKey=activeWallpaperKey();applied=true;}return applied;},setImportPreparing:value=>{importPreparing=value;},onImportProgress:async(c,progress)=>{if(c?.ws?.readyState===1)await c.evaluate('window.__cwbPanelHost?.__cwbImportProgress?.('+JSON.stringify(progress)+');true');},isSelectedHealthy:async c=>!!c?.installed&&!c.captureBlocked&&(!c.isRealtime||!!realtime&&!realtime.error&&!realtime.closed)&&await c.evaluate('!!window.__codexWallpaperBridge?.ready&&!window.__codexWallpaperBridge?.error'),nativeProfile:async(c,projectRoot)=>nativeFullProfile(projectRoot),controlMedia:async(command,sourceId)=>{if(!settings.systemMedia.enabled||!mediaPower.backend)throw Error('歌曲信息与播放控制未启用');await mediaPower.backend.control(command,{sourceId});}});
 async function alignTaskbar(){if(appUrl!=='app://-/index.html'||process.platform!=='win32')return;try{await stat(path.join(root,'Align-Taskbar.exe'))}catch{return}try{const r=await promisify(execFile)(path.join(root,'Align-Taskbar.exe'),['--apply'],{windowsHide:true,timeout:8000});status.taskbar={updatedAt:new Date().toISOString(),result:r.stdout.trim()};}catch(e){status.taskbar={error:e.message}}}
 
 function prepareLayer(size,mime,candidateId){
@@ -136,7 +147,7 @@ function startVideo(config){
  video.addEventListener(video.tagName==='VIDEO'?'loadeddata':'load',()=>{const canvas=document.createElement('canvas');canvas.width=canvas.height=16;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(video,0,0,16,16);const data=ctx.getImageData(0,0,16,16).data;let r=0,g=0,b=0;for(let i=0;i<data.length;i+=4){r+=data[i];g+=data[i+1];b+=data[i+2]}r/=256;g/=256;b/=256;const l=.2126*r+.7152*g+.0722*b,dark=l<145;const tint=v=>Math.round(dark?v*.18:220+v*.12);state.palette={r:tint(r),g:tint(g),b:tint(b),dark};state.ready=true;visibility()},{once:true});video.src=state.blobUrl;video.load?.();return true;
 }
 
-async function mount(c,target){
+async function mount(c,target){c.playbackReading=null;
  const ticket=activeSelection??selectionRevision,selectionStamp=selectionEpoch+':'+ticket,isCurrent=()=>ticket===selectionRevision;
  const assertCurrent=()=>{if(!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
 
@@ -215,11 +226,11 @@ async function tick(){
     if(!healthy)c.installed=false;
     if(!c.installed&&effectiveEntry(settings.library.find(e=>e.id===settings.selectedId))?.mode==='webwallgl'&&await c.evaluate('document.hidden')){Object.assign(targetState,{phase:'waiting-for-visible-page'});continue;}
     if(!c.installed){await mount(c,target);c.activeKey=activeWallpaperKey();}
-    await reportMedia(c);const observed=await c.evaluate('window.__codexWallpaperBridge?.sample()');
+    await reportMedia(c);const observed=await c.evaluate('(()=>{const value=window.__codexWallpaperBridge?.sample();return value?{...value,viewportWidth:innerWidth,viewportHeight:innerHeight}:null})()');
     if(!observed){c.installed=false;continue}
     targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':observed.paused?'realtime-capture-paused':Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed,...(c.isRealtime?{delivery:c.captureTiming,deliveryError:c.captureError}:{} )});
     if(observed.width&&observed.height){
-     const note=`实际 ${observed.width} × ${observed.height} · ${observed.mode==='realtime'?'原版兼容':observed.mode==='webwallgl'?'GPU':'媒体'}${observed.paused?' · 已暂停':''}`;
+     const entry=settings.library.find(e=>e.id===settings.selectedId),metrics=playbackMetrics(entry,observed,c.playbackReading);c.playbackReading=metrics.reading;targetState.playback=metrics.data;const note=metrics.text;
      await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbCaptureStats?.('+JSON.stringify(note)+');true');
     }
 

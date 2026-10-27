@@ -37,6 +37,11 @@ B 实施详情见 [媒体准备与事务](docs/PACKAGE-B-20261026.zh-CN.md)。A�
 - [ ] C2 Web相对资源/脚本通道有界可行性试验；仍保留明确禁用，不放宽CSP。
 - [ ] C3 字体/粒子/模型/脚本/效果的实际样本差异和真实音频复核；不能由空场景API回读代替。
 
+## 执行包 D（源码完成，联合部署待验收）
+
+- [x] D1 真实口径与静态/暂停、D2 GPU独立高刷与4K纹理预算、D3 小资源误淘汰修复及冷/暖/清理/大包/源变更对照；详见 [D记录](docs/PACKAGE-D-20261027.zh-CN.md)。
+- [ ] 当前客户端部署、稳定60/高刷可见输出与主/分离窗口结果；隔离提交率不冒充真实屏幕呈现。
+
 # DSH feature reuse into Codex（历史记录）
 
 Authorized 2026-10-24. Baseline: 1c1036e. Preserve the official client and the existing Codex bridge. Commit reviewed milestones locally; do not push.

@@ -14,7 +14,7 @@ import {clearConversionCache} from './conversion-cache.mjs';
 import {readWallpaperProperties,validatePropertyPatch,propertyDefinitions,effectivePropertyValues} from './wallpaper-properties.mjs';
 import {currentEngineSource,getCurrentEngineProject,inspectEngineProject} from './wallpaper-engine-source.mjs';
 import {commitConverted,removeManagedFile} from './media-store.mjs';
-import {describeProject,realtimeProfile,findWorkshopProject} from './realtime-source.mjs';
+import {describeProject,realtimeProfile,gpuProfile,findWorkshopProject} from './realtime-source.mjs';
 import {sanitizeVisual,appearanceSnapshot,parsePreset,nextRotation} from './appearance-model.mjs';
 import {AUDIO_FPS_OPTIONS,normalizeAudioFps} from './system-media.mjs';
 import {DISPLAY_TIERS,effectiveMediaSettings} from './display-tiers.mjs';
@@ -40,7 +40,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   const project=await describeProject(projectRoot);
   if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
   if(renderer==='webwallgl'&&project.type!=='scene')throw Error('网页 WebWallGL 资源通道尚未通过验收，请选择原生实时模式');
-  const limits={...realtimeProfile(profile||settings.playback),...(profile?.exactResolution?{exactResolution:true}:{})},token=randomUUID();
+  const limits={...(renderer==='webwallgl'?gpuProfile:realtimeProfile)(profile||settings.playback),...(profile?.exactResolution?{exactResolution:true}:{})},token=randomUUID();
   for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
   confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer,duplicatePolicy,nativeFull});
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
@@ -73,6 +73,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');const projectRoot=entry.projectRoot||(entry.workshopId?await findWorkshopProject(entry.workshopId):null);if(!projectRoot)throw Error('此素材没有完整场景');
    const profile=entry.displayTier==='full'?(services.nativeProfile?await services.nativeProfile(c,projectRoot):{maxWidth:3840,maxHeight:2160,fps:30,jpegQuality:92}):{...(entry.limits||settings.playback)};
    if(req.renderMode==='webwallgl'){delete profile.jpegQuality;if(entry.displayTier==='full')profile.exactResolution=true;}
+   else if(profile.fps>60){const saved=settings.library.find(e=>e.mode==='realtime'&&e.projectRoot===projectRoot);profile.fps=saved?.limits?.fps||settings.playback.fps||30;}
    return requestRealtime(c,projectRoot,true,profile,req.renderMode,'use',entry.displayTier==='full');
   }
   if(req.action==='scene-quality'){
@@ -174,10 +175,13 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('当前壁纸不存在');
    if(['realtime','webwallgl'].includes(entry.mode)){
     const previous=entry.limits,oldProfile=settings.playback,previousTier=entry.displayTier,previousCustom=entry.customDisplay;
-    const profile=entry.mode==='realtime'?{...req,...(previous?.maxHeight?{maxHeight:Math.floor(Number(req.maxWidth)*previous.maxHeight/previous.maxWidth/2)*2}:{}),...(previous?.jpegQuality?{jpegQuality:previous.jpegQuality}:{})}:req;
-    entry.limits=realtimeProfile(profile);entry.displayTier='custom';delete entry.customDisplay;settings.playback={maxWidth:entry.limits.maxWidth,fps:entry.limits.fps};
-    try{await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings)}catch(error){entry.limits=previous;entry.displayTier=previousTier;if(previousCustom)entry.customDisplay=previousCustom;settings.playback=oldProfile;await apply();await services.configureMedia?.(effectiveMediaSettings(settings));throw error}
-    return {config:settings,message:'已更新实时输出分辨率与采集帧率；Wallpaper Engine 全局帧率未修改。'};
+    const profile={...req,...(previous?.maxHeight&&(entry.mode==='realtime'||previous.exactResolution)?{maxHeight:Math.floor(Number(req.maxWidth)*previous.maxHeight/previous.maxWidth/2)*2}:{}),...(entry.mode==='realtime'&&previous?.jpegQuality?{jpegQuality:previous.jpegQuality}:{}),...(entry.mode==='webwallgl'&&previous?.exactResolution?{exactResolution:true}:{})};
+    entry.limits=(entry.mode==='webwallgl'?gpuProfile:realtimeProfile)(profile);entry.displayTier='custom';delete entry.customDisplay;
+    // GPU high-refresh preferences must not become unsupported media import defaults.
+    if(entry.limits.fps<=60)settings.playback={maxWidth:entry.limits.maxWidth,fps:entry.limits.fps};
+    const hot=entry.mode==='webwallgl'&&previous?.maxWidth===entry.limits.maxWidth&&previous?.maxHeight===entry.limits.maxHeight&&previous?.exactResolution===entry.limits.exactResolution;
+    try{if(!hot||!await services.updateFrameRate?.(entry.limits.fps))await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings)}catch(error){entry.limits=previous;entry.displayTier=previousTier;if(previousCustom)entry.customDisplay=previousCustom;settings.playback=oldProfile;let restored=false;if(hot)try{restored=!!await services.updateFrameRate?.(previous.fps);}catch{}try{if(!restored)await apply();await services.configureMedia?.(effectiveMediaSettings(settings));}catch(restoreError){error.message+='；旧场景恢复失败：'+restoreError.message;}throw error}
+    return {config:settings,message:entry.mode==='webwallgl'?'已更新GPU渲染上限；实际帧率受屏幕刷新、场景与负载限制，不补帧。':'已更新实时输出分辨率与采集帧率；Wallpaper Engine 全局帧率未修改。'};
    }
    const input=entry.sourcePath||path.join(root,entry.sourceFile||entry.file);
    try{await stat(input)}catch{throw Error('原素材不可用，请重新导入后调整规格')}
