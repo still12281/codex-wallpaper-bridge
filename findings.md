@@ -88,3 +88,14 @@ Bounded native capture acceptance: raw command-line escaping was the first failu
 - C2：WebWallGL source.webEntry依赖可导航URL与相对资源，现字节broker没有通用导航服务。不能删guard或绕CSP；候选为仅沙箱子目标、令牌虚拟URL+Fetch.fulfillRequest的有界可行性试验，仍未验证。
 - C3：字体/日期/粒子/模型骨骼/SceneScript/效果有上游实现，组件SKIP_COMPONENTS=true，动态切未预载字体仍可能回退；未做逐场景保真验收。
 - 只读核验两上游MIT：WebWallGL main仍197abe5、最后推送2026-10-14；DSH main于2026-10-26到7ba44b2，未整体升级。AnySearch一条Web查询失败，另一条返回WE官方属性文档；GitHub只读核验成功。详情来源：本地上游lib/we-props.js、src/live-layer-pointer.js、renderer/src/{web,scene-mount,api/mount}.ts；WebWallGL issue16仍开放。
+
+### C4/C5 首批源码（尚未部署）
+
+- 原样纳入 pinned DSH lib/we-props.js 和 src/we-cond.js，并登记原始/规范化哈希。宿主包装在内存克隆中适配 editable:false，隐藏UI但保留脚本默认；条件只控制显示，使用上游tokenize/parse而不用全局无限编译缓存或eval。
+- 属性按libraryGroups共享到同逻辑壁纸的各模式记录，原版/媒体仅保存待GPU启用。首次装配注入与运行中setProperties热更新、类型/范围校验、恢复默认、错误回退已有实现；可编辑首批bool/color/slider/combo，其它类型说明保留。
+- 首次隔离实际WebGL测试发现仅给MountOptions.properties仍回到gain=.35默认；源码scene-mount会重建liveUserProps。已在initializeRenderer内先给序列化project metadata注入覆盖（磁盘原件不动），再装配；第二次测试初始gain=.7和热更新=.9回读通过。
+- 指针转发新增up/cancel/leave/blur/隐藏时释放、ctrl/shift/alt/meta位与至少一帧按键保持；监听被动，排除contenteditable、chat scroll、控件、代码与选中文本。Web wheel协议接线仅在Web类型下可用，Scene没有滚轮语义。
+- 隔离WebGL首帧/像素、属性回读、失败候选保留、频谱attach/detach、暂停恢复、监听器清理与事件边缘通过。空场景没有可见图层，不能证明真实工坊属性/鼠标视觉效果；local-assets Invalid URL警告和simulated-stream诊断仍保留，不能将这些日志当原版兼容/真实音频验收。
+- 独立复核问题已修：切换作者属性key即清空旧字段并捕获目标ID；busy结束同步新出现控件；默认wire保留原始JSON而非把未知类型对象转字符串；保存不顺带删除原有未支持覆盖；延迟up释放最新坐标。属性单元和作者面板竞态/类型检查通过。C源码未部署，当前实际客户端仍B面板v15。
+- C2有界试验：只读取得当前客户端CSP，复制到独立headless页面；对虚拟项目URL的fetch被connect-src阻断，Fetch拦截请求数0。结果在仓库外package-b-work/web-csp-result.json。没有尝试伪装成可信OpenAI域、放宽CSP或开放Web入口。
+- D只读：上游FrameGate可接正FPS，本项目当前限制12/24/30/60；若续做，GPU高刷应独立于媒体/原生限制，60Hz环境不能验收120/144实际呈现。E的冷启、睡眠、正常退出清理及任务栏/闪屏需用户正常操作；未实施这些新功能。

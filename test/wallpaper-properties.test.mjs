@@ -1,0 +1,17 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,mkdir,writeFile,readFile} from 'node:fs/promises';import path from 'node:path';import os from 'node:os';
+import {propertyDefinitions,validatePropertyPatch,effectivePropertyValues} from '../src/wallpaper-properties.mjs';import {createActions} from '../src/wallpaper-actions.mjs';import {defaultSettings} from '../src/runtime-paths.mjs';
+const project={type:'scene',general:{properties:{enabled:{type:'bool',value:false,order:1},hidden:{type:'slider',value:.4,min:0,max:1,editable:false},gain:{type:'slider',value:.5,min:0,max:1,condition:'enabled == true'},choice:{type:'combo',value:2,options:[{label:'Integer',value:2},{label:'String',value:'2'}]},color:{type:'color',value:'0.1 0.2 0.3'},text:{type:'text',text:'Description'}}}};
+test('upstream definitions preserve hidden defaults, typed choices and conditional UI without filtering wire values',()=>{
+ const model=propertyDefinitions(project);assert.equal(model.values.hidden,.4);assert.equal(model.values.gain,.5);assert.equal(model.definitions.find(d=>d.name==='hidden').visible,false);assert.equal(model.definitions.find(d=>d.name==='gain').visible,false);assert.equal(propertyDefinitions(project,{enabled:true}).definitions.find(d=>d.name==='gain').visible,true);
+ assert.deepEqual({...validatePropertyPatch(project,{choice:'2',enabled:true})},{choice:'2',enabled:true});assert.equal(effectivePropertyValues(project,{gain:.8,hidden:.9,unknown:9}).hidden,.4);assert.equal(effectivePropertyValues(project,{gain:.8}).gain,.8);
+ const extra=structuredClone(project);extra.general.properties.vector={type:'vector',value:{x:1,y:2}};assert.deepEqual(effectivePropertyValues(extra).vector,{x:1,y:2});
+ for(const patch of [{hidden:.6},{gain:2},{enabled:'true'},{choice:false},{color:'#ffffff'},{unknown:1}])assert.throws(()=>validatePropertyPatch(project,patch));
+});
+test('property edits share logical versions, update without remount and roll back on renderer failure',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-properties-')),scene=path.join(root,'project');await mkdir(scene);await writeFile(path.join(scene,'project.json'),JSON.stringify(project));
+ const config=defaultSettings();config.library=[{id:'gpu',workshopId:'12345',projectRoot:scene,mode:'webwallgl'},{id:'native',workshopId:'12345',projectRoot:scene,mode:'realtime'}];config.selectedId='gpu';let fail=false,applies=0,last;
+ const action=createActions(root,config,async()=>applies++,undefined,{updateProperties:async values=>{last=values;if(fail){fail=false;throw Error('renderer failed');}return true;}});
+ const result=await action({}, {action:'wallpaper-properties-save',selectedId:'gpu',values:{enabled:true,gain:.7,choice:'2'}});assert(result.properties.applied);assert.equal(applies,0);assert.equal(last.hidden,.4);assert.equal(last.gain,.7);assert.deepEqual(config.library[0].userProperties,config.library[1].userProperties);
+ fail=true;await assert.rejects(action({}, {action:'wallpaper-properties-save',selectedId:'gpu',values:{gain:.9}}),/renderer failed/);assert.equal(config.library[0].userProperties.gain,.7);assert.equal(last.gain,.7);
+ await action({}, {action:'wallpaper-properties-reset',selectedId:'gpu'});assert(config.library.every(e=>e.userProperties===undefined));assert.equal(last.gain,.5);assert.equal(JSON.parse(await readFile(path.join(root,'settings.json'),'utf8')).selectedId,'gpu');await assert.rejects(action({}, {action:'wallpaper-properties-save',selectedId:'old',values:{enabled:true}}),/已切换/);
+});

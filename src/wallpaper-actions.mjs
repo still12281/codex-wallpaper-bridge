@@ -11,6 +11,7 @@ import {convertMedia} from './media-converter.mjs';
 import {planMedia} from './media-preflight.mjs';
 import {createImportJobs} from './import-jobs.mjs';
 import {clearConversionCache} from './conversion-cache.mjs';
+import {readWallpaperProperties,validatePropertyPatch,propertyDefinitions,effectivePropertyValues} from './wallpaper-properties.mjs';
 import {currentEngineSource,getCurrentEngineProject,inspectEngineProject} from './wallpaper-engine-source.mjs';
 import {commitConverted,removeManagedFile} from './media-store.mjs';
 import {describeProject,realtimeProfile,findWorkshopProject} from './realtime-source.mjs';
@@ -45,6 +46,20 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
  const execute=async function action(c,req){
+  if(['wallpaper-properties-read','wallpaper-properties-save','wallpaper-properties-reset'].includes(req.action)){
+   if(req.selectedId!==settings.selectedId)throw Error('当前壁纸已切换，请重新打开作者属性');
+   const group=libraryGroups(settings.library,settings.selectedId).find(g=>g.entries.some(e=>e.id===settings.selectedId));
+   const source=group?.entries.find(e=>e.id===settings.selectedId&&e.projectRoot)||group?.entries.find(e=>e.projectRoot);if(!source)throw Error('当前壁纸没有完整项目属性');
+   const model=await readWallpaperProperties(source),selected=settings.library.find(e=>e.id===settings.selectedId);
+   const describe=(values,applied=false)=>({definitions:propertyDefinitions(model.project,values).definitions.slice(0,200),total:model.definitions.length,applied,mode:selected.mode||'media'});
+   if(req.action==='wallpaper-properties-read')return {properties:describe(source.userProperties||{})};
+   const previous=group.entries.map(entry=>({entry,values:entry.userProperties})),next=Object.create(null);
+   if(req.action!=='wallpaper-properties-reset'){Object.assign(next,structuredClone(source.userProperties||{}));Object.assign(next,validatePropertyPatch(model.project,req.values));}
+   for(const {entry}of previous){if(Object.keys(next).length)entry.userProperties=structuredClone(next);else delete entry.userProperties;}
+   let applied=false;try{applied=!!await services.updateProperties?.(effectivePropertyValues(model.project,next));await saveConfig(root,settings);}catch(error){for(const {entry,values}of previous){if(values===undefined)delete entry.userProperties;else entry.userProperties=values;}await services.updateProperties?.(effectivePropertyValues(model.project,source.userProperties||{})).catch(()=>{});throw error;}
+   return {config:settings,properties:describe(next,applied),message:applied?'已更新当前GPU场景的作者属性，无需重新加载。':'已按此壁纸保存；下次GPU场景启用时生效，原版兼容模式暂不接入这些属性。'};
+  }
+
   if(req.action==='conversion-cache-clear'){const removed=await clearConversionCache(root);return {message:'已清理 '+removed+' 项转换缓存；原素材和已保存播放副本保持不变。'};}
   if(req.action==='display-native'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');
@@ -137,7 +152,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey);
    if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
    const entry=existing||{id:randomUUID(),name:project.name+(mode==='webwallgl'?' · WebGL':' · 实时'),mode,scripts:mode==='webwallgl',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
-   await committing(c,req);const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
+   if(!existing){const sibling=settings.library.find(e=>e.sourceKey===project.sourceKey||(e.workshopId&&e.workshopId===project.workshopId));if(sibling?.userProperties)entry.userProperties=structuredClone(sibling.userProperties);}await committing(c,req);const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
    try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
