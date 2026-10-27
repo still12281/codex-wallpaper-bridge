@@ -8,6 +8,9 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {createEngineCatalog} from './engine-library.mjs';
 import {convertMedia} from './media-converter.mjs';
+import {planMedia} from './media-preflight.mjs';
+import {createImportJobs} from './import-jobs.mjs';
+import {clearConversionCache} from './conversion-cache.mjs';
 import {currentEngineSource,getCurrentEngineProject,inspectEngineProject} from './wallpaper-engine-source.mjs';
 import {commitConverted,removeManagedFile} from './media-store.mjs';
 import {describeProject,realtimeProfile,findWorkshopProject} from './realtime-source.mjs';
@@ -26,8 +29,11 @@ export function normalizeLibrary(settings){
  settings.systemMedia.audioFps=normalizeAudioFps(settings.systemMedia.audioFps);
 }
 export function createActions(root,settings,apply,applyAppearance=apply,services={}){
- const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map();
- const populateHashes=async()=>{for(const entry of settings.library){if(entry.contentHash||['realtime','webwallgl'].includes(entry.mode))continue;const source=entry.sourceFile;if(!source)continue;try{entry.contentHash=await hashMedia(path.resolve(root,source));}catch{}}};
+ const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map(),jobs=createImportJobs({progress:services.onImportProgress});
+ const options=(c,req)=>{const job=jobs.get(c,req.operationId);return {acceptSizeRisk:req.acceptSizeRisk,signal:job?.controller.signal,onProgress:value=>jobs.report(job,{item:job?.item,...value})};};
+ const committing=async(c,req,converted)=>{const job=jobs.get(c,req.operationId);if(job?.controller.signal.aborted){if(converted)await removeManagedFile(root,settings,converted.file);throw job.controller.signal.reason;}if(job)job.phase='committing';services.setImportPreparing?.(false);};
+ const clearUpload=async u=>{await u.handle?.close().catch(()=>{});uploads.delete(u.id);await removeManagedFile(root,settings,u.file).catch(()=>{});};
+ const populateHashes=async(options={})=>{for(const entry of settings.library){if(entry.contentHash||['realtime','webwallgl'].includes(entry.mode))continue;const source=entry.sourceFile;if(!source)continue;try{options.signal?.throwIfAborted();const file=path.resolve(root,source);if(options.bytes!==undefined&&(await stat(file)).size!==options.bytes)continue;entry.contentHash=await hashMedia(file,options);}catch(error){if(options.signal?.aborted)throw options.signal.reason;}}};
  const duplicate=(entry,applyNow,policy)=>policy==='skip'?{config:settings,duplicateSkipped:entry.name,message:'已跳过重复壁纸：'+entry.name}:{duplicate:{existingId:entry.id,name:entry.name,apply:applyNow},message:'该壁纸已在我的壁纸中。'};
  const requestRealtime=async(c,projectRoot,applyNow,profile,renderer='native',duplicatePolicy,nativeFull=false)=>{
   const project=await describeProject(projectRoot);
@@ -38,7 +44,8 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer,duplicatePolicy,nativeFull});
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
- return async function action(c,req){
+ const execute=async function action(c,req){
+  if(req.action==='conversion-cache-clear'){const removed=await clearConversionCache(root);return {message:'已清理 '+removed+' 项转换缓存；原素材和已保存播放副本保持不变。'};}
   if(req.action==='display-native'){
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');
    const projectRoot=entry.projectRoot||(entry.workshopId?await findWorkshopProject(entry.workshopId):null);if(!projectRoot)throw Error('当前素材没有完整场景引用；请从 Wallpaper Engine 项目导入');
@@ -78,7 +85,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
      const limits=realtimeProfile(req.tier==='full'?{...tier,maxHeight:2160}:tier);if(req.tier==='full'&&entry.mode==='webwallgl')limits.exactResolution=true;
      if(['webwallgl','realtime'].includes(entry.mode)){entry.limits=limits;entry.quality={antiAliasing:req.tier==='full'?(entry.customDisplay?.quality?.antiAliasing||entry.quality?.antiAliasing||'fxaa'):'off',particles:tier.particles,postProcessing:tier.postProcessing};entry.videoTexScale=tier.videoTexScale;}
      else if(entry.mime?.startsWith('video/')||entry.mime==='image/gif'){
-      const converted=await convertMedia(root,entry.sourcePath||path.join(root,entry.sourceFile||entry.file),entry.sourceMime||entry.mime,entry.id,limits);
+      const converted=await convertMedia(root,entry.sourcePath||path.join(root,entry.sourceFile||entry.file),entry.sourceMime||entry.mime,entry.id,limits,options(c,req));
       created='media/variant-'+randomUUID()+'.mp4';await rename(path.join(root,converted.file),path.join(root,created));entry.file=created;entry.mime=converted.mime;entry.limits=converted.limits;
      }
     }
@@ -130,7 +137,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey);
    if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
    const entry=existing||{id:randomUUID(),name:project.name+(mode==='webwallgl'?' · WebGL':' · 实时'),mode,scripts:mode==='webwallgl',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
-   const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
+   await committing(c,req);const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
    try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
@@ -145,7 +152,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    if(ids.has(settings.realtimeFallbackId))delete settings.realtimeFallbackId;
    if(settings.rotation)settings.rotation={...settings.rotation,ids:(settings.rotation.ids||[]).filter(id=>!ids.has(id))};
    try{if(wasActive)await apply();await saveConfig(root,settings)}catch(error){settings.library=previous.library;settings.selectedId=previous.selectedId;settings.realtimeFallbackId=previous.fallback;settings.rotation=previous.rotation;if(wasActive)await apply();throw error;}
-   for(const removed of targets)for(const file of [removed.file,removed.sourceFile,removed.sourcePath,removed.staticFile])await removeManagedFile(root,settings,file);
+   for(const removed of targets)for(const file of [removed.file,removed.sourceFile,removed.sourcePath,removed.staticFile,removed.customDisplay?.file])await removeManagedFile(root,settings,file);
    return {config:settings,message:'已从 Codex 删除壁纸；原素材保持不变。'};
   }
   if(req.action==='playback'){
@@ -161,7 +168,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    try{await stat(input)}catch{throw Error('原素材不可用，请重新导入后调整规格')}
    const profile={maxWidth:Number(req.maxWidth),fps:Number(req.fps)};
    if(entry.displayTier!=='static'&&entry.limits?.maxWidth===profile.maxWidth&&(!entry.mime.startsWith('video/')||entry.limits?.fps===profile.fps))return {config:settings,message:'当前已是所选规格，无需重新生成。'};
-   const converted=await convertMedia(root,input,entry.sourceMime||entry.mime,entry.id,profile);
+   const converted=await convertMedia(root,input,entry.sourceMime||entry.mime,entry.id,profile,options(c,req));
    const previous={...entry},oldProfile=settings.playback;settings.playback=profile;entry.displayTier='custom';delete entry.customDisplay;
    try{await commitConverted(root,settings,entry,converted,previous,apply,saveConfig)}catch(e){settings.playback=oldProfile;throw e}return {config:settings};
   }
@@ -175,15 +182,15 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
     if(inspection.needsRealtime){const project=await describeProject(projectRoot),renderer=inspection.mode==='webwallgl'?'webwallgl':'native',existing=duplicateEntry(settings,{mode:renderer==='webwallgl'?'webwallgl':'realtime',sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,renderer,req.duplicatePolicy)}
    }
    if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type)){const existing=duplicateEntry(settings,{mode:req.renderMode,sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native',req.duplicatePolicy)}}
-   let contentHash;if(resolved?.kind==='media'){contentHash=await hashMedia(resolved.file);await populateHashes();}const existing=duplicateEntry(settings,{sourceKey:resolved?.sourceKey,workshopId,contentHash});
+   let contentHash;if(resolved?.kind==='media'){await planMedia(root,resolved.file,resolved.mime,req.profile?realtimeProfile(req.profile):settings.playback,options(c,req));contentHash=await hashMedia(resolved.file,options(c,req));await populateHashes({...options(c,req),bytes:(await stat(resolved.file)).size});}const existing=duplicateEntry(settings,{sourceKey:resolved?.sourceKey,workshopId,contentHash});
    if(existing){
     return duplicate(existing,applyNow,req.duplicatePolicy);
    }
    const id=randomUUID();let source,converted;
    try{source=resolved?.kind==='media'?{input:resolved.file,mime:resolved.mime,name:path.basename(resolved.file),source:'本地图片/视频',sourceKey:resolved.sourceKey,temporary:false}:await currentEngineSource(root,id,workshopId,resolved?.root)}catch(error){if(error.code==='REALTIME_REQUIRED')return requestRealtime(c,projectRoot,applyNow,req.profile,'native',req.duplicatePolicy);throw error}
-   const requestedProfile=req.profile?realtimeProfile(req.profile):settings.playback;
-   try{contentHash??=await hashMedia(source.input);converted=await convertMedia(root,source.input,source.mime,id,requestedProfile)}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
-   const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey,...(contentHash?{contentHash}:{})};const previous=settings.selectedId;settings.library.push(entry);if(applyNow)settings.selectedId=id;
+   const job=jobs.get(c,req.operationId);if(job)job.item=source.name;const requestedProfile=req.profile?realtimeProfile(req.profile):settings.playback;
+   try{contentHash??=await hashMedia(source.input,options(c,req));converted=await convertMedia(root,source.input,source.mime,id,requestedProfile,options(c,req))}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
+   await committing(c,req,converted);const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey,...(contentHash?{contentHash}:{})};const previous=settings.selectedId;settings.library.push(entry);if(applyNow)settings.selectedId=id;
    const refresh=applyNow?apply:async()=>{};
    try{await commitConverted(root,settings,entry,converted,{...entry},refresh,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}
    return {config:settings,message:applyNow?'已导入“我的壁纸”并应用。':'已保存到“我的壁纸”；当前背景保持不变，可稍后从列表选择应用。'};
@@ -209,21 +216,44 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    if(!types[req.mime]||!Number.isInteger(req.size)||req.size<1||req.size>250*1024*1024)throw Error('仅支持250MB以内的图片或视频');
    if([...uploads.values()].some(u=>u.owner===c))throw Error('已有文件正在导入');
    const id=randomUUID(),file='media/import-'+id+'.'+types[req.mime];await mkdir(path.join(root,'media'),{recursive:true});
-   uploads.set(id,{id,file,owner:c,name:String(req.name).slice(0,120),mime:req.mime,size:req.size,received:0,handle:await open(path.join(root,file),'wx')});return {uploadId:id};
+   uploads.set(id,{id,file,owner:c,operationId:req.operationId,name:String(req.name).slice(0,120),mime:req.mime,size:req.size,received:0,handle:await open(path.join(root,file),'wx')});return {uploadId:id};
   }
   const u=uploads.get(req.uploadId);if(!u||u.owner!==c)throw Error('导入会话已失效');
   if(req.action==='import-chunk'){
-   if(typeof req.data!=='string'||req.data.length>540000||!/^[A-Za-z0-9+/]*={0,2}$/.test(req.data))throw Error('导入数据无效');
+   if(typeof req.data!=='string'||req.data.length>2800000||!/^[A-Za-z0-9+/]*={0,2}$/.test(req.data))throw Error('导入数据无效');
    const chunk=Buffer.from(req.data,'base64');if(u.received+chunk.length>u.size)throw Error('导入长度超出声明');
    await u.handle.write(chunk,0,chunk.length,u.received);u.received+=chunk.length;return {};
   }
   if(req.action!=='import-end')throw Error('不支持的操作');
-  if(u.received!==u.size)throw Error('文件未传输完整');await u.handle.close();uploads.delete(u.id);
-  const contentHash=await hashMedia(path.join(root,u.file));
-  await populateHashes();
-  const existingUpload=duplicateEntry(settings,{contentHash});if(existingUpload){await removeManagedFile(root,settings,u.file);return duplicate(existingUpload,true,req.duplicatePolicy);}
-  const converted=await convertMedia(root,path.join(root,u.file),u.mime,u.id,req.profile?realtimeProfile(req.profile):settings.playback);
-  const entry={id:u.id,name:u.name,sourceFile:u.file,sourceMime:u.mime,contentHash};const previous=settings.selectedId;settings.library.push(entry);settings.selectedId=entry.id;
-  try{await commitConverted(root,settings,entry,converted,{...entry},apply,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;await apply();throw e}return {config:settings};
+  if(u.received!==u.size)throw Error('文件未传输完整');if(u.handle){await u.handle.close();u.handle=null;}
+  await planMedia(root,path.join(root,u.file),u.mime,req.profile?realtimeProfile(req.profile):settings.playback,options(c,req));const contentHash=await hashMedia(path.join(root,u.file),options(c,req));
+  await populateHashes({...options(c,req),bytes:u.size});
+  const existingUpload=duplicateEntry(settings,{contentHash});if(existingUpload){uploads.delete(u.id);await removeManagedFile(root,settings,u.file);return duplicate(existingUpload,req.apply!==false,req.duplicatePolicy);}
+  const converted=await convertMedia(root,path.join(root,u.file),u.mime,u.id,req.profile?realtimeProfile(req.profile):settings.playback,options(c,req));
+  await committing(c,req,converted);const entry={id:u.id,name:u.name,sourceFile:u.file,sourceMime:u.mime,contentHash};const previous=settings.selectedId,applyNow=req.apply!==false;settings.library.push(entry);if(applyNow)settings.selectedId=entry.id;
+  try{await commitConverted(root,settings,entry,converted,{...entry},applyNow?apply:async()=>{},saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}uploads.delete(u.id);return {config:settings};
  };
+ const action=async(c,req)=>{
+  req={...req};const u=uploads.get(req.uploadId);if(!req.operationId&&u?.owner===c)req.operationId=u.operationId;
+  if(req.action==='import-cancel'){
+   const active=jobs.get(c,req.operationId),result=jobs.cancel(c,req.operationId);
+   if(active?.phase!=='committing')for(const upload of uploads.values())if(upload.owner===c&&(!req.uploadId||upload.id===req.uploadId)&&(!req.operationId||upload.operationId===req.operationId)){await clearUpload(upload);if(active?.phase==='queued')jobs.end(active);}
+   if(active&&!active.inFlight&&active.phase!=='queued'&&active.phase!=='committing')jobs.end(active);return result;
+  }
+  if(c?.ws&&c.ws.readyState!==1)throw Object.assign(Error('导入窗口已断开'),{code:'IMPORT_CANCELLED'});
+  const job=jobs.get(c,req.operationId)||jobs.begin(c,req);let retain=false;
+  try{
+   job?.controller.signal.throwIfAborted();if(job){job.inFlight=true;if(req.name)job.item=String(req.name).slice(0,120);jobs.report(job,{phase:'准备'});services.setImportPreparing?.(true);}
+   const result=await execute(c,req);if(job?.controller.signal.aborted&&job.phase!=='committing'){for(const pending of [...uploads.values()])if(pending.owner===c&&pending.operationId===job.id)await clearUpload(pending);throw job.controller.signal.reason;}retain=!!(result.confirmation||result.mediaReview)||['import-start','import-chunk'].includes(req.action);return result;
+  }catch(error){
+   if(job?.controller.signal.aborted){for(const pending of [...uploads.values()])if(pending.owner===c&&pending.operationId===job.id)await clearUpload(pending);throw job.controller.signal.reason;}
+   if(error.code==='IMPORT_SIZE_REVIEW'){retain=true;return {mediaReview:{...error.review,retry:req},message:error.message};}
+   if(u?.owner===c)await clearUpload(u);
+   if(job?.controller.signal.aborted)throw job.controller.signal.reason;
+   throw error;
+  }finally{services.setImportPreparing?.(false);if(job)job.inFlight=false;if(job&&!retain)jobs.end(job);}
+ };
+ action.beginImport=(c,req)=>jobs.begin(c,req);
+ action.disposeOwner=async c=>{for(const [token,pending]of confirmations)if(pending.owner===c)confirmations.delete(token);for(const job of jobs.ownerJobs(c)){jobs.cancel(c,job.id);jobs.end(job);}for(const u of [...uploads.values()])if(u.owner===c)await clearUpload(u);};
+ return action;
 }

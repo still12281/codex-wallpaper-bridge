@@ -65,3 +65,26 @@ Bounded native capture acceptance: raw command-line escaping was the first failu
 - 设计：Fluent 的语义色/中性色/交互状态作主规范，借鉴 shadcn 的 primary/secondary/destructive 分类及 DSH 的轻量 token/图库结构；保留原生控件、dialog、Shadow DOM，不引入 React/Tailwind。仅参考公开规范，无复制第三方组件源码。
 - 诊断发现 runtime-status.json 为空且未发现旧 video-cdp-host 进程；客户端页内背景仍 ready。当前阶段只更新 UI，保留客户端/媒体层；不将旧运行日志当当前宿主运行证据。
 - 读取不存在的 native-surfaces.mjs 失败后，已用 rg 确认实际实现位于 wallpaper-style / wallpaper-widgets / upstream-adapters；Windows rg 不展开 windows/*.ps1，后续使用 --glob。
+
+## B 调查与首批实现
+
+- A 本地提交 `329d29d`。B 开始确认只读请求 2.5 秒无回应且无宿主进程；恢复原有宿主后收到真实错误回读，主/分离背景 ready。恢复前后配置全部顶层字段一致；没有证据证明旧宿主为何退出。
+- 实际媒体载入仍限制 32/128 MiB，与场景缓存的 256 MiB 单项/512 MiB 总量不同；不单独提高导出上限。现有 source/hash duplicate 和同规格免重生成保留。
+- 原 commitConverted 在 rename 后 save 失败时只清旧 pending，且可能覆盖旧 destination。已改独立最终版本，并把保存作为提交点；customDisplay.file 纳入引用保护及删除后清理。
+- 上传失败原来会在转换前丢掉上传会话，造成孤儿；现保留到成功或统一失败清理，容量风险待用户选择时保留会话，返回调整则显式清理。
+- 已核对 FFmpeg/ffprobe 官方文档的机器可读探测、streamcopy 和 progress；只做必要过滤。ffprobe 按源版本有界缓存 32 项；容量是估算，输出仍有硬限制，不使用截短输出蒙混通过。
+- 定向事务/真实 FFmpeg 样本共 5 项通过。8秒 1280×720 H.264/24/no-audio：原重新编码1551ms，新冷探测+复制72ms，保留原2,607,211字节；此样本不能推断 Scene/Web 或长视频整体速度。
+- 新实现尚未部署；队列中的取消、进度推送及结果复用仍待实施。当前 actionQueue 会阻塞普通取消；acting 全段为 true 会暂停原生采集/频谱泵，需只允许纯文件准备期并行现有背景，提交仍串行。
+- 首次替换转换器的 apply_patch 因同一文件同时 Delete/Add 被拒；改为 Update 后语法检查通过，未反复重试原补丁。
+- B3 已增加 owner/operationId 有界任务表，取消是唯一队列旁路；排队注册/取消 tombstone 防止重试复活，提交阶段拒绝取消。进度由实际转换回调推送，哈希/复制/探测支持取消；纯文件准备期放行现有原生帧/频谱，设置提交保持串行。
+- 单元与真实隔离宿主检查：正在转换+排队同时取消、文件清理、提交期拒绝取消、连续40次放弃场景确认不耗尽任务槽、失败保存保留旧字节通过。UI 中取消不计入导入成功，失败/未完成勾选保留，同一按钮可仅重试失败项。
+- 转换缓存按源path/size/mtime/ctime+MIME+规格+算法版本失效，最多16项/256MiB；仅在配置提交成功后缓存，优先同卷硬链接，必要时复制；删除缓存不删除已保存副本。上传批次由384KiB提高至2MiB，服务器仍校验声明长度和最大请求量。
+
+## C 只读准备（未实施）
+
+- 固定 DSH v1.4.0 控制层 / WebWallGL3.0.0，GPU、资源broker与候选保护已有；不把整套DSH插件或其HTTP服务算成宿主已复用。
+- 首选 C4：DSH/WebWallGL 已提供 setProperties/getProperties；需作者属性UI、类型/范围校验、按逻辑壁纸持久化和首次注入。DSH lib/we-props.js 会丢 editable:false 属性，与WE“隐藏UI但仍下发”不同，不能原样照搬。
+- C5：补pointerup/cancel/leave/blur清按钮、修饰键与至少16ms按键边缘；被动转发且排除聊天contenteditable/控件，不能截获输入。pushWheel上游只对Web有效，不能宣称Scene滚轮生效。
+- C2：WebWallGL source.webEntry依赖可导航URL与相对资源，现字节broker没有通用导航服务。不能删guard或绕CSP；候选为仅沙箱子目标、令牌虚拟URL+Fetch.fulfillRequest的有界可行性试验，仍未验证。
+- C3：字体/日期/粒子/模型骨骼/SceneScript/效果有上游实现，组件SKIP_COMPONENTS=true，动态切未预载字体仍可能回退；未做逐场景保真验收。
+- 只读核验两上游MIT：WebWallGL main仍197abe5、最后推送2026-10-14；DSH main于2026-10-26到7ba44b2，未整体升级。AnySearch一条Web查询失败，另一条返回WE官方属性文档；GitHub只读核验成功。详情来源：本地上游lib/we-props.js、src/live-layer-pointer.js、renderer/src/{web,scene-mount,api/mount}.ts；WebWallGL issue16仍开放。

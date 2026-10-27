@@ -7,7 +7,7 @@ import path from 'node:path';
 import {findFFmpeg} from './runtime-paths.mjs';
 const run=promisify(execFile);
 export function libraryMode(entry){return entry.mode==='webwallgl'?'WebGL 实时渲染':entry.mode==='realtime'?'原生实时渲染':entry.mime?.startsWith('video/')?'视频直接播放':'图片直接显示';}
-export async function hashMedia(file){const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);return hash.digest('hex');}
+export async function hashMedia(file,{signal,onProgress=()=>{}}={}){const hash=createHash('sha256');let bytes=0;onProgress({phase:'指纹'});for await(const chunk of createReadStream(file,{signal})){hash.update(chunk);bytes+=chunk.length;onProgress({phase:'指纹',processedBytes:bytes});}return hash.digest('hex');}
 export function duplicateEntry(settings,{mode='media',sourceKey,workshopId,contentHash}){if(contentHash)return settings.library.find(e=>e.contentHash===contentHash);const matches=settings.library.filter(e=>(sourceKey&&e.sourceKey===sourceKey)||(workshopId&&e.workshopId===workshopId));return matches.find(e=>e.mode===mode)||matches.find(e=>e.id===settings.selectedId)||matches[0];}
 async function projectPreview(root){
  const canonical=await realpath(root),metadata=path.join(canonical,'project.json');if((await stat(metadata)).size>1024*1024)return null;

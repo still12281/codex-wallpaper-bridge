@@ -1,0 +1,28 @@
+// Isolated host/Chromium: validates the actual binding queue and urgent cancellation.
+import {mkdtemp,mkdir,writeFile,readFile,readdir} from 'node:fs/promises';
+import {spawn,execFile} from 'node:child_process';import {promisify} from 'node:util';import {createServer} from 'node:net';
+import {pathToFileURL,fileURLToPath} from 'node:url';import path from 'node:path';import os from 'node:os';import assert from 'node:assert/strict';
+import {connectCdp} from '../src/cdp-client.mjs';import {findFFmpeg,defaultSettings} from '../src/runtime-paths.mjs';
+const run=promisify(execFile),temp=await mkdtemp(path.join(os.tmpdir(),'cwb-import-host-')),data=path.join(temp,'data');await mkdir(path.join(data,'media'),{recursive:true});
+const ffmpeg=await findFFmpeg(),source=path.join(temp,'source.mp4'),base=path.join(data,'media/base.mp4');
+await run(ffmpeg,['-v','error','-f','lavfi','-i','testsrc2=s=1280x720:r=60','-t','3','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-threads','2',source],{windowsHide:true});
+await run(ffmpeg,['-v','error','-f','lavfi','-i','color=red:s=32x32:r=12','-t','1','-c:v','libx264','-pix_fmt','yuv420p','-threads','1',base],{windowsHide:true});
+const config=defaultSettings();config.library=[{id:'base',name:'Fixture',file:'media/base.mp4',mime:'video/mp4'}];config.selectedId='base';config.pauseOnBlur=false;await writeFile(path.join(data,'settings.json'),JSON.stringify(config));
+const html=path.join(temp,'shell.html');await writeFile(html,'<!doctype html><div class="_ApplicationMenuTopBar_"><nav role="menubar"></nav></div><aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface></main>');const url=pathToFileURL(html).href;
+const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));
+const chrome=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--disable-background-networking','--remote-debugging-port='+port,'--user-data-dir='+path.join(temp,'profile'),url],{windowsHide:true,stdio:'ignore'});
+let c,host,errors='';const result={kind:'isolated-host-binding-import-cancellation'},sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const wait=async fn=>{for(let i=0;i<200;i++){try{if(await fn())return;}catch{}await sleep(50);}throw Error('Isolated import host timed out');};
+try{
+ await wait(async()=>{const target=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url);if(target){c=await connectCdp(target.webSocketDebuggerUrl);return true;}});
+ host=spawn(process.execPath,[fileURLToPath(new URL('../src/video-cdp-host.mjs',import.meta.url)),'--cdp-port',String(port),'--test-url',url],{env:{...process.env,CODEX_WALLPAPER_DATA_DIR:data},windowsHide:true,stdio:['ignore','ignore','pipe']});host.stderr.on('data',b=>errors+=b);
+ await wait(()=>c.evaluate('!!window.__cwbPanelHost&&!!window.__codexWallpaperBridge?.ready'));
+ await c.evaluate(`window.__rpcSequence=100000;window.__rpcPending=new Map();window.__oldReply=window.__cwbReply;window.__cwbReply=(id,result)=>{const resolve=window.__rpcPending.get(id);if(resolve){window.__rpcPending.delete(id);resolve(result);}else window.__oldReply(id,result);};window.__rpc=req=>new Promise(resolve=>{const id=++window.__rpcSequence;window.__rpcPending.set(id,resolve);window.__codexWallpaperSend(JSON.stringify({...req,id,token:window.__cwbPanelHost.__cwbToken}));});window.__retainedRenderer=window.__codexWallpaperBridge;true`);
+ const rpc=async req=>{const r=await c.call('Runtime.evaluate',{expression:'window.__rpc('+JSON.stringify(req)+')',awaitPromise:true,returnByValue:true});return r.result.value;};
+ const bytes=await readFile(source),start=await rpc({action:'import-start',operationId:'active',name:'fixture.mp4',mime:'video/mp4',size:bytes.length});assert(start.ok);
+ for(let offset=0;offset<bytes.length;offset+=2*1024*1024)assert((await rpc({action:'import-chunk',operationId:'active',uploadId:start.uploadId,data:bytes.subarray(offset,offset+2*1024*1024).toString('base64')})).ok);
+ await c.evaluate(`window.__cancelled=false;window.__cwbPanelHost.__cwbImportProgress=value=>{if(value.phase!=='转换'||window.__cancelled)return;window.__cancelled=true;window.__queuedReply=window.__rpc({action:'wallpaper-engine',operationId:'queued',projectToken:'must-not-resolve'});window.__cancelQueued=window.__rpc({action:'import-cancel',operationId:'queued'});window.__cancelActive=window.__rpc({action:'import-cancel',operationId:'active'});};true`);
+ const ended=await rpc({action:'import-end',operationId:'active',uploadId:start.uploadId,profile:{maxWidth:960,fps:12}});assert.equal(ended.code,'IMPORT_CANCELLED');
+ const replies=await c.call('Runtime.evaluate',{expression:'Promise.all([window.__queuedReply,window.__cancelQueued,window.__cancelActive])',awaitPromise:true,returnByValue:true});assert.equal(replies.result.value[0].code,'IMPORT_CANCELLED');assert(replies.result.value.slice(1).every(r=>r.cancelAccepted));
+ const saved=JSON.parse(await readFile(path.join(data,'settings.json'),'utf8'));assert.equal(saved.selectedId,'base');assert.equal(saved.library.length,1);assert.deepEqual(await readdir(path.join(data,'media')),['base.mp4']);assert(await c.evaluate('window.__retainedRenderer===window.__codexWallpaperBridge&&window.__codexWallpaperBridge.ready'));assert.equal(errors,'');result.activeAndQueuedCancelled=true;result.sourceUploadAndOutputCleaned=true;result.libraryAndRendererRetained=true;result.passed=true;
+}catch(error){result.error=error.stack;result.hostErrors=errors;process.exitCode=1;}finally{host?.kill();if(c){await c.call('Browser.close').catch(()=>{});c.close();}chrome.kill();console.log(JSON.stringify(result,null,2));}

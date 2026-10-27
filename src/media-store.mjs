@@ -1,6 +1,8 @@
 import {realpath,unlink,rename} from 'node:fs/promises';
 import path from 'node:path';
-function references(root,settings,file){const absolute=path.resolve(root,file).toLowerCase();return settings.library.some(e=>[e.file,e.sourceFile,e.sourcePath,e.staticFile].filter(Boolean).some(p=>path.resolve(root,p).toLowerCase()===absolute))}
+import {randomUUID} from 'node:crypto';
+import {rememberConversion} from './conversion-cache.mjs';
+function references(root,settings,file){const absolute=path.resolve(root,file).toLowerCase();return settings.library.some(e=>[e.file,e.sourceFile,e.sourcePath,e.staticFile,e.customDisplay?.file].filter(Boolean).some(p=>path.resolve(root,p).toLowerCase()===absolute))}
 export async function removeManagedFile(root,settings,file){
  if(!file||references(root,settings,file))return false;
  const absolute=path.resolve(root,file),relative=path.relative(root,absolute);
@@ -10,8 +12,14 @@ export async function removeManagedFile(root,settings,file){
  await unlink(absolute);return true;
 }
 export async function commitConverted(root,settings,entry,converted,previous,apply,save){
- const {destination,...media}=converted;Object.assign(entry,media);
- try{await apply();if(destination){await rename(path.join(root,entry.file),path.join(root,destination));entry.file=destination}await save(root,settings)}
- catch(error){for(const key of Object.keys(entry))delete entry[key];Object.assign(entry,previous);await apply().catch(()=>{});await removeManagedFile(root,settings,media.file).catch(()=>{});throw error}
- if(previous.file&&previous.file!==entry.file)await removeManagedFile(root,settings,previous.file);
+ const {destination,cacheKey,...media}=converted;
+ // Every commit owns a new final file. Never overwrite bytes used by a rollback
+ // or a saved custom tier, including when an older converter supplies a stable name.
+ const final=destination?'media/wallpaper-'+randomUUID()+path.extname(destination):media.file;
+ let moved=false;
+ try{if(destination){await rename(path.join(root,media.file),path.join(root,final));moved=true;}Object.assign(entry,media,{file:final});await apply();await save(root,settings)}
+ catch(error){for(const key of Object.keys(entry))delete entry[key];Object.assign(entry,previous);await apply().catch(()=>{});await removeManagedFile(root,settings,moved?final:media.file).catch(()=>{});throw error}
+ // Saving is the commit point. A cleanup failure cannot roll back persisted state.
+ await rememberConversion(root,cacheKey,entry.file).catch(()=>{});
+ if(previous.file&&previous.file!==entry.file)await removeManagedFile(root,settings,previous.file).catch(()=>{});
 }
