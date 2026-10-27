@@ -11,9 +11,12 @@ export async function createProjectReader(projectRoot){
   const info=await stat(file);if(!info.isFile())return null;const charge=charged.has(file)?0:info.size;if(info.size>512*1024*1024||transferred+charge>768*1024*1024)throw Error('壁纸资源超过实时渲染预算');
   return {file,info,charge};
  };
- const read=async name=>{const asset=await resolve(name);if(!asset)return null;transferred+=asset.charge;charged.add(asset.file);return readFile(asset.file);};
+ const charge=asset=>{transferred+=asset.charge;charged.add(asset.file);};
+ const read=async name=>{const asset=await resolve(name);if(!asset)return null;charge(asset);return readFile(asset.file);};
+ // Host-only capability: the sandbox still receives bytes, never this path or a File.
+ const localFile=async name=>{const asset=await resolve(name);if(!asset)return null;charge(asset);return {path:asset.file,size:asset.info.size,modified:asset.info.mtimeMs};};
  const metadata=async name=>{const asset=await resolve(name);return asset?{size:asset.info.size,etag:'"'+asset.info.size.toString(16)+'-'+asset.info.mtimeMs.toString(16)+'-'+asset.info.ctimeMs.toString(16)+'"'}:null;};
  const metadataPath=await realpath(path.join(root,'project.json')),relative=path.relative(root,metadataPath);if(relative.startsWith('..')||path.isAbsolute(relative)||(await stat(metadataPath)).size>1024*1024)throw Error('壁纸元数据路径或大小无效');
  const project=JSON.parse(await read('project.json'));if(!['scene','web'].includes(String(project.type).toLowerCase()))throw Error('WebWallGL 仅支持场景与网页项目');
- return {root,project,read,metadata,get bytes(){return transferred}};
+ return {root,project,read,metadata,localFile,get bytes(){return transferred}};
 }

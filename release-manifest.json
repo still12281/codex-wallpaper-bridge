@@ -88,6 +88,11 @@
       "sha256": "24aa64822c4dab2d65bb29364663e849a55f71181374546006b8549ce78b9754"
     },
     {
+      "path": "docs/FOLLOWUP-20261027.zh-CN.md",
+      "utf8Bytes": 5008,
+      "sha256": "fadc4500d46bbabda8ddbe5c2f3d740b7db4791053b304caeef32d1299fee3cf"
+    },
+    {
       "path": "docs/MAINTENANCE.zh-CN.md",
       "utf8Bytes": 3926,
       "sha256": "219dcf256bfad0c474390b831f369d80ab506ecfd48a96b5709bc37c5ca01483"
@@ -104,13 +109,13 @@
     },
     {
       "path": "docs/PACKAGE-C-20261027.zh-CN.md",
-      "utf8Bytes": 4952,
-      "sha256": "78280957778d66c071f7bfa17947576e6a244f03023d5370c4b48b14fd6b9444"
+      "utf8Bytes": 5278,
+      "sha256": "0d8f8a83287de8a720458b51bcc418d5d62a891af15b1c47bf8ce0009107ca3f"
     },
     {
       "path": "docs/PACKAGE-D-20261027.zh-CN.md",
-      "utf8Bytes": 3301,
-      "sha256": "6ea85f94882913fb2380fa18fd37913b1a101f7ec996accb65646c6f3bbda502"
+      "utf8Bytes": 3716,
+      "sha256": "a447864b1e790393407f020ec79f1d9a681cc54aaabf1a0031dee1d2a9329caa"
     },
     {
       "path": "docs/PACKAGE-E-20261027.zh-CN.md",
@@ -184,8 +189,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 13068,
-      "sha256": "70bd7f18a65a71cbd09d613e9a261a5967716bd9776b0132c6c238034e7b0780"
+      "utf8Bytes": 13632,
+      "sha256": "bdc652d2006d42e3b5bdd168237e5e7ec9962e58b5c5afec59cea2ad40fe9f18"
     },
     {
       "path": "settings.example.json",
@@ -304,8 +309,13 @@
     },
     {
       "path": "src/scene-resource-cache.mjs",
-      "utf8Bytes": 4150,
-      "sha256": "5a5dd5daeea3b4d50f79fa3f3380bf116dbb85ada45ebfe1508633d51f85e68e"
+      "utf8Bytes": 5239,
+      "sha256": "0fd36ae41a2dc5f6e5198486354ea9c1ed429d56e07ff12e567cfa8159ac363e"
+    },
+    {
+      "path": "src/scene-resource-transfer.mjs",
+      "utf8Bytes": 3124,
+      "sha256": "6c99b9d51b4a43ed9277dc3fe9f2fad7d1003b32295676c534f7139a792049dd"
     },
     {
       "path": "src/system-media.mjs",
@@ -359,8 +369,8 @@
     },
     {
       "path": "src/webwallgl-player.mjs",
-      "utf8Bytes": 21691,
-      "sha256": "3d73cea1f0eb136202fe5a4da6ce9862cc099a95eaf2cf4583e868c3d544672b"
+      "utf8Bytes": 21235,
+      "sha256": "fba504f7fff6299be142698c07085853093876ee5c7be7c53c09c2eaf3f7d902"
     },
     {
       "path": "src/webwallgl-runtime.mjs",
@@ -369,13 +379,13 @@
     },
     {
       "path": "src/webwallgl-source.mjs",
-      "utf8Bytes": 1970,
-      "sha256": "d4536f785d0ca068f30934347d854ef7129582aa4d0863be3086a99becb2d4de"
+      "utf8Bytes": 2281,
+      "sha256": "3b3d493650c1f80e343d23a6511ec0002ee8f1ca0eebb1953a24c9f6f6748ff0"
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 25626,
-      "sha256": "c90d08cf633ecfabf709b455cd2d20a58ecceea13c39319557733d7a0d048c84"
+      "utf8Bytes": 26166,
+      "sha256": "bc4b458491a4cd6ad0619decefa6b1f0321c03602c5219f95b473757251d0e2c"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -499,8 +509,8 @@
     },
     {
       "path": "test/webwallgl-source.test.mjs",
-      "utf8Bytes": 1012,
-      "sha256": "7343de80eaa0b99605862d8b15c9023450f21f1fbac35a0445a1ac1501eaa697"
+      "utf8Bytes": 1272,
+      "sha256": "b5e62f8ac832d89e9ba9f1ced0721864c7c52700bfa109aee7c2be9f0bf6f655"
     },
     {
       "path": "test/widgets.test.mjs",

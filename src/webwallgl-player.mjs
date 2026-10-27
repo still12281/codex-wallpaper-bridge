@@ -7,6 +7,7 @@ import {effectivePropertyValues} from './wallpaper-properties.mjs';
 import {codexRuntimeSource} from './webwallgl-runtime.mjs';
 import {createProjectReader} from './webwallgl-source.mjs';
 import {installSceneResourceCache,callSceneResourceCache} from './scene-resource-cache.mjs';
+import {transferSceneResource} from './scene-resource-transfer.mjs';
 
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 // Browser functions are serialized into a sandbox execution world, not the Codex world.
@@ -75,15 +76,13 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurr
   await c.call('Runtime.addBinding',{name:binding,executionContextId:contextId},sessionId);
   listener=event=>{let msg;try{msg=JSON.parse(event.data);}catch{return;}if(msg.method!=='Runtime.bindingCalled'||msg.params.name!==binding||msg.sessionId!==sessionId||msg.params.executionContextId!==contextId)return;
    let request;try{request=JSON.parse(msg.params.payload);}catch{return;}if(!Number.isInteger(request.id)||pending.has(request.id))return;if(pending.size>=512){evaluate('__cwbWebGL.complete('+request.id+',"壁纸资源请求过多");true').catch(()=>{});return;}pending.add(request.id);
-   transferQueue=transferQueue.then(async()=>{let bytes;const handle=binding+'-'+request.id;try{
+   transferQueue=transferQueue.then(async()=>{const handle=binding+'-'+request.id;try{
     if(closed)return;assertCurrent();const metadata=await reader.metadata(request.name);if(!metadata){await evaluate('__cwbWebGL.complete('+request.id+',null,null);true');return;}
     const key=createHash('sha256').update(JSON.stringify([reader.root,request.name,metadata.etag])).digest('hex'),info={rendererId:id,token:controlToken,id:request.id};
     if(await cacheCall('cached',[key,metadata.size,info]))return;
-    if(closed)return;bytes=await reader.read(request.name);if(closed)return;if(!bytes||bytes.length!==metadata.size||(await reader.metadata(request.name))?.etag!==metadata.etag)throw Error('壁纸资源在加载时改变，请重试');
-    await c.evaluate('window.__cwbSceneResources.begin('+JSON.stringify(handle)+','+JSON.stringify(key)+','+bytes.length+');true');
-    for(let offset=0;offset<bytes.length;offset+=4*1024*1024){if(closed)return;assertCurrent();await c.evaluate('window.__cwbSceneResources.receive('+JSON.stringify(handle)+','+JSON.stringify(bytes.subarray(offset,offset+4*1024*1024).toString('base64'))+','+offset+');true');}
+    if(closed)return;await transferSceneResource(c,reader,request.name,metadata,{handle,key,isCurrent:()=>!closed&&(adopted||isCurrent())});
     if(!closed)await cacheCall('complete',[handle,info]);
-   }catch(error){await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(handle)+');true').catch(()=>{});if(!closed)await evaluate('__cwbWebGL.complete('+request.id+','+JSON.stringify(error.message)+');true').catch(()=>{});}finally{bytes=null;pending.delete(request.id);if(!pending.size)setImmediate(()=>global.gc?.());}}).catch(()=>{});
+   }catch(error){await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(handle)+');true').catch(()=>{});if(!closed)await evaluate('__cwbWebGL.complete('+request.id+','+JSON.stringify(error.message)+');true').catch(()=>{});}finally{pending.delete(request.id);if(!pending.size)setImmediate(()=>global.gc?.());}}).catch(()=>{});
   };c.ws.addEventListener('message',listener);
   const runtimeSource=codexRuntimeSource(engine);await evaluate(runtimeSource.source);await evaluate('globalThis.__cwbFrameFreeze='+installFrameFreeze.toString()+';true');await evaluate('('+initializeRenderer.toString()+')('+JSON.stringify(reader.project)+','+JSON.stringify({fps:entry.limits?.fps||24,maxWidth:entry.limits?.maxWidth||1280,renderDpr:entry.limits?.exactResolution?2:undefined,fontBuffers:runtimeSource.fontBuffers,fontAdapterExpected:engine.includes('new FontFace('),scripts:entry.scripts===true,quality:entry.quality,properties,videoTexScale:entry.videoTexScale,audioResponse:config.systemMedia?.audio===true,key:entry.workshopId||entry.id,controlToken})+','+JSON.stringify(binding)+','+JSON.stringify(dshSource)+')');
   const end=Date.now()+90000;let sample;
