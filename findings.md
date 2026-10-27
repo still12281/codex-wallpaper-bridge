@@ -1,5 +1,13 @@
 # Migration findings
 
+## 2026-10-26 当前计划依据（只读结论，实施前复核）
+
+- 新完整计划为 `docs/EXECUTION-PLAN-20261026.zh-CN.md`，T01—T14 全覆盖；本轮仅编制计划，不启动功能实施或迁移新聊天。
+- 截图与源码对应：图库列数使用视口媒体查询而非面板宽度；预览吸顶与批量操作区存在布局/重复入口问题。引用浮层、额度卡片等同类表面仍需按实际 DOM 检查，不宜全局强制透明。
+- 视频转换使用软件编码、限制线程并逐项完成，当前完成转换后才检查 32/128 MiB 上限；可预防的长等待和失败需先做预检、快速复用与恢复。不能仅提高大小限制而忽略宿主加载/缓存成本。
+- 已接入 DSH renderer.js 和 WebWallGL，DSH 上游还有网页与输入接口；这不等于 Codex 已有可用的网页资源通道，也不代表全部原版效果兼容。优先上游、再检索成熟实现、最后最小自研。
+- 执行前保持最新库记录与用户选择；历史速度、质量、PID 和库数量只作对照，不作为恢复目标。启动/系统睡眠、长期 GPU 与跨版本/机器仍有待验收项。
+
 - Codex bridge has image/video, library discovery, native capture, a single-instance launcher and scoped native surface mappings. Preserve these.
 - DSH depends on Cordis/webServer/client runtime/React/slots; wholesale installation into Codex is unavailable.
 - WebWallGL 3.0.0 has a self-contained global browser bundle already prepared locally. Its source is MIT; wallpaper assets are separate and never redistributed.

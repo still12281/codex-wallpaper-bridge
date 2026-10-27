@@ -1,5 +1,11 @@
 # Migration progress
 
+## 2026-10-26 完整计划整理
+
+- 用户要求把最近两轮待办完整展开并判断是否换对话；新增 `docs/EXECUTION-PLAN-20261026.zh-CN.md`，T01—T14 映射到 A—E 五个执行包，每包含工作项、依赖、验收和提交边界。
+- `task_plan.md` 顶部指向当前完整计划；历史实施记录保留，最新“先预览、确定切换”继续有效。建议新对话从 A 开始，后续自然阶段再换；未创建新聊天。
+- 本轮仅更新计划与项目记录，不改源码、部署、用户配置或当前客户端，不执行渲染/导入等功能测试。覆盖和发布检查结果以本轮最终提交说明为准。
+
 2026-10-24: Baseline clean at 1c1036e. Previous implementation chat idle. Read launcher/current runtime and upstream API. Started read-only upstream-module review. No production runtime changes yet.
 
 WebWallGL milestone: added a bounded project capability, opaque sandbox runtime, pinned optional runtime preparation, renderer mode and meaningful tests. Chromium fixture and two native Codex scene probes passed (including script-enabled repeat). Native Web loading remains a separate unsatisfied gate, so it is explicitly rejected by this mode. Existing native capture remains available.

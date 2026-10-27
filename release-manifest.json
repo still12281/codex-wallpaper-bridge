@@ -78,6 +78,11 @@
       "sha256": "ef9fb2e956d81b5922c86a8898716fd4b70c6b65a13a25e8e92d758a5b33c96d"
     },
     {
+      "path": "docs/EXECUTION-PLAN-20261026.zh-CN.md",
+      "utf8Bytes": 20081,
+      "sha256": "18133f50ad8a364a3e30d0ee0a837c90e396436d174df242b00e55acf869657b"
+    },
+    {
       "path": "docs/FEATURE-MIGRATION.md",
       "utf8Bytes": 3754,
       "sha256": "4634083b845544974341f4a595b9b693a5600f2083465931199640961a3d5877"
@@ -139,8 +144,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 8169,
-      "sha256": "474fc40065eaf79119d332c1c78ad135b481f16e427c6d216d62192383118fb5"
+      "utf8Bytes": 9333,
+      "sha256": "318ba33d42f08c448a80f26177de88b4bf634360f245b7d57c87914acf5153ec"
     },
     {
       "path": "package.json",
@@ -149,8 +154,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 7761,
-      "sha256": "181a59ef3fe8ceceb78effa913c072442250d36d252e966d44cfaad8157ae735"
+      "utf8Bytes": 8427,
+      "sha256": "caace8507909b4671c417b1697879af607e18fcbe1752b5c7a75bb5b35c62c3e"
     },
     {
       "path": "settings.example.json",
@@ -304,8 +309,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 19795,
-      "sha256": "61a33164f514f565df2932118ca4b71719e406bdb2fc17e4db0efda1494e5d44"
+      "utf8Bytes": 20332,
+      "sha256": "13da1a58e6698becf528572e8d573813e97c448e29e31f669d2adc1c1ff11aff"
     },
     {
       "path": "test/appearance.test.mjs",

@@ -1,4 +1,10 @@
-# DSH feature reuse into Codex
+# 当前执行计划入口（2026-10-26）
+
+完整计划见 [壁纸项目完整执行计划](docs/EXECUTION-PLAN-20261026.zh-CN.md)：T01—T14 全部映射到 A 界面、B 导入、C DSH/GPU 兼容、D 帧率与切换、E 生命周期与收尾五个执行包。
+
+状态：仅完成计划整理，尚未授权本轮实施。建议后续新对话从 A 开始；不自动创建新对话。旧记录保留为历史，不恢复旧配置、不重做已完成基线；“先预览、确定切换”仍为当前 UI 要求。
+
+# DSH feature reuse into Codex（历史记录）
 
 Authorized 2026-10-24. Baseline: 1c1036e. Preserve the official client and the existing Codex bridge. Commit reviewed milestones locally; do not push.
 
