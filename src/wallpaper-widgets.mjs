@@ -1,9 +1,9 @@
 // Runs in the native page. Only public xterm options are changed; PTY/buffer data is never read.
 export async function installNativeWidgets(config,loadModule=url=>import(url)){
  const prior=window.__cwbWidgets;
- if(prior?.version===3&&(!prior.disposed||prior.status.phase==='unsupported')){prior.config=config;await prior.initialized;prior.update();return prior.status}
+ if(prior?.version===4&&(!prior.disposed||prior.status.phase==='unsupported')){prior.config=config;await prior.initialized;prior.update();return prior.status}
  prior?.dispose?.();
- const state=window.__cwbWidgets={version:3,config,disposed:false,terminals:new Set(),status:{phase:'initializing'}};
+ const state=window.__cwbWidgets={version:4,config,disposed:false,terminals:new Set(),status:{phase:'initializing'}};
  const copy=theme=>theme?{...theme}:theme;
  const effective=native=>{
   if(state.config.surfaceSync?.code===false)return native;
@@ -42,9 +42,10 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
  state.initialized=(async()=>{
   try{
    // Explicit compatibility gate: never call unknown exports or inspect React internals.
-   const url=[...document.querySelectorAll('link[rel="modulepreload"],script[src]')].map(e=>e.href||e.src).find(u=>u==='app://-/assets/app-initial-ad16eaadf81f.js');
+   const supported={'app://-/assets/app-initial-ad16eaadf81f.js':'f3t','app://-/assets/app-initial-438d1df57f70.js':'Lrt'};
+   const url=[...document.querySelectorAll('link[rel="modulepreload"],script[src]')].map(e=>e.href||e.src).find(u=>Object.hasOwn(supported,u));
    if(!url)throw Error('This client version has no supported terminal theme adapter');
-   const manager=(await loadModule(url)).f3t;
+   const manager=(await loadModule(url))[supported[url]];
    if(state.disposed||window.__cwbWidgets!==state)return;
    if(!manager?.renderers||typeof manager.renderers.values!=='function'||typeof manager.getOrCreateRenderer!=='function'||typeof manager.releaseRenderer!=='function')throw Error('Unsupported terminal manager shape');
    state.manager=manager;state.originalCreate=manager.getOrCreateRenderer;

@@ -15,6 +15,9 @@ const config={palette:{dark:true},surfaceSync:{code:true}};
 test('unsupported client safely retains native terminal behavior',async()=>{
  const e=environment(false);try{const r=await installNativeWidgets(config,async()=>{throw Error('must not load')});assert.equal(r.phase,'unsupported');assert.equal(Object.hasOwn(e.terminal,'options'),false)}finally{e.restore()}
 });
+test('the inspected 438d client uses its exact terminal manager export',async()=>{
+ const e=environment();try{document.querySelectorAll=()=>[{href:'app://-/assets/app-initial-438d1df57f70.js'}];let loaded;const result=await installNativeWidgets(config,async url=>{loaded=url;return {Lrt:e.manager}});assert.equal(loaded,'app://-/assets/app-initial-438d1df57f70.js');assert.equal(result.phase,'adapted');assert.equal(e.terminal.options.theme.background,'#00000000');window.__cwbWidgets.dispose();assert.equal(e.terminal.options.theme.background,'#fff');}finally{e.restore()}
+});
 test('disposing during module loading cannot install a late manager hook',async()=>{
  const e=environment();try{let resolve;const pending=new Promise(r=>{resolve=r}),original=e.manager.getOrCreateRenderer,installing=installNativeWidgets(config,()=>pending);window.__cwbWidgets.dispose();delete window.__cwbWidgets;resolve(e.module);await installing;assert.equal(e.manager.getOrCreateRenderer,original);assert.equal(Object.hasOwn(e.terminal,'options'),false)}finally{e.restore()}
 });

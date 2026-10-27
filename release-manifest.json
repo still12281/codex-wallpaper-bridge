@@ -153,6 +153,11 @@
       "sha256": "358d176241a1ac58df82911d63cae6e6ebc681d2361698e80bacf163a8a160dd"
     },
     {
+      "path": "docs/STEERING-WEB-20261027.zh-CN.md",
+      "utf8Bytes": 4054,
+      "sha256": "d97ec0b0b7d53f994b38687f6b0cd2fa015c4396036f8b5ada02fbd74b55deb8"
+    },
+    {
       "path": "docs/SURFACE-COVERAGE.md",
       "utf8Bytes": 4261,
       "sha256": "9de9cdc91ed44c8b63a9b5384da57cb0391675a386efd4b0147da65ca4d55518"
@@ -249,8 +254,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 40485,
-      "sha256": "9815140057467f6bb6c9be960ba6cdaba2ff47e25f89e7c29cb83e9000a745ba"
+      "utf8Bytes": 40490,
+      "sha256": "849867077a92e1c84ccb2feb5c708490388d184618edc0f3707062b3452b0215"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -269,8 +274,8 @@
     },
     {
       "path": "src/library-preview.mjs",
-      "utf8Bytes": 3335,
-      "sha256": "459ee13de65308ed532333be68aed9f5c5049d20b99799138ec51bf3a19f3280"
+      "utf8Bytes": 3338,
+      "sha256": "4b4d9b1b72c29ef2a1052607fb930dd8bba53e4419396751690dce0b4623b143"
     },
     {
       "path": "src/media-converter.mjs",
@@ -339,8 +344,8 @@
     },
     {
       "path": "src/upstream-adapters.mjs",
-      "utf8Bytes": 5488,
-      "sha256": "1286b108fba359fd70c5d7013085f293500b6a7a7da84cc7ffcb433b8244688a"
+      "utf8Bytes": 5684,
+      "sha256": "5e20f5185ff7ebc336506f50928a948936c68f7b06c92551d9774d23c15bcd89"
     },
     {
       "path": "src/video-cdp-host.mjs",
@@ -359,8 +364,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 32888,
-      "sha256": "ded5ac11d0a81d1f57eb0dfa96648d2fbb60ff293558b297b7da3c2ad63c002a"
+      "utf8Bytes": 32913,
+      "sha256": "da79871e403625c08b116e6f48a2e7f6718f5cffa7d4d6888c01d3ac5ada1a99"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -374,13 +379,13 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 11909,
-      "sha256": "47b96283200ee60dac6ebf720f06b63446703c31bcd6e32b82d3fd1c6bb8cf91"
+      "utf8Bytes": 12222,
+      "sha256": "50a06a01d78ee313b87de14d0ceefea30139866676ca8e3467787a934fa2c35f"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
-      "utf8Bytes": 6205,
-      "sha256": "b16e1aad971c0da398661ac3aed28824cd6dae9f606dee576d7eabe3486cf21e"
+      "utf8Bytes": 6319,
+      "sha256": "a5ad16862cbab7debba71298298d2259e11bd3a15932b5cdd975c9c4508f3afc"
     },
     {
       "path": "src/webwallgl-player.mjs",
@@ -399,8 +404,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 27003,
-      "sha256": "ff825c3bcdf8a53cb0ee70d4f362a8e4802545a6f916d2598cf4f01c756f45e8"
+      "utf8Bytes": 27379,
+      "sha256": "fc9a9333824cdde3d6a37d67332d4b6361cbb0ffd55812826b9f2f95c8c67351"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -429,8 +434,8 @@
     },
     {
       "path": "test/import-followup.test.mjs",
-      "utf8Bytes": 3202,
-      "sha256": "eb1329820b0feb43cf3f3402fbb7760b477b37bb14890b440fc14a6970a6f0a6"
+      "utf8Bytes": 3205,
+      "sha256": "6111bf49b6f76d165acfb96a82a8aac6f01db8b66f065409113bf86d4f37d96a"
     },
     {
       "path": "test/import-host-integration.mjs",
@@ -489,8 +494,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 28027,
-      "sha256": "9b4c74360c5014a12cf0be47dd690ff22d621e2d4e067d6c70b8a42f9fd20c9a"
+      "utf8Bytes": 29682,
+      "sha256": "f7e10fa292d9dd47ab66cb63e1a92df19c1ec620e83a40ca8676b8a03f752d10"
     },
     {
       "path": "test/playback-metrics.test.mjs",
@@ -534,8 +539,8 @@
     },
     {
       "path": "test/widgets.test.mjs",
-      "utf8Bytes": 3575,
-      "sha256": "6e8a8151c6209b1363d1c938b8093cc598f2adc7635003286315575a146f1327"
+      "utf8Bytes": 4153,
+      "sha256": "2521adbe8f934f291dbb3e5de79a0d81caab64fcf288226ce76a04c4678e25de"
     },
     {
       "path": "tools/check-release.mjs",

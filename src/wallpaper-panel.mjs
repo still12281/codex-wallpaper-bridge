@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===19){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===20){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=19;let features=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=20;let features=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
@@ -36,7 +36,7 @@ export function installPanel(config,token){
  const notice=(title,text)=>askChoice(title,text,'知道了','');
  const confirmationDialog=document.createElement('dialog');confirmationDialog.id='realtime-confirm';confirmationDialog.setAttribute('aria-labelledby','realtime-title');confirmationDialog.setAttribute('aria-describedby','realtime-notice');confirmationDialog.innerHTML='<h2 id="realtime-title">确认实时壁纸</h2><p id="realtime-name"></p><p id="realtime-notice"></p><form method="dialog"><footer><button value="cancel" autofocus>取消</button><button id="realtime-accept" value="confirm">确认导入并应用</button></footer></form>';s.append(confirmationDialog);
  extraStyle.textContent+=' #realtime-notice{white-space:pre-line}#realtime-confirm,#error-dialog,#cwb-choice-dialog{background:var(--cwb-confirm-bg,#17191dfc)!important;color:var(--cwb-confirm-ink,#e9eff5)!important}#realtime-confirm p,#error-dialog p,#cwb-choice-dialog p{opacity:1;color:inherit!important}';
- const renderMode=document.createElement('label');renderMode.innerHTML='场景导入方式<select id="engine-render-mode"><option value="auto">自动</option><option value="webwallgl">GPU 场景（DSH）模式</option><option value="realtime">原版兼容模式</option></select><p>WebGL 在隔离沙箱内运行场景和脚本，支持鼠标输入，兼容性依项目而定。原生实时使用后台源窗口，保留引擎效果。</p>';picker.querySelector('#engine-import-actions').before(renderMode);
+ const renderMode=document.createElement('label');renderMode.innerHTML='场景导入方式<select id="engine-render-mode"><option value="auto">自动（场景优先 GPU）</option><option value="webwallgl">GPU 直绘（WebGL）</option><option value="realtime">原版兼容模式</option></select><p>GPU 直绘即 WebGL：场景自动优先使用；网页走原版兼容；视频和图片直接播放。原版兼容保留引擎效果，采集会增加占用。</p>';picker.querySelector('#engine-import-actions').before(renderMode);
  renderMode.previousElementSibling.textContent='选中一张壁纸后，下方会显示该项目的实际检查结果。检查完成后再选择保存或应用。';
  extraStyle.textContent+=' #engine-picker input:not([type=checkbox]){width:100%;box-sizing:border-box;margin-top:8px;padding:8px;border:1px solid #5c849b70;border-radius:8px;color:inherit;background:transparent}#engine-scan,#choose-folder{width:100%;margin-top:8px}#engine-roots{margin-top:12px}#engine-locations,#engine-selection{font-size:11px;overflow-wrap:anywhere;white-space:pre-line}';
  const kindLabel=document.createElement('label');kindLabel.innerHTML='搜索类型<select id="engine-kind"><option value="engine">Wallpaper Engine 壁纸</option><option value="media">其它图片 / 视频（指定文件夹）</option></select>';picker.prepend(kindLabel);
