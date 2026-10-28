@@ -134,8 +134,8 @@
     },
     {
       "path": "docs/OPEN-SOURCE-AUDIT-20261028.zh-CN.md",
-      "utf8Bytes": 4606,
-      "sha256": "6f2c67a042f50f1f286aa9c9f51d8e46748b862b8ccc32248a74275a4b48338c"
+      "utf8Bytes": 4954,
+      "sha256": "2bbf1d8149d20376013a4ecdcc9cc46a3fbbe60a6b776954e8247e24f0931a1e"
     },
     {
       "path": "docs/PACKAGE-A-20261026.zh-CN.md",
@@ -340,8 +340,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 22558,
-      "sha256": "33ece29589243fc8ea00b2d9f5218a8ceb7d6c55b5bf7e49e71acc6d759cb3e8"
+      "utf8Bytes": 23411,
+      "sha256": "ce8be095006954967b18ec48b9d51b2e13fb13048800739367d6b2572c37f844"
     },
     {
       "path": "settings.example.json",
@@ -550,8 +550,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 40058,
-      "sha256": "9b72b72c9236f09c56c54492db0ed1fd350f94ad6974729a29900d4176662f99"
+      "utf8Bytes": 40232,
+      "sha256": "df2096f456a24b0be7a7622c69c9912a3b973db2cff759b9f77bf5ba94850461"
     },
     {
       "path": "test/appearance.test.mjs",
