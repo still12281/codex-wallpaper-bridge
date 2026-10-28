@@ -2,7 +2,9 @@
 
 All overrides are optional and evaluated locally. Do not publish real environment values.
 
-For normal installation and in-app setup, follow the [Chinese installation guide](INSTALL.zh-CN.md). `Install.cmd` prepares dependencies, copies reviewed source into a versioned private installation and creates unified desktop/Start-menu shortcuts. It preserves settings and does not launch or close Codex. The built entry records PowerShell, Node and supplied FFmpeg/uv executable paths so desktop launches do not depend on a refreshed PATH.
+For normal installation and in-app setup, follow the [Chinese installation guide](INSTALL.zh-CN.md). `Install.cmd` prepares dependencies and copies reviewed source into a versioned private installation. Choose `-ShortcutMode separate` for a dedicated entry, `replace` to back up and replace identified official `.lnk` files, or `none`. `installation.json` remembers the choice; separate/none also prevent later startup from rewriting official shortcuts. `Restore-Shortcuts.ps1` restores unchanged replacements from verified backups and disables subsequent automatic replacement. Store registration and taskbar pinning remain separate Windows operations.
+
+Use `-UpdateReconnect enable/keep/disable` to opt into, preserve or remove the event-only future-update rule. `-NonInteractive -NoPause` makes the command-line installation unattended at the script level; OS installer consent can still appear. Installation preserves wallpaper settings and does not launch or close Codex. The built entry records PowerShell, Node and supplied FFmpeg/uv executable paths so desktop launches do not depend on a refreshed PATH.
 
 | Variable | Use |
 | --- | --- |

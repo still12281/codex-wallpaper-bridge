@@ -2,6 +2,8 @@
 
 ## Unreleased — source candidate
 
+- Offer separate/original-shortcut replacement modes with persisted startup policy, exact backups and guarded restoration. Recognize verified Store shortcut identities, preserve unrelated/document shortcuts, and add noninteractive/no-pause install commands plus an explicit update-recovery choice. Normalize Task Scheduler principal names to SIDs when validating an existing update task.
+
 - Add an Install.cmd entry that prepares missing dependencies through WinGet, deploys checksum-verified source into versioned user directories, prepares GPU/native runtimes and creates unified desktop/Start-menu shortcuts. Preserve settings, source downloads and the running client; record optional FFmpeg/uv paths for Explorer launches. Rewrite newcomer-facing setup, configuration, advantages, upgrade and troubleshooting documentation.
 
 - Add eleven reviewed screenshots from the actual desktop client on an empty new-chat screen, with private fields hidden before capture and self-made gallery thumbnails. Expand the Chinese README with a gallery, renderer choices, preparation steps and remaining acceptance limits. Keep runtime capture scripts and source assets outside the repository; allow only exact documentation PNG paths with raw-byte hashes and metadata/CRC checks.

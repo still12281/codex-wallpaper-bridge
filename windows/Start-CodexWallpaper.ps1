@@ -90,7 +90,7 @@ try {
   $taskIdentity=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
   $taskReuseExisting=$null -ne $taskIdentity
   $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes $taskInitial -HasVerifiedCdp $taskReuseExisting
-  try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
+  try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot -CodexAppId $taskCodex.AppUserModelId)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
   Save-TaskPhase 'startup-checked'
   if($null -eq $taskIdentity) {
     if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '9335 已被其他进程占用，未更改该进程。'}

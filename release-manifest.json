@@ -19,13 +19,13 @@
     },
     {
       "path": ".gitignore",
-      "utf8Bytes": 940,
-      "sha256": "df4574dba971fda188c363238e3213547ccd5d24763c9eccd18652cc569bd3a2"
+      "utf8Bytes": 985,
+      "sha256": "c0b16df5df8798aa8597d915d6fba8a46fd63e1ae78cdb9a6f1276349d2aaf4f"
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 9215,
-      "sha256": "a245a9a49f0a73847dbfa6ba8b69e967fff70cea8995fd6fa77018ff0c891df6"
+      "utf8Bytes": 9604,
+      "sha256": "864771ad03317dc9f8bff71584fa4c14399df6e198293398b0e57c356badf504"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -34,8 +34,8 @@
     },
     {
       "path": "Install.cmd",
-      "utf8Bytes": 1721,
-      "sha256": "592fce4116cc22597076fba23a34eaf79361fe265699ce40c0343fd8f62265f4"
+      "utf8Bytes": 1861,
+      "sha256": "f1836cddb0db895659dba45e5cc1f043df50d9f852d316ad728e914182b65eeb"
     },
     {
       "path": "LICENSE",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 8096,
-      "sha256": "e2df5239dddc583432fd28a634bfaafcdda4f480c34b101d8d4af55e15b2aa7e"
+      "utf8Bytes": 8849,
+      "sha256": "bd3ac80de50a68fdc2acdb8b9216d1d3a72a4105561e23ad6c7b21fefaa7f273"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 10521,
-      "sha256": "898642be1a21350bbc4658362355bc3fe4cb67df845f8590cf1f3a0e8f07927a"
+      "utf8Bytes": 11792,
+      "sha256": "4ac2a2e26476684b562f733b7973f52f243f90500bb24c914da4aaf935701ac0"
     },
     {
       "path": "README.zh-CN.md",
@@ -74,8 +74,8 @@
     },
     {
       "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
-      "utf8Bytes": 5959,
-      "sha256": "5e4bb132d3230fd8edd41477eac91b762aa2c05e2c75b453721e6103192faf24"
+      "utf8Bytes": 6440,
+      "sha256": "7a26a8a2de8e4db33b00bc09f9edfb9dc0c91a9b6497d46cf0e20b9f62c305b1"
     },
     {
       "path": "docs/ARCHITECTURE.md",
@@ -89,8 +89,8 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 4910,
-      "sha256": "d0b98c47b9fc15f00bcaffefeccca44665cbd523b125316f2514d48dc71bf6c9"
+      "utf8Bytes": 5580,
+      "sha256": "205eb0f23dd67a0239153e008cd4ba63940119f15b66620b1917fbb1e1c8db17"
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
@@ -114,8 +114,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 10053,
-      "sha256": "da8e35b1ebc3d0b07e0b74998d5a95de7bec03238124acf0e2046403e69e8949"
+      "utf8Bytes": 13258,
+      "sha256": "fb476f2a51cdd7ae3980095258043b510a0ce1d9ae63fed923c685d7da41b4d7"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -315,8 +315,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 19510,
-      "sha256": "91dc4888b8c0ca226f55410725210370143ac8ff5c8e5a39f0517d9a48020c85"
+      "utf8Bytes": 20278,
+      "sha256": "949326f60398dd95eddf9bdb2ae7c7ce1f138297427f7eba1461d84a4a452349"
     },
     {
       "path": "package.json",
@@ -325,8 +325,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 17256,
-      "sha256": "017ba76ff7597d26c5657af28332d3595130bdedf457135c65f168a5785d8983"
+      "utf8Bytes": 18328,
+      "sha256": "b64f8049a974dce5dce3bad4a12db23723ad63a164632155903d8c9a36debd24"
     },
     {
       "path": "settings.example.json",
@@ -535,8 +535,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 35800,
-      "sha256": "bd320a86aa9beb9380473dac6b1657fa27d4d04bb5dbebe3a3c16c665c63a743"
+      "utf8Bytes": 36988,
+      "sha256": "679a48da08910e45049af0f59fc863c8f6e49da76f7e7d4a623ae9065f057a90"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -592,6 +592,11 @@
       "path": "test/import-transaction.test.mjs",
       "utf8Bytes": 2180,
       "sha256": "709f27678675828ef9bb765b853e84a8421abd34bd54c17e154cd7ab7fdca033"
+    },
+    {
+      "path": "test/install-options.ps1",
+      "utf8Bytes": 4476,
+      "sha256": "3251c4dfd06ec829da6ef4865a3f851dcd5b30307d0daf7fe98916b3999ae2f2"
     },
     {
       "path": "test/install-runtime.ps1",
@@ -700,8 +705,8 @@
     },
     {
       "path": "test/update-reconnect.ps1",
-      "utf8Bytes": 5964,
-      "sha256": "44dfa616a959423be734b6d2d05681f6161d4d447a8aac59bdff1da3c4c4a1b7"
+      "utf8Bytes": 6414,
+      "sha256": "bed9eaa59e3c6635b468cff85d430096e478da3bce490581050c774226f95b16"
     },
     {
       "path": "test/wallpaper-properties.test.mjs",
@@ -725,8 +730,8 @@
     },
     {
       "path": "tools/check-release.mjs",
-      "utf8Bytes": 2940,
-      "sha256": "89af6c505028ad398da96e200b27a5493322c9a2c412ddd865038b5ee357f342"
+      "utf8Bytes": 2975,
+      "sha256": "101ab780a1993a00c50d57731990fbf8eec45112af32ece3968ae09ac2c0f77a"
     },
     {
       "path": "tools/create-manifest.mjs",
@@ -885,18 +890,18 @@
     },
     {
       "path": "windows/Install-UpdateReconnect.ps1",
-      "utf8Bytes": 3841,
-      "sha256": "7d5ac595e498236c3f7faab71e1f3928b0d641666640fbea898b00321619336d"
+      "utf8Bytes": 3874,
+      "sha256": "f11c772342187e40ec9c1d42abc4f1ccd1b3e91ac4bc013c3ceba19f1ceb2cb9"
     },
     {
       "path": "windows/Install-Wallpaper.ps1",
-      "utf8Bytes": 6083,
-      "sha256": "07597253e04bd22ccd6a25599c05848a0b668ab5e16a2e9e373637d0baf96836"
+      "utf8Bytes": 8917,
+      "sha256": "49a798f7d1c0c67ba4072f71e734b612c7e5197420fa57a882e8fd0d60d004a1"
     },
     {
       "path": "windows/InstallSupport.ps1",
-      "utf8Bytes": 3462,
-      "sha256": "251cb6ac59f765ad1ee41c247b4cd378840cc26fdc9f733ee6a57c3d7fbffdd0"
+      "utf8Bytes": 4584,
+      "sha256": "60b88c3acf40d86dee17466e57278f9d940a9f7f6e79a163c02e211554214e26"
     },
     {
       "path": "windows/LaunchPolicy.ps1",
@@ -934,24 +939,29 @@
       "sha256": "5d2f96bab78184661873da64f003769a364fb9686ac17bc3c6a909541848cf12"
     },
     {
+      "path": "windows/Restore-Shortcuts.ps1",
+      "utf8Bytes": 2046,
+      "sha256": "57d71705880f64e0e76103738120b57c3d2954c08f691acebc9dd2a6fccbdad2"
+    },
+    {
       "path": "windows/Runtime.ps1",
       "utf8Bytes": 1526,
       "sha256": "9be7b808294f5b6026416239a48bc0d56f2065c28a6bddfe8eaa7caeffc949e1"
     },
     {
       "path": "windows/ShortcutIdentity.cs",
-      "utf8Bytes": 2012,
-      "sha256": "a788ceda42b2fe7857bf3633b03bd19ed9a9e7c657994368d514fcd9fe185dd6"
+      "utf8Bytes": 2576,
+      "sha256": "9cda88d243841a920cf301870a9cc1da05c4665529a8854abe4129a42173fedc"
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 19104,
-      "sha256": "873ed85969a2e216821968a61a83d5e8334457f99ac0db05660a519183a88072"
+      "utf8Bytes": 19142,
+      "sha256": "8c318eadf96fb1e7351c2a45962e5f9ffba2d5d3b4c600abae8a94d0e337d6c4"
     },
     {
       "path": "windows/StartupHealth.ps1",
-      "utf8Bytes": 5277,
-      "sha256": "89f8594190dbaccb2cb195027f5478b6469f8a75030b036d8f0d3ede315a9259"
+      "utf8Bytes": 6370,
+      "sha256": "c1a71f4e46de6b719fb4a5ec52ca0789294a7815459c0461aa456f43a05c691b"
     },
     {
       "path": "windows/TaskbarIdentity.cs",
@@ -960,8 +970,8 @@
     },
     {
       "path": "windows/UpdateReconnectPolicy.ps1",
-      "utf8Bytes": 5703,
-      "sha256": "59c88669b1563e9f885a86d38037f43796d50e5822fbb37cd51aca252d7b5284"
+      "utf8Bytes": 5981,
+      "sha256": "2762a59644328a00627b041a662c84daf5ccc682654cf4ce85b442cdeff35161"
     }
   ]
 }

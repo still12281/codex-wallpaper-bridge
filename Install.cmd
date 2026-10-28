@@ -3,6 +3,8 @@ setlocal
 title Codex Wallpaper Bridge - Install
 set "cwb_installer_pwsh="
 set "cwb_installer_readonly="
+set "cwb_installer_nopause="
+for %%A in (%*) do if /I "%%~A"=="-NoPause" set "cwb_installer_nopause=1"
 for %%A in (%*) do if /I "%%~A"=="-CheckOnly" set "cwb_installer_readonly=1"
 for %%A in (%*) do if /I "%%~A"=="-SkipDependencyInstall" set "cwb_installer_readonly=1"
 if defined CODEX_WALLPAPER_PWSH if exist "%CODEX_WALLPAPER_PWSH%" set "cwb_installer_pwsh=%CODEX_WALLPAPER_PWSH%"
@@ -28,5 +30,5 @@ set "cwb_install_exit=1"
 :finish
 echo.
 if not "%cwb_install_exit%"=="0" echo Installation failed. Read the message above, then run Install.cmd again.
-pause
+if not defined cwb_installer_nopause pause
 exit /b %cwb_install_exit%

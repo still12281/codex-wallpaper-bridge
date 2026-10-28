@@ -1,6 +1,11 @@
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot '../windows/UpdateReconnectPolicy.ps1')
 function Assert-Update($Condition,[string]$Message){if(-not $Condition){throw $Message}}
+$identity=[Security.Principal.WindowsIdentity]::GetCurrent()
+Assert-Update (Test-WallpaperUpdateTaskOwner $identity.User.Value $identity.User.Value) 'Task SID owner rejected'
+Assert-Update (Test-WallpaperUpdateTaskOwner $identity.Name $identity.User.Value) 'Task Scheduler account-name normalization rejected'
+Assert-Update (-not (Test-WallpaperUpdateTaskOwner $identity.Name 'S-1-5-21-0-0-0-9999')) 'Foreign task owner accepted'
+$identity.Dispose()
 $selfCim=Get-CimInstance Win32_Process -Filter "ProcessId = $PID"
 $exact=Get-WallpaperExactUpdateSnapshot $selfCim;$self=Get-Process -Id $PID
 Assert-Update ($exact.ticks -eq $self.StartTime.ToUniversalTime().Ticks) 'Native process identity lost FILETIME precision';$self.Dispose()

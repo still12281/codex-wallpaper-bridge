@@ -16,6 +16,15 @@ namespace CodexWallpaperEntry {
  }
  public static class LinkIdentity {
   [DllImport("ole32.dll")] static extern int PropVariantClear(ref PropVariant value);
+  public static string Get(string path) {
+   object link=Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("00021401-0000-0000-C000-000000000046")));
+   try {
+    ((IPersistFile)link).Load(path,0);
+    var key=new PropertyKey {fmtid=new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),pid=5};
+    PropVariant value;Marshal.ThrowExceptionForHR(((IPropertyStore)link).GetValue(ref key,out value));
+    try {return value.vt==31?Marshal.PtrToStringUni(value.pointer):null;}finally{PropVariantClear(ref value);}
+   }finally{Marshal.FinalReleaseComObject(link);}
+  }
   public static string Set(string path,string appId,string command,string icon) {
    object link=Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("00021401-0000-0000-C000-000000000046")));
    var persist=(IPersistFile)link; persist.Load(path,2);

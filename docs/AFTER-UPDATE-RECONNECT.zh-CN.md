@@ -35,6 +35,8 @@
 
 ## 查看和停用
 
+新安装可在交互安装时选择启用，或执行 `Install.cmd -UpdateReconnect enable -NonInteractive -NoPause`；`keep` 保持现有任务，`disable` 移除属于该安装的规则。Windows 任务计划程序有时把主体从 SID 回显为账号名；安装/检查现有任务时会先解析到 SID 再核对，避免同一用户重复安装被误拒绝。只读的 `Install-UpdateReconnect.ps1 -Root <数据目录> -InspectOnly` 验证任务结构而不触发重连。
+
 在PowerShell中查看当前用户规则：
 
 ```powershell

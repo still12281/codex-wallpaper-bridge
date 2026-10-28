@@ -1,3 +1,8 @@
+function Test-WallpaperUpdateTaskOwner([string]$Principal,[string]$UserId) {
+  if($Principal -ceq $UserId){return $true}
+  try{return ([Security.Principal.NTAccount]::new($Principal).Translate([Security.Principal.SecurityIdentifier])).Value -ceq $UserId}catch{return $false}
+}
+
 function Get-WallpaperUpdateEvent {
   param([xml]$Xml)
   $data=@{};foreach($item in $Xml.Event.EventData.Data){$data[[string]$item.Name]=[string]$item.'#text'}

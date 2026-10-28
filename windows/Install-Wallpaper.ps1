@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param([string]$DataDirectory,[switch]$CheckOnly,[switch]$SkipDependencyInstall,[switch]$SkipPreparation,[switch]$NoShortcuts)
+param([string]$DataDirectory,[switch]$CheckOnly,[switch]$SkipDependencyInstall,[switch]$SkipPreparation,[switch]$NoShortcuts,
+  [ValidateSet('ask','separate','replace','none')][string]$ShortcutMode='ask',
+  [ValidateSet('ask','enable','keep','disable')][string]$UpdateReconnect='ask',
+  [switch]$NonInteractive,[switch]$NoPause)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'InstallSupport.ps1')
 $installSourceRoot=Split-Path -Parent $PSScriptRoot
@@ -12,6 +15,10 @@ try{
   # Discover only; do not activate, close or change the official client.
   . (Join-Path $installSourceRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
   $installCodex=Get-DreamSkinCodexInstall
+  $installPolicyPath=Join-Path $installDataRoot 'installation.json';$installPrevious=$null
+  if(Test-Path -LiteralPath $installPolicyPath){$installPrevious=Get-Content -LiteralPath $installPolicyPath -Raw -ErrorAction Stop|ConvertFrom-Json}
+  if($NoShortcuts){$ShortcutMode='none'}
+  $installChoices=Resolve-WallpaperInstallChoices -ShortcutMode $ShortcutMode -UpdateReconnect $UpdateReconnect -Existing $installPrevious -NonInteractive:($NonInteractive -or $CheckOnly)
   $installSpecs=@(
     @{name='pwsh';package='Microsoft.PowerShell'},
     @{name='node';package='OpenJS.NodeJS.LTS'},
@@ -24,7 +31,7 @@ try{
     if(Test-WallpaperInstallDependency $spec.name $executable){$installResolved[$spec.name]=$executable}else{$installMissing+=$spec}
   }
   if($CheckOnly){
-    [ordered]@{checkOnly=$true;codex="$($installCodex.Version)";dataDirectory=$installDataRoot;dependencies=$installResolved;missing=@($installMissing|ForEach-Object package);willStartClient=$false} | ConvertTo-Json -Depth 4
+    [ordered]@{checkOnly=$true;codex="$($installCodex.Version)";dataDirectory=$installDataRoot;dependencies=$installResolved;missing=@($installMissing|ForEach-Object package);choices=$installChoices;willStartClient=$false} | ConvertTo-Json -Depth 4
     if($installMissing.Count){exit 2};exit 0
   }
   if($installMissing.Count -and $SkipDependencyInstall){throw ('Missing dependencies: '+(($installMissing|ForEach-Object package)-join ', '))}
@@ -64,15 +71,37 @@ try{
   & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Prepare-TaskbarEntry.ps1')
   if($LASTEXITCODE -ne 0){throw 'Shortcut preparation failed; see the message above.'}
   $installEntry=Join-Path $installDataRoot 'CodexEntry.exe';$installLink=Join-Path $installDataRoot 'Codex.lnk'
-  if(-not $NoShortcuts){
+  if($installChoices.shortcutMode -eq 'separate' -and $installPrevious.shortcutMode -eq 'replace'){
+    $restored=@(& (Join-Path $installDirectory 'windows/Restore-Shortcuts.ps1') -Root $installDataRoot)
+    if(@($restored|Where-Object error).Count){throw 'Could not restore all original shortcuts. Inspect Restore-Shortcuts.ps1 output before switching modes.'}
+    if(@($restored|Where-Object reason -eq 'shortcut-modified-preserved').Count){Write-Warning 'User-modified shortcuts were preserved while switching to separate mode.'}
+  }
+  $installPolicy=[ordered]@{schemaVersion=1;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect}
+  [IO.File]::WriteAllText($installPolicyPath,($installPolicy|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
+  if($installChoices.shortcutMode -eq 'separate'){
     $installDesktop=Join-Path ([Environment]::GetFolderPath('Desktop')) 'Codex Wallpaper.lnk'
     $installMenu=Join-Path ([Environment]::GetFolderPath('Programs')) 'Codex Wallpaper Bridge/Codex Wallpaper.lnk'
     Publish-WallpaperInstallShortcut $installLink $installDesktop $installEntry
     Publish-WallpaperInstallShortcut $installLink $installMenu $installEntry
   }
-  [ordered]@{installed=$true;source=$installDirectory;entry=$installEntry;dataDirectory=$installDataRoot;shortcutsCreated=(-not $NoShortcuts);preparationSkipped=[bool]$SkipPreparation;clientStarted=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $installDataRoot 'install-status.json') -Encoding UTF8 -ErrorAction Stop
+  elseif($installChoices.shortcutMode -eq 'replace'){
+    . (Join-Path $installDirectory 'windows/StartupHealth.ps1')
+    $replaced=@(Repair-WallpaperEntryShortcuts -Root $installDataRoot -CodexAppId $installCodex.AppUserModelId)
+    if(@($replaced|Where-Object error).Count){throw 'Some shortcuts could not be replaced. Originals are backed up; use Restore-Shortcuts.ps1 or inspect shortcut-replacements.json.'}
+    if(-not @($replaced|Where-Object changed).Count){
+      Publish-WallpaperInstallShortcut $installLink (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Codex.lnk') $installEntry
+      Write-Host 'No replaceable original .lnk found. Created a desktop Codex shortcut; Store registration and taskbar pins remain unchanged.'
+    }
+  }
+  if($installChoices.updateReconnect -in @('enable','disable')){
+    $updateArguments=@('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $installDirectory 'windows/Install-UpdateReconnect.ps1'),'-Root',$installDataRoot)
+    if($installChoices.updateReconnect -eq 'disable'){$updateArguments+='-Uninstall'}
+    & $installResolved.pwsh @updateArguments
+    if($LASTEXITCODE -ne 0){throw 'Base installation completed, but the update-recovery task could not be changed. See docs/INSTALL.zh-CN.md.'}
+  }
+  [ordered]@{installed=$true;source=$installDirectory;entry=$installEntry;dataDirectory=$installDataRoot;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect;preparationSkipped=[bool]$SkipPreparation;clientStarted=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $installDataRoot 'install-status.json') -Encoding UTF8 -ErrorAction Stop
   Write-Host ''
-  Write-Host 'Installed. Save drafts, exit ordinary Codex normally, then open Codex Wallpaper.' -ForegroundColor Green
+  Write-Host 'Installed. Save drafts, exit ordinary Codex normally, then open the selected wallpaper entry.' -ForegroundColor Green
   Write-Host ('Entry: '+$installEntry)
   Write-Host ('Data:  '+$installDataRoot)
   exit 0

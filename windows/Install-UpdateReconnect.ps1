@@ -11,7 +11,7 @@ $userId=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $name='CodexWallpaperBridge-AfterUpdate-'+$userId
 $entry=Join-Path $Root 'CodexEntry.exe'
 $existing=Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
-if($existing -and ($existing.Principal.UserId -ne $userId -or $existing.Actions.Execute -ine $entry -or $existing.Actions.Arguments -cne '--after-update-event $(UpdateRecordId)')){throw 'Existing task identity does not match this installation'}
+if($existing -and (-not (Test-WallpaperUpdateTaskOwner $existing.Principal.UserId $userId) -or $existing.Actions.Execute -ine $entry -or $existing.Actions.Arguments -cne '--after-update-event $(UpdateRecordId)')){throw 'Existing task identity does not match this installation'}
 if($Uninstall){if($existing){Unregister-ScheduledTask -TaskName $name -Confirm:$false -ErrorAction Stop};[pscustomobject]@{removed=$true;task=$name};return}
 $runtime=Get-Content -LiteralPath (Join-Path $Root 'launcher-runtime.json') -Raw -ErrorAction Stop|ConvertFrom-Json
 if(-not [IO.Path]::IsPathFullyQualified($runtime.powerShell) -or [IO.Path]::GetFileName($runtime.powerShell) -ine 'pwsh.exe' -or -not (Test-Path -LiteralPath $runtime.powerShell -PathType Leaf)){throw 'Recorded PowerShell unavailable'}

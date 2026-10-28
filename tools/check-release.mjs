@@ -16,7 +16,7 @@ for(const file of actual){
   if(!record||record.hashMode!=='raw-bytes'||record.bytes!==bytes.length||record.sha256!==digest(bytes))issues.push({file,issue:'reviewed image checksum changed or missing'});
   continue;
  }
- if(denied.test(file)||/^(?:settings|settings.next)\.json$/i.test(path.basename(file)))issues.push({file,issue:'runtime data, media or binary file'});
+ if(denied.test(file)||/^(?:settings|settings.next|installation|shortcut-replacements)\.json$/i.test(path.basename(file)))issues.push({file,issue:'runtime data, media or binary file'});
  if(!expected.has(file))issues.push({file,issue:'not present in reviewed release allowlist'});
  const text=canonical(await readFile(path.join(repoRoot,file)));
  if(/\b[A-Z]:[\\/]Users[\\/][^\s/\\"'<>]+/i.test(text))issues.push({file,issue:'literal user profile path'});

@@ -1,5 +1,11 @@
 # Migration progress
 
+## 2026-10-28 快捷方式模式、恢复与命令行
+
+增加安装时separate/replace/none选择、enable/keep/disable更新选项及NonInteractive/NoPause。模式保存在仓库外installation.json，后续启动不再在专用模式下自动替换原入口；替换保留名字，核对官方路径/Store身份，备份原字节并建立哈希索引。Restore-Shortcuts保留后改文件并关闭自动替换；切回专用模式先按备份恢复原入口。真实任务计划检查发现SID/账号名规范化差异导致重复安装被误拒绝，修复后只读任务验证通过，现有任务未重注册或执行。
+
+install-options/startup-health/update-reconnect定向测试、CMD无暂停只检查和独立目录none+keep安装构建通过；未动用户快捷方式、任务或当前Codex。现有规则Ready、armed-for-future-updates，不把策略测试冒充下一次自然更新恢复。README/安装指南补两种选择、备份恢复和一条本地CLI命令；远程一键的公开下载地址尚不存在，无remote、不虚构URL、不推送。
+
 ## 2026-10-28 面向新用户的一键安装
 
 新增Install.cmd、Install-Wallpaper/InstallSupport和按发布清单安装源的工具，WinGet按需准备依赖，默认准备GPU及原版采集，复制到数据目录versions子目录并构建一体入口。FFmpeg/uv路径随入口记录，旧配置/素材保留；安装不启动/关闭当前客户端、不自动安装更新任务。README改为优势、功能、双击安装、首次使用和配置，完整安装指南覆盖依赖、自定义盘、可选组件、故障、升级与卸载。

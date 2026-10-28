@@ -4,9 +4,9 @@
 
 1. 安装官方 Microsoft Store 版 Codex，正常打开一次并登录。
 2. 在本仓库点击 **Code → Download ZIP**，解压到本地文件夹。不要在压缩包预览中直接运行。
-3. 双击根目录的 **`Install.cmd`**。保持联网，按 Windows 提示允许依赖安装。
+3. 双击根目录的 **`Install.cmd`**。选择新建专用入口或替换原快捷方式，并选择是否启用更新后一次重连。保持联网，按 Windows 提示允许依赖安装。
 4. 出现绿色 **Installed** 后，保存工作并正常退出原来的 Codex。若客户端仍在后台运行，从其退出菜单结束会话。
-5. 打开桌面的 **Codex Wallpaper**。以后使用这个入口启动带壁纸的 Codex，也可将它固定到任务栏。
+5. 专用模式打开 **Codex Wallpaper**；替换模式使用原名称的 Codex 入口。以后从所选入口启动带壁纸的 Codex，需要时将它固定到任务栏。
 
 不需要安装 Git、手动执行 npm install 或配置环境变量。安装器不会替你安装/登录商业客户端，也不会关闭正在使用的 Codex。
 
@@ -18,10 +18,51 @@
 | 准备基础依赖 | 检测 PowerShell 7、Node.js 22+、FFmpeg 和 uv；缺失或版本不符时通过 WinGet 安装 |
 | 准备渲染组件 | 下载并校验固定版本 WebWallGL，准备 Python 3.12 与锁定版本的原版采集依赖 |
 | 安装程序 | 按发布清单校验并复制到数据目录的独立版本子目录 |
-| 生成入口 | 本机编译 CodexEntry.exe，使用已安装 Codex 的官方图标，生成桌面与开始菜单快捷方式 |
-| 保留用户数据 | 保留已有壁纸库、设置和旧版本；不自动启动 Codex、不安装更新任务或监控服务 |
+| 生成入口 | 使用已安装 Codex 的官方图标，按选择新建专用入口或备份后替换已识别的原快捷方式 |
+| 保留用户数据 | 保留已有壁纸库、设置和旧版本；安装不启动/关闭 Codex，只在明确选择启用时安装更新事件任务，无自有常驻监控 |
 
 首次安装需要下载依赖，耗时取决于网络。依赖安装使用 [WinGet 标准安装命令](https://learn.microsoft.com/en-us/windows/package-manager/winget/install)，会接受指定依赖及软件源的安装协议；系统安装程序可能请求管理员授权。
+
+## 快捷方式怎么选
+
+| 模式 | 行为 |
+| --- | --- |
+| `separate` / 安装时选 1 | 创建桌面与开始菜单的 Codex Wallpaper，原入口保持原样；以后启动也不自动替换原快捷方式 |
+| `replace` / 安装时选 2 | 备份并替换当前用户桌面/开始菜单中已识别的 Codex/ChatGPT `.lnk`，保留名称；没有可替换文件时创建桌面 Codex |
+| `none` | 只生成数据目录里的 CodexEntry.exe / Codex.lnk，保留所有外部快捷方式 |
+
+识别使用官方包路径或准确的 Store 应用身份，不会仅凭文件名替换其它软件，也不丢弃自定义文件/深链参数。Store 自身的注册入口、其它用户/公共桌面入口与任务栏固定数据不直接改写；任务栏请手动取消旧固定项后固定新的壁纸入口。已保存的模式会用于后续启动和升级。
+
+从替换模式改选专用模式时，安装器先按备份恢复未被你另行修改的原快捷方式，再创建专用入口。
+
+### 恢复被替换的原快捷方式
+
+在 PowerShell 7 中运行以下命令；自定义安装时将 `$root` 改为自己的数据目录：
+
+```powershell
+$root = Join-Path $env:LOCALAPPDATA 'CodexWallpaperBridge'
+$script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).Trim()
+& (Join-Path (Split-Path -Parent $script) 'Restore-Shortcuts.ps1') -Root $root
+```
+
+恢复前会核对原备份和当前快捷方式哈希；你后来改过的快捷方式会保留并提示，不直接覆盖。恢复同时关闭后续启动的自动替换。需要额外的壁纸入口时，再以 `-ShortcutMode separate` 运行安装器。
+
+## 命令行一键部署
+
+以下命令在已解压的项目目录执行。会自动准备依赖，安装期间不询问选项，结束不暂停；Windows 的依赖安装授权仍按系统提示处理。
+
+```powershell
+# 新建专用入口；不改变现有更新任务
+.\Install.cmd -ShortcutMode separate -UpdateReconnect keep -NonInteractive -NoPause
+
+# 替换已识别的原入口；启用后续更新的一次正常重连
+.\Install.cmd -ShortcutMode replace -UpdateReconnect enable -NonInteractive -NoPause
+
+# 自定义安装盘
+.\Install.cmd -DataDirectory 'D:\CodexWallpaperBridge' -ShortcutMode separate -UpdateReconnect keep -NonInteractive -NoPause
+```
+
+`-ShortcutMode` 可取 `separate / replace / none`；`-UpdateReconnect` 可取 `enable / keep / disable`。`keep` 不改任务，`disable` 只移除属于该安装的任务。无交互且未指定选项时，新安装默认专用入口并保持更新任务原状；升级保留已记录的入口选择。
 
 ## 系统和可选软件
 
@@ -62,7 +103,7 @@
 
 ## 首次设置壁纸
 
-1. 从 **Codex Wallpaper** 打开客户端，点击顶部 **壁纸**。
+1. 从安装时选择的壁纸入口打开客户端，点击顶部 **壁纸**。
 2. 普通图片/视频：点击 **导入图片 / 视频**，选择文件；支持 JPG、PNG、WebP、GIF、MP4、WebM。
 3. Wallpaper Engine：点击 **搜索 Wallpaper 壁纸 / 图片 / 视频**。默认搜索已发现的壁纸库；未发现时，将范围改为 **自选文件夹**，选择包含 `project.json` 的项目目录或它的上级库目录。
 4. 点击缩略图预览，选择 **导入当前项并应用**，或 **仅保存当前项**。勾选多张后可 **批量保存**，保持当前背景。
@@ -99,6 +140,8 @@ node ./tools/prepare-media-bridge.mjs
 若基础安装用了自定义数据目录，先执行 `$env:CODEX_WALLPAPER_DATA_DIR='D:\CodexWallpaperBridge'`，再运行准备命令。然后在壁纸面板 **系统音乐联动** 中启用歌曲显示或壁纸音频响应，点击保存。详见[音乐联动说明](SYSTEM-MEDIA.md)。
 
 ## 可选：更新后一次重连
+
+安装时选 `y` 或命令行传 `-UpdateReconnect enable` 即可启用；无需再手动执行本节命令。每次从壁纸入口启动都会重新识别当前注册包。事件任务用于处理更新直接重开客户端、未经过壁纸入口的情况；只在未来更新后尝试一次正常关闭/重连，不用于平常启动时重启客户端。
 
 在 PowerShell 7 中运行：
 
@@ -168,6 +211,6 @@ $env:CODEX_WALLPAPER_UV = 'D:\Tools\uv\uv.exe'
 - **升级**：下载新版本并重新双击安装；自定义安装盘时继续传相同 `-DataDirectory`。
 - **备份**：使用[本地维护](MAINTENANCE.zh-CN.md)中的完整库备份/恢复；外观预设 JSON 只保存外观。
 - **停用**：正常退出 Codex 后，使用原来的官方入口启动。
-- **卸载**：先备份需要的内容，移除自己安装的更新任务，正常退出客户端，删除 Codex Wallpaper 桌面/开始菜单快捷方式，并手动删除本项目数据目录。不会要求卸载 Node、PowerShell、FFmpeg 或 uv，它们可能被其它软件使用。
+- **卸载**：先备份需要的内容；若用过替换模式，先恢复原快捷方式。移除自己安装的更新任务，正常退出客户端，删除自己创建的壁纸快捷方式，再手动删除本项目数据目录。不会要求卸载 Node、PowerShell、FFmpeg 或 uv，它们可能被其它软件使用。
 
 不要在 Issues 中上传整个数据目录、settings.json、账号 profile 或未经脱敏的日志。

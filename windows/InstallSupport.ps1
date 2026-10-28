@@ -2,6 +2,19 @@
 function Update-WallpaperInstallPath {
   $env:PATH=$env:PATH+';'+[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User')
 }
+function Resolve-WallpaperInstallChoices {
+  param([string]$ShortcutMode='ask',[string]$UpdateReconnect='ask',$Existing,[switch]$NonInteractive,[scriptblock]$ReadChoice={param($Question) Read-Host $Question})
+  if($ShortcutMode -eq 'ask'){
+    if($Existing.shortcutMode -in @('separate','replace','none')){$ShortcutMode=$Existing.shortcutMode}
+    elseif($NonInteractive){$ShortcutMode='separate'}
+    else{do{$answer=& $ReadChoice 'Shortcut: 1 = new Codex Wallpaper entry (default), 2 = replace identified original Codex shortcuts with backup'}while($answer -notin @('','1','2'));$ShortcutMode=if($answer -eq '2'){'replace'}else{'separate'}}
+  }
+  if($UpdateReconnect -eq 'ask'){
+    if($Existing -or $NonInteractive){$UpdateReconnect='keep'}
+    else{do{$answer=& $ReadChoice 'Enable recovery after future Codex updates? It may request ONE normal close/reconnect after an update; no forced close or resident watcher. y/N'}while($answer -notin @('','y','Y','n','N'));$UpdateReconnect=if($answer -in @('y','Y')){'enable'}else{'keep'}}
+  }
+  [pscustomobject]@{shortcutMode=$ShortcutMode;updateReconnect=$UpdateReconnect}
+}
 function Get-WallpaperInstallDependency([string]$Name) {
   $variable=@{node='CODEX_WALLPAPER_NODE';pwsh='CODEX_WALLPAPER_PWSH';ffmpeg='CODEX_WALLPAPER_FFMPEG';uv='CODEX_WALLPAPER_UV'}[$Name]
   $override=[Environment]::GetEnvironmentVariable($variable,'Process')
