@@ -36,7 +36,7 @@
 
 ## 效果展示
 
-以下均为**真实 Codex 桌面端实拍**，使用未提交的空白新对话。收起侧栏，并在截图前隐藏账号、项目、路径、权限和歌曲信息；图库使用自制演示缩略图。图片没有拼接或替换界面，未附带真实聊天、桌面任务栏或壁纸原文件。完整 [11 张图片索引与采集说明](docs/SCREENSHOTS.zh-CN.md)。
+以下均为**真实 Codex 桌面端实拍**；完整 [11 张图片索引与采集说明](docs/SCREENSHOTS.zh-CN.md)。
 
 <table>
 <tr><td width="50%"><b>图库与导入状态</b><br><img src="docs/images/03-import-gallery.png" alt="类型、分级、导入状态及单项操作" width="460"></td><td width="50%"><b>外观与特效</b><br><img src="docs/images/04-appearance.png" alt="透明度、字体、视差与点击特效" width="460"></td></tr>

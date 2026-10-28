@@ -1,5 +1,11 @@
 # Migration progress
 
+## 2026-10-28 私有上传与CI依赖补齐
+
+私有仓库still12281/codex-wallpaper-bridge已创建，用户完成workflow补充授权后main推送成功；两次核对PRIVATE。固定v0.1.0-alpha.0安装包与SHA256已放Draft/Prerelease，远端回读一致。首次Release创建因GitHub不接受短target_commitish返回422，改为经远端核对的完整SHA后创建成功，没有发布为正式Release。
+
+首次GitHub CI运行40669371853中5项失败均为运行器缺FFmpeg；增加固定8.0.1下载、官方清单SHA256校验、缓存和显式CODEX_WALLPAPER_FFMPEG路径，不跳过媒体测试；矩阵分别完成，避免一项失败取消另一项。保留用户同期精简的README截图介绍。后续草稿安装包跟随修正后的源码重新打包并回读校验，仓库保持私有，不新增公网安装命令。
+
 ## 2026-10-28 私有上传准备与手动恢复
 
 用户明确授权GitHub私有上传，待整体审核后再公开。新增Repair.cmd并由安装器放入稳定数据目录；先由用户正常退出，再打开原CodexEntry，不消费自动任务次数、不重置配置、不自动关进程。实际独立目录安装及Repair --check通过，当前客户端未关闭或启动。删除README/安装指南中解压后CLI一键部署示例，采用固定版本Release ZIP+SHA256，公网安装命令延后到真实发布。

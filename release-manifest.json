@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 363,
-      "sha256": "ae9ec9f7b7dc674ff9e478dd246d9d1b1295ae995043951de1ff0aa6a2bd631f"
+      "utf8Bytes": 1683,
+      "sha256": "58f89c28586b080833a57df08b1bc6dedb6b5658be7c86efedf1b7030a1ed862"
     },
     {
       "path": ".gitignore",
@@ -54,8 +54,8 @@
     },
     {
       "path": "README.md",
-      "utf8Bytes": 12187,
-      "sha256": "824904e18fa465b3211e9a76507395667d4a11a768971554dd8c8b8360708b61"
+      "utf8Bytes": 11932,
+      "sha256": "913763ba7db5bfde8fdc292e969df31a8c7b687ab53db5abe79e62560c9fef63"
     },
     {
       "path": "README.zh-CN.md",
@@ -174,8 +174,8 @@
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
-      "utf8Bytes": 4736,
-      "sha256": "aa190d534fa64fab663c0b3cca938184b3809517ca721291ceb6cef33f977d0e"
+      "utf8Bytes": 4882,
+      "sha256": "fc1ed6cb8f4afe466aaa97de2cc2ca5eccd200060407e553e8a796927ea34976"
     },
     {
       "path": "docs/SCREENSHOTS.zh-CN.md",
@@ -330,8 +330,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 19216,
-      "sha256": "60a8d1ad96b3b26e32417c34f0affb2afb78e9d7fa074bc44b87e06ff4b477fb"
+      "utf8Bytes": 20058,
+      "sha256": "82c5294ef868f24f39204e127954e2ab95f0d42b30a5f838cb36a3dfcf69c8e1"
     },
     {
       "path": "settings.example.json",
@@ -540,8 +540,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 38005,
-      "sha256": "6298635cd2ee4617507075c6884da316664dd0211359adab8470f2f54e0ec84b"
+      "utf8Bytes": 38145,
+      "sha256": "5c69cb2b892d85a5aad28dd41ee8b417782ac3ac9e630caa629cb8b419ba52d8"
     },
     {
       "path": "test/appearance.test.mjs",

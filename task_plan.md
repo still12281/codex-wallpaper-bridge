@@ -5,7 +5,7 @@
 - [x] 保留独立于自动更新任务的手动恢复路径：Repair.cmd随安装复制到稳定数据目录，提示用户自行正常退出后打开原CodexEntry；不强制关闭、不重置配置。实际安装及--check无启动检查通过，普通入口源码与自动事件分支独立。
 - [x] 删除中英文README/安装指南中“解压后命令行一键部署”示例；采用固定版本Release ZIP+SHA256，远程安装命令留到真实发布地址确定后再写。
 - [x] 82项源码单元测试、发布/第三方哈希与完整Git历史隐私复核通过；已有历史59提交/740blob/11张同当前审查图一致的PNG，无敏感信息命中，单一noreply提交身份。
-- [ ] 当前gh登录still12281有效，目标still12281/codex-wallpaper-bridge，先创建并核对PRIVATE再推送main；准备仅仓库成员可见的草稿Release安装包及校验文件，保持仓库私有与Release草稿，不自动公开。
+- [x] 已创建并前后核对still12281/codex-wallpaper-bridge为PRIVATE，main已推送；用户补充workflow权限后保留既有CI。v0.1.0-alpha.0为Draft/Prerelease，两项安装包资产远端回读SHA256一致，不公开。首轮CI暴露云端缺FFmpeg，补固定8.0.1下载/校验和缓存；私有草稿将随修正后的源码更新，远端检查结果以Actions为准。
 
 ## 当前授权：快捷方式选择、更新选项与命令行部署（2026-10-28）
 
