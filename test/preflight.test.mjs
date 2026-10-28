@@ -20,6 +20,17 @@ test('scene inspection keeps the complete project instead of stripping a video l
  assert.equal((await inspectEngineProject(root,'video-layer')).supported,false);
 });
 
+test('auto routing persists scene GPU and Web native priority while explicit choices remain available',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-priority-'));await writeFile(path.join(root,'project.json'),JSON.stringify({type:'web',file:'index.html'}));
+ const config=defaultSettings();assert.deepEqual(config.rendererPriority,{scene:'webwallgl',web:'native'});
+ assert.equal((await inspectEngineProject(root,'auto',config.rendererPriority)).mode,'realtime');
+ assert.equal((await inspectEngineProject(root,'auto',{web:'chromium-web'})).mode,'chromium-web');
+ const actions=createActions(root,config,async()=>{}),owner={},catalog=await actions(owner,{action:'engine-list',scope:'folder',folder:root}),token=catalog.wallpapers[0].token;
+ const auto=await actions(owner,{action:'wallpaper-engine',projectToken:token,apply:false});assert.equal(auto.confirmation.renderer,'native');
+ const browser=await actions(owner,{action:'wallpaper-engine',projectToken:token,renderMode:'chromium-web',apply:false});assert.equal(browser.confirmation.renderer,'chromium-web');
+ await writeFile(path.join(root,'project.json'),JSON.stringify({type:'scene'}));assert.equal((await inspectEngineProject(root,'auto',config.rendererPriority)).mode,'webwallgl');
+});
+
 test('auto scene uses GPU rendering and preserves old video records until confirmation',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-audio-import-')),project=path.join(root,'project');await mkdir(project);
  await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene',general:{supportsaudioprocessing:true},title:'Audio scene'}));

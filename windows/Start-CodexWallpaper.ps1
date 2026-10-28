@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 $taskCodeRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'Runtime.ps1')
 . (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')
+. (Join-Path $PSScriptRoot 'StartupHealth.ps1')
 $taskRoot = Get-WallpaperDataRoot
 $taskNode = Get-WallpaperNode
 . (Join-Path $taskCodeRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
@@ -30,6 +31,7 @@ function Save-TaskPhase([string]$Phase) {
   # PowerShell can marshal $null to an empty backup path for File.Replace.
   # A same-directory overwrite move also handles both first and repeated starts.
   [IO.File]::Move($taskTemp,$taskStatusPath,$true)
+  Save-WallpaperStartupHealth -Root $taskRoot -Status $taskStatus
 }
 function Get-TaskSnapshot {
   @(Get-WallpaperCodexProcesses | ForEach-Object {
@@ -80,9 +82,13 @@ try {
   $taskPort=9335
   $taskInitial=@(Get-TaskSnapshot)
   $taskStatus.initialProcessIds=@($taskInitial.Id)
+  $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes $taskInitial
   if($InspectOnly){$taskStatus.phase='inspect-only';$taskStatus.updatedAt=[DateTimeOffset]::UtcNow.ToString('o');$taskStatus | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $taskRoot 'entry-inspect-status.json') -Encoding utf8 -ErrorAction Stop;$taskStatus | ConvertTo-Json -Depth 8;exit 0}
   $taskIdentity=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
   $taskReuseExisting=$null -ne $taskIdentity
+  $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes $taskInitial -HasVerifiedCdp $taskReuseExisting
+  try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
+  Save-TaskPhase 'startup-checked'
   if($null -eq $taskIdentity) {
     if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '9335 已被其他进程占用，未更改该进程。'}
     if($taskInitial.Count -gt 0 -and $WaitForClientExit) {
@@ -128,7 +134,7 @@ try {
       $taskInitial=@()
     }
     if($taskInitial.Count -gt 0) {
-      if(-not $RestartCurrent){throw '当前普通 Codex 窗口未接入壁纸。请从壁纸入口确认重新连接；后台恢复不会自动关闭它。'}
+      if(-not $RestartCurrent){throw '检测到普通 Codex 已在运行，未开放壁纸连接；更新自动重开也可能进入此状态。请正常退出后再从现有 Codex 一体入口打开，将自动识别新版并恢复已保存壁纸；当前客户端和配置已保留。'}
       Save-TaskPhase 'closing-existing-client-gracefully'
       Close-TaskSnapshot $taskInitial
       if(@(Get-TaskSnapshot).Count -gt 0){throw '检测到新出现或仍存在的 Codex 实例，已保留，不进行再次关闭。'}
@@ -138,6 +144,7 @@ try {
     $taskCodex=Get-DreamSkinCodexInstall
     $taskStatus.codexVersion="$($taskCodex.Version)"
     $taskStatus.packageFullName="$($taskCodex.PackageFullName)"
+    $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes @()
     $taskArguments=@(Get-WallpaperDebugArguments $taskPort)
     Save-TaskPhase 'launching-registered-package-with-cdp'
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)

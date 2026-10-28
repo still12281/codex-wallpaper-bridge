@@ -13,11 +13,12 @@ export async function getCurrentEngineProject(){
  }
  throw Error('没有找到可用的 Wallpaper Engine 当前壁纸，请使用搜索或手动导入');
 }
-export async function inspectEngineProject(projectDirectory,renderMode='auto'){
+export async function inspectEngineProject(projectDirectory,renderMode='auto',priority={}){
  const root=await realpath(projectDirectory),projectPath=path.join(root,'project.json'),projectStat=await stat(projectPath),project=JSON.parse(await readFile(projectPath,'utf8')),type=String(project.type||'').toLowerCase();
  if(['image','video'].includes(type)){const input=await realpath(path.resolve(root,project.file||''));if(!input.toLowerCase().startsWith((root+path.sep).toLowerCase()))throw Error('壁纸素材路径不受支持');await stat(input);return {supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:type==='video'?'当前选中的是视频，生成播放副本后直接播放。':'当前选中的是图片，直接生成显示副本。'}}
  if(!['scene','web'].includes(type))return {supported:false,needsRealtime:null,mode:'unsupported',label:'此项目暂不支持',reason:'无法识别的项目类型：'+type};
- if(type==='web'||renderMode==='realtime')return {supported:true,needsRealtime:true,mode:'realtime',label:'需要实时渲染',reason:type==='web'?'当前选中的是网页壁纸，需要 Wallpaper Engine 持续运行。':'已选择完整场景模式，此项目由 Wallpaper Engine 实时运行。'};
+ if(type==='web'&&renderMode==='auto'&&priority.web==='chromium-web')return {supported:true,needsRealtime:true,mode:'chromium-web',label:'网页浏览器（试验）',reason:'按网页优先设置选择本地浏览器；无音频/鼠标转发，暂停后重载，不兼容时可改原版。'};
+ if(type==='web'||renderMode==='realtime'||(renderMode==='auto'&&priority.scene==='native'))return {supported:true,needsRealtime:true,mode:'realtime',label:'需要实时渲染',reason:type==='web'?'当前选中的是网页壁纸，需要 Wallpaper Engine 持续运行。':'已选择完整场景模式，此项目由 Wallpaper Engine 实时运行。'};
  if(renderMode==='video-layer')return {supported:false,needsRealtime:true,mode:'unsupported',label:'视频层导入已移除',reason:'请选择 GPU 流畅模式或原版兼容模式。'};
  return {supported:true,needsRealtime:true,mode:'webwallgl',label:'GPU 场景',reason:'保留完整场景；音频响应由媒体设置控制。'};
 }
