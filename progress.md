@@ -10,6 +10,8 @@
 
 远端首次新增策略回归暴露测试虚拟宿主路径写死 E:，运行器无此盘导致 Join-Path 提前失败；改为系统临时目录，保留完整旧版本/边界用例后重新运行。不把测试夹具问题归为媒体功能故障，也不跳过失败步骤。
 
+修复提交 52d0ead、便携测试修正 42dafe1 已推送私有 main；Actions 40692757676 的 Node 22/24 全部成功，新增 PowerShell 安装/升级策略步骤通过。完整历史增至 63 提交/788 blob，扫描无命中。本轮判断为适合准备 Windows 源码 alpha，不承诺未来更新免疫或全平台兼容；继续保持 Private/Draft，公开动作由用户决定。最终草稿随交付源码重新打包、解压检查并核对远端资产校验值。
+
 ## 2026-10-28 私有上传与CI依赖补齐
 
 私有仓库still12281/codex-wallpaper-bridge已创建，用户完成workflow补充授权后main推送成功；两次核对PRIVATE。固定v0.1.0-alpha.0安装包与SHA256已放Draft/Prerelease，远端回读一致。首次Release创建因GitHub不接受短target_commitish返回422，改为经远端核对的完整SHA后创建成功，没有发布为正式Release。
