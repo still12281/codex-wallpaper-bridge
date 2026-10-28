@@ -32,7 +32,16 @@ internal static class CodexEntry {
  private static void Run(string[] args) {
   string dataRoot=AppDomain.CurrentDomain.BaseDirectory;
   bool inspect=Array.IndexOf(args,"--check-runtime")>=0;
+  bool afterUpdate=args.Length>0&&args[0]=="--after-update-event";
   try {
+   if(afterUpdate){
+    long record;if(args.Length!=2||!Int64.TryParse(args[1],out record)||record<=0){Environment.ExitCode=1;return;}
+    string bootstrap=File.ReadAllText(Path.Combine(dataRoot,"launch-script.txt")).Trim();
+    string runner=Path.Combine(Path.GetDirectoryName(bootstrap),"AfterUpdateReconnect.ps1");
+    if(!File.Exists(runner))throw new FileNotFoundException("Update reconnect runner unavailable");
+    var updateInfo=new ProcessStartInfo{FileName=FindPowerShell(),Arguments="-NoProfile -NonInteractive -File \""+runner+"\" -Root \""+dataRoot.TrimEnd(Path.DirectorySeparatorChar)+"\" -EventRecordId "+record,UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=Path.GetDirectoryName(runner)};
+    using(var update=Process.Start(updateInfo)){if(!update.WaitForExit(180000)){Environment.ExitCode=1;return;}Environment.ExitCode=update.ExitCode;}return;
+   }
    if(!inspect){
    SetCurrentProcessExplicitAppUserModelID(WallpaperIdentity.AppId);
    if(Starting(dataRoot))return;
@@ -71,7 +80,7 @@ internal static class CodexEntry {
   } catch(Exception error) {
    Environment.ExitCode=1;
    File.WriteAllText(Path.Combine(dataRoot,"entry-error.log"),DateTimeOffset.Now.ToString("o")+" "+error.ToString());
-   if(!inspect)MessageBox.Show(error.Message,"Codex 壁纸启动失败",MessageBoxButtons.OK,MessageBoxIcon.Error);
+   if(!inspect&&!afterUpdate)MessageBox.Show(error.Message,"Codex 壁纸启动失败",MessageBoxButtons.OK,MessageBoxIcon.Error);
   }
  }
 }

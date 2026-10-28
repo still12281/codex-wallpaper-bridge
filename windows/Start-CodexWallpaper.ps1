@@ -1,7 +1,8 @@
 [CmdletBinding()]
-param([switch]$RestartCurrent,[switch]$WaitForClientExit,[switch]$InspectOnly,[string]$TaskName)
+param([switch]$RestartCurrent,[switch]$WaitForClientExit,[switch]$InspectOnly,[string]$TaskName,[switch]$AfterUpdate)
 
 $ErrorActionPreference = 'Stop'
+if($AfterUpdate -and ($RestartCurrent -or $WaitForClientExit -or $TaskName)){throw 'Automatic update mode cannot close clients or wait for their lifetime'}
 $taskCodeRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'Runtime.ps1')
 . (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')
@@ -50,6 +51,7 @@ function Get-TaskMatchingProcess($Snapshot) {
   return $null
 }
 function Close-TaskSnapshot([object[]]$Snapshots) {
+  if($AfterUpdate){throw 'Automatic update bootstrap never closes another client'}
   foreach($taskSnapshot in @($Snapshots | Where-Object IsMain)) {
     $taskProcess = Get-TaskMatchingProcess $taskSnapshot
     if($null -ne $taskProcess) { try { [void]$taskProcess.CloseMainWindow() } finally { $taskProcess.Dispose() } }
@@ -149,11 +151,12 @@ try {
     Save-TaskPhase 'launching-registered-package-with-cdp'
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
     $taskLaunchNotBefore=[DateTime]::UtcNow.Ticks
-    $taskLaunchedId=Start-DreamSkinCodex -Codex $taskCodex -Arguments $taskArguments
+    $taskLaunchedId=if($AfterUpdate){Start-DreamSkinCodexDirect -Codex $taskCodex -Arguments $taskArguments}else{Start-DreamSkinCodex -Codex $taskCodex -Arguments $taskArguments}
     $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
-    $taskStatus.launchStrategy='package-activation'
+    $taskStatus.launchStrategy=if($AfterUpdate){'after-update-validated-direct-once'}else{'package-activation'}
     $taskIdentity=Wait-TaskIdentity -Port $taskPort
     if($null -eq $taskIdentity) {
+      if($AfterUpdate){$taskOwnedRoot=$null;throw 'Update reconnect opened the client but no verified CDP; no retry or close will follow'}
       $taskArgumentStatus=Get-DreamSkinCodexDebugArgumentStatus -Processes @(Get-DreamSkinCodexProcesses -Codex $taskCodex) -Port $taskPort
       $taskStatus.packageArgumentStatus="$taskArgumentStatus"
       if($taskArgumentStatus -ne 'protocol-redirected'){throw '官方包未开放已验证的 CDP 端点；停止重复启动。'}
@@ -232,6 +235,7 @@ try {
   $taskStatus.error=$_.Exception.Message
   Save-TaskPhase 'failed'
   try {
+    if($AfterUpdate){$taskOwnedRoot=$null;$taskStatus.recovery='after-update-no-close-no-retry';Save-TaskPhase 'failed';exit 1}
     if($null -ne $taskOwnedRoot){Close-TaskSnapshot @($taskOwnedRoot);$taskOwnedRoot=$null}
     if(@(Get-TaskSnapshot).Count -eq 0){
       Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)

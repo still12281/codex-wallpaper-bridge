@@ -63,6 +63,11 @@
       "sha256": "420e1b8f7cf1f4e6f8db841806d3b95a6ae0a0dc2e63192862038a3fec7b6b20"
     },
     {
+      "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
+      "utf8Bytes": 5959,
+      "sha256": "5e4bb132d3230fd8edd41477eac91b762aa2c05e2c75b453721e6103192faf24"
+    },
+    {
       "path": "docs/ARCHITECTURE.md",
       "utf8Bytes": 1629,
       "sha256": "19a958de07f8c59c2dba45fab2fb5651a0bfe6d1f60d57222997e910282d806a"
@@ -74,8 +79,8 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 3847,
-      "sha256": "d9583c68cf62c5f3b32ce19229f60b664e94384935556f5d71dbfd2263078b46"
+      "utf8Bytes": 4348,
+      "sha256": "e6af5f796d7a6e9c25fda2334cc0f1aaf639e6d13e0c1df78b94362f3b1485e2"
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
@@ -159,8 +164,8 @@
     },
     {
       "path": "docs/STARTUP-UPDATE-20261027.zh-CN.md",
-      "utf8Bytes": 5935,
-      "sha256": "14d070f15e0e43cbbbedceeee2a519fb13b2b36291275a6e9097d63131e129d4"
+      "utf8Bytes": 5940,
+      "sha256": "85050deb1b713763fa60a3dfb16baf7ae166d334e94324cc011a3800a01a6f83"
     },
     {
       "path": "docs/STEERING-WEB-20261027.zh-CN.md",
@@ -424,8 +429,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 28747,
-      "sha256": "971274f27efc3c2daddd5e3c38151696fc7d6d4a89129fb8052caaa670710211"
+      "utf8Bytes": 29323,
+      "sha256": "bc0ced3584f0fd33d3099b30c632c3a418a472a97876f6b2fa9750dfe7f947fc"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -556,6 +561,11 @@
       "path": "test/system-media.test.mjs",
       "utf8Bytes": 4551,
       "sha256": "f3a48ae1ba3881f9515f132db2a001adfd7618599efb603ded4b538d948e33c1"
+    },
+    {
+      "path": "test/update-reconnect.ps1",
+      "utf8Bytes": 5964,
+      "sha256": "44dfa616a959423be734b6d2d05681f6161d4d447a8aac59bdff1da3c4c4a1b7"
     },
     {
       "path": "test/wallpaper-properties.test.mjs",
@@ -698,6 +708,11 @@
       "sha256": "91831b36a15adb29cd41c70eb635b94bb417c93a38b47108a0ab0b138df510c9"
     },
     {
+      "path": "windows/AfterUpdateReconnect.ps1",
+      "utf8Bytes": 7690,
+      "sha256": "a9df47657743f086f0f48497c689b0ca2aa01ef9d4c9b8a816d4302a53ffaa45"
+    },
+    {
       "path": "windows/Align-Taskbar.cs",
       "utf8Bytes": 888,
       "sha256": "cd1b2a13713fb39db920a5077042201e41a18fbf780cd6364683a719a89d2f70"
@@ -709,8 +724,13 @@
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 6266,
-      "sha256": "9ff3d26023df923f5a97f37ebd3d92e288e1592d837b29a88c8468c72d4fda9b"
+      "utf8Bytes": 7265,
+      "sha256": "92b5af40f0d013615731a9edd967ad9e9865a494fa76a6d240f2c67b25aa0e3b"
+    },
+    {
+      "path": "windows/Install-UpdateReconnect.ps1",
+      "utf8Bytes": 3841,
+      "sha256": "7d5ac595e498236c3f7faab71e1f3928b0d641666640fbea898b00321619336d"
     },
     {
       "path": "windows/LaunchPolicy.ps1",
@@ -759,8 +779,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 17158,
-      "sha256": "f6e499dc57144c4af78352df355a03f0413548225dd36e452a9d9c0f9a4aeed0"
+      "utf8Bytes": 17839,
+      "sha256": "756de516f17f91e948eaf40589d7cfa6bf5b96964af6f3abeffc0958661d7840"
     },
     {
       "path": "windows/StartupHealth.ps1",
@@ -771,6 +791,11 @@
       "path": "windows/TaskbarIdentity.cs",
       "utf8Bytes": 5142,
       "sha256": "b331ed0d6482e39dc833a0e30f86777baa2557607207d3aafd6f76fbf170637c"
+    },
+    {
+      "path": "windows/UpdateReconnectPolicy.ps1",
+      "utf8Bytes": 5703,
+      "sha256": "59c88669b1563e9f885a86d38037f43796d50e5822fbb37cd51aca252d7b5284"
     }
   ]
 }

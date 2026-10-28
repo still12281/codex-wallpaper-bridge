@@ -14,9 +14,9 @@
 
 **Prevention：** 每次入口启动检查桌面、开始菜单与固定项中名为Codex/ChatGPT的无参数官方Codex快捷方式，先备份原字节，再统一到已有CodexEntry与原官方图标。含文档/协议参数的快捷方式、其它同名应用不处理。重复执行不再改写；失败记录错误，不阻断壁纸启动。现有一体入口路径、图标、数据目录及运行时绝对路径保留。
 
-这只覆盖经过统一入口的启动。Windows更新直接激活AUMID、官方登录startupTask或直接exe启动仍可能绕过它；没有增加事件任务、IFEO、登录项或监控来冒充自动恢复。Windows RegisterApplicationRestart只能登记调用者自身，桥无法用公开写入API替当前Codex补上重启参数。[RegisterApplicationRestart](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-registerapplicationrestart)、[MSIX更新后的重启](https://learn.microsoft.com/en-us/windows/msix/non-store-developer-updates)。
+f3a2cc1阶段只覆盖经过统一入口的启动。Windows更新直接激活AUMID、官方登录startupTask或直接exe启动仍可能绕过它；该阶段没有增加事件任务、IFEO、登录项或监控来冒充自动恢复。Windows RegisterApplicationRestart只能登记调用者自身，桥无法用公开写入API替当前Codex补上重启参数。[RegisterApplicationRestart](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-registerapplicationrestart)、[MSIX更新后的重启](https://learn.microsoft.com/en-us/windows/msix/non-store-developer-updates)。
 
-因此，“从一体入口启动自动检测”已实施；“任何系统更新自动重开都不会丢壁纸”尚未实现。若要继续做更新后自动重连，需要重新确认用户对自动关闭/重开客户端的约束，不能擅自重启当前会话。当前实现没有承诺未来所有私有UI接口自动兼容。
+后续用户已授权仅更新后尝试一次正常重连，已安装[事件驱动的一次性规则](AFTER-UPDATE-RECONNECT.zh-CN.md)，没有常驻自有监控进程。没有补触发当前会话，也没有承诺未来所有私有UI接口自动兼容或“免疫更新”；自然更新的完整恢复仍待验收。
 
 ## 网页流畅度与优先设置
 
