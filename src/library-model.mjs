@@ -13,5 +13,5 @@ export function libraryGroups(entries,selectedId){
   for(const other of linked.slice(1)){group.entries.push(...other.entries);groups.splice(groups.indexOf(other),1);for(const [key,value]of byIdentity)if(value===other)byIdentity.set(key,group);}
   group.entries.push(entry);for(const key of identities)byIdentity.set(key,group);
  }
- return groups.map(group=>{const preferred=group.entries.find(e=>e.id===selectedId)||group.entries.find(e=>e.mode==='webwallgl')||group.entries.find(e=>e.mode==='realtime')||group.entries[0];return {...group,entry:preferred,id:preferred.id,name:String(preferred.name||'未命名壁纸').replace(/ · (?:视频层|WebGL|实时)$/,'')};});
+ return groups.map(group=>{const preferred=group.entries.find(e=>e.id===selectedId)||group.entries.find(e=>e.mode==='webwallgl')||group.entries.find(e=>e.mode==='realtime')||group.entries[0];return {...group,entry:preferred,id:preferred.id,name:String(preferred.name||'未命名壁纸').replace(/ · (?:视频层|WebGL|实时|网页浏览器)$/,'')};});
 }

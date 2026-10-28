@@ -1,0 +1,9 @@
+// Chromium's owned debugging pipe closes with its parent. No network debugger
+// is exposed, and the wallpaper never receives the transport.
+export function connectPipe(child){
+ let sequence=0,buffer='',closed=false;const pending=new Map(),listeners=new Set();
+ const fail=error=>{if(closed)return;closed=true;for(const item of pending.values()){clearTimeout(item.timer);item.reject(error);}pending.clear();for(const listener of listeners)listener({method:'CWB.pipeClosed',params:{message:error.message}});};
+ child.stdio[4].setEncoding('utf8');child.stdio[4].on('data',text=>{buffer+=text;if(buffer.length>24*1024*1024){fail(Error('网页调试消息超过预算'));child.kill();return;}let end;while((end=buffer.indexOf('\0'))>=0){const line=buffer.slice(0,end);buffer=buffer.slice(end+1);if(!line)continue;let value;try{value=JSON.parse(line);}catch{fail(Error('网页调试消息无效'));return;}const item=pending.get(value.id);if(item){pending.delete(value.id);clearTimeout(item.timer);value.error?item.reject(Error(value.error.message)):item.resolve(value.result);}else if(value.method)for(const listener of listeners)listener(value);}});
+ child.once('exit',()=>fail(Error('专用网页浏览器已退出')));child.once('error',fail);child.stdio[3].on('error',fail);child.stdio[4].on('error',fail);child.stdio[4].once('end',()=>fail(Error('网页调试管道已关闭')));
+ return {listen(listener){listeners.add(listener);return()=>listeners.delete(listener);},call(method,params={},sessionId,timeout=5000){return new Promise((resolve,reject)=>{if(closed){reject(Error('网页调试通道已关闭'));return;}const id=++sequence,timer=setTimeout(()=>{pending.delete(id);reject(Error(method+' timeout'));},timeout);pending.set(id,{resolve,reject,timer});child.stdio[3].write(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})})+'\0',error=>{if(error)fail(error);});});}};
+}

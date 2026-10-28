@@ -150,6 +150,36 @@
       "originalSha256": "96e78c770f08d5d3ea0e3517a50c674a099d9b2ad9cc66f1319323b88aef7e78",
       "canonicalSha256": "96e78c770f08d5d3ea0e3517a50c674a099d9b2ad9cc66f1319323b88aef7e78",
       "modified": false
+    },
+    {
+      "component": "dsh-wallpaper-engine",
+      "repository": "https://github.com/elysia395/dsh-wallpaper-engine",
+      "commit": "3b0103bc1d5431840208966ce67155f392c4095c",
+      "originalPath": "lib/serve.js",
+      "vendoredPath": "vendor/dsh-wallpaper/serve.js",
+      "originalSha256": "3077802584908f613f8583eba9acba9a2724b4d87c93eee663ea8c1ddefa0966",
+      "canonicalSha256": "3077802584908f613f8583eba9acba9a2724b4d87c93eee663ea8c1ddefa0966",
+      "modified": false
+    },
+    {
+      "component": "dsh-wallpaper-engine",
+      "repository": "https://github.com/elysia395/dsh-wallpaper-engine",
+      "commit": "3b0103bc1d5431840208966ce67155f392c4095c",
+      "originalPath": "lib/we-focus-guard.js",
+      "vendoredPath": "vendor/dsh-wallpaper/we-focus-guard.js",
+      "originalSha256": "557873635e67894e65092011104ff00908a200e8574ae1f26fc7bd845ac37f01",
+      "canonicalSha256": "557873635e67894e65092011104ff00908a200e8574ae1f26fc7bd845ac37f01",
+      "modified": false
+    },
+    {
+      "component": "webwallgl",
+      "repository": "https://github.com/oneincase/webwallgl",
+      "commit": "197abe54266c31d346cebc314e49a26b70c960cc",
+      "originalPath": "renderer/src/web-shim.js",
+      "vendoredPath": "vendor/webwallgl/web-shim.js",
+      "originalSha256": "5e3a1554754631caac1363484d1d00a4b2b5c9591dfcb87dd011cc4ddd79d9f4",
+      "canonicalSha256": "91831b36a15adb29cd41c70eb635b94bb417c93a38b47108a0ab0b138df510c9",
+      "modified": false
     }
   ]
 }

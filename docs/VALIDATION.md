@@ -1,5 +1,7 @@
 # Validation boundaries
 
+The opt-in [Chromium Web source](BROWSER-WEB-20261027.zh-CN.md) has bounded headless pipe/lifecycle evidence. The current 26.1023 client has no listening wallpaper CDP endpoint, so this source's adoption and visible presentation in that client are pending; older native acceptance below must not be applied to it.
+
 Current follow-up: [4K, DSH source reuse, resource and flashing evidence](USABILITY-20261026.md). Earlier measurements below retain their original scope and do not describe the new 4K profile.
 
 ## Native highest-tier follow-up, 2026-10-26

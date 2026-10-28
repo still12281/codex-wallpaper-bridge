@@ -11,6 +11,7 @@ An experimental, local wallpaper layer for the Codex desktop app on Windows. Pic
 ## Features
 
 - Optional sandboxed WebGL scenes and native scene/web capture, with confirmation, save-only references and failure recovery. Native sample acceptance and limits: [WebGL](docs/WEBWALLGL.md), [realtime](docs/REALTIME.md).
+- Opt-in [headless Chromium Web source (experimental)](docs/BROWSER-WEB-20261027.zh-CN.md), using local Chrome/Edge, project-relative assets and partial WE APIs. Pause releases its browser; resume reloads the page. No system audio, mouse forwarding or external resource support. Existing native Web records and the official client's CSP stay intact.
 - Paged thumbnails, type/rating filters, hide/restore, portable appearance presets, saved media/GPU/native-project rotation, glass, fonts, parallax and click/trail FX.
 - Optional [system media](docs/SYSTEM-MEDIA.md), off by default.
 - Resize the embedded settings panel from its lower-right grip; drag its title, remember its size, or reset it. No separate window.

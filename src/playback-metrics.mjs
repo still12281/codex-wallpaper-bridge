@@ -4,7 +4,7 @@ export function playbackMetrics(entry,sample,previous,now=Date.now()){
  const mode=sample.mode||'media',identity=entry.id+':'+(sample.rendererId||sample.rendererStartedAt||mode),count=mode==='realtime'?sample.frames:sample.quality?.total;
  const elapsed=previous?.identity===identity?now-previous.at:0;
  const measured=sample.paused?0:mode==='webwallgl'?sample.stats?.fps:elapsed>=1000&&count>=previous.count?(count-previous.count)*1000/elapsed:null;
- const metric=mode==='webwallgl'?'GPU渲染':mode==='realtime'?'原版画布更新':'视频解码';
+ const metric=mode==='webwallgl'?'GPU渲染':mode==='realtime'?(entry.engine==='chromium-web'?'网页画布更新':'原版画布更新'):'视频解码';
  const parts=[`输出 ${sample.width} × ${sample.height}`,`视口 ${sample.viewportWidth||'?'} × ${sample.viewportHeight||'?'}`,`设置上限 ${sample.configuredFps||entry.limits?.fps||'?'} FPS`];
  if(entry.mime?.startsWith('image/')&&entry.mime!=='image/gif'&&mode==='media')parts.push('静态图片');
  else parts.push(metric+' '+(Number.isFinite(measured)?measured.toFixed(1):'待采样')+' FPS');

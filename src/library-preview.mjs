@@ -6,9 +6,9 @@ import {promisify} from 'node:util';
 import path from 'node:path';
 import {findFFmpeg} from './runtime-paths.mjs';
 const run=promisify(execFile);
-export function libraryMode(entry){return entry.mode==='webwallgl'?'GPU 直绘（WebGL）':entry.mode==='realtime'?'原生实时渲染':entry.mime?.startsWith('video/')?'视频直接播放':'图片直接显示';}
+export function libraryMode(entry){return entry.mode==='webwallgl'?'GPU 直绘（WebGL）':entry.mode==='realtime'?(entry.engine==='chromium-web'?'网页浏览器（试验）':'原生实时渲染'):entry.mime?.startsWith('video/')?'视频直接播放':'图片直接显示';}
 export async function hashMedia(file,{signal,onProgress=()=>{}}={}){const hash=createHash('sha256');let bytes=0;onProgress({phase:'指纹'});for await(const chunk of createReadStream(file,{signal})){hash.update(chunk);bytes+=chunk.length;onProgress({phase:'指纹',processedBytes:bytes});}return hash.digest('hex');}
-export function duplicateEntry(settings,{mode='media',sourceKey,workshopId,contentHash}){if(contentHash)return settings.library.find(e=>e.contentHash===contentHash);const matches=settings.library.filter(e=>(sourceKey&&e.sourceKey===sourceKey)||(workshopId&&e.workshopId===workshopId));return matches.find(e=>e.mode===mode)||matches.find(e=>e.id===settings.selectedId)||matches[0];}
+export function duplicateEntry(settings,{mode='media',engine,sourceKey,workshopId,contentHash}){if(contentHash)return settings.library.find(e=>e.contentHash===contentHash);const matches=settings.library.filter(e=>(sourceKey&&e.sourceKey===sourceKey)||(workshopId&&e.workshopId===workshopId));if(engine)return matches.find(e=>e.mode===mode&&(e.engine||'wallpaper-engine')===engine);return matches.find(e=>e.mode===mode)||matches.find(e=>e.id===settings.selectedId)||matches[0];}
 async function projectPreview(root){
  const canonical=await realpath(root),metadata=path.join(canonical,'project.json');if((await stat(metadata)).size>1024*1024)return null;
  const project=JSON.parse(await readFile(metadata,'utf8'));if(typeof project.preview!=='string'||path.isAbsolute(project.preview)||!/^\.(jpg|jpeg|png|webp|gif)$/i.test(path.extname(project.preview)))return null;
