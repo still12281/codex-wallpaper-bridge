@@ -1,12 +1,10 @@
 # Codex Wallpaper Bridge
 
-The 4K tier renders at 3840×2160. Scene projects can use the DSH v1.4.0 renderer control source with WebWallGL directly inside a sandboxed iframe, or the installed Wallpaper Engine through native capture after confirmation. Native capture preserves original engine effects, scripts and audio processing and follows the desktop frame-rate cap. Capture latency and compression remain measurable differences, and native mouse forwarding is not implemented. See [realtime mode](docs/REALTIME.md) and [local maintenance](docs/MAINTENANCE.zh-CN.md).
-
 [简体中文](README.md)
 
-An experimental, local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
+A local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
 
-**Status: source-only alpha candidate.** This is an independent community project, not an official OpenAI plugin or Wallpaper Engine integration. It relies on local Chromium debugging and private UI selectors, which can change between client versions. No release binaries, accounts, wallpaper source files, or user configuration are included. Reviewed documentation screenshots are included below.
+This is an independent community project, not an official OpenAI plugin. It connects through the local Chromium debugging interface. No accounts, wallpaper source files, or user configuration are included.
 
 ![Actual desktop client with an empty new-chat screen](docs/images/01-overview.png)
 
@@ -14,8 +12,9 @@ See the [Chinese screenshot gallery](README.md#效果展示) and [capture proven
 
 ## Features
 
-- Optional sandboxed WebGL scenes and native scene/web capture, with confirmation, save-only references and failure recovery. Native sample acceptance and limits: [WebGL](docs/WEBWALLGL.md), [realtime](docs/REALTIME.md).
-- Opt-in [headless Chromium Web source (experimental)](docs/BROWSER-WEB-20261027.zh-CN.md), using local Chrome/Edge, project-relative assets and partial WE APIs. Pause releases its browser; resume reloads the page. No system audio, mouse forwarding or external resource support. Existing native Web records and the official client's CSP stay intact.
+- Sandboxed WebGL scenes and native scene/web capture, with confirmation, save-only references and failure recovery. See [WebGL](docs/WEBWALLGL.md) and [realtime mode](docs/REALTIME.md).
+- The 4K tier renders at 3840×2160. GPU scenes reuse the DSH v1.4.0 renderer control source; native capture uses the installed Wallpaper Engine and follows its desktop frame-rate cap.
+- Opt-in [headless Chromium Web source (experimental)](docs/BROWSER-WEB-20261027.zh-CN.md), using local Chrome/Edge, project-relative assets and partial WE APIs. Pause releases its browser; resume reloads the page.
 - Paged thumbnails, type/rating filters, hide/restore, portable appearance presets, saved media/GPU/native-project rotation, glass, fonts, parallax and click/trail FX.
 - Optional [system media](docs/SYSTEM-MEDIA.md), off by default.
 - Resize the embedded settings panel from its lower-right grip; drag its title, remember its size, or reset it. No separate window.
@@ -41,7 +40,7 @@ There are no production npm dependencies. The required parsing and Windows helpe
 
 ## Setup
 
-1. Review [security](SECURITY.md), [privacy](PRIVACY.md), and the [current validation limits](docs/VALIDATION.md).
+1. Review [security](SECURITY.md) and [privacy](PRIVACY.md).
 2. Ensure `node.exe`, `pwsh.exe`, and FFmpeg are available. Optional overrides are documented in [configuration](docs/CONFIGURATION.md).
 3. In PowerShell 7, from this checkout:
 
@@ -51,10 +50,12 @@ There are no production npm dependencies. The required parsing and Windows helpe
    ```
 
 4. The scripts create `CodexEntry.exe` and `Codex.lnk` under `%LOCALAPPDATA%\CodexWallpaperBridge`, or your configured data directory. They do not replace existing desktop shortcuts or taskbar pins. If the checkout moves, rebuild the launcher.
-5. Save drafts and fully exit the ordinary Codex client yourself. Open the generated shortcut to request a local debugging session and load the wallpaper controls. If launch verification fails, inspect the local launch status instead of repeatedly restarting the client. Cold-start compatibility is still experimental.
-6. If desired, manually replace an old taskbar pin with this generated shortcut. A shared icon/AppID does not redirect an existing Store pin. Startup animation is not implemented.
+5. Before first use, save drafts and fully exit the ordinary Codex client yourself. Open the generated shortcut to start a local debugging session and load the wallpaper controls.
+6. If desired, manually replace an old taskbar pin with this generated shortcut. A shared icon/AppID does not redirect an existing Store pin.
 
-For an **already verified local Codex debugging session**, `npm start` attaches the host to loopback port 9335. It does not enable debugging on an ordinary running client. Do not expose the port to a network.
+For GPU scenes, run `npm run prepare:webwallgl` with the same data-directory configuration. Optional system media uses `npm run prepare:media` and requires a working GitHub CLI. See [WebGL setup](docs/WEBWALLGL.md) and [system media](docs/SYSTEM-MEDIA.md). Chromium Web mode requires local Chrome/Edge; native capture requires Wallpaper Engine.
+
+For a local Codex debugging session started through the unified entry, `npm start` attaches the host to loopback port 9335. It does not enable debugging on an ordinary running client. Do not expose the port to a network.
 
 ## Use
 
@@ -68,7 +69,7 @@ Open **壁纸** in the client. The current UI is in Chinese.
 - Choose resolution and FPS, then apply. Conversion takes time; the host switches after decoding the new copy. Default: 1280-wide, 24 FPS, muted, pause in the background. High settings and large sources can still cost CPU/GPU time.
 - Delete removes app-owned records and unreferenced app copies, never Workshop or external source files.
 
-Auto mode prefers complete GPU scenes and original Wallpaper Engine capture for Web projects. Saved video entries are preserved. An explicit experimental Chromium Web mode is also available; WebGL Web embedding remains disabled. Scene scripts and effects have project-dependent compatibility. See the [feature migration status](docs/FEATURE-MIGRATION.md). Pet choreography remains excluded.
+Auto mode prefers complete GPU scenes and original Wallpaper Engine capture for Web projects. An explicit experimental Chromium Web mode is also available. Scene scripts and effects have project-dependent compatibility. See [WebGL](docs/WEBWALLGL.md), [native capture](docs/REALTIME.md) and [Chromium Web](docs/BROWSER-WEB-20261027.zh-CN.md) for mode-specific behavior.
 
 ## Development
 
@@ -92,6 +93,4 @@ No tests should attach to a real Codex session or copy a real account profile. T
 
 ## License and acknowledgements
 
-The candidate proposes MIT for original code; the maintainer must confirm this before publishing. Third-party files retain their own MIT notices. Wallpapers and proprietary client software are not part of this license. OpenAI, Codex, Steam, and Wallpaper Engine names belong to their respective owners; no affiliation is implied.
-
-Maintainer identity and repository links are intentionally unset. Complete [the release checklist](docs/RELEASE_CHECKLIST.zh-CN.md) before publishing.
+See [LICENSE](LICENSE) for original code and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for upstream notices. Wallpapers and proprietary client software are not part of the code license. OpenAI, Codex, Steam, and Wallpaper Engine names belong to their respective owners; no affiliation is implied.
