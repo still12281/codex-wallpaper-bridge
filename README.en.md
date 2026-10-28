@@ -6,7 +6,11 @@ The 4K tier renders at 3840×2160. Scene projects can use the DSH v1.4.0 rendere
 
 An experimental, local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
 
-**Status: source-only alpha candidate.** This is an independent community project, not an official OpenAI plugin or Wallpaper Engine integration. It relies on local Chromium debugging and private UI selectors, which can change between client versions. No release binaries, accounts, wallpapers, screenshots, or user configuration are included.
+**Status: source-only alpha candidate.** This is an independent community project, not an official OpenAI plugin or Wallpaper Engine integration. It relies on local Chromium debugging and private UI selectors, which can change between client versions. No release binaries, accounts, wallpaper source files, or user configuration are included. Reviewed documentation screenshots are included below.
+
+![Actual desktop client with an empty new-chat screen](docs/images/01-overview.png)
+
+See the [Chinese screenshot gallery](README.md#效果展示) and [capture provenance](docs/SCREENSHOTS.zh-CN.md) for all 11 actual desktop captures. Private fields were hidden before capture; the gallery uses self-made sample thumbnails. No chat transcript or desktop/taskbar is shown. The visible third-party wallpaper remains its author's work and is not licensed by this repository's code license.
 
 ## Features
 

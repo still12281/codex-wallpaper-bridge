@@ -2,6 +2,8 @@
 
 ## Unreleased — source candidate
 
+- Add eleven reviewed screenshots from the actual desktop client on an empty new-chat screen, with private fields hidden before capture and self-made gallery thumbnails. Expand the Chinese README with a gallery, renderer choices, preparation steps and remaining acceptance limits. Keep runtime capture scripts and source assets outside the repository; allow only exact documentation PNG paths with raw-byte hashes and metadata/CRC checks.
+
 - Refine the wallpaper panel with theme-aware layered surfaces, consistent desktop control sizing, clearer preview and advanced-setting groups, and quieter batch/close actions. Adapt principles from awesome-design-md's Linear/Raycast analyses without external fonts, images or new runtime dependencies; preserve the original handlers and settings.
 
 - Make the root README Chinese, retain an English translation, and document a reviewed demonstration-image workflow without publishing real chat screenshots or wallpaper assets.

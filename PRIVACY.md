@@ -2,7 +2,9 @@
 
 ## What the repository contains
 
-Source code, newly written documentation, synthetic test generators, minimal licensed third-party source, and an empty example configuration. It does not include real account profiles, cookies, tokens, raw chat transcripts, screenshots, real configuration files, imported wallpaper files, shortcut files or binaries. Development notes and Git history retain bounded implementation and validation facts; they require review before publication and are not a dump of the private runtime directory.
+Source code, newly written documentation, synthetic test generators, minimal licensed third-party source, an empty example configuration, and individually reviewed documentation PNGs listed in [the capture index](docs/SCREENSHOTS.zh-CN.md). It does not include real account profiles, cookies, tokens, raw chat transcripts, real configuration files, imported wallpaper files, shortcut files or executable binaries. Development notes and Git history retain bounded implementation and validation facts; they require review before publication and are not a dump of the private runtime directory.
+
+The documentation captures were explicitly requested and taken from the actual desktop client on an empty, unsubmitted new-chat screen. Private fields were temporarily hidden before capture. Only app/panel regions were captured, without the desktop or taskbar. Gallery thumbnails are self-made examples; no demo projects were imported into the private library. Third-party wallpaper visible in the overview remains its author's work. No general screenshot permission is added to the runtime. Release validation permits only exact reviewed filenames, checks raw-byte hashes and rejects PNG metadata or appended content; visual review is still required.
 
 The public host does **not** automatically take screenshots of the desktop or chats. Opt-in realtime wallpapers capture only their uniquely named Wallpaper Engine render window after confirmation and pass JPEG frames in memory; frames are not saved or uploaded. Preparation used an explicit file allowlist, not a copy of the development runtime directory.
 

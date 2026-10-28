@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "hashFormat": "sha256 of UTF-8 text normalized to LF, no BOM",
+  "hashFormat": "sha256 of UTF-8 text normalized to LF, no BOM; reviewed PNG entries use raw-bytes",
   "files": [
     {
       "path": ".gitattributes",
@@ -19,13 +19,13 @@
     },
     {
       "path": ".gitignore",
-      "utf8Bytes": 523,
-      "sha256": "b800404a7d841627203c9ec5d244d9d11641be1bea8cec1bb92226cf096b3b37"
+      "utf8Bytes": 940,
+      "sha256": "df4574dba971fda188c363238e3213547ccd5d24763c9eccd18652cc569bd3a2"
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 8335,
-      "sha256": "17868104b90c6efd92cf6ea19587fc78f9393b2736b5232dded717c80f53f395"
+      "utf8Bytes": 8775,
+      "sha256": "69def727b34fb79e29b189dbb573d355c19e0da0ecbfd83b9839eb9c32d4b19a"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -39,18 +39,18 @@
     },
     {
       "path": "PRIVACY.md",
-      "utf8Bytes": 3240,
-      "sha256": "97ea6c2ed9414eb1dbc6575231600ed09da8ee68f754bebc327232975952401f"
+      "utf8Bytes": 3990,
+      "sha256": "61b358e2405d2af1a1eeeaa6b24651083c5623c7e098ab414533d36e4430281b"
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 7901,
-      "sha256": "11d95cc511d53f1b5ee0f635588c2bfca57b97d8214eaee203a00d80e82f5ee0"
+      "utf8Bytes": 8442,
+      "sha256": "52c03bd0a76d1c6986142e2f3c419b35f221790615e489aca0ac973a173ba0ab"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 7875,
-      "sha256": "291cee036d1b795f801cf0166538c4f813be912d0020ffb73d64e9b70eb717a5"
+      "utf8Bytes": 12010,
+      "sha256": "baa5b9765784faf290c7d2f3f7a4944bfabc398716cb115e8a0c064ba18d40ce"
     },
     {
       "path": "README.zh-CN.md",
@@ -159,13 +159,13 @@
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
-      "utf8Bytes": 3694,
-      "sha256": "b72ba9dbb5146fd0ccc090842d471e5b3410b19df7a7108b14806bf7151bf21b"
+      "utf8Bytes": 3845,
+      "sha256": "2e1fced94b707265c9f25bfbdd496ce337f765bbdc60a1f2ce52c1f555ece619"
     },
     {
       "path": "docs/SCREENSHOTS.zh-CN.md",
-      "utf8Bytes": 1446,
-      "sha256": "90f5696d46afb63fcb2808d4599a7c7184324153b31a8a5b999a639b7a03d06e"
+      "utf8Bytes": 3914,
+      "sha256": "a0747184d4321842ff6d1ad8db3fef2c3a4b934655a1e7271c168c5540328ed2"
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
@@ -231,6 +231,77 @@
       "path": "docs/WEBWALLGL.md",
       "utf8Bytes": 7933,
       "sha256": "2ac2631b4e28fc13508f2a2b7a033efa56f5b591dd7ff27aacdb786bfb8d21ee"
+    },
+    {
+      "path": "docs/images/01-overview.png",
+      "hashMode": "raw-bytes",
+      "bytes": 651052,
+      "sha256": "f09819ea9a0bb2942005693a338c236ad69bf3b8779b4570cbc18018fee7ac71"
+    },
+    {
+      "path": "docs/images/02-library.png",
+      "hashMode": "raw-bytes",
+      "bytes": 71278,
+      "sha256": "e08b52a5bf2b93d0ac45d4346b21bf80578442cffa983c0212de736cac39c3e5"
+    },
+    {
+      "path": "docs/images/03-import-gallery.png",
+      "hashMode": "raw-bytes",
+      "bytes": 57347,
+      "sha256": "d4a4dd8a444e4b2b849acfd5137325183816209adf36abf868b601fb037af051"
+    },
+    {
+      "path": "docs/images/04-appearance.png",
+      "hashMode": "raw-bytes",
+      "bytes": 41195,
+      "sha256": "635b1c1cf112d27fa40ecde495da32c7a1d681cf2d3361d6da3236da74d52e17"
+    },
+    {
+      "path": "docs/images/05-author-properties.png",
+      "hashMode": "raw-bytes",
+      "bytes": 39873,
+      "sha256": "4442e1a7cdf484c7f44b0bd1c9dff83322a0ba51050b903cb2bcffcb4cc50233"
+    },
+    {
+      "path": "docs/images/06-presets-rotation.png",
+      "hashMode": "raw-bytes",
+      "bytes": 37877,
+      "sha256": "22f6c5caae00084b87a89b75802c793d56c4ea215e88bf22030e9440e695fd76"
+    },
+    {
+      "path": "docs/images/07-batch-save.png",
+      "hashMode": "raw-bytes",
+      "bytes": 70793,
+      "sha256": "0e47a9ae8c472ab8f596eea9395e16d9e73809e7f17b4e8364b9740df561530c"
+    },
+    {
+      "path": "docs/images/08-system-media.png",
+      "hashMode": "raw-bytes",
+      "bytes": 39063,
+      "sha256": "fd434f44b96a62a4316f900e0f5f681746fbf7af5250a31ac83f916a42d615d5"
+    },
+    {
+      "path": "docs/images/09-playback-quality.png",
+      "hashMode": "raw-bytes",
+      "bytes": 45775,
+      "sha256": "04bdcf69a0fbbf79602803d5e5b5da414da20bfaa1f4dd6bf96bfc94c8b34fdf"
+    },
+    {
+      "path": "docs/images/10-light-theme.png",
+      "hashMode": "raw-bytes",
+      "bytes": 40816,
+      "sha256": "e10470380e357d354b86e3b1b70064e96348f4f72baac71a504f570071746715"
+    },
+    {
+      "path": "docs/images/11-narrow-panel.png",
+      "hashMode": "raw-bytes",
+      "bytes": 42367,
+      "sha256": "82633e329f95e4a51d21862c1325ab1285a2bd8071a1661efabcba1b207a71ce"
+    },
+    {
+      "path": "docs/images/README.md",
+      "utf8Bytes": 776,
+      "sha256": "9c7a54b78779097c9e358874f2d0ca55a288b9f5a93285f672be02834d09729b"
     },
     {
       "path": "findings.md",
@@ -454,8 +525,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 33014,
-      "sha256": "51c35e2b6d5f6e68a7420e94170d97ae976a0963dc24d68f2a13d9137f711d10"
+      "utf8Bytes": 34528,
+      "sha256": "848095245d540cda1b5f8f5bb3e8ddcec8633b0437ee51c92d3ff23338f7eb0b"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -578,6 +649,11 @@
       "sha256": "4add6a776d50743ca13eb6ad5ef0022083f881014500bec80fd677f524870696"
     },
     {
+      "path": "test/release-images.test.mjs",
+      "utf8Bytes": 1538,
+      "sha256": "22dc20183f29e235f0ae24483fe9f623a739ce8217b1c4844b942be11f997277"
+    },
+    {
       "path": "test/resource-cache-integration.mjs",
       "utf8Bytes": 5103,
       "sha256": "c4cf753769f3829386ca21ef18a38136cc0184d9c2d7fc765fe4f9f37d88e93f"
@@ -629,13 +705,13 @@
     },
     {
       "path": "tools/check-release.mjs",
-      "utf8Bytes": 2336,
-      "sha256": "95533bee867bf9472e6c48e4d0e54db78b38a089842b05bb411415f06f44ebbe"
+      "utf8Bytes": 2940,
+      "sha256": "89af6c505028ad398da96e200b27a5493322c9a2c412ddd865038b5ee357f342"
     },
     {
       "path": "tools/create-manifest.mjs",
-      "utf8Bytes": 526,
-      "sha256": "dea71409299d82b8aa25d529ace1c95c9923bfeac3a2764a200ccde1593c8dcd"
+      "utf8Bytes": 562,
+      "sha256": "ffc7951bb58fe69e2fcc96e0f28a513820c55cdc82b687d904fb7d306a478df9"
     },
     {
       "path": "tools/library-maintenance.mjs",
@@ -654,8 +730,13 @@
     },
     {
       "path": "tools/release-files.mjs",
-      "utf8Bytes": 1229,
-      "sha256": "62df52367b209d5989bd0d62ac36260b43577ee650dba424aad7b837ae54f5ff"
+      "utf8Bytes": 1421,
+      "sha256": "8d1a2be4e90cd4d356129a1dcdf2d71dce8656e07e401e3f122bd9cea5098b4b"
+    },
+    {
+      "path": "tools/release-images.mjs",
+      "utf8Bytes": 2151,
+      "sha256": "0471786a9cef6882dc26b28bbb2e1b825ad89402994b76a3096ab51fcb9c05a2"
     },
     {
       "path": "vendor/codex-dynamic-skin/LICENSE",
