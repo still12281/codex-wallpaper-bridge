@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 7986,
-      "sha256": "6d3b4ec71231c025b4c4dcac92bf093607add605f5d484ba192879686adc692d"
+      "utf8Bytes": 8335,
+      "sha256": "17868104b90c6efd92cf6ea19587fc78f9393b2736b5232dded717c80f53f395"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -64,8 +64,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "utf8Bytes": 4439,
-      "sha256": "420e1b8f7cf1f4e6f8db841806d3b95a6ae0a0dc2e63192862038a3fec7b6b20"
+      "utf8Bytes": 4932,
+      "sha256": "81c4910dfc0a5e1babb7e4b3656fdf58795bfb2e3469e75fd905c7d67bfd04aa"
     },
     {
       "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
@@ -203,6 +203,11 @@
       "sha256": "37570b06b7299b7145b1108a6667d60c6fadefc160ab21f5a1ad58f6f24fee34"
     },
     {
+      "path": "docs/UI-DESIGN-20261028.zh-CN.md",
+      "utf8Bytes": 4019,
+      "sha256": "225c461bd049a939651de29e561bd580d03827b36a39bca844ce13035a2a6182"
+    },
+    {
       "path": "docs/UI-WEB-20261027.zh-CN.md",
       "utf8Bytes": 5012,
       "sha256": "af2155e6a1f5147719b1f2d50944f3531e1806705dac51404ba8113a0a4a6f38"
@@ -239,8 +244,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 15161,
-      "sha256": "a6d32930fed4afedeabfdf943126f8aff539ce4ed6131d8f0810e9e88d5cb365"
+      "utf8Bytes": 15943,
+      "sha256": "8ed835976839fd6f4103e0d4d5ad7ac1daade2f4a9a459e462c209e9dd15edb2"
     },
     {
       "path": "settings.example.json",
@@ -349,8 +354,8 @@
     },
     {
       "path": "src/panel-window.mjs",
-      "utf8Bytes": 14000,
-      "sha256": "371bfd22607bf40ec0a941fd28562a17d753334d6c9e1947a8de7869881e9a65"
+      "utf8Bytes": 20494,
+      "sha256": "4a27bb30c5d8c58c2f28cce90bf30ae44142d993affcf4d9edd42dc4b4a698bc"
     },
     {
       "path": "src/playback-metrics.mjs",
@@ -409,8 +414,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 33718,
-      "sha256": "e289c077084fae6bdbb0ca759d501a0d25cd5011e2cafbe4647d435bf03d444b"
+      "utf8Bytes": 34687,
+      "sha256": "ff2445f8b46c729689b2551b1a2300402ab944f7ba2618e3b5eceb16f7dd751d"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -449,8 +454,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 32141,
-      "sha256": "f53dd67c2a31a80f78e7714a0d63f1fbfe9243840ba4e7c2b03ea10d725e7f4e"
+      "utf8Bytes": 33014,
+      "sha256": "51c35e2b6d5f6e68a7420e94170d97ae976a0963dc24d68f2a13d9137f711d10"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -554,8 +559,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 29682,
-      "sha256": "f7e10fa292d9dd47ab66cb63e1a92df19c1ec620e83a40ca8676b8a03f752d10"
+      "utf8Bytes": 31442,
+      "sha256": "92bf0d2c4a3bbfafbfc79035996d2290e7ad1ceeb36346231b474964d833d439"
     },
     {
       "path": "test/performance-reuse.test.mjs",

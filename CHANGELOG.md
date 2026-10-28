@@ -2,6 +2,8 @@
 
 ## Unreleased — source candidate
 
+- Refine the wallpaper panel with theme-aware layered surfaces, consistent desktop control sizing, clearer preview and advanced-setting groups, and quieter batch/close actions. Adapt principles from awesome-design-md's Linear/Raycast analyses without external fonts, images or new runtime dependencies; preserve the original handlers and settings.
+
 - Make the root README Chinese, retain an English translation, and document a reviewed demonstration-image workflow without publishing real chat screenshots or wallpaper assets.
 - Reuse version-validated media fingerprints and bounded previews, deliver scene bytes before disk-cache persistence, and use file-backed cache responses to reduce transient copies. Keep dimensions, FPS limits and effects unchanged.
 - Restore verified native Codex windows on explicit launcher clicks and require visible, non-minimized foreground readback. Match the main page geometry or a process/target-bound handle rather than treating CDP Page.bringToFront as native-window restoration; healthy main pages no longer request redundant package activation. Actual taskbar-click and cross-DPI acceptance remain pending.

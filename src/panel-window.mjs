@@ -56,8 +56,82 @@ export function installPanelWindow(host,shadow,dialog){
  :host dialog[aria-busy=true] #status{color:var(--cwb-accent)}
  @media(prefers-reduced-motion:reduce){:host *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
  @media(forced-colors:active){:host button{border:1px solid ButtonText}:host :is(button,input,select,summary):focus-visible{outline-color:Highlight}}
+ `;
+ // Compact desktop surfaces, inspired by the referenced design analyses.
+ // All effects are local CSS; no font requests, image assets or backdrop blur.
+ style.textContent+=`
+ :host{font:14px/1.5 "Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI",system-ui,sans-serif;--cwb-radius:8px;--cwb-control-height:36px}
+ dialog[aria-labelledby=title]{border:1px solid var(--cwb-divider);border-radius:12px;box-shadow:0 16px 48px #0004}
+ .cwb-titlebar{flex-basis:48px;padding:0 8px 0 18px;border-color:var(--cwb-divider);background:var(--cwb-surface)}
+ .cwb-titlebar h2{font-size:14px;line-height:1.4;font-weight:650;letter-spacing:.1px}
+ .cwb-window-body{padding:16px;scroll-padding:16px;scrollbar-color:var(--cwb-border) transparent}
+ .cwb-window-body>label{font-size:13px;font-weight:600;margin:16px 0 0}
+ .cwb-window-body>label:first-child{margin-top:0}
+ :host :is(button,input,select){font-family:inherit}
+ :host button{font-size:13px;font-weight:600;line-height:1.5;padding:8px 12px;box-shadow:none;transition:background-color 120ms,border-color 120ms,color 120ms}
+ :host button:not(:disabled){cursor:pointer}
+ :host button:disabled{opacity:.58;cursor:default}
+ :host dialog[aria-busy=true] :is(button,select):disabled{cursor:progress}
+ :host :is(select,input:not([type=checkbox]):not([type=range]):not([type=file])){min-height:36px;padding:8px 10px;font-size:13px;line-height:1.5}
+ :host select{margin-top:8px}
+ :host option,:host optgroup{background:var(--cwb-field);color:var(--cwb-ink)}
+ :host :is(button,input,select,summary,.cwb-titlebar):focus-visible{outline:2px solid var(--cwb-accent);outline-offset:3px}
+ :host button[data-cwb-variant=danger]{background:var(--cwb-field);border-color:var(--cwb-divider)}
+ :host button[data-cwb-variant=danger]:not(:disabled):hover{background:var(--cwb-danger-bg);border-color:var(--cwb-danger)}
+ :host .cwb-preview,:host #cwb-display-options{border:1px solid var(--cwb-divider);border-radius:12px;background:var(--cwb-surface);padding:14px}
+ :host .cwb-preview{margin:12px 0 16px}
+ :host .cwb-preview .cwb-row{gap:10px}
+ :host .cwb-preview :is(p,label){font-weight:400}
+ :host #library-preview-name{font-size:14px;line-height:1.5;font-weight:650;color:var(--cwb-ink);margin-top:10px}
+ :host #library-preview-mode{font-size:12px;line-height:1.6;margin:4px 0 12px}
+ :host #library-preview-image{width:100%;max-height:160px;object-fit:contain;border-radius:8px}
+ :host .cwb-preview-head{align-items:center;gap:12px}
+ :host .cwb-preview-head img{width:56px;height:56px;object-fit:cover;border-radius:8px;flex:0 0 56px}
+ :host .cwb-preview-head strong{font-size:14px;line-height:1.5;font-weight:650}
+ :host #cwb-import-preview{gap:14px}
+ :host #cwb-selected-import-state{color:var(--cwb-accent);font-size:12px;line-height:1.5}
+ :host #cwb-import-preview>label{font-size:13px;font-weight:600}
+ :host #engine-import-actions{gap:10px}
+ :host #cwb-import-preview>.cwb-row{padding-top:14px;border-color:var(--cwb-divider);gap:10px}
+ :host #cwb-batch-status{font-size:12px;font-weight:500;color:var(--cwb-muted)}
+ :host .cwb-library-filters{gap:12px;padding:12px;border:1px solid var(--cwb-divider);border-radius:10px;background:var(--cwb-surface);margin-top:12px}
+ :host .cwb-library-filters label{font-size:12px;font-weight:600}
+ :host .cwb-library-filters select{font-size:13px;padding:8px;min-height:36px}
+ :host .cwb-library-grid{gap:12px;margin:14px 0}
+ :host .cwb-card{border:1px solid var(--cwb-divider);border-radius:10px;background:var(--cwb-surface)}
+ :host .cwb-card:has(button[aria-pressed=true]){border-color:var(--cwb-accent)}
+ :host .cwb-card button{padding:0;border:0;border-radius:0;background:transparent;min-height:0;text-align:left;line-height:1.5}
+ :host .cwb-card button:not(:disabled):hover{background:var(--cwb-raised)}
+ :host .cwb-card button[aria-pressed=true]{outline:2px solid var(--cwb-accent);outline-offset:-2px}
+ :host .cwb-card button>span{padding:8px 10px;font-size:12px;line-height:1.55;font-weight:600}
+ :host .cwb-card .cwb-badge{font-size:11px;font-weight:400;color:var(--cwb-muted);padding-top:0}
+ :host .cwb-card .cwb-import-state{font-size:11px;font-weight:500;color:var(--cwb-muted);padding:0 10px 10px;opacity:1}
+ :host .cwb-card label{min-height:34px;padding:8px 10px;gap:6px;background:var(--cwb-field);border-top:1px solid var(--cwb-divider);font-size:12px}
+ :host .cwb-pagination{margin:12px 0 16px;gap:12px}
+ :host .cwb-pagination button{min-height:34px}
+ :host .cwb-window-body details.cwb-feature{margin-top:16px;padding:0;border:1px solid var(--cwb-divider);border-radius:10px;background:var(--cwb-surface)}
+ :host details.cwb-feature>summary{padding:12px 14px;font-size:13px;line-height:1.5;font-weight:650;border-radius:9px}
+ :host details.cwb-feature>summary::marker{color:var(--cwb-muted)}
+ :host details.cwb-feature[open]>summary{border-bottom:1px solid var(--cwb-divider);border-radius:9px 9px 0 0}
+ :host details.cwb-feature>:not(summary){margin-left:14px;margin-right:14px;max-width:calc(100% - 28px)}
+ :host details.cwb-feature>:last-child:not(summary){margin-bottom:14px}
+ :host details.cwb-feature :is(label,p){font-size:12px;line-height:1.6}
+ :host details.cwb-feature>label{font-size:13px;font-weight:500}
+ :host #cwb-visual{gap:12px 14px}
+ :host #surface-options{padding-top:0;margin-top:18px}
+ :host #surface-options>summary{font-size:13px;font-weight:600}
+ :host #status{font-size:12px;line-height:1.65;min-height:20px;margin:14px 0;color:var(--cwb-muted);white-space:pre-wrap;overflow-wrap:anywhere}
+ :host #status:not(:empty){padding:10px 12px;border:1px solid var(--cwb-divider);border-radius:8px;background:var(--cwb-surface)}
+ :host footer{gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--cwb-divider)}
+ :host dialog:not([aria-labelledby=title]){padding:22px;border:1px solid var(--cwb-divider);border-radius:12px;background:var(--cwb-surface)}
+ :host dialog:not([aria-labelledby=title]) h2{font-size:18px;line-height:1.4;margin-bottom:12px}
+ :host dialog:not([aria-labelledby=title]) p{color:var(--cwb-muted);line-height:1.7}
+ :host .cwb-titlebar button{min-height:30px;padding:0;border:0;background:transparent}
+ :host #toggle{min-height:28px;font-weight:500}
+ @container cwb-panel (max-width:360px){:host .cwb-library-filters{padding:10px;gap:10px}:host #engine-import-actions,:host #cwb-import-preview>.cwb-row{grid-template-columns:minmax(0,1fr)}:host .cwb-library-grid{gap:10px}}
+ @media(prefers-reduced-motion:reduce){:host *{transition:none!important;animation:none!important}}
  `;shadow.append(style);
- for(const id of ['library-apply','engine-import','cwb-batch-import','cwb-display-apply','cwb-renderer-apply','apply','cwb-quality-save','cwb-choice-confirm','realtime-accept','done'])if($(id))$(id).dataset.cwbVariant='primary';
+ for(const id of ['library-apply','engine-import','cwb-display-apply','cwb-renderer-apply','apply','cwb-quality-save','cwb-choice-confirm','realtime-accept'])if($(id))$(id).dataset.cwbVariant='primary';
  for(const id of ['library-delete','delete','cwb-preset-delete'])if($(id))$(id).dataset.cwbVariant='danger';
  let maximized=false,restoreRect=null,dragging=null,sizing=null;
  const titlebar=document.createElement('header');titlebar.className='cwb-titlebar';titlebar.tabIndex=0;titlebar.title='拖动移动；双击最大化；方向键移动，Shift+方向键缩放';
