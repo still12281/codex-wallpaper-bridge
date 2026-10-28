@@ -115,7 +115,10 @@ async function applySelected(){
 }
 mediaPower=createMediaPower({start:options=>startSystemMedia(root,options),sessions:()=>sessions.values(),send:async(c,kind,payload)=>{const data=JSON.stringify(payload);if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');}});
 const configureMedia=async options=>{const effective=effectiveMediaSettings({...settings,systemMedia:options});await mediaPower.configure(effective);if(spectrumTimer){clearInterval(spectrumTimer);spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(effective.audioFps));spectrumTimer.unref();}};
-async function reportMedia(c){await c.evaluate('('+installMediaActivity.toString()+')('+JSON.stringify(c.token)+');true');}
+async function reportMedia(c){
+ if(await c.evaluate('(()=>{const a=window.__cwbMediaActivity;if(a?.token!=='+JSON.stringify(c.token)+')return false;a.report();return true})()'))return;
+ await c.evaluate('('+installMediaActivity.toString()+')('+JSON.stringify(c.token)+');true');
+}
 async function captureStatic(entry){
  const c=[...sessions.values()].find(c=>c.installed);if(!c)throw Error('当前壁纸尚未显示，无法保存静态画面');let data;
  if(c.webPlayer){const old=await c.webPlayer.sample();await c.webPlayer.pause(false);try{await sleep(150);data=await c.webPlayer.signature();}finally{await c.webPlayer.pause(old.paused);}}
@@ -213,7 +216,10 @@ async function tick(){
   const observations=[];
   const webTargets=list.filter(t=>t.type==='webview'&&t.url.startsWith('https://chatgpt.com/'));
   for(const [id,c]of embeddedSessions)if(!webTargets.some(t=>t.id===id)){c.close();embeddedSessions.delete(id)}
-  for(const target of webTargets){try{let c=embeddedSessions.get(target.id);if(!c||c.ws.readyState!==1){c=await connectCdp(target.webSocketDebuggerUrl);embeddedSessions.set(target.id,c)}await c.call('Emulation.setDefaultBackgroundColorOverride',settings.surfaceSync?.embedded===false?{}:{color:{r:0,g:0,b:0,a:0}});await c.evaluate('('+paintEmbedded.toString()+')('+JSON.stringify(displaySettings(settings))+')')}catch(error){status.embeddedError=error.message}}
+  for(const target of webTargets){try{let c=embeddedSessions.get(target.id);if(!c||c.ws.readyState!==1){c=await connectCdp(target.webSocketDebuggerUrl);embeddedSessions.set(target.id,c)}const config=displaySettings(settings),enabled=config.enabled!==false&&config.surfaceSync?.embedded!==false,key=JSON.stringify([enabled,config.palette]);
+   const intact=c.embeddedKey===key&&await c.evaluate('!!document.getElementById("codex-wallpaper-embedded-style")==='+enabled+(enabled?'&&document.documentElement.classList.contains("dark")==='+!!(config.palette?.dark??true):''));
+   if(!intact){await c.call('Emulation.setDefaultBackgroundColorOverride',enabled?{color:{r:0,g:0,b:0,a:0}}:{});await c.evaluate('('+paintEmbedded.toString()+')('+JSON.stringify(config)+')');c.embeddedKey=key;}
+  }catch(error){status.embeddedError=error.message}}
   if(!targets.length){await stopRealtime();status.phase='waiting-for-target';status.targets=[];await save()}
   for(const [id,c]of sessions)if(!targets.some(t=>t.id===id)){await actions.disposeOwner(c);await c.webPlayer?.dispose();c.webPlayer=null;c.close();sessions.delete(id)}
   for(const target of targets){

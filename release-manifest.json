@@ -143,6 +143,11 @@
       "sha256": "81c0e727a3f9f099bfa19c581c6fcf09e780c773b45ada9a3a92d336488dc24e"
     },
     {
+      "path": "docs/PERFORMANCE-20261028.zh-CN.md",
+      "utf8Bytes": 3681,
+      "sha256": "9df946c6b6acd6299c68ed39b3486bda9c649ddc13d817a7f3de3ea1b2b82e6f"
+    },
+    {
       "path": "docs/REALTIME.md",
       "utf8Bytes": 5109,
       "sha256": "6019b70ec9d6a019c850ecb6855c6ed20a61f96c274e24688a1ec310640ec529"
@@ -299,8 +304,8 @@
     },
     {
       "path": "src/library-preview.mjs",
-      "utf8Bytes": 3496,
-      "sha256": "7c0a3257db38f3b971f9bb747daab2e39c6ad9029fe3368a54a73271a9e62328"
+      "utf8Bytes": 4963,
+      "sha256": "5f74076cbf02d5a5c3b25a9afb35a9e727740a178c71ad94bb8b5d1098393afa"
     },
     {
       "path": "src/media-converter.mjs",
@@ -354,8 +359,8 @@
     },
     {
       "path": "src/scene-resource-cache.mjs",
-      "utf8Bytes": 5239,
-      "sha256": "0fd36ae41a2dc5f6e5198486354ea9c1ed429d56e07ff12e567cfa8159ac363e"
+      "utf8Bytes": 5890,
+      "sha256": "1cc64ef9cc858f3b939a1d50eb7eff590efe1753b6e48f313aba3c9177899c56"
     },
     {
       "path": "src/scene-resource-transfer.mjs",
@@ -374,8 +379,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 37856,
-      "sha256": "e62a00b37b073334f6aab20f59740254cd7ec3357237f16420ed0b182e6b92c7"
+      "utf8Bytes": 38387,
+      "sha256": "ff3f6738dc39a99d2acf01318833b9afe747749681285c36b8cf8c55641566a5"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -429,8 +434,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 30529,
-      "sha256": "93ca5fbd1862a2dd531c3d0e33e297316665075c294dc88c9940eddbcdbc2c8b"
+      "utf8Bytes": 31441,
+      "sha256": "0d1ffac915d17c108264e5b2c562d31c8e168a8be07678995ae1c615216e5a4d"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -533,6 +538,11 @@
       "sha256": "f7e10fa292d9dd47ab66cb63e1a92df19c1ec620e83a40ca8676b8a03f752d10"
     },
     {
+      "path": "test/performance-reuse.test.mjs",
+      "utf8Bytes": 2119,
+      "sha256": "e1d2f710fa2eeda509bfe63f8f30495d4d804c4bdffe15e096ac13f79326f768"
+    },
+    {
       "path": "test/playback-metrics.test.mjs",
       "utf8Bytes": 1935,
       "sha256": "a0dc1f6d0d140717b1f59b7bb2f45dadd24bbcbd0ce2fe6d92455407f453d9ad"
@@ -541,6 +551,11 @@
       "path": "test/preflight.test.mjs",
       "utf8Bytes": 5978,
       "sha256": "4add6a776d50743ca13eb6ad5ef0022083f881014500bec80fd677f524870696"
+    },
+    {
+      "path": "test/resource-cache-integration.mjs",
+      "utf8Bytes": 5103,
+      "sha256": "c4cf753769f3829386ca21ef18a38136cc0184d9c2d7fc765fe4f9f37d88e93f"
     },
     {
       "path": "test/rotation-host-integration.mjs",
