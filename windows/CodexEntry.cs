@@ -7,6 +7,7 @@ using System.Windows.Forms;
 internal static class CodexEntry {
  [DllImport("shell32.dll", CharSet=CharSet.Unicode)]
  private static extern int SetCurrentProcessExplicitAppUserModelID(string id);
+ [DllImport("user32.dll")]private static extern bool AllowSetForegroundWindow(int processId);
  private static string FindRuntime(string environmentName,string setting,string executable,string standard) {
   string configured=Environment.GetEnvironmentVariable(environmentName);
   if(!String.IsNullOrEmpty(configured)&&Path.IsPathRooted(configured)&&File.Exists(configured))return configured;
@@ -60,6 +61,7 @@ internal static class CodexEntry {
    string node=FindNode();info.EnvironmentVariables["CODEX_WALLPAPER_NODE"]=node;
    if(inspect){info.RedirectStandardOutput=true;info.RedirectStandardError=true;}
    using(var process=Process.Start(info)) {
+    if(!inspect)AllowSetForegroundWindow(process.Id);
     if(!inspect){
      if(!process.WaitForExit(180000))throw new IOException("壁纸启动尚未完成，请查看 launch-status.json；现有 Codex 已保留。");
      var launch=Read(dataRoot,"launch-status.json");

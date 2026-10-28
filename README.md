@@ -1,93 +1,83 @@
 # Codex Wallpaper Bridge
 
-The 4K tier renders at 3840×2160. Scene projects can use the DSH v1.4.0 renderer control source with WebWallGL directly inside a sandboxed iframe, or the installed Wallpaper Engine through native capture after confirmation. Native capture preserves original engine effects, scripts and audio processing and follows the desktop frame-rate cap. Capture latency and compression remain measurable differences, and native mouse forwarding is not implemented. See [realtime mode](docs/REALTIME.md) and [local maintenance](docs/MAINTENANCE.zh-CN.md).
+[English](README.en.md)
 
-[简体中文](README.zh-CN.md)
+为 Windows Codex 桌面客户端添加静态与动态壁纸，在客户端内切换素材、搜索 Wallpaper Engine 库、调整播放规格。
 
-An experimental, local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
+**当前为源码形式的实验性开源候选。** 这是社区项目，依赖本机 Chromium 调试接口和客户端 UI 结构，不是 OpenAI 官方插件；客户端更新可能导致不兼容。本机已有启动和真实客户端播放证据，当前任务栏唤回补丁、更新恢复完整流程、其它版本及新机器仍需验收。启动动画暂未实现。
 
-**Status: source-only alpha candidate.** This is an independent community project, not an official OpenAI plugin or Wallpaper Engine integration. It relies on local Chromium debugging and private UI selectors, which can change between client versions. No release binaries, accounts, wallpapers, screenshots, or user configuration are included.
+## 能做什么
 
-## Features
+- 场景可选隔离沙箱 WebGL 渲染；场景/网页也可选原生实时采集。支持二次确认、仅保存、失败回退；已有本机样例验收，兼容范围见 [WebGL](docs/WEBWALLGL.md) 和 [实时模式](docs/REALTIME.md)。
+- 缩略图分页、类型/分级筛选、隐藏与恢复；外观预设导入导出、已保存媒体/GPU/原版项目轮播、玻璃、字体、视差、点击与拖尾特效。
+- 可选 [系统音乐联动](docs/SYSTEM-MEDIA.md)，默认关闭。
+- 设置面板右下角可拖动缩放并记忆大小，标题可移动，底部可重置；保留在 Codex 内。
 
-- Optional sandboxed WebGL scenes and native scene/web capture, with confirmation, save-only references and failure recovery. Native sample acceptance and limits: [WebGL](docs/WEBWALLGL.md), [realtime](docs/REALTIME.md).
-- Opt-in [headless Chromium Web source (experimental)](docs/BROWSER-WEB-20261027.zh-CN.md), using local Chrome/Edge, project-relative assets and partial WE APIs. Pause releases its browser; resume reloads the page. No system audio, mouse forwarding or external resource support. Existing native Web records and the official client's CSP stay intact.
-- Paged thumbnails, type/rating filters, hide/restore, portable appearance presets, saved media/GPU/native-project rotation, glass, fonts, parallax and click/trail FX.
-- Optional [system media](docs/SYSTEM-MEDIA.md), off by default.
-- Resize the embedded settings panel from its lower-right grip; drag its title, remember its size, or reset it. No separate window.
+- 在 Codex 内导入、切换和删除壁纸记录。
+- 默认只搜索各本地磁盘已发现的 Wallpaper Engine 库，包括工坊、自建与内置项目。
+- 自选文件夹搜索 Wallpaper 项目，也可单独搜索普通图片/视频，默认不全盘扫描普通媒体。
+- 随壁纸自动取色，适配聊天区、侧栏和常见设置页；消息和输入区分别留位。
+- 静音循环、切后台暂停；宽度和 FPS 可调，转换完成后热切换，无需重启客户端。
+- 每张壁纸保留一份当前播放副本，同规格不重复转换；外部原文件不因删除操作被删除。
+- 可本机编译隐藏 GUI 启动入口，不需长期保持命令窗口。
 
-- In-app wallpaper library, local imports, switching, and deletion of app-owned copies.
-- Default search limited to discovered Wallpaper Engine libraries across local disks, including Workshop, custom projects, and built-in projects.
-- Optional folder search for Wallpaper projects or ordinary images/videos.
-- Wallpaper-derived colors across the chat, sidebar, and common settings surfaces.
-- Separate message and composer space to keep transparent input controls readable.
-- Silent video playback, pause on loss of focus, adjustable resolution/frame limits, and hot application after conversion.
-- One current playback file per wallpaper; previous playback copies are replaced after successful decode.
-- Optional hidden Windows launcher. Its build uses the locally installed client icon; no OpenAI icon is redistributed.
+## 效果展示
 
-## Requirements
+发布演示图正在准备，当前没有附带真实聊天截图或第三方壁纸素材。建议展示主界面、壁纸库/导入、播放与外观设置三张图，以及一个短切换动图；采集与脱敏要求见[演示图片清单](docs/SCREENSHOTS.zh-CN.md)。
 
-- Windows 10/11, x64, with the official Microsoft Store Codex client installed.
-- Node.js 22 or later and PowerShell 7.
-- FFmpeg with H.264 and WebP encoders, supplied separately. Set `CODEX_WALLPAPER_FFMPEG` if it is not on PATH or discoverable from a local WinGet installation.
-- Wallpaper Engine only for Wallpaper Engine library features. Local image/video imports do not require it.
-- .NET Framework C# compiler for the optional GUI launcher.
+## 性能与兼容边界
 
-There are no production npm dependencies. The required parsing and Windows helper sources are vendored with their original licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
+本轮同一212 MB场景的真实Codex隐藏候选对照：首帧就绪约1.48秒降至0.87秒，分辨率和效果配置相同。首次64 MiB文件指纹约49.8毫秒，未变化文件重复约0.48毫秒。它们是限定样本，不代表所有壁纸、冷盘或点击到屏幕呈现时间；客户端总内存下降幅度仍待同条件验收。详见[性能记录](docs/PERFORMANCE-20261028.zh-CN.md)。
 
-## Setup
+官方客户端、账号、CSP和壁纸原文件保持独立；未来更新仍可能改变调试接口或页面结构。本项目不能免疫更新。可选的一次性更新重连规则默认需要单独安装，只在后续更新事件尝试一次正常恢复，不强制终止客户端、不增加自有常驻监控。见[更新恢复范围](docs/AFTER-UPDATE-RECONNECT.zh-CN.md)。
 
-1. Review [security](SECURITY.md), [privacy](PRIVACY.md), and the [current validation limits](docs/VALIDATION.md).
-2. Ensure `node.exe`, `pwsh.exe`, and FFmpeg are available. Optional overrides are documented in [configuration](docs/CONFIGURATION.md).
-3. In PowerShell 7, from this checkout:
+## 依赖与安装
 
-   ```powershell
-   ./windows/Build-Launcher.ps1
-   ./windows/Prepare-TaskbarEntry.ps1
-   ```
+需要 Windows 10/11 x64、官方 Microsoft Store Codex、Node.js 22+、PowerShell 7，以及单独安装的 FFmpeg（含 H.264/WebP 编码器）。可选 GUI 启动器使用本机 .NET Framework C# 编译器。Wallpaper Engine 只对其库功能必需，本地图片/视频导入不依赖它。
 
-4. The scripts create `CodexEntry.exe` and `Codex.lnk` under `%LOCALAPPDATA%\CodexWallpaperBridge`, or your configured data directory. They do not replace existing desktop shortcuts or taskbar pins. If the checkout moves, rebuild the launcher.
-5. Save drafts and fully exit the ordinary Codex client yourself. Open the generated shortcut to request a local debugging session and load the wallpaper controls. If launch verification fails, inspect the local launch status instead of repeatedly restarting the client. Cold-start compatibility is still experimental.
-6. If desired, manually replace an old taskbar pin with this generated shortcut. A shared icon/AppID does not redirect an existing Store pin. Startup animation is not implemented.
+无需安装生产 npm 依赖。必要上游源码已最小化随附，并保留原许可证；见 [第三方来源](THIRD_PARTY_NOTICES.md)。没有随附 FFmpeg、Codex、Wallpaper Engine 程序或任何壁纸素材。
 
-For an **already verified local Codex debugging session**, `npm start` attaches the host to loopback port 9335. It does not enable debugging on an ordinary running client. Do not expose the port to a network.
+先阅读 [隐私说明](PRIVACY.md)、[安全说明](SECURITY.md)、[验证边界](docs/VALIDATION.md)。在仓库根目录用 PowerShell 7 运行：
 
-## Use
-
-Open **壁纸** in the client. The current UI is in Chinese.
-
-- **搜索 Wallpaper 壁纸 / 图片 / 视频** defaults to Wallpaper Engine + discovered global libraries. Change to a folder to search a particular project/library.
-- **其它图片 / 视频** searches a chosen folder and its descendants. It does not scan every image/video on every drive by default.
-- My-library selection previews a thumbnail and renderer label; apply and delete are explicit buttons. Selected import inspection stays beside its preview.
-- Checked imports save the whole selection without changing the active background. Duplicate items prompt or appear in a batch summary; file content hashes distinguish renamed copies from changed contents.
-- Choose a result and import it. Direct imports accept JPG, PNG, WebP, GIF, MP4, and WebM, subject to size/format limits.
-- Choose resolution and FPS, then apply. Conversion takes time; the host switches after decoding the new copy. Default: 1280-wide, 24 FPS, muted, pause in the background. High settings and large sources can still cost CPU/GPU time.
-- Delete removes app-owned records and unreferenced app copies, never Workshop or external source files.
-
-Auto mode routes audio-processing scenes to native realtime confirmation; other extractable scenes can still use the video layer. WebGL mode supports sandboxed scene scripts with project-dependent compatibility. Web wallpapers use native capture; WebGL Web resource loading is not yet accepted. See the [feature migration status](docs/FEATURE-MIGRATION.md). Pet choreography remains excluded.
-
-## Development
-
-```text
-src/        Host, local actions, UI styling, discovery and conversion
-windows/    Launcher source, build/setup scripts and folder picker
-vendor/     Minimal third-party source and unchanged licenses
-test/       Synthetic tests; no personal wallpaper or conversation fixtures
-tools/      Release allowlist, content and checksum checks
-docs/       Configuration, architecture, validation and release checklist
+```powershell
+./windows/Build-Launcher.ps1
+./windows/Prepare-TaskbarEntry.ps1
 ```
+
+产物默认放在 `%LOCALAPPDATA%\CodexWallpaperBridge`，源码目录不存放账号配置、素材与日志。设置覆盖项见 [配置说明](docs/CONFIGURATION.md)。移动源码目录后需重新构建启动器。
+
+构建脚本生成一体入口 `CodexEntry.exe` 和 `Codex.lnk`。运行入口会核对当前注册包；匹配到过期的官方快捷方式时先备份再修复为一体入口，已有壁纸固定项只刷新官方图标引用，不自动重做任务栏固定。请先自行保存草稿并完全退出普通 Codex，再使用生成的入口；启动接入仍属实验能力。需要固定时，由用户手动将新入口固定到任务栏。相同图标/AppID 不会自动改写原任务栏入口。不要通过反复重启来排错。
+
+已有经过验证的本机 CDP 会话时，可用 `npm start` 接入 loopback 9335；这条命令不会给普通客户端开启调试。调试端口不能开放到网络。
+
+## 如何使用
+
+打开“壁纸”后，“我的壁纸”选中只查看缩略图与运行方式，点击“应用所选壁纸”才切换。预览旁可以直接删除。
+
+点“搜索 Wallpaper 壁纸 / 图片 / 视频”：
+
+1. 默认类型为 Wallpaper Engine，范围为全局已发现的壁纸库；可展开“搜索位置”。任意嵌套位置、脱离登记的库不保证被自动发现，可改为自选文件夹。
+2. 需要其它素材时，切换到“其它图片 / 视频”，选择目录或粘贴路径，再搜索。支持 JPG、PNG、WebP、GIF、MP4、WebM。
+3. 选中结果后，预览旁显示是否需要实时渲染。单张可导入并应用或仅保存；勾选多项后，使用独立“批量保存勾选项”按钮，保持当前背景。单张按钮始终处理当前预览。批量结果会汇总成功、重复和失败项，重复单项弹窗提醒；可按全部/未导入/已导入筛选。宽度/FPS 在“播放规格”中调整。
+4. 默认 1280 宽、24 FPS、静音、后台暂停。高规格仍可能卡顿，首次转换会暂时使用 CPU。
+5. 删除只清理 Codex 内记录及专属副本，保留 Wallpaper Engine 和外部原文件。
+
+自动导入场景使用完整 GPU 场景，不再提取并丢弃独立组件。4K 档为实际 3840×2160，可选复用 DSH v1.4.0 控制源码的 GPU 场景，或保留原版效果与音频处理的原版兼容模式；后者经确认启用，帧率跟随桌面配置。已有视频记录保留。采集/压缩和显示延迟仍有差距，原生模式暂不转发鼠标交互。WebGL 模式可运行沙箱场景脚本，兼容性依项目而定。网页自动使用原版兼容，也可显式选择[网页浏览器（试验）](docs/BROWSER-WEB-20261027.zh-CN.md)：需要Chrome/Edge，支持本地资源/部分作者API；暂停释放浏览器，恢复重载，无系统音频/鼠标转发。官方CSP不变，WebGL直接嵌入网页仍禁用。完整迁移范围见 [功能状态](docs/FEATURE-MIGRATION.md)。
+
+完整库的备份、恢复、素材路径诊断与项目重定位，以及停用/卸载说明见 [本地维护](docs/MAINTENANCE.zh-CN.md)。外观预设 JSON 只包含外观，不是完整库备份。
+
+## 开发与验证
 
 ```powershell
 npm test
 npm run check:privacy
-# Optional: local Chrome/Chromium + FFmpeg, isolated synthetic page only
-npm run test:integration
+npm run test:integration # 可选，需要 Chrome/Chromium 和 FFmpeg
 ```
 
-No tests should attach to a real Codex session or copy a real account profile. The integration test uses a temporary isolated browser profile and generated media. Test reports are local; do not publish real client logs or screenshots without reviewing them.
+测试使用合成素材与隔离页面，不读取真实聊天/账号配置，不自动连接正在运行的 Codex。整理候选的测试通过，不等同于完整原生冷启动验收。
 
-## License and acknowledgements
+## 开源发布说明
 
-The candidate proposes MIT for original code; the maintainer must confirm this before publishing. Third-party files retain their own MIT notices. Wallpapers and proprietary client software are not part of this license. OpenAI, Codex, Steam, and Wallpaper Engine names belong to their respective owners; no affiliation is implied.
+项目暂定名 **Codex Wallpaper Bridge**，原创部分拟用 **MIT**，正式发布前由维护者确认。维护者公开署名和仓库地址仍待确认；Git提交使用GitHub公开noreply身份。上游版权与许可证完整保留；壁纸素材和商业客户端不属于本项目的开源许可。
 
-Maintainer identity and repository links are intentionally unset. Complete [the release checklist](docs/RELEASE_CHECKLIST.zh-CN.md) before publishing.
+正式发布还需确定仓库归属/名称、公开署名、许可证、维护与反馈方式；详见 [发布前信息清单](docs/RELEASE_CHECKLIST.zh-CN.md)。本地 Git 已初始化并按阶段提交，尚未配置远程；源码不含用户数据或发布二进制。

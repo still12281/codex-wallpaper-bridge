@@ -14,5 +14,5 @@
     "test:webwallgl": "node test/webwallgl-integration.mjs",
     "prepare:media": "node tools/prepare-media-bridge.mjs"
   },
-  "files": ["src/", "windows/", "vendor/", "docs/", "tools/", "test/", "README.md", "README.zh-CN.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "PRIVACY.md", "SECURITY.md", "CONTRIBUTING.md", "CHANGELOG.md", "settings.example.json", "release-manifest.json"]
+  "files": ["src/", "windows/", "vendor/", "docs/", "tools/", "test/", "README.md", "README.zh-CN.md", "README.en.md", "LICENSE", "THIRD_PARTY_NOTICES.md", "PRIVACY.md", "SECURITY.md", "CONTRIBUTING.md", "CHANGELOG.md", "settings.example.json", "release-manifest.json"]
 }

@@ -17,6 +17,7 @@ settings.next.json
 launch-script.txt
 launcher-runtime.json
 entry-runtime-check.json
+main-window.json
 *-status.json
 *diagnostic*.json
 *inspection*.json

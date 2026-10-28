@@ -182,14 +182,19 @@ try {
   $taskStatus.rootExecutable=$taskVerifiedRoot.MainModule.FileName
   if($taskReuseExisting){
     if(-not (Test-DreamSkinPathEqual -Left $taskStatus.rootExecutable -Right "$($taskCodex.Executable)")){throw '现有客户端与已注册包版本不同，保留现有客户端并停止跨版本激活。'}
-    $taskStatus.reactivationPid=Start-DreamSkinCodex -Codex $taskCodex -Arguments @()
-    Start-Sleep -Milliseconds 500
+    $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId --no-wait
+    if($LASTEXITCODE -eq 2){
+      $taskStatus.reactivationPid=Start-DreamSkinCodex -Codex $taskCodex -Arguments @()
+      Start-Sleep -Milliseconds 500
+      $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId
+    }
+    if($LASTEXITCODE -ne 0){throw '未找到可唤回的 Codex 主页面，已有客户端已保留。'}
     $taskAfterActivation=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
     $taskSameRoot=Get-Process -Id $taskStatus.debugRootPid -ErrorAction Stop
     if($null -eq $taskAfterActivation -or $taskAfterActivation.BrowserId -ne $taskIdentity.BrowserId -or $taskSameRoot.StartTime.ToUniversalTime().ToString('o') -ne $taskStatus.rootStartedAtUtc){throw '唤回时客户端身份发生变化，未关闭或替换任何客户端。'}
-    $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId
-    if($LASTEXITCODE -ne 0){throw '未能唤回 Codex 主窗口，已有客户端已保留。'}
-    $taskStatus.mainTargetId=($taskActivationResult | ConvertFrom-Json).mainTarget
+    $taskMain=$taskActivationResult|ConvertFrom-Json
+    $taskStatus.mainTargetId=$taskMain.mainTarget
+    $taskStatus.nativeActivation=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -MainTarget $taskMain.mainTarget -GeometryJson ($taskMain.geometry|ConvertTo-Json -Compress)
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses) $taskStatus.debugRootPid
     $taskStatus.existingMainWindowReopened=$true
   }
@@ -226,6 +231,12 @@ try {
     }
     Start-Sleep -Milliseconds 500
   }while([DateTimeOffset]::UtcNow -lt $taskDeadline)
+  if($taskRendered -and -not $taskReuseExisting){
+    try{
+      $taskHintResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId --no-wait
+      if($LASTEXITCODE -eq 0){$taskHint=$taskHintResult|ConvertFrom-Json;$taskStatus.mainWindowHint=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -MainTarget $taskHint.mainTarget -GeometryJson ($taskHint.geometry|ConvertTo-Json -Compress) -RememberOnly}
+    }catch{$taskStatus.mainWindowHintError=$_.Exception.Message}
+  }
   Save-TaskPhase $(if($taskRendered){'background-rendered'}else{'cdp-ready-background-not-yet-rendered'})
   if(-not $taskRendered){$taskOwnedRoot=$null;throw 'Codex 已打开，但壁纸首帧未就绪；客户端已保留，请检查壁纸宿主日志。'}
   if($taskLockOwned){$taskBootstrapLock.ReleaseMutex();$taskLockOwned=$false}

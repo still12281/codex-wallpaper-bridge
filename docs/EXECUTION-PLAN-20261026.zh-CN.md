@@ -150,5 +150,5 @@
 - UI 参考：<https://github.com/microsoft/fluentui>、<https://github.com/shadcn-ui/ui>。优先复用设计与必要组件，不默认引入整个框架。
 - 渲染参考：<https://github.com/elysia395/dsh-wallpaper-engine>、<https://github.com/oneincase/webwallgl>；系统媒体参考：<https://github.com/oneincase/media-bridge>。执行时核对具体版本及实现，不以 README 为验收。
 - 仓库边界与历史证据：`docs/USABILITY-20261026.md`、`docs/WEBWALLGL.md`、`docs/SYSTEM-MEDIA.md`、`docs/MAINTENANCE.zh-CN.md`、`docs/UPSTREAM-SOURCES.json`、`THIRD_PARTY_NOTICES.md`。
-- 代码工作区：`E:/codexwallpaper/CodexWallpaperBridge-OpenSource`；部署：`E:/codexwallpaper/CodexWallpaperBridge`；私有证据：`E:/codexwallpaper/CodexWallpaperBridge-ReleaseWork`。截图、原始媒体、用户配置与诊断日志不加入 Git。
+- 代码工作区、部署数据和私有证据分别存放；部署与证据位于仓库外。截图、原始媒体、用户配置与诊断日志不加入 Git，本公开记录不保留本机绝对路径。
 - 计划编制起点为提交 `5a41a93`，当时工作区干净。该事实不代替后续实施时的实时检查。
