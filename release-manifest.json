@@ -134,8 +134,8 @@
     },
     {
       "path": "docs/PACKAGE-E-20261027.zh-CN.md",
-      "utf8Bytes": 7080,
-      "sha256": "e9f28d511df097884050fe5865ad01a8236fea3700c7cddf431cc438d2011db8"
+      "utf8Bytes": 10593,
+      "sha256": "0f7861d40553f7064959ce09ad86e0a0b8c4fda137c61f55c44cf20afd8afa65"
     },
     {
       "path": "docs/PAUSED-20261026.zh-CN.md",
@@ -429,8 +429,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 29323,
-      "sha256": "bc0ced3584f0fd33d3099b30c632c3a418a472a97876f6b2fa9750dfe7f947fc"
+      "utf8Bytes": 30045,
+      "sha256": "50bc4d7f54888e34c2142e84d44908efbf69b4a0f786ed13ff8efe97b80d67a1"
     },
     {
       "path": "test/appearance.test.mjs",
