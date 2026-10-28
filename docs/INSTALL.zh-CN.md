@@ -1,5 +1,19 @@
 # Windows 安装与配置
 
+## 命令行一键部署
+
+适用于 Windows 10/11 x64；先安装并登录官方 Microsoft Store 版 Codex。打开 PowerShell，执行：
+
+```powershell
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1.0-alpha.0/install.ps1' | iex
+```
+
+命令下载固定版本引导脚本；脚本从同一 Release 下载 ZIP，按内置 SHA-256 校验后解压，再调用 `Install.cmd`。无需 Git、手动下载 ZIP 或先安装 PowerShell 7。依赖、快捷方式和更新重连选项与下面的双击安装一致；不会关闭或重启当前 Codex。
+
+默认安装到 `%LOCALAPPDATA%\CodexWallpaperBridge`。想指定其它盘，可先在同一个 PowerShell 中设置 `$env:CODEX_WALLPAPER_DATA_DIR = 'D:\CodexWallpaperBridge'`，再执行上面的远程命令；升级时使用同一目录。下载及解压缓存留在终端显示的 `%TEMP%\CodexWallpaperBridge-install-*` 独立文件夹，成功后可自行删除；壁纸库不存放在此缓存中。
+
+每条命令对应固定版本；升级时使用新版 README/Release 提供的命令。脚本或下载被网络拦截时，按下文手动下载，不需要关闭安全软件。希望先审阅脚本，可在 [Release](https://github.com/still12281/codex-wallpaper-bridge/releases/tag/v0.1.0-alpha.0) 下载 `install.ps1` 和对应 `.sha256`；脚本的 `-CheckOnly` 选项只下载校验并检查安装条件，不执行安装。
+
 ## 推荐：双击安装
 
 1. 安装官方 Microsoft Store 版 Codex，正常打开一次并登录。

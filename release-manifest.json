@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2145,
-      "sha256": "213c5f2e91ec9de192ab17ec35a1a5098e761d28903d4e9a5111811b60146537"
+      "utf8Bytes": 2164,
+      "sha256": "f1fa54eb2088b92fe4717b2d58efd24bf0f71e6cd1dc8278b249a183db01ef8a"
     },
     {
       "path": ".gitignore",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 9524,
-      "sha256": "15a7a037acd0ed39c52f2c2f5838d9b886b20027c1a00066ab65645aaed5376d"
+      "utf8Bytes": 10390,
+      "sha256": "75e93698a926649f30484fbcfbab17c62ebd00047d26077950e8e69b252c38f7"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 12087,
-      "sha256": "afc7a4aaf701e2d5dbbf1d5ac4f45e369cef4b7d9265daab31afdffe92352436"
+      "utf8Bytes": 12870,
+      "sha256": "0ac4f3afb2df81a05f1d6ea196e19cdb08552bf38af20093ce8e6e4599cac4d2"
     },
     {
       "path": "README.zh-CN.md",
@@ -119,8 +119,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 14453,
-      "sha256": "92f0e13211a848fd20040662881db131c95c224d4ecbbce5344db8fc40172fd9"
+      "utf8Bytes": 15871,
+      "sha256": "4c576cc8222b183819b384b59a7339930e569a052395f547279ac511b1024944"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -181,6 +181,11 @@
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
       "utf8Bytes": 4882,
       "sha256": "fc1ed6cb8f4afe466aaa97de2cc2ca5eccd200060407e553e8a796927ea34976"
+    },
+    {
+      "path": "docs/RELEASING.zh-CN.md",
+      "utf8Bytes": 1527,
+      "sha256": "5706dd28ca06c7b975faeed47b8e0c6b6fe041073cbb067bc91b9b6ed0895956"
     },
     {
       "path": "docs/SCREENSHOTS.zh-CN.md",
@@ -325,8 +330,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 21224,
-      "sha256": "1d1f85011f7ba71198ecb4851f67c296ea121f8d39b1dad4421c572f4bc75365"
+      "utf8Bytes": 21951,
+      "sha256": "3e5637bbff2dec04865e9f08104165e76d53211cbdb8a034c925ea3434e4b1f1"
     },
     {
       "path": "package.json",
@@ -335,8 +340,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 22086,
-      "sha256": "085144480d7c367729416424fb3daae6d3186acab3a294c1c06f5e8aae4a526c"
+      "utf8Bytes": 22558,
+      "sha256": "33ece29589243fc8ea00b2d9f5218a8ceb7d6c55b5bf7e49e71acc6d759cb3e8"
     },
     {
       "path": "settings.example.json",
@@ -545,8 +550,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 39346,
-      "sha256": "60608b61ca4f2263ff40116c9ad928bc2944381056c9031eb4172372064b9f19"
+      "utf8Bytes": 40058,
+      "sha256": "9b72b72c9236f09c56c54492db0ed1fd350f94ad6974729a29900d4176662f99"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -699,6 +704,16 @@
       "sha256": "22dc20183f29e235f0ae24483fe9f623a739ce8217b1c4844b942be11f997277"
     },
     {
+      "path": "test/remote-bootstrap.ps1",
+      "utf8Bytes": 3434,
+      "sha256": "3a133eb09cfe5b7004689d34a4318f3347471c57352562c4aa7b11b8563abe39"
+    },
+    {
+      "path": "test/remote-bootstrap.test.mjs",
+      "utf8Bytes": 1361,
+      "sha256": "acb9c76f221720666aa17b71b8194ce11a64ab003675a13627bab93f6223f65a"
+    },
+    {
       "path": "test/resource-cache-integration.mjs",
       "utf8Bytes": 5103,
       "sha256": "c4cf753769f3829386ca21ef18a38136cc0184d9c2d7fc765fe4f9f37d88e93f"
@@ -754,9 +769,19 @@
       "sha256": "101ab780a1993a00c50d57731990fbf8eec45112af32ece3968ae09ac2c0f77a"
     },
     {
+      "path": "tools/create-bootstrap.mjs",
+      "utf8Bytes": 1689,
+      "sha256": "985b5ef1c30c7c0af410c3ad910fbc97802af1a5f3315d0ef1fd4cdf45100e97"
+    },
+    {
       "path": "tools/create-manifest.mjs",
       "utf8Bytes": 562,
       "sha256": "ffc7951bb58fe69e2fcc96e0f28a513820c55cdc82b687d904fb7d306a478df9"
+    },
+    {
+      "path": "tools/install-bootstrap.ps1",
+      "utf8Bytes": 3230,
+      "sha256": "f78d297520ac7a62dfd109a44e2f41cdceca970c72d64ac9361bf28c3864ed91"
     },
     {
       "path": "tools/install-source.mjs",

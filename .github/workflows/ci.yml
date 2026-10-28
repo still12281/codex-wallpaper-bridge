@@ -42,7 +42,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          foreach ($test in @('launch-policy','startup-health','install-options','install-upgrade','install-dependencies','update-reconnect')) {
+          foreach ($test in @('launch-policy','startup-health','install-options','install-upgrade','install-dependencies','update-reconnect','remote-bootstrap')) {
             & "./test/$test.ps1"
           }
           & ./test/install-runtime.ps1 -ScratchDirectory (Join-Path $env:RUNNER_TEMP 'cwb-runtime-path-test')

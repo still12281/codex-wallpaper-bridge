@@ -92,6 +92,20 @@ GPU 不能保证兼容任意场景；打包场景、图片副本及单次资源�
 
 **准备：Windows 10/11 x64，已安装并登录官方 Microsoft Store 版 Codex，保持联网。**
 
+### 命令行一键安装
+
+打开 **PowerShell**，复制执行：
+
+```powershell
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1.0-alpha.0/install.ps1' | iex
+```
+
+自动下载 **v0.1.0-alpha.0** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
+
+安装成功后，保存工作并正常退出原 Codex，再打开所选壁纸入口。安装器不会自动关闭当前客户端。无法连接 GitHub 时使用下方手动下载方式。
+
+### 下载安装包
+
 1. 从本仓库的 [Releases](https://github.com/still12281/codex-wallpaper-bridge/releases) 下载固定版本的 `CodexWallpaperBridge-*.zip` 安装包，解压到本地文件夹。对应 `.sha256` 文件用于核对下载完整性。
 2. 双击 **[`Install.cmd`](Install.cmd)**。选择 **1：新建 Codex Wallpaper 专用入口**，或 **2：备份并替换识别到的原 Codex 快捷方式**。
 3. 按提示选择是否启用更新后一次重连；等待绿色 **Installed** 提示。依赖安装弹出 Windows 授权时，按提示确认。
@@ -110,7 +124,7 @@ GPU 不能保证兼容任意场景；打包场景、图片副本及单次资源�
 | 网页浏览器（试验） | 本机 Chrome 或 Edge |
 | 系统音乐联动 | 按[安装指南](docs/INSTALL.zh-CN.md#可选系统音乐和音频响应)准备可选音乐组件 |
 
-安装默认位于 `%LOCALAPPDATA%\CodexWallpaperBridge`。安装成功后，下载的 ZIP 和解压目录可以移走。升级时下载新版本重新安装，壁纸库与设置会保留。找不到 WinGet 时，先在 Microsoft Store 安装/更新 **App Installer（应用安装程序）**。
+安装默认位于 `%LOCALAPPDATA%\CodexWallpaperBridge`。安装成功后，下载的 ZIP 和解压目录可以移走；远程安装下载缓存的位置会在终端输出。升级时运行新版本对应的一键命令或安装包，壁纸库与设置会保留。找不到 WinGet 时，先在 Microsoft Store 安装/更新 **App Installer（应用安装程序）**。
 
 **[完整安装指南：自定义安装盘、手动安装、依赖路径、故障处理、升级和卸载](docs/INSTALL.zh-CN.md)** · [隐私](PRIVACY.md) · [安全](SECURITY.md)
 
