@@ -1,5 +1,11 @@
 # Migration findings
 
+## 2026-10-28 新用户安装入口
+
+- 现有Build-Launcher/Prepare-TaskbarEntry分别执行，不安装缺失依赖、不部署稳定源码副本；直接移动解压目录会使launch-script失效。
+- 默认GPU需prepare:webwallgl；原版采集需uv和固定Python3.12脚本依赖；系统音乐另需media-bridge，现有准备使用gh，可作为显式可选步骤。不能把两条构建命令称为完整一键安装。
+- 安装器将只安装清单文件到按清单哈希区分的版本目录，保留旧版本与settings；Node/PowerShell记录绝对路径，补充FFmpeg/uv路径供Explorer启动继承。
+
 ## 2026-10-28 性能与源码alpha准备
 
 - 场景首帧原先等待Cache API完整写入；File输入可用作Response源，避免再构造整包缓存字节副本。改为先投递沙箱、有界后台写入，同键查询等待写入后复用。实际隐藏212MB对照1478→870ms，输出/效果相同；不能当作完整可见切换或常驻内存降幅。

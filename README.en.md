@@ -40,20 +40,16 @@ There are no production npm dependencies. The required parsing and Windows helpe
 
 ## Setup
 
-1. Review [security](SECURITY.md) and [privacy](PRIVACY.md).
-2. Ensure `node.exe`, `pwsh.exe`, and FFmpeg are available. Optional overrides are documented in [configuration](docs/CONFIGURATION.md).
-3. In PowerShell 7, from this checkout:
+1. On Windows 10/11 x64, install the official Microsoft Store Codex client, open it and sign in.
+2. Choose **Code → Download ZIP** in this repository, then extract it locally.
+3. Double-click **[Install.cmd](Install.cmd)**. Stay online and allow dependency installation if Windows asks. Wait for the green **Installed** message.
+4. Save work and exit ordinary Codex normally. Open **Codex Wallpaper** on your desktop. Use this unified entry for future wallpaper sessions; pin it manually if desired.
 
-   ```powershell
-   ./windows/Build-Launcher.ps1
-   ./windows/Prepare-TaskbarEntry.ps1
-   ```
+The installer detects or installs PowerShell 7, Node.js 22+, FFmpeg and uv through WinGet; prepares the pinned WebWallGL runtime and Python 3.12 capture dependencies; copies the reviewed source into a versioned installation; and creates desktop/Start-menu shortcuts with the official installed icon. Git, npm install and manual JSON configuration are not required. The installer does not close or launch Codex or register an update task.
 
-4. The scripts create `CodexEntry.exe` and `Codex.lnk` under `%LOCALAPPDATA%\CodexWallpaperBridge`, or your configured data directory. They do not replace existing desktop shortcuts or taskbar pins. If the checkout moves, rebuild the launcher.
-5. Before first use, save drafts and fully exit the ordinary Codex client yourself. Open the generated shortcut to start a local debugging session and load the wallpaper controls.
-6. If desired, manually replace an old taskbar pin with this generated shortcut. A shared icon/AppID does not redirect an existing Store pin.
+Data and installed versions live under `%LOCALAPPDATA%\CodexWallpaperBridge`. You may move the downloaded ZIP/extracted folder after installation. Run the new version's installer to upgrade while preserving your library and settings. If WinGet is missing, install/update **App Installer** in Microsoft Store. Optional [system media](docs/SYSTEM-MEDIA.md) requires separate media-bridge preparation and GitHub CLI authentication. Chromium Web mode needs Chrome/Edge; native capture needs Wallpaper Engine.
 
-For GPU scenes, run `npm run prepare:webwallgl` with the same data-directory configuration. Optional system media uses `npm run prepare:media` and requires a working GitHub CLI. See [WebGL setup](docs/WEBWALLGL.md) and [system media](docs/SYSTEM-MEDIA.md). Chromium Web mode requires local Chrome/Edge; native capture requires Wallpaper Engine.
+See the [complete installation guide](docs/INSTALL.zh-CN.md) for custom directories, manual commands, executable overrides, first-use configuration, troubleshooting, updates and removal. Read [security](SECURITY.md) and [privacy](PRIVACY.md) before installing.
 
 For a local Codex debugging session started through the unified entry, `npm start` attaches the host to loopback port 9335. It does not enable debugging on an ordinary running client. Do not expose the port to a network.
 

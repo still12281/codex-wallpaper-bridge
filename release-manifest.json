@@ -24,13 +24,18 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 8775,
-      "sha256": "69def727b34fb79e29b189dbb573d355c19e0da0ecbfd83b9839eb9c32d4b19a"
+      "utf8Bytes": 9215,
+      "sha256": "a245a9a49f0a73847dbfa6ba8b69e967fff70cea8995fd6fa77018ff0c891df6"
     },
     {
       "path": "CONTRIBUTING.md",
       "utf8Bytes": 1087,
       "sha256": "652b6f0439a6b7cc3a4952f348c064d1124d030bf6ba32885e0a07d0b366640e"
+    },
+    {
+      "path": "Install.cmd",
+      "utf8Bytes": 1721,
+      "sha256": "592fce4116cc22597076fba23a34eaf79361fe265699ce40c0343fd8f62265f4"
     },
     {
       "path": "LICENSE",
@@ -44,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 7633,
-      "sha256": "fc87aca294edb48c8c2c55303911c0329944353e7da46c7896434f0f4c9fcd5f"
+      "utf8Bytes": 8096,
+      "sha256": "e2df5239dddc583432fd28a634bfaafcdda4f480c34b101d8d4af55e15b2aa7e"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 9834,
-      "sha256": "f5b75de9dea800e772a5cc60bc78cf915870222201a9e6ce9350c6a9b6762a31"
+      "utf8Bytes": 10521,
+      "sha256": "898642be1a21350bbc4658362355bc3fe4cb67df845f8590cf1f3a0e8f07927a"
     },
     {
       "path": "README.zh-CN.md",
@@ -84,8 +89,8 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 4348,
-      "sha256": "e6af5f796d7a6e9c25fda2334cc0f1aaf639e6d13e0c1df78b94362f3b1485e2"
+      "utf8Bytes": 4910,
+      "sha256": "d0b98c47b9fc15f00bcaffefeccca44665cbd523b125316f2514d48dc71bf6c9"
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
@@ -106,6 +111,11 @@
       "path": "docs/FOLLOWUP-20261027.zh-CN.md",
       "utf8Bytes": 7058,
       "sha256": "ba0b777382fdd270e34db293cac582137699eab84d3c9ac29e01ef8902cb34ca"
+    },
+    {
+      "path": "docs/INSTALL.zh-CN.md",
+      "utf8Bytes": 10053,
+      "sha256": "da8e35b1ebc3d0b07e0b74998d5a95de7bec03238124acf0e2046403e69e8949"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -159,8 +169,8 @@
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
-      "utf8Bytes": 3845,
-      "sha256": "2e1fced94b707265c9f25bfbdd496ce337f765bbdc60a1f2ce52c1f555ece619"
+      "utf8Bytes": 4230,
+      "sha256": "f6a3935b774ca0ad5ee17e9a163295026ed32cc9313dc01d6bfb80139eb5be1a"
     },
     {
       "path": "docs/SCREENSHOTS.zh-CN.md",
@@ -305,18 +315,18 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 18891,
-      "sha256": "589230aa6f04be357252015de9b077294a853c51a176701f50bd94e24441b662"
+      "utf8Bytes": 19510,
+      "sha256": "91dc4888b8c0ca226f55410725210370143ac8ff5c8e5a39f0517d9a48020c85"
     },
     {
       "path": "package.json",
-      "utf8Bytes": 913,
-      "sha256": "822d66514ca3b2713c4103193e439eb646dd59d4f8e2e27bbc3f845d83445725"
+      "utf8Bytes": 928,
+      "sha256": "88001bf90ef79a7111d81fea23a156026e53cc45ecd008f25f83424ff9a945a3"
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 15943,
-      "sha256": "8ed835976839fd6f4103e0d4d5ad7ac1daade2f4a9a459e462c209e9dd15edb2"
+      "utf8Bytes": 17256,
+      "sha256": "017ba76ff7597d26c5657af28332d3595130bdedf457135c65f168a5785d8983"
     },
     {
       "path": "settings.example.json",
@@ -525,8 +535,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 34528,
-      "sha256": "848095245d540cda1b5f8f5bb3e8ddcec8633b0437ee51c92d3ff23338f7eb0b"
+      "utf8Bytes": 35800,
+      "sha256": "bd320a86aa9beb9380473dac6b1657fa27d4d04bb5dbebe3a3c16c665c63a743"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -582,6 +592,16 @@
       "path": "test/import-transaction.test.mjs",
       "utf8Bytes": 2180,
       "sha256": "709f27678675828ef9bb765b853e84a8421abd34bd54c17e154cd7ab7fdca033"
+    },
+    {
+      "path": "test/install-runtime.ps1",
+      "utf8Bytes": 1313,
+      "sha256": "dc59fc84c15bea91fbc32ba540b45fb18d7a53a59deca355f8cd05c125598b48"
+    },
+    {
+      "path": "test/install-source.test.mjs",
+      "utf8Bytes": 2751,
+      "sha256": "1614b8582d6f38831c0fa95afd7fceb7f669923d41c7931b93c9fc05f071c6f8"
     },
     {
       "path": "test/integration.mjs",
@@ -712,6 +732,11 @@
       "path": "tools/create-manifest.mjs",
       "utf8Bytes": 562,
       "sha256": "ffc7951bb58fe69e2fcc96e0f28a513820c55cdc82b687d904fb7d306a478df9"
+    },
+    {
+      "path": "tools/install-source.mjs",
+      "utf8Bytes": 3662,
+      "sha256": "19c44c75ad07a878b0ef7523836711ae2634433a52a257255db5cdc33a67e18d"
     },
     {
       "path": "tools/library-maintenance.mjs",
@@ -845,8 +870,8 @@
     },
     {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 2175,
-      "sha256": "24803cc56004148b0517663aacb94072dffc5ed16c0c2158e73adb555de05f03"
+      "utf8Bytes": 2509,
+      "sha256": "c89072ef86828584f04d28b4c4cb9aaf2e7dd620d803ee553b99c9d67524d081"
     },
     {
       "path": "windows/ClientWindow.cs",
@@ -862,6 +887,16 @@
       "path": "windows/Install-UpdateReconnect.ps1",
       "utf8Bytes": 3841,
       "sha256": "7d5ac595e498236c3f7faab71e1f3928b0d641666640fbea898b00321619336d"
+    },
+    {
+      "path": "windows/Install-Wallpaper.ps1",
+      "utf8Bytes": 6083,
+      "sha256": "07597253e04bd22ccd6a25599c05848a0b668ab5e16a2e9e373637d0baf96836"
+    },
+    {
+      "path": "windows/InstallSupport.ps1",
+      "utf8Bytes": 3462,
+      "sha256": "251cb6ac59f765ad1ee41c247b4cd378840cc26fdc9f733ee6a57c3d7fbffdd0"
     },
     {
       "path": "windows/LaunchPolicy.ps1",
@@ -900,8 +935,8 @@
     },
     {
       "path": "windows/Runtime.ps1",
-      "utf8Bytes": 762,
-      "sha256": "29ff63a320902df5ff481556d51de2770000543f31c2ae6389475a7973afaeca"
+      "utf8Bytes": 1526,
+      "sha256": "9be7b808294f5b6026416239a48bc0d56f2065c28a6bddfe8eaa7caeffc949e1"
     },
     {
       "path": "windows/ShortcutIdentity.cs",
@@ -910,8 +945,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 19055,
-      "sha256": "3bc65aef8ce08800f5a5400b93d337c841c7ddf14c86f7b0c5d2ca1327578d74"
+      "utf8Bytes": 19104,
+      "sha256": "873ed85969a2e216821968a61a83d5e8334457f99ac0db05660a519183a88072"
     },
     {
       "path": "windows/StartupHealth.ps1",

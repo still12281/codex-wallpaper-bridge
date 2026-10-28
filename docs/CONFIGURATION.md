@@ -2,12 +2,15 @@
 
 All overrides are optional and evaluated locally. Do not publish real environment values.
 
+For normal installation and in-app setup, follow the [Chinese installation guide](INSTALL.zh-CN.md). `Install.cmd` prepares dependencies, copies reviewed source into a versioned private installation and creates unified desktop/Start-menu shortcuts. It preserves settings and does not launch or close Codex. The built entry records PowerShell, Node and supplied FFmpeg/uv executable paths so desktop launches do not depend on a refreshed PATH.
+
 | Variable | Use |
 | --- | --- |
 | `CODEX_WALLPAPER_DATA_DIR` | Absolute data directory. Defaults to the user's local application data folder, `CodexWallpaperBridge`. Keep it outside the repository. |
 | `CODEX_WALLPAPER_PWSH` | PowerShell 7 executable; otherwise discovered from PATH / the standard installation. |
 | `CODEX_WALLPAPER_NODE` | Node executable for the Windows launcher script; otherwise `node.exe` from PATH. |
 | `CODEX_WALLPAPER_FFMPEG` | FFmpeg executable; otherwise PATH or a supported local WinGet package is searched. |
+| `CODEX_WALLPAPER_UV` | uv executable used to prepare/run native capture; the installer records its resolved path. |
 | `CODEX_WALLPAPER_TEST_CHROME` | Browser executable for the optional isolated integration test only. |
 
 `settings.example.json` is intentionally empty. On first run, a private `settings.json` is created in the data directory. The UI writes the wallpaper library, playback limits, selection, palette and last folder there. New UI instances default to Wallpaper Engine + global discovered libraries; ordinary media requires an explicit folder.

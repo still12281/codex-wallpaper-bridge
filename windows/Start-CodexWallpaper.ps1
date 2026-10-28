@@ -8,6 +8,7 @@ $taskCodeRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')
 . (Join-Path $PSScriptRoot 'StartupHealth.ps1')
 $taskRoot = Get-WallpaperDataRoot
+Import-WallpaperOptionalRuntimes -Root $taskRoot
 $taskNode = Get-WallpaperNode
 . (Join-Path $taskCodeRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
 $taskStatusPath = Join-Path $taskRoot 'launch-status.json'

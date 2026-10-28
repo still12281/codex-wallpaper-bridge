@@ -23,6 +23,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Taskbar helper compilation failed' }
 $buildPowerShell=(Get-Process -Id $PID -ErrorAction Stop).Path
 if($PSVersionTable.PSVersion.Major -lt 7 -or [IO.Path]::GetFileName($buildPowerShell) -ine 'pwsh.exe'){throw 'Build using PowerShell 7 so its actual runtime path can be recorded.'}
 $buildRuntime=[ordered]@{schemaVersion=1;powerShell=$buildPowerShell;node=(Get-WallpaperNode)}
+foreach($optional in @(@{key='ffmpeg';value=$env:CODEX_WALLPAPER_FFMPEG},@{key='uv';value=$env:CODEX_WALLPAPER_UV})){
+  if($optional.value){if(-not (Test-Path -LiteralPath $optional.value -PathType Leaf)){throw ('Optional executable not found: '+$optional.key)};$buildRuntime[$optional.key]=[IO.Path]::GetFullPath($optional.value)}
+}
 $buildRuntime | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $buildDataRoot 'launcher-runtime.json') -Encoding utf8 -ErrorAction Stop
 [IO.File]::WriteAllText((Join-Path $buildDataRoot 'launch-script.txt'),(Join-Path $PSScriptRoot 'Start-CodexWallpaper.ps1'),[Text.UTF8Encoding]::new($false))
 Write-Output "Built launcher in $buildDataRoot. No shortcut was changed and no app was started."
