@@ -35,7 +35,9 @@
 
 ## 查看和停用
 
-新安装可在交互安装时选择启用，或执行 `Install.cmd -UpdateReconnect enable -NonInteractive -NoPause`；`keep` 保持现有任务，`disable` 移除属于该安装的规则。Windows 任务计划程序有时把主体从 SID 回显为账号名；安装/检查现有任务时会先解析到 SID 再核对，避免同一用户重复安装被误拒绝。只读的 `Install-UpdateReconnect.ps1 -Root <数据目录> -InspectOnly` 验证任务结构而不触发重连。
+新安装可在交互安装时选择启用。Windows 任务计划程序有时把主体从 SID 回显为账号名；安装/检查现有任务时会先解析到 SID 再核对，避免同一用户重复安装被误拒绝。只读的 `Install-UpdateReconnect.ps1 -Root <数据目录> -InspectOnly` 验证任务结构而不触发重连。
+
+自动恢复失败不会封锁普通入口。保存工作并正常退出客户端后，运行数据目录的 `Repair.cmd`，或直接运行 `CodexEntry.exe`。手动启动不受自动任务已消费版本的限制，详见[手动恢复](INSTALL.zh-CN.md#更新后壁纸消失手动恢复)。
 
 在PowerShell中查看当前用户规则：
 

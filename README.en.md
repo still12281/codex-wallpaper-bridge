@@ -41,19 +41,11 @@ There are no production npm dependencies. The required parsing and Windows helpe
 ## Setup
 
 1. On Windows 10/11 x64, install the official Microsoft Store Codex client, open it and sign in.
-2. Choose **Code → Download ZIP** in this repository, then extract it locally.
+2. Download a versioned `CodexWallpaperBridge-*.zip` package and its `.sha256` file from [Releases](https://github.com/still12281/codex-wallpaper-bridge/releases), then extract it locally.
 3. Double-click **[Install.cmd](Install.cmd)**. Choose a separate Codex Wallpaper entry or replacement of identified original shortcuts with backups, then choose whether to enable one graceful reconnect after future updates. Stay online and allow dependency installation if Windows asks.
 4. Wait for **Installed**, save work and exit ordinary Codex normally. Open the selected wallpaper entry. Taskbar pins must be replaced manually.
 
 The installer detects or installs PowerShell 7, Node.js 22+, FFmpeg and uv through WinGet; prepares the pinned WebWallGL runtime and Python 3.12 capture dependencies; and copies reviewed source into a versioned installation. Git, npm install and manual JSON configuration are not required. It does not close or launch Codex. A future-update event task is registered only when explicitly enabled; there is no custom resident watcher. Separate-entry mode also prevents later startup from rewriting official shortcuts.
-
-For unattended setup from the extracted directory:
-
-```powershell
-.\Install.cmd -ShortcutMode separate -UpdateReconnect keep -NonInteractive -NoPause
-# Or replace identified original shortcuts with backups and enable update recovery:
-.\Install.cmd -ShortcutMode replace -UpdateReconnect enable -NonInteractive -NoPause
-```
 
 Replacement affects verified current-user desktop/Start-menu `.lnk` files. It preserves Store registration, taskbar pins, unrelated shortcuts and custom arguments. See [shortcut restoration and installation options](docs/INSTALL.zh-CN.md).
 
@@ -62,6 +54,12 @@ Data and installed versions live under `%LOCALAPPDATA%\CodexWallpaperBridge`. Yo
 See the [complete installation guide](docs/INSTALL.zh-CN.md) for custom directories, manual commands, executable overrides, first-use configuration, troubleshooting, updates and removal. Read [security](SECURITY.md) and [privacy](PRIVACY.md) before installing.
 
 For a local Codex debugging session started through the unified entry, `npm start` attaches the host to loopback port 9335. It does not enable debugging on an ordinary running client. Do not expose the port to a network.
+
+## Manual recovery after a client update
+
+Click the wallpaper entry once to check/reconnect the host. If the wallpaper is still missing, save work and exit Codex normally, including background instances. Run `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd` from Win+R, or use `Repair.cmd` inside your custom data directory. Confirm you have exited the client, then the tool opens the stable `CodexEntry.exe` entry using the current registered package. It does not close processes or reset settings. The executable and `Codex.lnk` in the same directory are also available if desktop shortcuts are missing.
+
+Manual startup is independent of the automatic update task's one-attempt-per-version limit. Reinstall the release package into the same data directory if installation files/dependencies are missing. See [manual recovery](docs/INSTALL.zh-CN.md) for detailed steps and error locations.
 
 ## Use
 

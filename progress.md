@@ -1,5 +1,11 @@
 # Migration progress
 
+## 2026-10-28 私有上传准备与手动恢复
+
+用户明确授权GitHub私有上传，待整体审核后再公开。新增Repair.cmd并由安装器放入稳定数据目录；先由用户正常退出，再打开原CodexEntry，不消费自动任务次数、不重置配置、不自动关进程。实际独立目录安装及Repair --check通过，当前客户端未关闭或启动。删除README/安装指南中解压后CLI一键部署示例，采用固定版本Release ZIP+SHA256，公网安装命令延后到真实发布。
+
+本轮82项Node单元测试通过；上传前Git历史审查59提交/740blob及11张当前审查图一致的PNG，无凭据/个人目录/完整SID/运行数据命中，提交身份为noreply。gh登录已恢复，目标still12281/codex-wallpaper-bridge，必须核对PRIVATE后才推送，并将安装包仅放草稿Release；本授权不包含公开仓库。
+
 ## 2026-10-28 快捷方式模式、恢复与命令行
 
 增加安装时separate/replace/none选择、enable/keep/disable更新选项及NonInteractive/NoPause。模式保存在仓库外installation.json，后续启动不再在专用模式下自动替换原入口；替换保留名字，核对官方路径/Store身份，备份原字节并建立哈希索引。Restore-Shortcuts保留后改文件并关闭自动替换；切回专用模式先按备份恢复原入口。真实任务计划检查发现SID/账号名规范化差异导致重复安装被误拒绝，修复后只读任务验证通过，现有任务未重注册或执行。

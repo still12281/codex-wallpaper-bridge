@@ -3,7 +3,7 @@
 ## 推荐：双击安装
 
 1. 安装官方 Microsoft Store 版 Codex，正常打开一次并登录。
-2. 在本仓库点击 **Code → Download ZIP**，解压到本地文件夹。不要在压缩包预览中直接运行。
+2. 从仓库 [Releases](https://github.com/still12281/codex-wallpaper-bridge/releases) 下载固定版本的 `CodexWallpaperBridge-*.zip` 和对应 `.sha256`，解压到本地文件夹。不要在压缩包预览中直接运行。
 3. 双击根目录的 **`Install.cmd`**。选择新建专用入口或替换原快捷方式，并选择是否启用更新后一次重连。保持联网，按 Windows 提示允许依赖安装。
 4. 出现绿色 **Installed** 后，保存工作并正常退出原来的 Codex。若客户端仍在后台运行，从其退出菜单结束会话。
 5. 专用模式打开 **Codex Wallpaper**；替换模式使用原名称的 Codex 入口。以后从所选入口启动带壁纸的 Codex，需要时将它固定到任务栏。
@@ -47,23 +47,6 @@ $script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).
 
 恢复前会核对原备份和当前快捷方式哈希；你后来改过的快捷方式会保留并提示，不直接覆盖。恢复同时关闭后续启动的自动替换。需要额外的壁纸入口时，再以 `-ShortcutMode separate` 运行安装器。
 
-## 命令行一键部署
-
-以下命令在已解压的项目目录执行。会自动准备依赖，安装期间不询问选项，结束不暂停；Windows 的依赖安装授权仍按系统提示处理。
-
-```powershell
-# 新建专用入口；不改变现有更新任务
-.\Install.cmd -ShortcutMode separate -UpdateReconnect keep -NonInteractive -NoPause
-
-# 替换已识别的原入口；启用后续更新的一次正常重连
-.\Install.cmd -ShortcutMode replace -UpdateReconnect enable -NonInteractive -NoPause
-
-# 自定义安装盘
-.\Install.cmd -DataDirectory 'D:\CodexWallpaperBridge' -ShortcutMode separate -UpdateReconnect keep -NonInteractive -NoPause
-```
-
-`-ShortcutMode` 可取 `separate / replace / none`；`-UpdateReconnect` 可取 `enable / keep / disable`。`keep` 不改任务，`disable` 只移除属于该安装的任务。无交互且未指定选项时，新安装默认专用入口并保持更新任务原状；升级保留已记录的入口选择。
-
 ## 系统和可选软件
 
 - **Windows 10/11 x64**，官方 Microsoft Store 版 Codex。
@@ -79,6 +62,7 @@ $script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).
 ```text
 %LOCALAPPDATA%\CodexWallpaperBridge\
   CodexEntry.exe          一体启动入口
+  Repair.cmd              手动恢复入口，不依赖自动更新任务
   Codex.lnk               带官方图标的快捷方式
   launcher-runtime.json   已检测到的依赖路径
   launch-script.txt       当前安装版本的位置
@@ -90,6 +74,18 @@ $script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).
 ```
 
 程序会复制到安装目录。安装成功后，下载的 ZIP 和解压文件夹可以移走；不要移动正在使用的安装目录。升级时重新下载、解压并运行 `Install.cmd`，继续使用原数据目录。安装器保留旧版本，不自动清理你的数据。
+
+## 更新后壁纸消失：手动恢复
+
+自动重连失败后仍可手动恢复。手动启动走普通入口，不读取自动任务的“该版本已尝试”限制。
+
+1. **先重新点一次壁纸入口。** 专用模式用 Codex Wallpaper，替换模式用原名称的 Codex；如果只是壁纸宿主断开，入口会检查并补接。
+2. **仍无壁纸时，保存内容并正常退出 Codex。** 关闭全部窗口，并从应用退出菜单结束仍在后台的实例。不要在任务管理器中强制结束来代替正常退出。
+3. **运行安装目录的 `Repair.cmd`。** 默认位置可按 `Win + R` 输入 `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`。自定义安装时使用自己选择的数据目录。确认已正常退出后按键，工具会通过 `CodexEntry.exe` 重新识别当前包并启动。
+4. **入口丢失也能恢复。** 同一数据目录中的 `CodexEntry.exe` 和 `Codex.lnk` 均为稳定入口，不依赖桌面快捷方式或自动任务。
+5. **依赖/安装文件缺失时重新安装。** 下载 Release 安装包，运行安装器并选择原数据目录；壁纸库和配置会保留。若新版客户端改变了接入方式，使用兼容该客户端的新版桥接程序。
+
+手动恢复不重置设置、不删除素材、不消费自动重连次数，不修改官方包或 CSP。`Repair.cmd` 只提示你先自行退出，然后打开原一体入口，不负责自动关进程。错误可查看数据目录中的 `entry-error.log` 和 `launch-status.json`；分享前隐藏个人路径和内容。
 
 ### 更换安装盘
 
@@ -141,7 +137,7 @@ node ./tools/prepare-media-bridge.mjs
 
 ## 可选：更新后一次重连
 
-安装时选 `y` 或命令行传 `-UpdateReconnect enable` 即可启用；无需再手动执行本节命令。每次从壁纸入口启动都会重新识别当前注册包。事件任务用于处理更新直接重开客户端、未经过壁纸入口的情况；只在未来更新后尝试一次正常关闭/重连，不用于平常启动时重启客户端。
+安装时选 `y` 即可启用；无需再手动执行本节命令。每次从壁纸入口启动都会重新识别当前注册包。事件任务用于处理更新直接重开客户端、未经过壁纸入口的情况；只在未来更新后尝试一次正常关闭/重连，不用于平常启动时重启客户端。失败后按上面的手动恢复流程处理。
 
 在 PowerShell 7 中运行：
 

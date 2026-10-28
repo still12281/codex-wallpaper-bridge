@@ -70,6 +70,7 @@ try{
   if($LASTEXITCODE -ne 0){throw 'Entry build failed; see the compiler message above.'}
   & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Prepare-TaskbarEntry.ps1')
   if($LASTEXITCODE -ne 0){throw 'Shortcut preparation failed; see the message above.'}
+  Copy-Item -LiteralPath (Join-Path $installDirectory 'Repair.cmd') -Destination (Join-Path $installDataRoot 'Repair.cmd') -Force -ErrorAction Stop
   $installEntry=Join-Path $installDataRoot 'CodexEntry.exe';$installLink=Join-Path $installDataRoot 'Codex.lnk'
   if($installChoices.shortcutMode -eq 'separate' -and $installPrevious.shortcutMode -eq 'replace'){
     $restored=@(& (Join-Path $installDirectory 'windows/Restore-Shortcuts.ps1') -Root $installDataRoot)

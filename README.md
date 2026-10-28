@@ -6,7 +6,7 @@
 
 **本地壁纸 · 一体入口 · 内嵌控制面板 · 可选 GPU 场景**
 
-[为什么选择它](#为什么选择它) · [效果展示](#效果展示) · [一键安装](#一键安装) · [首次使用](#首次使用) · [配置](#怎么配置) · [文档](#相关文档)
+[为什么选择它](#为什么选择它) · [效果展示](#效果展示) · [安装](#安装) · [首次使用](#首次使用) · [配置](#怎么配置) · [文档](#相关文档)
 
 ![真实桌面客户端中的空白新对话与壁纸](docs/images/01-overview.png)
 
@@ -79,11 +79,20 @@ GPU 不能保证兼容任意场景；打包场景、图片副本及单次资源�
 
 启动入口会重新识别当前注册的 Codex 安装包。可选安装一次性更新重连规则，在后续更新事件尝试一次正常恢复，不强制终止客户端、不增加自有常驻监控。见[更新重连说明](docs/AFTER-UPDATE-RECONNECT.zh-CN.md)。
 
-## 一键安装
+### 更新后壁纸消失，怎么手动恢复
+
+1. 先点击安装时选择的壁纸入口，让它重新检查并接入。
+2. 若仍未恢复，保存工作并通过应用菜单**正常退出 Codex**，包括仍在后台的实例。
+3. 按 `Win + R`，输入 `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`，按提示重新打开。自定义安装时使用对应目录里的 `Repair.cmd`；同目录的 `CodexEntry.exe` 也可直接运行。
+4. 若提示安装文件或依赖缺失，重新运行本项目安装包，选择原来的数据目录。
+
+手动入口不受自动更新任务“只尝试一次”的限制，不清空壁纸库和设置。详细处理见[手动恢复指南](docs/INSTALL.zh-CN.md#更新后壁纸消失手动恢复)。
+
+## 安装
 
 **准备：Windows 10/11 x64，已安装并登录官方 Microsoft Store 版 Codex，保持联网。**
 
-1. 点击本仓库 **Code → Download ZIP**，解压到本地文件夹。
+1. 从本仓库的 [Releases](https://github.com/still12281/codex-wallpaper-bridge/releases) 下载固定版本的 `CodexWallpaperBridge-*.zip` 安装包，解压到本地文件夹。对应 `.sha256` 文件用于核对下载完整性。
 2. 双击 **[`Install.cmd`](Install.cmd)**。选择 **1：新建 Codex Wallpaper 专用入口**，或 **2：备份并替换识别到的原 Codex 快捷方式**。
 3. 按提示选择是否启用更新后一次重连；等待绿色 **Installed** 提示。依赖安装弹出 Windows 授权时，按提示确认。
 4. 保存工作并正常退出原来的 Codex，再从所选入口打开。任务栏需要手动取消旧固定项并固定新的入口。
@@ -92,19 +101,7 @@ GPU 不能保证兼容任意场景；打包场景、图片副本及单次资源�
 
 替换模式只处理当前用户桌面/开始菜单中经过路径或 Store 应用身份确认的 `.lnk`，保留原名并保存原文件备份；没有可替换文件时创建桌面 `Codex` 快捷方式。不改 Store 注册入口或任务栏固定数据。专用模式会保留原入口，后续启动也不会自动替换它。
 
-### 命令行一键安装
-
-在解压目录打开终端，任选一条执行，无需回答安装选项或按键结束：
-
-```powershell
-# 新建专用快捷方式，保留现有更新任务设置
-.\Install.cmd -ShortcutMode separate -UpdateReconnect keep -NonInteractive -NoPause
-
-# 备份并替换原Codex快捷方式，同时启用更新后一次正常重连
-.\Install.cmd -ShortcutMode replace -UpdateReconnect enable -NonInteractive -NoPause
-```
-
-自定义安装盘可追加 `-DataDirectory 'D:\CodexWallpaperBridge'`。`-UpdateReconnect enable` 注册 Windows 更新事件任务：仅在后续 Codex 更新后尝试一次正常重连，不强制结束、不增加自有常驻监控。升级安装默认沿用已保存的快捷方式模式和现有更新任务。
+更新重连仅在后续 Codex 更新后尝试一次正常恢复，不强制结束、不增加自有常驻监控。升级安装默认沿用已保存的快捷方式模式和现有更新任务。自定义安装盘见[安装指南](docs/INSTALL.zh-CN.md#更换安装盘)。
 
 | 你想使用什么 | 还需要安装什么 |
 | --- | --- |
