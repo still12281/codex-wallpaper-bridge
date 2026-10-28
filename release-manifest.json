@@ -335,8 +335,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 21325,
-      "sha256": "9a09db95fde05a6090af6171c7cd74bda43934d0a91748369043b9c1ced908c9"
+      "utf8Bytes": 21606,
+      "sha256": "d40994d8d47e61a682a1939e753edefcab602c57a05aa67a584f0213240c8066"
     },
     {
       "path": "settings.example.json",
@@ -635,8 +635,8 @@
     },
     {
       "path": "test/launch-policy.ps1",
-      "utf8Bytes": 5043,
-      "sha256": "be194f9275873cda7b68185e13fba24695be0875d8441bc743c5725ae5c58843"
+      "utf8Bytes": 5063,
+      "sha256": "e034952716d2075e180cc18a69acb055dca674d9e7cd5a28f9cd9c47712de5dd"
     },
     {
       "path": "test/launcher-runtime.ps1",

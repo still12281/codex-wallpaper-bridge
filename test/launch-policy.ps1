@@ -38,8 +38,9 @@ Assert-Policy (-not (Test-WallpaperOfficialCodexPath 'C:\Program Files\WindowsAp
 $ambiguous=Client '26.1.1.1' 107;$ambiguous.ExecutablePath='E:\OtherRoot\WindowsApps\OpenAI.Codex_26.1.1.1_x64__2p2nqsd0c76g0\app\ChatGPT.exe'
 $blocked=$false;try{Select-WallpaperCodexProcesses @($ambiguous) 1|Out-Null}catch{$blocked=$true}
 Assert-Policy $blocked 'An ambiguous old install root would permit a second client'
-$data='E:\Bridge';$code='E:\Bridge\versions\release-aaaaaaaaaaaaaaaa';$node='C:\Runtime\node.exe';$now=[DateTimeOffset]::UtcNow
-$process=[pscustomobject]@{ProcessId=123;ExecutablePath=$node;CommandLine='"C:\Runtime\node.exe" --expose-gc "E:\Bridge\versions\release-bbbbbbbbbbbbbbbb\src\video-cdp-host.mjs" --cdp-port 9335'}
+$data=Join-Path ([IO.Path]::GetTempPath()) 'cwb-policy-fixture';$code=Join-Path $data 'versions/release-aaaaaaaaaaaaaaaa';$node='C:\Runtime\node.exe';$now=[DateTimeOffset]::UtcNow
+$oldHost=Join-Path $data 'versions/release-bbbbbbbbbbbbbbbb/src/video-cdp-host.mjs'
+$process=[pscustomobject]@{ProcessId=123;ExecutablePath=$node;CommandLine=('"'+$node+'" --expose-gc "'+$oldHost+'" --cdp-port 9335')}
 $status=[pscustomobject]@{pid=123;browserId='current-browser';updatedAt=$now.ToString('o')}
 Assert-Policy ((Get-WallpaperHostDecision $process $status $data $code $node 'current-browser' $now) -eq 'reuse') 'Healthy previous-version host would be duplicated'
 $status.updatedAt=$now.AddSeconds(-30).ToString('o')
@@ -48,7 +49,7 @@ $status.updatedAt=$now.ToString('o');$process.ExecutablePath='C:\OldRuntime\node
 Assert-Policy ((Get-WallpaperHostDecision $process $status $data $code $node 'current-browser' $now) -eq 'conflict') 'Old Node runtime host would be duplicated'
 $unreported=[pscustomobject]@{Name='node.exe';CommandLine=$process.CommandLine}
 Assert-Policy (@(Select-WallpaperOwnedHosts @($unreported) $data $code).Count -eq 1) 'Missing status would hide the old host'
-foreach($bad in @('E:\OtherBridge\versions\release-bbbbbbbbbbbbbbbb\src\video-cdp-host.mjs','E:\Bridge\versions\release-bbbbbbbbbbbbbbbb\src\video-cdp-host.mjs.backup','E:\Bridge\versions\release-bbbbbbbbbbbbbbbb\..\src\video-cdp-host.mjs')){
+foreach($bad in @(($data+'-foreign\versions\release-bbbbbbbbbbbbbbbb\src\video-cdp-host.mjs'),($oldHost+'.backup'),($data+'\versions\release-bbbbbbbbbbbbbbbb\..\src\video-cdp-host.mjs'))){
   Assert-Policy (-not (Test-WallpaperHostScript ('node.exe "'+$bad+'"') $data $code)) 'Host path boundary failed'
 }
 Write-Output 'PASS: old/new roots blocked; renderer allowed; foreign session/path excluded; official default profile retained.'
