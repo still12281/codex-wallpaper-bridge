@@ -60,7 +60,7 @@
 
 </details>
 
-主图的第三方壁纸为 `anime-girl-saint-4K-perseutech`，权利归原作者；本仓库的代码许可不授予壁纸或客户端品牌使用权。
+演示壁纸来源：[anime-girl-saint-4K-perseutech](https://steamcommunity.com/sharedfiles/filedetails/?id=3552392736)，工坊上传者 **perseu**。图片只展示客户端效果，不提供原壁纸文件；壁纸与客户端品牌的权利归各自权利人，不随本项目代码许可重新授权。
 
 ### 选择哪种运行方式
 

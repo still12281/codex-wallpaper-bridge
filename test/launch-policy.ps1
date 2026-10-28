@@ -1,6 +1,11 @@
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot '../windows/LaunchPolicy.ps1')
 function Assert-Policy($Condition,[string]$Message){if(-not $Condition){throw $Message}}
+Set-WallpaperTrustedPackageRoots @([pscustomobject]@{PackageFamilyName='OpenAI.Codex_2p2nqsd0c76g0';SignatureKind='Store';PackageRoot='C:\Program Files\WindowsApps\OpenAI.Codex_1.0.0.0_x64__2p2nqsd0c76g0'})
+& {
+  function Get-DreamSkinRegisteredCodexInstalls { @([pscustomobject]@{PackageFamilyName='OpenAI.Codex_other';SignatureKind='Store'},[pscustomobject]@{PackageFamilyName='OpenAI.Codex_2p2nqsd0c76g0';SignatureKind='Store'}) }
+  Assert-Policy ((Get-WallpaperRegisteredCodex).PackageFamilyName -ceq 'OpenAI.Codex_2p2nqsd0c76g0') 'Another Store publisher could replace the official package'
+}
 function Client($Version,$Id,$Session=1,$Command=''){
   [pscustomobject]@{Name='ChatGPT.exe';ExecutablePath="C:\Program Files\WindowsApps\OpenAI.Codex_${Version}_x64__2p2nqsd0c76g0\app\ChatGPT.exe";ProcessId=$Id;SessionId=$Session;CommandLine=$Command}
 }
@@ -27,4 +32,23 @@ $blocked=$false;try{Select-WallpaperCodexProcesses @($unknown) 1}catch{$blocked=
 Assert-Policy $blocked 'Unreadable identity was ignored'
 $arguments=@(Get-WallpaperDebugArguments 9335)
 Assert-Policy ($arguments.Count -eq 2 -and -not ($arguments -match '--user-data-dir')) 'Independent profile reintroduced'
+Assert-Policy (-not (Test-WallpaperOfficialCodexPath 'E:\user-project\WindowsApps\OpenAI.Codex_unrelatedpublisher\app\ChatGPT.exe')) 'Imitation package path was trusted'
+Assert-Policy (-not (Test-WallpaperOfficialCodexPath 'E:\user-project\WindowsApps\OpenAI.Codex_26.1.1.1_x64__2p2nqsd0c76g0\app\ChatGPT.exe')) 'Imitation WindowsApps root was trusted'
+Assert-Policy (-not (Test-WallpaperOfficialCodexPath 'C:\Program Files\WindowsApps\OpenAI.Codex_26.1.1.1_x64__unrelatedpublisher\app\ChatGPT.exe')) 'Unknown publisher was trusted'
+$ambiguous=Client '26.1.1.1' 107;$ambiguous.ExecutablePath='E:\OtherRoot\WindowsApps\OpenAI.Codex_26.1.1.1_x64__2p2nqsd0c76g0\app\ChatGPT.exe'
+$blocked=$false;try{Select-WallpaperCodexProcesses @($ambiguous) 1|Out-Null}catch{$blocked=$true}
+Assert-Policy $blocked 'An ambiguous old install root would permit a second client'
+$data='E:\Bridge';$code='E:\Bridge\versions\release-aaaaaaaaaaaaaaaa';$node='C:\Runtime\node.exe';$now=[DateTimeOffset]::UtcNow
+$process=[pscustomobject]@{ProcessId=123;ExecutablePath=$node;CommandLine='"C:\Runtime\node.exe" --expose-gc "E:\Bridge\versions\release-bbbbbbbbbbbbbbbb\src\video-cdp-host.mjs" --cdp-port 9335'}
+$status=[pscustomobject]@{pid=123;browserId='current-browser';updatedAt=$now.ToString('o')}
+Assert-Policy ((Get-WallpaperHostDecision $process $status $data $code $node 'current-browser' $now) -eq 'reuse') 'Healthy previous-version host would be duplicated'
+$status.updatedAt=$now.AddSeconds(-30).ToString('o')
+Assert-Policy ((Get-WallpaperHostDecision $process $status $data $code $node 'current-browser' $now) -eq 'conflict') 'Stale previous-version host would be duplicated'
+$status.updatedAt=$now.ToString('o');$process.ExecutablePath='C:\OldRuntime\node.exe'
+Assert-Policy ((Get-WallpaperHostDecision $process $status $data $code $node 'current-browser' $now) -eq 'conflict') 'Old Node runtime host would be duplicated'
+$unreported=[pscustomobject]@{Name='node.exe';CommandLine=$process.CommandLine}
+Assert-Policy (@(Select-WallpaperOwnedHosts @($unreported) $data $code).Count -eq 1) 'Missing status would hide the old host'
+foreach($bad in @('E:\OtherBridge\versions\release-bbbbbbbbbbbbbbbb\src\video-cdp-host.mjs','E:\Bridge\versions\release-bbbbbbbbbbbbbbbb\src\video-cdp-host.mjs.backup','E:\Bridge\versions\release-bbbbbbbbbbbbbbbb\..\src\video-cdp-host.mjs')){
+  Assert-Policy (-not (Test-WallpaperHostScript ('node.exe "'+$bad+'"') $data $code)) 'Host path boundary failed'
+}
 Write-Output 'PASS: old/new roots blocked; renderer allowed; foreign session/path excluded; official default profile retained.'

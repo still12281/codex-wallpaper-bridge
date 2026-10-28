@@ -37,4 +37,13 @@ jobs:
           & $binary -version
           if ($LASTEXITCODE -ne 0) { throw 'Test FFmpeg is not executable' }
       - run: npm test
+      - name: Installer and startup policy regressions
+        if: matrix.node == 24
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($test in @('launch-policy','startup-health','install-options','install-upgrade','install-dependencies','update-reconnect')) {
+            & "./test/$test.ps1"
+          }
+          & ./test/install-runtime.ps1 -ScratchDirectory (Join-Path $env:RUNNER_TEMP 'cwb-runtime-path-test')
       - run: npm run check:privacy

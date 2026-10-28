@@ -22,7 +22,7 @@ try{
   foreach($item in @(@($runtime.powerShell,'pwsh.exe'),@($runtime.node,'node.exe'))){if(-not [IO.Path]::IsPathFullyQualified($item[0]) -or [IO.Path]::GetFileName($item[0]) -ine $item[1] -or -not (Test-Path -LiteralPath $item[0] -PathType Leaf)){throw 'Recorded runtime is unavailable'}}
   . (Join-Path (Split-Path -Parent $bootstrap) 'LaunchPolicy.ps1')
   . (Join-Path $codeRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
-  $installed=Get-DreamSkinCodexInstall
+  $installed=Get-WallpaperRegisteredCodex
   $decision=Get-WallpaperUpdateDecision -Event $event -State $state -Installed $installed -UserId $userId
   $validationState=@{armedAt=$state.armedAt;baselineRecordId=$state.baselineRecordId;observedVersion=$state.observedVersion}
   if($InspectOnly){[ordered]@{inspectOnly=$true;decision=$decision;eventRecordId=$record;currentClientUnchanged=$true}|ConvertTo-Json -Depth 5;return}
@@ -49,7 +49,7 @@ try{
   $snapshot=$roots[0]
   $state.attempt=[ordered]@{package=$event.package;eventRecordId=$record;processId=$snapshot.id;createdAt=$snapshot.createdAt;closeRequired=(-not $reattach);at=[DateTimeOffset]::UtcNow.ToString('o')};$state.phase='one-reconnect-attempt';Save-WallpaperUpdateState $Root $state
   if($reattach){$state.phase='ready-to-relaunch'}else{$state.phase=Invoke-WallpaperUpdateCloseOnce -Close {
-    $freshInstall=Get-DreamSkinCodexInstall
+    $freshInstall=Get-WallpaperRegisteredCodex
     if($freshInstall.Executable -ine $snapshot.path -or -not (Get-WallpaperUpdateDecision -Event $event -State $validationState -Installed $freshInstall -UserId $userId).eligible){return $false}
     $current=@(UpdateRoots);if($current.Count -ne 1 -or $current[0].id -ne $snapshot.id -or $current[0].ticks -ne $snapshot.ticks -or $current[0].path -ine $snapshot.path){return $false}
     $process=Get-Process -Id $snapshot.id -ErrorAction Stop

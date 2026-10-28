@@ -18,10 +18,19 @@ function Resolve-WallpaperInstallChoices {
 function Get-WallpaperInstallDependency([string]$Name) {
   $variable=@{node='CODEX_WALLPAPER_NODE';pwsh='CODEX_WALLPAPER_PWSH';ffmpeg='CODEX_WALLPAPER_FFMPEG';uv='CODEX_WALLPAPER_UV'}[$Name]
   $override=[Environment]::GetEnvironmentVariable($variable,'Process')
-  if($override){if(-not (Test-Path -LiteralPath $override -PathType Leaf)){throw "Invalid $variable executable path"};return [IO.Path]::GetFullPath($override)}
-  $command=Get-Command ($Name+'.exe') -ErrorAction SilentlyContinue
-  if($command){return $command.Source}
-  $candidates=@()
+  if($override){
+    if(-not (Test-Path -LiteralPath $override -PathType Leaf) -or -not (Test-WallpaperInstallDependency $Name $override)){
+      $detail=if($Name -eq 'ffmpeg'){' FFmpeg requires a working ffprobe.exe in the same directory.'}else{''}
+      throw "Invalid $variable executable/version.$detail"
+    }
+    return [IO.Path]::GetFullPath($override)
+  }
+  foreach($candidate in @(Get-WallpaperInstallCandidates $Name)){if((Test-Path -LiteralPath $candidate -PathType Leaf) -and (Test-WallpaperInstallDependency $Name $candidate)){return [IO.Path]::GetFullPath($candidate)}}
+  return $null
+}
+function Get-WallpaperInstallCandidates([string]$Name) {
+  $commands=@(Get-Command ($Name+'.exe') -All -CommandType Application -ErrorAction SilentlyContinue)
+  $candidates=@($commands|ForEach-Object Source)
   switch($Name){
     node {$candidates+=Join-Path $env:ProgramFiles 'nodejs/node.exe'}
     pwsh {$candidates+=Join-Path $env:ProgramFiles 'PowerShell/7/pwsh.exe'}
@@ -34,14 +43,13 @@ function Get-WallpaperInstallDependency([string]$Name) {
       foreach($folder in Get-ChildItem -LiteralPath $package.FullName -Directory -ErrorAction Stop){$candidates+=Join-Path $folder.FullName 'bin/ffmpeg.exe'}
     }}
   }
-  foreach($candidate in $candidates){if(Test-Path -LiteralPath $candidate -PathType Leaf){return [IO.Path]::GetFullPath($candidate)}}
-  return $null
+  return @($candidates|Select-Object -Unique)
 }
 function Test-WallpaperInstallDependency([string]$Name,[string]$Executable) {
   if(-not $Executable){return $false}
   try{
     $info=New-Object Diagnostics.ProcessStartInfo
-    $info.FileName=$Executable;$info.Arguments=if($Name -eq 'pwsh'){'-NoProfile -Command "$PSVersionTable.PSVersion.Major"'}elseif($Name -eq 'ffmpeg'){'-version'}else{'--version'}
+    $info.FileName=$Executable;$info.Arguments=if($Name -eq 'pwsh'){'-NoProfile -Command "$PSVersionTable.PSVersion.Major"'}elseif($Name -in @('ffmpeg','ffprobe')){'-version'}else{'--version'}
     $info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.RedirectStandardOutput=$true;$info.RedirectStandardError=$true
     $process=New-Object Diagnostics.Process;$process.StartInfo=$info
     try{
@@ -52,8 +60,32 @@ function Test-WallpaperInstallDependency([string]$Name,[string]$Executable) {
     }finally{$process.Dispose()}
     if($Name -eq 'pwsh'){return [int]$output.Trim() -ge 7}
     if($Name -eq 'node'){return "$output" -match '^v(\d+)\.' -and [int]$Matches[1] -ge 22}
+    if($Name -eq 'ffmpeg'){
+      $probe=Join-Path (Split-Path -Parent $Executable) 'ffprobe.exe'
+      return "$output" -match 'ffmpeg version' -and (Test-Path -LiteralPath $probe -PathType Leaf) -and (Test-WallpaperInstallDependency 'ffprobe' $probe)
+    }
+    if($Name -eq 'ffprobe'){return "$output" -match 'ffprobe version'}
     return "$output" -match $(if($Name -eq 'uv'){'^uv \d+\.'}else{'ffmpeg version'})
   }catch{return $false}
+}
+function Install-WallpaperReplacementShortcuts {
+  param([string]$Root,[string]$CodexAppId,[string]$DesktopDirectory=[Environment]::GetFolderPath('Desktop'),[string[]]$Candidates)
+  $arguments=@{Root=$Root;CodexAppId=$CodexAppId}
+  if($PSBoundParameters.ContainsKey('Candidates')){$arguments.Candidates=$Candidates}
+  $replaced=@(Repair-WallpaperEntryShortcuts @arguments)
+  if(@($replaced|Where-Object error).Count){throw 'Some shortcuts could not be replaced. Originals are backed up; inspect shortcut-replacements.json.'}
+  $entry=Join-Path $Root 'CodexEntry.exe';$desktopLink=Join-Path $DesktopDirectory 'Codex.lnk'
+  $paths=@($desktopLink)+@($Candidates)
+  $index=Join-Path $Root 'shortcut-replacements.json'
+  if(Test-Path -LiteralPath $index){$paths+=@((Get-Content -LiteralPath $index -Raw|ConvertFrom-Json).links|ForEach-Object path)}
+  $existing=$false;$shell=New-Object -ComObject WScript.Shell
+  try{foreach($file in ($paths|Where-Object {$_ -and (Test-Path -LiteralPath $_)}|Select-Object -Unique)){
+    $link=$shell.CreateShortcut($file)
+    try{if($link.TargetPath -and [IO.Path]::GetFullPath($link.TargetPath) -ieq [IO.Path]::GetFullPath($entry)){$existing=$true;break}}finally{[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($link)}
+  }}finally{[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)}
+  $created=$false
+  if(-not @($replaced|Where-Object changed).Count -and -not $existing){Publish-WallpaperInstallShortcut (Join-Path $Root 'Codex.lnk') $desktopLink $entry;$created=$true}
+  [pscustomobject]@{replaced=@($replaced|Where-Object changed).Count;existingManaged=$existing;createdFallback=$created}
 }
 function Publish-WallpaperInstallShortcut([string]$Source,[string]$Destination,[string]$Entry) {
   $shell=New-Object -ComObject WScript.Shell

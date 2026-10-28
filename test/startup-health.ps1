@@ -1,6 +1,7 @@
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot '../windows/StartupHealth.ps1')
 function Assert-Startup($Condition,[string]$Message){if(-not $Condition){throw $Message}}
+Set-WallpaperTrustedPackageRoots @([pscustomobject]@{PackageFamilyName='OpenAI.Codex_2p2nqsd0c76g0';SignatureKind='Store';PackageRoot='C:\Program Files\WindowsApps\OpenAI.Codex_1.0.0.0_x64__2p2nqsd0c76g0'})
 $root=Join-Path ([IO.Path]::GetTempPath()) ('cwb-startup-'+[guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
 $old=[pscustomobject]@{version='26.1021.3705.0';package='old';at='2026-10-27T00:00:00Z'}
 [IO.File]::WriteAllText((Join-Path $root 'entry-health.json'),(@{lastSuccess=$old}|ConvertTo-Json))

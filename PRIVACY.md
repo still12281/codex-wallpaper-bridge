@@ -10,13 +10,15 @@ The public host does **not** automatically take screenshots of the desktop or ch
 
 ## Local runtime data
 
-By default all generated data is under `%LOCALAPPDATA%\CodexWallpaperBridge`, outside the checkout. `CODEX_WALLPAPER_DATA_DIR` may override it with an absolute path. Do not point this setting inside a repository you intend to publish.
+Bridge-managed settings, media copies, installed versions, diagnostics and helper caches live under `%LOCALAPPDATA%\CodexWallpaperBridge` by default, outside the checkout. `CODEX_WALLPAPER_DATA_DIR` may override it with an absolute path. Do not point this setting inside a repository you intend to publish.
+
+The official client uses its own existing account profile; the unified entry does not create or move that profile. GPU resource CacheStorage lives in that official profile and is not included in a bridge data-directory backup. The optional Chromium Web renderer uses separate, private dedicated browser-profile slots under `web-runtime` in the bridge data directory; stopping the browser does not delete those directories. Legacy dedicated Codex profiles, if present from an older installation, are retained rather than migrated or deleted. See [local maintenance](docs/MAINTENANCE.zh-CN.md) before backing up, clearing caches or uninstalling.
 
 This data can contain:
 
 - Wallpaper source paths, titles, Workshop IDs, search locations and choices in `settings.json`.
 - Imported/extracted source copies and converted media under `media` and `staging`.
-- The debugging profile, with any data stored by the official client in that profile. Treat it as sensitive account data.
+- Legacy dedicated debugging profiles retained from older installations, or the separate Chromium Web source profile. Treat any profile containing account data as sensitive; do not include it in reports.
 - Local process, CDP browser/target identifiers and diagnostic errors in status/log files.
 - A launcher sidecar containing the source checkout path, and a locally extracted app icon.
 

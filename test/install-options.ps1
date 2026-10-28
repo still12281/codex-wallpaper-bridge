@@ -2,6 +2,7 @@ $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot '../windows/InstallSupport.ps1')
 . (Join-Path $PSScriptRoot '../windows/StartupHealth.ps1')
 function Assert-Option($Condition,[string]$Message){if(-not $Condition){throw $Message}}
+Set-WallpaperTrustedPackageRoots @([pscustomobject]@{PackageFamilyName='OpenAI.Codex_2p2nqsd0c76g0';SignatureKind='Store';PackageRoot='C:\Program Files\WindowsApps\OpenAI.Codex_1.0.0.0_x64__2p2nqsd0c76g0'})
 $noPrompt={throw 'Noninteractive/preserved settings must not prompt'}
 $choice=Resolve-WallpaperInstallChoices -NonInteractive -ReadChoice $noPrompt
 Assert-Option ($choice.shortcutMode -eq 'separate' -and $choice.updateReconnect -eq 'keep') 'Unattended defaults changed existing shortcuts or update tasks'
@@ -13,7 +14,7 @@ Assert-Option ($choice.shortcutMode -eq 'replace' -and $choice.updateReconnect -
 $root=Join-Path ([IO.Path]::GetTempPath()) ('cwb-options-'+[guid]::NewGuid());[void][IO.Directory]::CreateDirectory((Join-Path $root 'icons'))
 $entry=Join-Path $root 'CodexEntry.exe';[IO.File]::WriteAllText($entry,'fixture');[IO.File]::WriteAllText((Join-Path $root 'icons/Codex-Native.ico'),'fixture')
 $shell=New-Object -ComObject WScript.Shell
-$file=Join-Path $root 'Codex.lnk';$link=$shell.CreateShortcut($file);$link.TargetPath='C:\Program Files\WindowsApps\OpenAI.Codex_fixture_x64__fixture\app\ChatGPT.exe';$link.Description='original description';$link.Save();[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($link)
+$file=Join-Path $root 'Codex.lnk';$link=$shell.CreateShortcut($file);$link.TargetPath='C:\Program Files\WindowsApps\OpenAI.Codex_1.0.0.0_x64__2p2nqsd0c76g0\app\ChatGPT.exe';$link.Description='original description';$link.Save();[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($link)
 $original=[IO.File]::ReadAllBytes($file)
 foreach($mode in @('separate','none')){
   @{schemaVersion=1;shortcutMode=$mode}|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'installation.json')

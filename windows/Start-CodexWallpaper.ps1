@@ -20,7 +20,8 @@ $taskBootstrapLock=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridgeBoot
 $taskLockOwned=$false
 try{$taskLockOwned=$taskBootstrapLock.WaitOne(0)}catch [Threading.AbandonedMutexException]{$taskLockOwned=$true}
 if(-not $taskLockOwned){$taskBootstrapLock.Dispose();exit 0}
-$taskCodex = Get-DreamSkinCodexInstall
+$taskCodex = Get-WallpaperRegisteredCodex
+Set-WallpaperTrustedPackageRoots @($taskCodex)
 $taskStatus.codexVersion="$($taskCodex.Version)"
 $taskStatus.packageFullName="$($taskCodex.PackageFullName)"
 $taskStatus.profileMode='official-default'
@@ -144,7 +145,7 @@ try {
     }
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
     # Store may have registered an update while an older client was exiting.
-    $taskCodex=Get-DreamSkinCodexInstall
+    $taskCodex=Get-WallpaperRegisteredCodex
     $taskStatus.codexVersion="$($taskCodex.Version)"
     $taskStatus.packageFullName="$($taskCodex.PackageFullName)"
     $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes @()
@@ -206,13 +207,17 @@ try {
   if(Test-Path -LiteralPath $taskRuntime){
     try{$taskPrevious=Get-Content -LiteralPath $taskRuntime -Raw -ErrorAction Stop|ConvertFrom-Json
       $taskProcessInfo=Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$taskPrevious.pid)" -ErrorAction Stop
-      $taskHostAge=([DateTimeOffset]::UtcNow-([DateTimeOffset]$taskPrevious.updatedAt)).TotalSeconds
-      $taskKnownScript=$taskProcessInfo -and (@((Join-Path $taskCodeRoot 'src/video-cdp-host.mjs'),(Join-Path $taskRoot 'app/src/video-cdp-host.mjs'),(Join-Path $taskRoot 'video-cdp-host.mjs')) | Where-Object {$taskProcessInfo.CommandLine.Replace('/','\').Contains($_.Replace('/','\'))}).Count -gt 0
-      $taskHostAlreadyRunning=$taskKnownScript -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and $taskPrevious.browserId -eq $taskIdentity.BrowserId -and $taskHostAge -ge 0 -and $taskHostAge -lt 12
-      $taskConflictingHost=$taskKnownScript -and $taskProcessInfo.ExecutablePath -ieq $taskNode -and -not $taskHostAlreadyRunning
+      $taskHostDecision=Get-WallpaperHostDecision -Process $taskProcessInfo -Status $taskPrevious -Root $taskRoot -CodeRoot $taskCodeRoot -Node $taskNode -BrowserId $taskIdentity.BrowserId
+      $taskHostAlreadyRunning=$taskHostDecision -eq 'reuse'
+      $taskConflictingHost=$taskHostDecision -eq 'conflict'
     }catch{}
   }
-  if($taskConflictingHost){throw '已有壁纸宿主仍在运行，但状态过期或身份不匹配；已停止重复启动。请检查 runtime-status.json 和日志，当前 Codex 已保留。'}
+  if(-not $taskHostAlreadyRunning -and -not $taskConflictingHost){
+    # A missing/partially written status must never hide an existing owned host.
+    $taskUnverifiedHosts=@(Select-WallpaperOwnedHosts @(Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction Stop) $taskRoot $taskCodeRoot)
+    $taskConflictingHost=$taskUnverifiedHosts.Count -gt 0
+  }
+  if($taskConflictingHost){throw '已有壁纸宿主仍在运行，但状态过期、不可读或身份不匹配；已停止重复启动。请稍后重试，或正常退出 Codex 后重新打开壁纸入口。'}
   if(-not $taskHostAlreadyRunning){
     $taskHost=Start-Process -FilePath $taskNode -ArgumentList @('--expose-gc','--max-old-space-size=64','--max-semi-space-size=4',('"{0}"' -f (Join-Path $taskCodeRoot 'src/video-cdp-host.mjs')),'--cdp-port',"$taskPort") -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $taskRoot 'video-output.log') -RedirectStandardError (Join-Path $taskRoot 'video-error.log') -ErrorAction Stop
     $taskStatus.hostPid=$taskHost.Id

@@ -9,7 +9,8 @@ if (-not (Test-Path -LiteralPath $buildCompiler)) { throw '.NET Framework C# com
 $buildArguments = @('/nologo','/target:winexe','/platform:x64','/reference:System.Web.Extensions.dll','/reference:System.Windows.Forms.dll',('/out:' + (Join-Path $buildDataRoot 'CodexEntry.exe')),(Join-Path $PSScriptRoot 'TaskbarIdentity.cs'))
 if (-not $NoIcon) {
   . (Join-Path $buildRepoRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
-  $buildCodex = Get-DreamSkinCodexInstall
+  . (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')
+  $buildCodex = Get-WallpaperRegisteredCodex
   . (Join-Path $PSScriptRoot 'Official-Icon.ps1')
   $buildIconPath = Join-Path $buildDataRoot 'Codex.ico'
   [void](Copy-WallpaperOfficialIcon $buildCodex $buildIconPath)

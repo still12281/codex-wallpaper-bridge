@@ -5,7 +5,8 @@ $entryCodeRoot=Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'Runtime.ps1')
 $entryRoot=Get-WallpaperDataRoot
 . (Join-Path $entryCodeRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
-$entryCodex=Get-DreamSkinCodexInstall
+. (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')
+$entryCodex=Get-WallpaperRegisteredCodex
 if($null -eq $entryCodex){throw 'Official Codex package unavailable'}
 $entryLink=Join-Path $entryRoot 'Codex.lnk'
 $entryIcon=Join-Path $entryRoot 'icons/Codex-Native.ico'

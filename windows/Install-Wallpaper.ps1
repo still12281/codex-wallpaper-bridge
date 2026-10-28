@@ -7,14 +7,21 @@ $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'InstallSupport.ps1')
 $installSourceRoot=Split-Path -Parent $PSScriptRoot
 $installDataRoot=if($DataDirectory){$DataDirectory}elseif($env:CODEX_WALLPAPER_DATA_DIR){$env:CODEX_WALLPAPER_DATA_DIR}else{Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'CodexWallpaperBridge'}
+$installMutex=$null;$installLockOwned=$false
 try{
+  if(-not $CheckOnly){
+    $installMutex=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridge.Install')
+    try{$installLockOwned=$installMutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$installLockOwned=$true}
+    if(-not $installLockOwned){throw 'Another wallpaper installation is running. Finish or close it before trying again.'}
+  }
   if(-not [Environment]::Is64BitOperatingSystem -or $env:OS -ne 'Windows_NT'){throw 'Windows x64 is required.'}
   if($env:PROCESSOR_ARCHITECTURE -ne 'AMD64' -and $env:PROCESSOR_ARCHITEW6432 -ne 'AMD64'){throw 'This launcher targets Windows x64.'}
   if(-not [IO.Path]::IsPathRooted($installDataRoot) -or $installDataRoot -match '^[A-Za-z]:[^\\/]'){throw 'DataDirectory must be absolute.'}
   $installDataRoot=[IO.Path]::GetFullPath($installDataRoot)
   # Discover only; do not activate, close or change the official client.
   . (Join-Path $installSourceRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
-  $installCodex=Get-DreamSkinCodexInstall
+  . (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')
+  $installCodex=Get-WallpaperRegisteredCodex
   $installPolicyPath=Join-Path $installDataRoot 'installation.json';$installPrevious=$null
   if(Test-Path -LiteralPath $installPolicyPath){$installPrevious=Get-Content -LiteralPath $installPolicyPath -Raw -ErrorAction Stop|ConvertFrom-Json}
   if($NoShortcuts){$ShortcutMode='none'}
@@ -28,7 +35,7 @@ try{
   $installResolved=@{};$installMissing=@()
   foreach($spec in $installSpecs){
     $executable=Get-WallpaperInstallDependency $spec.name
-    if(Test-WallpaperInstallDependency $spec.name $executable){$installResolved[$spec.name]=$executable}else{$installMissing+=$spec}
+    if($executable){$installResolved[$spec.name]=$executable}else{$installMissing+=$spec}
   }
   if($CheckOnly){
     [ordered]@{checkOnly=$true;codex="$($installCodex.Version)";dataDirectory=$installDataRoot;dependencies=$installResolved;missing=@($installMissing|ForEach-Object package);choices=$installChoices;willStartClient=$false} | ConvertTo-Json -Depth 4
@@ -44,7 +51,7 @@ try{
       if($LASTEXITCODE -ne 0){throw ('WinGet failed for '+$spec.package+' (exit '+$LASTEXITCODE+'). See docs/INSTALL.zh-CN.md.')}
       Update-WallpaperInstallPath
       $executable=Get-WallpaperInstallDependency $spec.name
-      if(-not (Test-WallpaperInstallDependency $spec.name $executable)){throw ('Cannot resolve '+$spec.name+' after installation. Set its CODEX_WALLPAPER executable override; see docs/INSTALL.zh-CN.md.')}
+      if(-not $executable){throw ('Cannot resolve '+$spec.name+' after installation. Set its CODEX_WALLPAPER executable override; see docs/INSTALL.zh-CN.md.')}
       $installResolved[$spec.name]=$executable
     }
   }
@@ -87,12 +94,8 @@ try{
   }
   elseif($installChoices.shortcutMode -eq 'replace'){
     . (Join-Path $installDirectory 'windows/StartupHealth.ps1')
-    $replaced=@(Repair-WallpaperEntryShortcuts -Root $installDataRoot -CodexAppId $installCodex.AppUserModelId)
-    if(@($replaced|Where-Object error).Count){throw 'Some shortcuts could not be replaced. Originals are backed up; use Restore-Shortcuts.ps1 or inspect shortcut-replacements.json.'}
-    if(-not @($replaced|Where-Object changed).Count){
-      Publish-WallpaperInstallShortcut $installLink (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Codex.lnk') $installEntry
-      Write-Host 'No replaceable original .lnk found. Created a desktop Codex shortcut; Store registration and taskbar pins remain unchanged.'
-    }
+    $replacement=Install-WallpaperReplacementShortcuts -Root $installDataRoot -CodexAppId $installCodex.AppUserModelId
+    if($replacement.createdFallback){Write-Host 'No original or existing managed .lnk found. Created a desktop Codex shortcut; Store registration and taskbar pins remain unchanged.'}
   }
   if($installChoices.updateReconnect -in @('enable','disable')){
     $updateArguments=@('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $installDirectory 'windows/Install-UpdateReconnect.ps1'),'-Root',$installDataRoot)
@@ -107,3 +110,4 @@ try{
   Write-Host ('Data:  '+$installDataRoot)
   exit 0
 }catch{Write-Error $_ -ErrorAction Continue;exit 1}
+finally{if($installLockOwned){$installMutex.ReleaseMutex()};if($installMutex){$installMutex.Dispose()}}

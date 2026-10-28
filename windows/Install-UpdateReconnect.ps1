@@ -18,7 +18,8 @@ if(-not [IO.Path]::IsPathFullyQualified($runtime.powerShell) -or [IO.Path]::GetF
 $bootstrap=(Get-Content -LiteralPath (Join-Path $Root 'launch-script.txt') -Raw -ErrorAction Stop).Trim()
 if(-not (Test-Path -LiteralPath $entry -PathType Leaf) -or -not (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $bootstrap) 'AfterUpdateReconnect.ps1') -PathType Leaf)){throw 'Build the integrated entry and install the update runner first'}
 . (Join-Path (Split-Path -Parent (Split-Path -Parent $bootstrap)) 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
-$installed=Get-DreamSkinCodexInstall
+. (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')
+$installed=Get-WallpaperRegisteredCodex
 $log=Get-WinEvent -ListLog 'Microsoft-Windows-AppXDeploymentServer/Operational' -ErrorAction Stop
 if(-not $log.IsEnabled){throw 'AppX deployment event log is disabled; no global log settings changed'}
 $xml=New-WallpaperUpdateTaskXml -UserId $userId -Entry $entry -Root $Root
