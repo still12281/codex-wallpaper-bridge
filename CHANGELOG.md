@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased — source candidate
+## 0.1.0-alpha.1 — 2026-10-29
 
 - Resolve native terminal theme managers by one validated interface in the already loaded module instead of fixed bundle/export names. Distinguish armed/zero terminals from actual adaptation, recover delayed module loading, and report terminal theme status separately from wallpaper readiness.
+
+## 0.1.0-alpha.0 — 2026-10-28
 
 - Add a stable installed Repair.cmd that opens the ordinary wallpaper entry only after the user confirms a normal exit. Document manual recovery independent of automatic update attempts, preserve settings, and switch distribution instructions to versioned Release ZIP packages with SHA-256 files.
 

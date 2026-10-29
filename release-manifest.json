@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 10197,
-      "sha256": "7f254e944179108cbb84fbb9e76053660ea79056a328e0194f6f0e0d561cb1dc"
+      "utf8Bytes": 10227,
+      "sha256": "18d4bb132381a16fcc89e68eaf9340f5223064b5878f74cc54023e09ba3fbfba"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -50,12 +50,12 @@
     {
       "path": "README.en.md",
       "utf8Bytes": 10390,
-      "sha256": "75e93698a926649f30484fbcfbab17c62ebd00047d26077950e8e69b252c38f7"
+      "sha256": "f9c76d29ac8f97daba9f7cdc332af514c7876e0260e1bc4d00ffef085e87253b"
     },
     {
       "path": "README.md",
       "utf8Bytes": 12870,
-      "sha256": "0ac4f3afb2df81a05f1d6ea196e19cdb08552bf38af20093ce8e6e4599cac4d2"
+      "sha256": "013f5a073945e4b51090aa31be109c003f62b28b2e9d7758077af577070af079"
     },
     {
       "path": "README.zh-CN.md",
@@ -120,7 +120,7 @@
     {
       "path": "docs/INSTALL.zh-CN.md",
       "utf8Bytes": 15871,
-      "sha256": "4c576cc8222b183819b384b59a7339930e569a052395f547279ac511b1024944"
+      "sha256": "c672302a7905d989c05def9de1a9277bd6799cb9aa1df354191e823cea68aec1"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -341,12 +341,12 @@
     {
       "path": "package.json",
       "utf8Bytes": 961,
-      "sha256": "1542228ddbe5cfe505bb507e01a18a43eb6a6547d553fb2ad73452282023f3f8"
+      "sha256": "5d5752696b52179049165b686c02b2eb3bbd102e95aaf20b1b3a30e8803cbae4"
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 24732,
-      "sha256": "8e785c1bcac6ac494d6e7d625e4eba941cabfc5d717eaeb76043411f88707172"
+      "utf8Bytes": 25507,
+      "sha256": "1d5c04ecd7feb1b4989ea42341dae4306166aa78968c80b8c912c3fdf6b673d9"
     },
     {
       "path": "settings.example.json",
@@ -555,8 +555,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 41108,
-      "sha256": "dc6dc3f35aa2835714150310951b7bfcaf129d1bc12ae9ba2167cc28a5660257"
+      "utf8Bytes": 41530,
+      "sha256": "79dbe056a525433a517184c1fd82a5fb3bfcbec38ebaedb680664d02d8e45022"
     },
     {
       "path": "test/appearance.test.mjs",
