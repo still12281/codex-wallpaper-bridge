@@ -229,8 +229,8 @@
     },
     {
       "path": "docs/TERMINAL-SYNC-20261029.zh-CN.md",
-      "utf8Bytes": 2817,
-      "sha256": "c923999783e729a881212e97756da10b737f8867abdf1579448e9b9b2e38ed75"
+      "utf8Bytes": 3193,
+      "sha256": "d63c65bb7cd9a63b38c28e8d0a89fef32f1d58567a0ea1ceaa816b2e89f6cc44"
     },
     {
       "path": "docs/UI-DESIGN-20261028.zh-CN.md",
@@ -345,8 +345,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 25507,
-      "sha256": "1d5c04ecd7feb1b4989ea42341dae4306166aa78968c80b8c912c3fdf6b673d9"
+      "utf8Bytes": 26316,
+      "sha256": "d15f87bceb752c31f4dd73c8077ac50eb1b22b737b5aefffb20a39e09c23bb1b"
     },
     {
       "path": "settings.example.json",
@@ -555,8 +555,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 41530,
-      "sha256": "79dbe056a525433a517184c1fd82a5fb3bfcbec38ebaedb680664d02d8e45022"
+      "utf8Bytes": 41675,
+      "sha256": "8af58f673d2676284dc0c0f10cf4506a7d8dc4c058d292aba474aefb9fb4a033"
     },
     {
       "path": "test/appearance.test.mjs",
