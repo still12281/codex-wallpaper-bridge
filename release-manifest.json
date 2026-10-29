@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 9902,
-      "sha256": "1f68327f9bd2f6ec310a9202326743cc893c9fe01904d4e93e16bc1e7397a1ca"
+      "utf8Bytes": 10197,
+      "sha256": "7f254e944179108cbb84fbb9e76053660ea79056a328e0194f6f0e0d561cb1dc"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -228,6 +228,11 @@
       "sha256": "37570b06b7299b7145b1108a6667d60c6fadefc160ab21f5a1ad58f6f24fee34"
     },
     {
+      "path": "docs/TERMINAL-SYNC-20261029.zh-CN.md",
+      "utf8Bytes": 2817,
+      "sha256": "c923999783e729a881212e97756da10b737f8867abdf1579448e9b9b2e38ed75"
+    },
+    {
       "path": "docs/UI-DESIGN-20261028.zh-CN.md",
       "utf8Bytes": 4019,
       "sha256": "225c461bd049a939651de29e561bd580d03827b36a39bca844ce13035a2a6182"
@@ -330,8 +335,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 21951,
-      "sha256": "3e5637bbff2dec04865e9f08104165e76d53211cbdb8a034c925ea3434e4b1f1"
+      "utf8Bytes": 22727,
+      "sha256": "e5a32f1dbfb560188aaa93a9ce81268ee3dfb292468f263f361de52331239690"
     },
     {
       "path": "package.json",
@@ -340,8 +345,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 23411,
-      "sha256": "ce8be095006954967b18ec48b9d51b2e13fb13048800739367d6b2572c37f844"
+      "utf8Bytes": 24732,
+      "sha256": "8e785c1bcac6ac494d6e7d625e4eba941cabfc5d717eaeb76043411f88707172"
     },
     {
       "path": "settings.example.json",
@@ -495,8 +500,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 38387,
-      "sha256": "ff3f6738dc39a99d2acf01318833b9afe747749681285c36b8cf8c55641566a5"
+      "utf8Bytes": 38507,
+      "sha256": "f9f493d6c2abf12ce183489d676f9268c3693cab268f4acf7200d39a8b99d416"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -530,8 +535,8 @@
     },
     {
       "path": "src/wallpaper-widgets.mjs",
-      "utf8Bytes": 6319,
-      "sha256": "a5ad16862cbab7debba71298298d2259e11bd3a15932b5cdd975c9c4508f3afc"
+      "utf8Bytes": 7522,
+      "sha256": "1eb47c25d6c9507b6122c41d9d8b372d3690a0a2d56c0bcf71f12e66d96b4a59"
     },
     {
       "path": "src/webwallgl-player.mjs",
@@ -550,8 +555,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 40232,
-      "sha256": "df2096f456a24b0be7a7622c69c9912a3b973db2cff759b9f77bf5ba94850461"
+      "utf8Bytes": 41108,
+      "sha256": "dc6dc3f35aa2835714150310951b7bfcaf129d1bc12ae9ba2167cc28a5660257"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -760,8 +765,8 @@
     },
     {
       "path": "test/widgets.test.mjs",
-      "utf8Bytes": 4153,
-      "sha256": "2521adbe8f934f291dbb3e5de79a0d81caab64fcf288226ce76a04c4678e25de"
+      "utf8Bytes": 6554,
+      "sha256": "20efa6603c97dfcb36bbb6cbf54b6bbfc3f0c2d96e6ddca5ba086febf8f374bf"
     },
     {
       "path": "tools/check-release.mjs",

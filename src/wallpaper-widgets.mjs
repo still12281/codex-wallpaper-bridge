@@ -1,9 +1,9 @@
 // Runs in the native page. Only public xterm options are changed; PTY/buffer data is never read.
 export async function installNativeWidgets(config,loadModule=url=>import(url)){
  const prior=window.__cwbWidgets;
- if(prior?.version===4&&(!prior.disposed||prior.status.phase==='unsupported')){prior.config=config;await prior.initialized;prior.update();return prior.status}
+ if(prior?.version===6&&!prior.disposed){prior.config=config;await prior.refresh();prior.update();return prior.status}
  prior?.dispose?.();
- const state=window.__cwbWidgets={version:4,config,disposed:false,terminals:new Set(),status:{phase:'initializing'}};
+ const state=window.__cwbWidgets={version:6,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
  const copy=theme=>theme?{...theme}:theme;
  const effective=native=>{
   if(state.config.surfaceSync?.code===false)return native;
@@ -30,30 +30,42 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
   Object.defineProperty(terminal,'options',{configurable:true,get:()=>proxy,set(value){if(!state.disposed&&value&&Object.hasOwn(value,'theme')){record.nativeTheme=copy(value.theme);descriptor.set.call(terminal,{...value,theme:effective(value.theme)})}else descriptor.set.call(terminal,value)}});
   record.restore=()=>{record.surface?.removeAttribute('data-cwb-terminal-surface');try{options.theme=record.nativeTheme}catch{}delete terminal.options;if(terminal.open===record.wrappedOpen)terminal.open=record.open;if(terminal.dispose===record.wrappedDispose)terminal.dispose=record.dispose;state.terminals.delete(record)};
   record.wrappedOpen=function(...args){const result=record.open.apply(this,args);if(!state.disposed)apply(record);return result};terminal.open=record.wrappedOpen;
-  record.wrappedDispose=function(...args){record.restore();return record.dispose.apply(this,args)};terminal.dispose=record.wrappedDispose;
+  record.wrappedDispose=function(...args){record.restore();try{return record.dispose.apply(this,args)}finally{state.update()}};terminal.dispose=record.wrappedDispose;
   state.terminals.add(record);apply(record);
  };
- state.update=()=>{if(state.disposed)return;try{for(const r of state.terminals)apply(r);state.status={phase:state.config.surfaceSync?.code===false?'native':'adapted',terminals:state.terminals.size}}catch(error){fail(error)}};
+ state.update=()=>{if(state.disposed||!state.manager)return;try{for(const r of state.terminals)apply(r);state.status={phase:state.config.surfaceSync?.code===false?'native':state.terminals.size?'adapted':'armed',terminals:state.terminals.size,module:state.moduleUrl,adapter:'terminal-manager-contract-v1'}}catch(error){fail(error)}};
  let frame=null;
- const observer=new MutationObserver(changes=>{if(!state.disposed&&frame===null&&changes.some(c=>[...c.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('.xterm,[data-codex-terminal]')||n.querySelector?.('.xterm,[data-codex-terminal]'))))){frame=requestAnimationFrame(()=>{frame=null;state.update()})}});
+ const selector='.xterm,[data-codex-terminal],link[rel="modulepreload"],script[src]';
+ const observer=new MutationObserver(changes=>{if(!state.disposed&&frame===null&&changes.some(c=>[...c.addedNodes].some(n=>n.nodeType===1&&(n.matches?.(selector)||n.querySelector?.(selector))))){frame=requestAnimationFrame(()=>{frame=null;state.refresh()})}});
  observer.observe(document.body,{childList:true,subtree:true});
- state.dispose=()=>{if(state.disposed)return;state.disposed=true;observer.disconnect();if(frame!==null){cancelAnimationFrame(frame);frame=null}for(const r of [...state.terminals])r.restore();if(state.manager&&typeof state.wrappedCreate==='function'&&state.manager.getOrCreateRenderer===state.wrappedCreate)state.manager.getOrCreateRenderer=state.originalCreate;state.status={phase:'disposed'}};
- const fail=error=>{state.dispose();state.status={phase:'unsupported',reason:error.message}};
- state.initialized=(async()=>{
+ const restore=()=>{for(const r of [...state.terminals])r.restore();if(state.manager&&typeof state.wrappedCreate==='function'&&state.manager.getOrCreateRenderer===state.wrappedCreate)state.manager.getOrCreateRenderer=state.originalCreate;state.manager=null};
+ state.dispose=()=>{if(state.disposed)return;state.disposed=true;observer.disconnect();if(frame!==null){cancelAnimationFrame(frame);frame=null}restore();state.status={phase:'disposed'}};
+ const fail=error=>{restore();state.status={phase:'unsupported',reason:error.message,terminals:0,module:state.moduleUrl}};
+ const dataMethod=(object,key)=>{for(let p=object;p;p=Object.getPrototypeOf(p)){const d=Object.getOwnPropertyDescriptor(p,key);if(d)return typeof d.value==='function'?d.value:null}return null};
+ const modules=()=>[...new Set([...document.querySelectorAll('link[rel="modulepreload"],script[src]')].map(e=>e.href||e.src).filter(u=>/^app:\/\/-\/assets\/app-initial-[a-f0-9]{8,64}\.js$/.test(u)))].sort();
+ state.refresh=()=>{
+  if(state.disposed)return Promise.resolve();
+  const urls=modules(),key=urls.join('|');
+  if(state.moduleKey===key){if(state.manager){try{for(const renderer of state.manager.renderers.values())register(renderer);state.update()}catch(error){fail(error)}}return state.initialized||Promise.resolve()}
+  restore();state.moduleKey=key;state.moduleUrl=urls[0];
+  state.initialized=(async()=>{
   try{
-   // Explicit compatibility gate: never call unknown exports or inspect React internals.
-   const supported={'app://-/assets/app-initial-ad16eaadf81f.js':'f3t','app://-/assets/app-initial-438d1df57f70.js':'Lrt'};
-   const url=[...document.querySelectorAll('link[rel="modulepreload"],script[src]')].map(e=>e.href||e.src).find(u=>Object.hasOwn(supported,u));
-   if(!url)throw Error('This client version has no supported terminal theme adapter');
-   const manager=(await loadModule(url))[supported[url]];
-   if(state.disposed||window.__cwbWidgets!==state)return;
-   if(!manager?.renderers||typeof manager.renderers.values!=='function'||typeof manager.getOrCreateRenderer!=='function'||typeof manager.releaseRenderer!=='function')throw Error('Unsupported terminal manager shape');
+   // Inspect only the page's already loaded native module. Never invoke an export
+   // to find the manager, inspect React internals, or touch session/PTY buffers.
+   if(urls.length!==1)throw Error(urls.length?'Ambiguous native terminal modules':'No loaded native terminal module');
+   const module=await loadModule(urls[0]);
+   if(state.disposed||window.__cwbWidgets!==state||state.moduleKey!==key)return;
+   const candidates=[...new Set(Object.values(module).filter(value=>value&&typeof value==='object'&&Object.getOwnPropertyDescriptor(value,'renderers')?.value instanceof Map&&dataMethod(value,'getOrCreateRenderer')&&dataMethod(value,'releaseRenderer')))];
+   if(candidates.length!==1)throw Error(candidates.length?'Ambiguous terminal manager contract':'Unsupported terminal manager contract');
+   const manager=candidates[0];
    state.manager=manager;state.originalCreate=manager.getOrCreateRenderer;
-   state.wrappedCreate=function(...args){const renderer=state.originalCreate.apply(this,args);if(state.disposed)return renderer;try{register(renderer);state.update()}catch(error){fail(error)}return renderer};
+   const originalCreate=state.originalCreate;
+   state.wrappedCreate=function(...args){const renderer=originalCreate.apply(this,args);if(state.disposed||state.manager!==manager)return renderer;try{register(renderer);state.update()}catch(error){fail(error)}return renderer};
    manager.getOrCreateRenderer=state.wrappedCreate;
    for(const renderer of manager.renderers.values())register(renderer);
    state.status={phase:'ready'};state.update();
-  }catch(error){fail(error)}
- })();
- await state.initialized;return state.status;
+  }catch(error){if(!state.disposed&&state.moduleKey===key)fail(error)}
+  })();return state.initialized;
+ };
+ await state.refresh();return state.status;
 }

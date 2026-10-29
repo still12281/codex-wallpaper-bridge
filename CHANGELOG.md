@@ -2,6 +2,8 @@
 
 ## Unreleased — source candidate
 
+- Resolve native terminal theme managers by one validated interface in the already loaded module instead of fixed bundle/export names. Distinguish armed/zero terminals from actual adaptation, recover delayed module loading, and report terminal theme status separately from wallpaper readiness.
+
 - Add a stable installed Repair.cmd that opens the ordinary wallpaper entry only after the user confirms a normal exit. Document manual recovery independent of automatic update attempts, preserve settings, and switch distribution instructions to versioned Release ZIP packages with SHA-256 files.
 
 - Offer separate/original-shortcut replacement modes with persisted startup policy, exact backups and guarded restoration. Recognize verified Store shortcut identities, preserve unrelated/document shortcuts, and add noninteractive/no-pause install commands plus an explicit update-recovery choice. Normalize Task Scheduler principal names to SIDs when validating an existing update task.

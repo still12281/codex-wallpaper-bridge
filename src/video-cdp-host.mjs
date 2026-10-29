@@ -4,7 +4,6 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {connectCdp} from './cdp-client.mjs';
 import {paintShell,paintEmbedded} from './wallpaper-style.mjs';
-import {installNativeWidgets} from './wallpaper-widgets.mjs';
 import {normalizeLibrary,createActions,saveConfig} from './wallpaper-actions.mjs';
 import {randomUUID,createHash} from 'node:crypto';
 import {execFile} from 'node:child_process';
@@ -160,6 +159,7 @@ async function mount(c,target){c.playbackReading=null;
 
  await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__cwbPickerModel='+adapters.picker+';window.__cwbInstallFx='+adapters.fx+';window.__cwbFrameFreeze='+installFrameFreeze.toString()+';window.__cwbDecorate='+decorateShell.toString()+';window.__cwbInstallFeatures='+installFeaturePanel.toString()+';true');
  await c.evaluate('('+installSceneResourceCache.toString()+')();true');
+ const {installNativeWidgets}=await import('./wallpaper-widgets.mjs?v='+(await stat(path.join(codeRoot,'wallpaper-widgets.mjs'))).mtimeMs);
  await c.evaluate('window.__cwbApplyWidgets='+installNativeWidgets.toString()+';true');
  const styleVersion=(await stat(path.join(codeRoot,'wallpaper-style.mjs'))).mtimeMs;
  const {paintShell}=await import('./wallpaper-style.mjs?v='+styleVersion);
@@ -237,7 +237,7 @@ async function tick(){
     if(!healthy)c.installed=false;
     if(!c.installed&&effectiveEntry(settings.library.find(e=>e.id===settings.selectedId))?.mode==='webwallgl'&&await c.evaluate('document.hidden')){Object.assign(targetState,{phase:'waiting-for-visible-page'});continue;}
     if(!c.installed){await mount(c,target);c.activeKey=activeWallpaperKey();}
-    await reportMedia(c);const observed=await c.evaluate('(()=>{const value=window.__codexWallpaperBridge?.sample();return value?{...value,viewportWidth:innerWidth,viewportHeight:innerHeight}:null})()');
+    await reportMedia(c);const observed=await c.evaluate('(()=>{const value=window.__codexWallpaperBridge?.sample();return value?{...value,terminalTheme:window.__cwbWidgets?.status,viewportWidth:innerWidth,viewportHeight:innerHeight}:null})()');
     if(!observed){c.installed=false;continue}
     targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':observed.paused?'realtime-capture-paused':realtime?.kind!=='chromium-web'&&Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed,...(c.isRealtime?{delivery:c.captureTiming,deliveryError:c.captureError}:{} )});
     if(observed.width&&observed.height){

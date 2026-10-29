@@ -18,6 +18,18 @@ test('unsupported client safely retains native terminal behavior',async()=>{
 test('the inspected 438d client uses its exact terminal manager export',async()=>{
  const e=environment();try{document.querySelectorAll=()=>[{href:'app://-/assets/app-initial-438d1df57f70.js'}];let loaded;const result=await installNativeWidgets(config,async url=>{loaded=url;return {Lrt:e.manager}});assert.equal(loaded,'app://-/assets/app-initial-438d1df57f70.js');assert.equal(result.phase,'adapted');assert.equal(e.terminal.options.theme.background,'#00000000');window.__cwbWidgets.dispose();assert.equal(e.terminal.options.theme.background,'#fff');}finally{e.restore()}
 });
+test('new native module hashes and renamed exports resolve by one manager contract without calling exports',async()=>{
+ const e=environment();try{document.querySelectorAll=()=>[{href:'app://-/assets/app-initial-db76c3384587.js'}];const result=await installNativeWidgets(config,async()=>({unrelated(){throw Error('must not invoke')},Bat:e.manager,alias:e.manager}));assert.equal(result.phase,'adapted');assert.equal(result.terminals,1);assert.equal(result.adapter,'terminal-manager-contract-v1');assert.equal(e.terminal.options.theme.background,'#00000000');}finally{e.restore()}
+});
+test('no terminal is armed rather than marked adapted; a later native renderer is themed',async()=>{
+ const e=environment();try{e.manager.renderers.clear();const result=await installNativeWidgets(config,async()=>e.module);assert.equal(result.phase,'armed');assert.equal(result.terminals,0);e.manager.getOrCreateRenderer();assert.equal(window.__cwbWidgets.status.phase,'adapted');assert.equal(window.__cwbWidgets.status.terminals,1);assert.equal(e.terminal.options.theme.background,'#00000000');e.terminal.dispose();assert.equal(window.__cwbWidgets.status.phase,'armed');assert.equal(window.__cwbWidgets.status.terminals,0);}finally{e.restore()}
+});
+test('a native module loaded after initialization can recover without polling or a new adapter instance',async()=>{
+ const e=environment(false);try{await installNativeWidgets(config,async()=>e.module);const first=window.__cwbWidgets;assert.equal(first.status.phase,'unsupported');document.querySelectorAll=()=>[{href:'app://-/assets/app-initial-db76c3384587.js'}];await installNativeWidgets(config,async()=>({Bat:e.manager}));assert.equal(window.__cwbWidgets,first);assert.equal(first.status.phase,'adapted');}finally{e.restore()}
+});
+test('ambiguous managers and accessor-shaped candidates do not change terminal options',async()=>{
+ const e=environment();try{let reads=0;const accessor={get renderers(){reads++;return e.manager.renderers},getOrCreateRenderer(){},releaseRenderer(){}};const second={...e.manager,renderers:new Map()};const result=await installNativeWidgets(config,async()=>({a:e.manager,b:second,c:accessor}));assert.equal(result.phase,'unsupported');assert.match(result.reason,/Ambiguous/);assert.equal(reads,0);assert.equal(Object.hasOwn(e.terminal,'options'),false);assert.equal(e.terminal.options.theme.background,'#fff');}finally{e.restore()}
+});
 test('disposing during module loading cannot install a late manager hook',async()=>{
  const e=environment();try{let resolve;const pending=new Promise(r=>{resolve=r}),original=e.manager.getOrCreateRenderer,installing=installNativeWidgets(config,()=>pending);window.__cwbWidgets.dispose();delete window.__cwbWidgets;resolve(e.module);await installing;assert.equal(e.manager.getOrCreateRenderer,original);assert.equal(Object.hasOwn(e.terminal,'options'),false)}finally{e.restore()}
 });
