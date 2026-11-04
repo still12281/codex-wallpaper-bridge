@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Recover from an occupied/stale default debugging port by preserving its owner and selecting a free loopback port from 9335–9354. Persist only a verified endpoint hint, recheck same-session main-process identity on reuse, pass the port to taskbar/update recovery, and recheck availability before launch. Preserve ordinary running clients and stable entry mutexes; no process termination or public binding is introduced.
+
 - Prioritize and publish the main wallpaper before detached/embedded synchronization, defer taskbar alignment, and poll briefly while the initial shell is pending. Add bounded optional-cache reads with cancellation and original-file fallback; cache initialization no longer gates resource delivery. Keep render quality and limits unchanged, record startup phases, and test suspended auxiliary pages, delayed shells and late cache results in isolated browsers.
 
 - Fix exit/reopen races: wait briefly for a preceding explicit client shutdown, distinguish helper leftovers from live main processes, preserve new activations, and stop prelaunch errors from reopening ordinary Codex without wallpaper arguments. Ordinary fallback now requires a client created and verified by that same bootstrap. Add a real-bootstrap regression with isolated process/package/launch fixtures; actual updated-client first-frame acceptance remains pending.

@@ -103,3 +103,67 @@ function Get-WallpaperFailureRecovery {
   if($CreatedVerifiedClient){return 'reopen-normal-client'}
   return 'no-client-started-before-failure'
 }
+
+function Get-WallpaperCdpProbePorts([string]$Root) {
+  $ports=@()
+  foreach($name in @('cdp-endpoint.json','runtime-status.json')){
+    try{
+      $record=Get-Content -LiteralPath (Join-Path $Root $name) -Raw -ErrorAction Stop|ConvertFrom-Json -ErrorAction Stop
+      if($name -eq 'cdp-endpoint.json'){
+        if($record.schemaVersion -ne 1 -or $record.address -cne '127.0.0.1'){continue}
+        $value=$record.port
+      }else{$value=$record.cdpPort}
+      if(($value -is [int] -or $value -is [long]) -and $value -ge 9335 -and $value -le 9354){$ports+=[int]$value}
+    }catch{}
+  }
+  @($ports+@(9335)|Select-Object -Unique)
+}
+function Get-WallpaperVerifiedEndpoint {
+  param([int]$Port,$Codex)
+  $listeners=@(Get-DreamSkinPortListeners -Port $Port)
+  if(-not $listeners.Count -or @($listeners|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count){return $null}
+  $owners=@($listeners.OwningProcess|Select-Object -Unique)
+  if($owners.Count -ne 1){return $null}
+  $owner=Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$owners[0])" -ErrorAction SilentlyContinue
+  $session=(Get-Process -Id $PID -ErrorAction Stop).SessionId
+  if(-not $owner -or $owner.SessionId -ne $session -or $owner.CommandLine -match '--type=|--monitor-self' -or
+    -not (Test-DreamSkinPathEqual -Left "$($owner.ExecutablePath)" -Right "$($Codex.Executable)")){return $null}
+  $identity=Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $Codex
+  if(-not $identity){return $null}
+  $fresh=Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$owners[0])" -ErrorAction SilentlyContinue
+  if(-not $fresh -or $fresh.CreationDate -ne $owner.CreationDate -or $fresh.SessionId -ne $session -or $fresh.ExecutablePath -ine $owner.ExecutablePath){return $null}
+  $native=$null
+  try{
+    $native=Get-Process -Id ([int]$owners[0]) -ErrorAction Stop
+    # CIM timestamps have microsecond precision; native StartTime keeps 100ns.
+    if($native.HasExited -or $native.SessionId -ne $session -or $native.MainModule.FileName -ine $owner.ExecutablePath -or [math]::Abs($native.StartTime.ToUniversalTime().Ticks-$owner.CreationDate.ToUniversalTime().Ticks) -gt 10){return $null}
+    [pscustomobject]@{BrowserId=$identity.BrowserId;BrowserWebSocketDebuggerUrl=$identity.BrowserWebSocketDebuggerUrl;Browser=$identity.Browser;TargetCount=$identity.TargetCount;RootProcessId=[int]$owners[0];RootCreatedAtUtc=$native.StartTime.ToUniversalTime().ToString('o');RootExecutable=$owner.ExecutablePath;SessionId=$session}
+  }catch{return $null}finally{if($native){$native.Dispose()}}
+}
+function Select-WallpaperCdpEndpoint {
+  param([string]$Root,$Codex,[int[]]$Candidates=@(9335..9354),
+    [scriptblock]$Probe={param($Port,$Install) Get-WallpaperVerifiedEndpoint -Port $Port -Codex $Install},
+    [scriptblock]$Available={param($Port) Test-DreamSkinPortAvailable -Port $Port})
+  foreach($port in @(Get-WallpaperCdpProbePorts $Root)){
+    if($port -notin $Candidates){continue}
+    $identity=& $Probe $port $Codex
+    if($identity){return [pscustomobject]@{port=$port;identity=$identity;reason='verified-client-reused'}}
+  }
+  foreach($port in $Candidates){if(& $Available $port){return [pscustomobject]@{port=$port;identity=$null;reason=$(if($port -eq 9335){'default-port-available'}else{'occupied-port-preserved'})}}}
+  throw '壁纸连接候选端口 9335–9354 均不可用；未结束或修改任何占用进程。'
+}
+function Get-WallpaperVerifiedEndpointForAnyRegistered([string]$Root) {
+  foreach($port in @(Get-WallpaperCdpProbePorts $Root)){
+    foreach($install in @(Get-DreamSkinRegisteredCodexInstalls|Where-Object {$_.PackageFamilyName -ceq 'OpenAI.Codex_2p2nqsd0c76g0' -and $_.SignatureKind -eq 'Store'})){
+      $identity=Get-WallpaperVerifiedEndpoint -Port $port -Codex $install
+      if($identity){return [pscustomobject]@{Identity=$identity;Codex=$install;Port=$port}}
+    }
+  }
+  return $null
+}
+function Save-WallpaperCdpEndpoint([string]$Root,[int]$Port,$Identity) {
+  if($Port -lt 9335 -or $Port -gt 9354 -or -not $Identity.BrowserId -or $Identity.RootProcessId -le 0){throw 'Cannot save an unverified wallpaper endpoint'}
+  $record=[ordered]@{schemaVersion=1;address='127.0.0.1';port=$Port;browserId=$Identity.BrowserId;processId=$Identity.RootProcessId;createdAtUtc=$Identity.RootCreatedAtUtc;executable=$Identity.RootExecutable;sessionId=$Identity.SessionId;updatedAt=[DateTimeOffset]::UtcNow.ToString('o')}
+  $file=Join-Path $Root 'cdp-endpoint.json';$next=$file+'.next'
+  [IO.File]::WriteAllText($next,($record|ConvertTo-Json -Depth 4),[Text.UTF8Encoding]::new($false));[IO.File]::Move($next,$file,$true)
+}

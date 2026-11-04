@@ -63,7 +63,7 @@ Data and installed versions live under `%LOCALAPPDATA%\CodexWallpaperBridge`. Yo
 
 See the [complete installation guide](docs/INSTALL.zh-CN.md) for custom directories, manual commands, executable overrides, first-use configuration, troubleshooting, updates and removal. Read [security](SECURITY.md) and [privacy](PRIVACY.md) before installing.
 
-For a local Codex debugging session started through the unified entry, `npm start` attaches the host to loopback port 9335. It does not enable debugging on an ordinary running client. Do not expose the port to a network.
+The unified entry selects and records a local debugging port, preferring 9335 and using an available fallback through 9354 when needed. For manual development diagnostics, read `cdpPort` in the data directory's `runtime-status.json` and pass it to `node src/video-cdp-host.mjs --cdp-port <port>`; `npm start` uses only the diagnostic default 9335. These commands do not enable debugging on an ordinary running client. Do not expose the port to a network or start another host alongside the unified entry's host.
 
 ## Manual recovery after a client update
 

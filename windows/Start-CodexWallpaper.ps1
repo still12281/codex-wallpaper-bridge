@@ -79,7 +79,7 @@ function Get-TaskLaunchedRoot([int]$ProcessId,[long]$NotBefore=0) {
 function Wait-TaskIdentity([int]$Port,[int]$Seconds=25) {
   $taskDeadline=[DateTimeOffset]::UtcNow.AddSeconds($Seconds)
   do {
-    $taskIdentity=Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $taskCodex
+    $taskIdentity=Get-WallpaperVerifiedEndpoint -Port $Port -Codex $taskCodex
     if($null -ne $taskIdentity){return $taskIdentity}
     Start-Sleep -Milliseconds 500
   }while([DateTimeOffset]::UtcNow -lt $taskDeadline)
@@ -93,13 +93,16 @@ try {
   $taskStatus.initialMainProcessIds=@($taskInitial | Where-Object IsMain | ForEach-Object Id)
   $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes $taskInitial
   if($InspectOnly){$taskStatus.phase='inspect-only';$taskStatus.updatedAt=[DateTimeOffset]::UtcNow.ToString('o');$taskStatus | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $taskRoot 'entry-inspect-status.json') -Encoding utf8 -ErrorAction Stop;$taskStatus | ConvertTo-Json -Depth 8;exit 0}
-  $taskIdentity=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
+  $taskEndpoint=Select-WallpaperCdpEndpoint -Root $taskRoot -Codex $taskCodex
+  $taskPort=[int]$taskEndpoint.port
+  $taskStatus.cdpPort=$taskPort
+  $taskStatus.endpointSelection=$taskEndpoint.reason
+  $taskIdentity=$taskEndpoint.identity
   $taskReuseExisting=$null -ne $taskIdentity
   $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes $taskInitial -HasVerifiedCdp $taskReuseExisting
   try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot -CodexAppId $taskCodex.AppUserModelId)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
   Save-TaskPhase 'startup-checked'
   if($null -eq $taskIdentity) {
-    if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '9335 已被其他进程占用，未更改该进程。'}
     if($taskInitial.Count -gt 0 -and $WaitForClientExit) {
       $taskInitialIds=@($taskInitial.Id)
       $taskRoots=@($taskInitial | Where-Object {$_.Parent -notin $taskInitialIds})
@@ -137,9 +140,6 @@ try {
       $taskRemainingMain=@(Get-WallpaperCodexProcesses | Where-Object {$_.CommandLine -notmatch '--type=' -and $_.CommandLine -notmatch '--monitor-self'})
       if($taskRemainingMain.Count -gt 0){throw '检测到仍运行的主实例，保留它并停止替换。'}
       $taskStatus.preservedOrphanProcessIds=@((Get-TaskSnapshot).Id)
-      if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){
-        throw '退出期间端口被其他进程占用，未启动调试实例。'
-      }
       $taskInitial=@()
     }
     if($taskInitial.Count -gt 0 -and -not $WaitForClientExit -and -not $RestartCurrent -and -not $AfterUpdate){
@@ -162,9 +162,15 @@ try {
     $taskStatus.codexVersion="$($taskCodex.Version)"
     $taskStatus.packageFullName="$($taskCodex.PackageFullName)"
     $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes @()
+    if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){
+      $taskEndpoint=Select-WallpaperCdpEndpoint -Root $taskRoot -Codex $taskCodex
+      if($taskEndpoint.identity){throw '准备期间已有新的 Codex 连接，已保留该客户端，未启动第二份。'}
+      $taskPort=[int]$taskEndpoint.port;$taskStatus.cdpPort=$taskPort;$taskStatus.endpointSelection=$taskEndpoint.reason
+    }
     $taskArguments=@(Get-WallpaperDebugArguments $taskPort)
     Save-TaskPhase 'launching-registered-package-with-cdp'
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
+    if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '所选壁纸连接端口在启动前被占用，已保留占用者，请重新点击入口。'}
     $taskLaunchNotBefore=[DateTime]::UtcNow.Ticks
     $taskLaunchedId=if($AfterUpdate){Start-DreamSkinCodexDirect -Codex $taskCodex -Arguments $taskArguments}else{Start-DreamSkinCodex -Codex $taskCodex -Arguments $taskArguments}
     $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
@@ -182,6 +188,14 @@ try {
       if(@(Get-TaskSnapshot).Count -gt 0){throw '出现额外 Codex 实例，保留实例并停止直接启动回退。'}
       Save-TaskPhase 'launching-validated-store-executable'
       Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
+      if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){
+        $taskEndpoint=Select-WallpaperCdpEndpoint -Root $taskRoot -Codex $taskCodex
+        if($taskEndpoint.identity){throw '回退准备期间出现新的 Codex 连接，已保留客户端。'}
+        $taskPort=[int]$taskEndpoint.port;$taskStatus.cdpPort=$taskPort;$taskStatus.endpointSelection=$taskEndpoint.reason
+        $taskArguments=@(Get-WallpaperDebugArguments $taskPort)
+      }
+      Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
+      if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '回退连接端口被占用，已停止启动并保留占用者。'}
       $taskLaunchNotBefore=[DateTime]::UtcNow.Ticks
       $taskLaunchedId=Start-DreamSkinCodexDirect -Codex $taskCodex -Arguments $taskArguments
       $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
@@ -197,6 +211,8 @@ try {
   $taskVerifiedRoot=Get-Process -Id $taskStatus.debugRootPid -ErrorAction Stop
   $taskStatus.rootStartedAtUtc=$taskVerifiedRoot.StartTime.ToUniversalTime().ToString('o')
   $taskStatus.rootExecutable=$taskVerifiedRoot.MainModule.FileName
+  if($taskIdentity.RootProcessId -ne $taskStatus.debugRootPid -or $taskIdentity.RootCreatedAtUtc -ne $taskStatus.rootStartedAtUtc -or $taskIdentity.RootExecutable -ine $taskStatus.rootExecutable){throw '壁纸连接的客户端身份在验证后发生变化，已保留客户端。'}
+  try{Save-WallpaperCdpEndpoint -Root $taskRoot -Port $taskPort -Identity $taskIdentity}catch{$taskStatus.endpointRecordWarning=$_.Exception.Message}
   if($taskReuseExisting){
     if(-not (Test-DreamSkinPathEqual -Left $taskStatus.rootExecutable -Right "$($taskCodex.Executable)")){throw '现有客户端与已注册包版本不同，保留现有客户端并停止跨版本激活。'}
     $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId --no-wait
@@ -206,7 +222,7 @@ try {
       $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId
     }
     if($LASTEXITCODE -ne 0){throw '未找到可唤回的 Codex 主页面，已有客户端已保留。'}
-    $taskAfterActivation=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
+    $taskAfterActivation=Get-WallpaperVerifiedEndpoint -Port $taskPort -Codex $taskCodex
     $taskSameRoot=Get-Process -Id $taskStatus.debugRootPid -ErrorAction Stop
     if($null -eq $taskAfterActivation -or $taskAfterActivation.BrowserId -ne $taskIdentity.BrowserId -or $taskSameRoot.StartTime.ToUniversalTime().ToString('o') -ne $taskStatus.rootStartedAtUtc){throw '唤回时客户端身份发生变化，未关闭或替换任何客户端。'}
     $taskMain=$taskActivationResult|ConvertFrom-Json

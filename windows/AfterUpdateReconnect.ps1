@@ -36,13 +36,13 @@ try{
     @(Get-WallpaperCodexProcesses | Where-Object {$_.CommandLine -notmatch '--type=|--monitor-self'} | ForEach-Object {Get-WallpaperExactUpdateSnapshot $_})
   }
   $roots=@(UpdateRoots)
-  $healthyInfo=Get-DreamSkinVerifiedCdpIdentityForAnyRegistered -Port 9335
+  $healthyInfo=Get-WallpaperVerifiedEndpointForAnyRegistered -Root $Root
   $healthy=$null -ne $healthyInfo
   $clientDecision=Get-WallpaperUpdateClientDecision -Roots $roots -Executable $installed.Executable -EventAt $event.at -HealthyCdp $healthy
   $reattach=$false
   if($healthy -and $healthyInfo.Codex.PackageFullName -ceq $installed.PackageFullName -and (Get-WallpaperUpdateClientDecision -Roots $roots -Executable $installed.Executable -EventAt $event.at) -eq 'close-once'){
     $hostReady=$false
-    try{$runtimeStatus=Get-Content -LiteralPath (Join-Path $Root 'runtime-status.json') -Raw -ErrorAction Stop|ConvertFrom-Json;$age=([DateTimeOffset]::UtcNow-([DateTimeOffset]$runtimeStatus.updatedAt)).TotalSeconds;$hostReady=$runtimeStatus.browserId -eq $healthyInfo.Identity.BrowserId -and $age -ge 0 -and $age -le 12 -and $runtimeStatus.phase -in @('background-rendered','background-disabled','realtime-capture-active','realtime-capture-paused')}catch{}
+    try{$runtimeStatus=Get-Content -LiteralPath (Join-Path $Root 'runtime-status.json') -Raw -ErrorAction Stop|ConvertFrom-Json;$age=([DateTimeOffset]::UtcNow-([DateTimeOffset]$runtimeStatus.updatedAt)).TotalSeconds;$hostReady=$runtimeStatus.cdpPort -eq $healthyInfo.Port -and $runtimeStatus.browserId -eq $healthyInfo.Identity.BrowserId -and $age -ge 0 -and $age -le 12 -and $runtimeStatus.phase -in @('background-rendered','background-disabled','realtime-capture-active','realtime-capture-paused')}catch{}
     $reattach=-not $hostReady
   }
   if($clientDecision -ne 'close-once' -and -not $reattach){$state.phase=$clientDecision;return}

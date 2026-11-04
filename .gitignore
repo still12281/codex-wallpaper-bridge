@@ -16,6 +16,8 @@ settings.json
 settings.next.json
 launch-script.txt
 launcher-runtime.json
+cdp-endpoint.json
+cdp-endpoint.json.next
 installation.json
 shortcut-replacements.json
 entry-runtime-check.json

@@ -14,18 +14,18 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2199,
-      "sha256": "c23afe069ea1fbed292bec0abada94c9c08aef1f19f3d4b3ccf2b8aa96b4f58b"
+      "utf8Bytes": 2214,
+      "sha256": "e91c5c936c5d96561a511a24a104739ef43879f5f6a55dd4ebb9a2cfbc06007c"
     },
     {
       "path": ".gitignore",
-      "utf8Bytes": 985,
-      "sha256": "c0b16df5df8798aa8597d915d6fba8a46fd63e1ae78cdb9a6f1276349d2aaf4f"
+      "utf8Bytes": 1026,
+      "sha256": "ecfbd8b1afd55e6044c2502c5ee64a387c8f764f72618945cbc2b209dc5dec09"
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 11742,
-      "sha256": "95ca0e551fb5f150436c1a5f2804e903c4018b3a40b2609c016192994e650b31"
+      "utf8Bytes": 12166,
+      "sha256": "889763b9aaefc21dc3537b30df3214edcbe87136daf47a3efe58871b5a645b7a"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,8 +49,8 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 11040,
-      "sha256": "f04a90dad1a4329537f91dd079b9a8e07ffe6e249d102a9a4be9971c84603602"
+      "utf8Bytes": 11331,
+      "sha256": "a0a4e5ae4e1b535776b88a9c5445ee8e88be534a4400c745264ba4bfca4a0e50"
     },
     {
       "path": "README.md",
@@ -94,13 +94,18 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 6164,
-      "sha256": "93683c062556ddccba99977640362dc0eef4de7a8588b23f6468f6ad4a97e612"
+      "utf8Bytes": 6581,
+      "sha256": "c0423ac154f76a47354afc94f6d8f23b756cc77d5a9128529a4b1bb01045b96f"
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
       "utf8Bytes": 7277,
       "sha256": "ef9fb2e956d81b5922c86a8898716fd4b70c6b65a13a25e8e92d758a5b33c96d"
+    },
+    {
+      "path": "docs/ENDPOINT-RECOVERY-20261104.zh-CN.md",
+      "utf8Bytes": 2471,
+      "sha256": "273a7d658350ea18f6c559f9f861a27280074a0de6bb1ec9b361178de9747531"
     },
     {
       "path": "docs/EXECUTION-PLAN-20261026.zh-CN.md",
@@ -345,8 +350,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 24499,
-      "sha256": "d8c9c105c31ed6f5a7381ae38063263859457b63aeccabb7df13f8db0e2f3445"
+      "utf8Bytes": 25008,
+      "sha256": "dfb39ae7c84c83f9a44300a46885a993333a1c2256e0f4bc4386a450496d0555"
     },
     {
       "path": "package.json",
@@ -355,8 +360,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 30738,
-      "sha256": "daac874eae44dc5c54b442c82f2ba962180bf838a364838da78ec7bcabd2a90e"
+      "utf8Bytes": 31763,
+      "sha256": "220775b33b7cd37c9b3b35fb0d33b79d9a9e653d069cc5c53487299210d4801a"
     },
     {
       "path": "settings.example.json",
@@ -510,8 +515,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 41151,
-      "sha256": "8fd0981520a32f4ce6ffa24e1c0845d2572f91eb358a81daafebfca754d664b8"
+      "utf8Bytes": 41173,
+      "sha256": "9963e14c55fbf25324702ff3b2bc27bf140f129c24c17be82ba6c1adb2a21bd8"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -565,8 +570,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 43566,
-      "sha256": "3601f05cf541295c6884452e3d838d4293c22cc238e8a125aa823942aa01d1ad"
+      "utf8Bytes": 44040,
+      "sha256": "a6f0a5032267e00d3fc749bd0c9fca3329fa6fa6113a581e47a10aeee06263c2"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -582,6 +587,11 @@
       "path": "test/browser-web.test.mjs",
       "utf8Bytes": 4115,
       "sha256": "d8697c54830bf20e62921e0bf58b6f04e21585a054936e5b358df526c2f8c8d6"
+    },
+    {
+      "path": "test/cdp-endpoint.ps1",
+      "utf8Bytes": 5781,
+      "sha256": "a71726007d2e83e5477e27b4b2de76fa1d6942892fa9e9f106200a4aaad71b90"
     },
     {
       "path": "test/client-window.ps1",
@@ -755,8 +765,8 @@
     },
     {
       "path": "test/startup-shutdown.ps1",
-      "utf8Bytes": 3698,
-      "sha256": "015d6ad356ae7173c57bee03368e4f397398359ca3b878f5fb087dcf4d42a57c"
+      "utf8Bytes": 5239,
+      "sha256": "2b89ca6325d40d8c078186c927db443dec83ffd1c10b6b23e39976269d2f6efc"
     },
     {
       "path": "test/surfaces.test.mjs",
@@ -795,8 +805,8 @@
     },
     {
       "path": "tools/check-release.mjs",
-      "utf8Bytes": 2975,
-      "sha256": "101ab780a1993a00c50d57731990fbf8eec45112af32ece3968ae09ac2c0f77a"
+      "utf8Bytes": 2999,
+      "sha256": "4c190ae958e3c21db3589f853759c7c3e260a36d5f436f811568fb063e0dfe03"
     },
     {
       "path": "tools/create-bootstrap.mjs",
@@ -940,8 +950,8 @@
     },
     {
       "path": "windows/AfterUpdateReconnect.ps1",
-      "utf8Bytes": 7696,
-      "sha256": "670b2a1a7b72a8e55037085f875c39b1cbed9c02c0b532c2984bfd35ad936bb1"
+      "utf8Bytes": 7744,
+      "sha256": "e60de235ad819158c09d090819742b08ca6af1beb6e7aa671d35cefff313d1ae"
     },
     {
       "path": "windows/Align-Taskbar.cs",
@@ -980,8 +990,8 @@
     },
     {
       "path": "windows/LaunchPolicy.ps1",
-      "utf8Bytes": 6910,
-      "sha256": "d23c237d755d32b72ecbc3516745c540009e8b285d7079bc62bf183d063fc6e7"
+      "utf8Bytes": 11517,
+      "sha256": "8546e703635ce5d17e44953c345e489a461ad8d3d84df6a160d8a09daeb38c66"
     },
     {
       "path": "windows/LoginStartup.ps1",
@@ -1040,8 +1050,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 20405,
-      "sha256": "bc1211cbe7fe481a265aa86b189693070da49f9bd35fcae9980810a830bf866e"
+      "utf8Bytes": 21928,
+      "sha256": "f19e9fc9ca1ab05e79a140e0a00196e68589ca2112329c54adfeb3718c2ea9ec"
     },
     {
       "path": "windows/StartupHealth.ps1",
