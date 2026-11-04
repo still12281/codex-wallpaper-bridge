@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2164,
-      "sha256": "f1fa54eb2088b92fe4717b2d58efd24bf0f71e6cd1dc8278b249a183db01ef8a"
+      "utf8Bytes": 2180,
+      "sha256": "16c286c589e89c8fb16580ae92f3373140d9db8d8804c674bc2ecd39cdb7dd37"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 10227,
-      "sha256": "18d4bb132381a16fcc89e68eaf9340f5223064b5878f74cc54023e09ba3fbfba"
+      "utf8Bytes": 10793,
+      "sha256": "583cde0183d0600f429102b891a299ceb07875adeb0dca75dff0e485c79d3016"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 10390,
-      "sha256": "f9c76d29ac8f97daba9f7cdc332af514c7876e0260e1bc4d00ffef085e87253b"
+      "utf8Bytes": 11040,
+      "sha256": "f04a90dad1a4329537f91dd079b9a8e07ffe6e249d102a9a4be9971c84603602"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 12870,
-      "sha256": "013f5a073945e4b51090aa31be109c003f62b28b2e9d7758077af577070af079"
+      "utf8Bytes": 13329,
+      "sha256": "73385922bc44a21e575056290741818c33eba12cfff8eb3c1997a2cab76d7317"
     },
     {
       "path": "README.zh-CN.md",
@@ -94,8 +94,8 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 5580,
-      "sha256": "205eb0f23dd67a0239153e008cd4ba63940119f15b66620b1917fbb1e1c8db17"
+      "utf8Bytes": 6164,
+      "sha256": "93683c062556ddccba99977640362dc0eef4de7a8588b23f6468f6ad4a97e612"
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
@@ -119,13 +119,18 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 15871,
-      "sha256": "c672302a7905d989c05def9de1a9277bd6799cb9aa1df354191e823cea68aec1"
+      "utf8Bytes": 16285,
+      "sha256": "b6c79a92a23fa807d4214a016014be72ac4245e6e985073aa94e801abfdf9ddd"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
       "utf8Bytes": 4715,
       "sha256": "116e910183b5e677639f0f642090b16883105a4f52a1c3c000358dca6cd94ad1"
+    },
+    {
+      "path": "docs/LOGIN-STARTUP.zh-CN.md",
+      "utf8Bytes": 4343,
+      "sha256": "fbdc986e8966cdd87a97651716d98f26fad3caaed7351def9605009d1e14ea3a"
     },
     {
       "path": "docs/MAINTENANCE.zh-CN.md",
@@ -179,8 +184,8 @@
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
-      "utf8Bytes": 4882,
-      "sha256": "fc1ed6cb8f4afe466aaa97de2cc2ca5eccd200060407e553e8a796927ea34976"
+      "utf8Bytes": 5339,
+      "sha256": "6bf07c653dead08c3d204e84ca8a5060c08b0df9dd5ab1f5b59e32ec50ba16cc"
     },
     {
       "path": "docs/RELEASING.zh-CN.md",
@@ -335,18 +340,18 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 22727,
-      "sha256": "e5a32f1dbfb560188aaa93a9ce81268ee3dfb292468f263f361de52331239690"
+      "utf8Bytes": 23371,
+      "sha256": "42ee13f8ce215050a0d9c8aa0fa4eb3ac9c8cb349b289ce5a2ac14cf122ea8f0"
     },
     {
       "path": "package.json",
       "utf8Bytes": 961,
-      "sha256": "5d5752696b52179049165b686c02b2eb3bbd102e95aaf20b1b3a30e8803cbae4"
+      "sha256": "7bbfa9fd85666f04f4f8e49b45caaa15d0540209e363585b9e35ea2fbd474154"
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 26316,
-      "sha256": "d15f87bceb752c31f4dd73c8077ac50eb1b22b737b5aefffb20a39e09c23bb1b"
+      "utf8Bytes": 27680,
+      "sha256": "95c58b905ad9de21fd02cd5fa218d2728c052aacc125194f53762681916cb0e1"
     },
     {
       "path": "settings.example.json",
@@ -555,8 +560,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 41675,
-      "sha256": "8af58f673d2676284dc0c0f10cf4506a7d8dc4c058d292aba474aefb9fb4a033"
+      "utf8Bytes": 42102,
+      "sha256": "15328fb772d91b87ff576a78688124c1412b76d115c435bb0a0f9110c0381538"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -662,6 +667,11 @@
       "path": "test/lifetime-integration.mjs",
       "utf8Bytes": 3732,
       "sha256": "01733e6cd71ce22314ba282577c4bc59f4c5420b7f3466d22097f83939be05db"
+    },
+    {
+      "path": "test/login-startup.ps1",
+      "utf8Bytes": 10275,
+      "sha256": "7ffe6eb1c7f0941ed78fd36913ff30a4245f66d0027745f654edb5f0c230adc8"
     },
     {
       "path": "test/maintenance.test.mjs",
@@ -945,8 +955,8 @@
     },
     {
       "path": "windows/Install-Wallpaper.ps1",
-      "utf8Bytes": 9204,
-      "sha256": "c6708bb6c6f572d36628cab967d0f18ff5365dcc0d785547b46a6eb6725fb462"
+      "utf8Bytes": 9678,
+      "sha256": "5fa58ee20739fb8b9463278ef9e08ac6f88576fd45705f6a274c39f512c17242"
     },
     {
       "path": "windows/InstallSupport.ps1",
@@ -957,6 +967,11 @@
       "path": "windows/LaunchPolicy.ps1",
       "utf8Bytes": 5531,
       "sha256": "4500b0c700616316e20e826aca5c3564b15e3c2d40f0fe282a3dfc52f989018f"
+    },
+    {
+      "path": "windows/LoginStartup.ps1",
+      "utf8Bytes": 8224,
+      "sha256": "10c2afc29e3815e3689ad1011174202039ba77883e1b675710070ec850c04296"
     },
     {
       "path": "windows/Native-Icon-Pins.ps1",
@@ -997,6 +1012,11 @@
       "path": "windows/Runtime.ps1",
       "utf8Bytes": 1526,
       "sha256": "9be7b808294f5b6026416239a48bc0d56f2065c28a6bddfe8eaa7caeffc949e1"
+    },
+    {
+      "path": "windows/Set-LoginStartup.ps1",
+      "utf8Bytes": 1960,
+      "sha256": "695e867672cfa7ed58997b693bc967e811d87aff186694f1e796daeba5dc69d8"
     },
     {
       "path": "windows/ShortcutIdentity.cs",

@@ -88,6 +88,10 @@ GPU 不能保证兼容任意场景；打包场景、图片副本及单次资源�
 
 手动入口不受自动更新任务“只尝试一次”的限制，不清空壁纸库和设置。详细处理见[手动恢复指南](docs/INSTALL.zh-CN.md#更新后壁纸消失手动恢复)。
 
+### 开机自动打开 Codex，却没有壁纸
+
+官方登录启动会绕过壁纸入口。alpha.2 起可在解压目录运行 `./Install.cmd -LoginStartup enable`，备份原状态后改为从一体入口自动启动；默认安装保持原登录设置。已有安装的启用、检查与撤销见[登录自启动说明](docs/LOGIN-STARTUP.zh-CN.md)。当前普通窗口仍需正常退出后从壁纸入口重开，配置检查不等于真实开机验收。
+
 ## 安装
 
 **准备：Windows 10/11 x64，已安装并登录官方 Microsoft Store 版 Codex，保持联网。**
@@ -97,10 +101,10 @@ GPU 不能保证兼容任意场景；打包场景、图片副本及单次资源�
 打开 **PowerShell**，复制执行：
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1.0-alpha.1/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1.0-alpha.2/install.ps1' | iex
 ```
 
-自动下载 **v0.1.0-alpha.1** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
+自动下载 **v0.1.0-alpha.2** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
 
 安装成功后，保存工作并正常退出原 Codex，再打开所选壁纸入口。安装器不会自动关闭当前客户端。无法连接 GitHub 时使用下方手动下载方式。
 

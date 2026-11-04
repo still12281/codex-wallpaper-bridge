@@ -5,14 +5,14 @@
 适用于 Windows 10/11 x64；先安装并登录官方 Microsoft Store 版 Codex。打开 PowerShell，执行：
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1.0-alpha.1/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1.0-alpha.2/install.ps1' | iex
 ```
 
 命令下载固定版本引导脚本；脚本从同一 Release 下载 ZIP，按内置 SHA-256 校验后解压，再调用 `Install.cmd`。无需 Git、手动下载 ZIP 或先安装 PowerShell 7。依赖、快捷方式和更新重连选项与下面的双击安装一致；不会关闭或重启当前 Codex。
 
 默认安装到 `%LOCALAPPDATA%\CodexWallpaperBridge`。想指定其它盘，可先在同一个 PowerShell 中设置 `$env:CODEX_WALLPAPER_DATA_DIR = 'D:\CodexWallpaperBridge'`，再执行上面的远程命令；升级时使用同一目录。下载及解压缓存留在终端显示的 `%TEMP%\CodexWallpaperBridge-install-*` 独立文件夹，成功后可自行删除；壁纸库不存放在此缓存中。
 
-每条命令对应固定版本；升级时使用新版 README/Release 提供的命令。脚本或下载被网络拦截时，按下文手动下载，不需要关闭安全软件。希望先审阅脚本，可在 [Release](https://github.com/still12281/codex-wallpaper-bridge/releases/tag/v0.1.0-alpha.1) 下载 `install.ps1` 和对应 `.sha256`；脚本的 `-CheckOnly` 选项只下载校验并检查安装条件，不执行安装。
+每条命令对应固定版本；升级时使用新版 README/Release 提供的命令。脚本或下载被网络拦截时，按下文手动下载，不需要关闭安全软件。希望先审阅脚本，可在 [Release](https://github.com/still12281/codex-wallpaper-bridge/releases/tag/v0.1.0-alpha.2) 下载 `install.ps1` 和对应 `.sha256`；脚本的 `-CheckOnly` 选项只下载校验并检查安装条件，不执行安装。
 
 ## 推荐：双击安装
 
@@ -150,6 +150,10 @@ node ./tools/prepare-media-bridge.mjs
 ```
 
 若基础安装用了自定义数据目录，先执行 `$env:CODEX_WALLPAPER_DATA_DIR='D:\CodexWallpaperBridge'`，再运行准备命令。然后在壁纸面板 **系统音乐联动** 中启用歌曲显示或壁纸音频响应，点击保存。详见[音乐联动说明](SYSTEM-MEDIA.md)。
+
+## 可选：登录自启动
+
+官方 Codex 的自启动会绕过壁纸入口。alpha.2 起可在解压目录运行 `./Install.cmd -LoginStartup enable`，将登录启动显式交给壁纸一体入口；默认 `keep` 保持现有设置。已安装后的启用、只读检查、撤销与卸载顺序见[登录自启动说明](LOGIN-STARTUP.zh-CN.md)。配置保留当前客户端，真实下次登录仍需验收。
 
 ## 可选：更新后一次重连
 

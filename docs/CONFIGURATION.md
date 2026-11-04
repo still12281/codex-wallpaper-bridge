@@ -6,6 +6,8 @@ For normal installation and in-app setup, follow the [Chinese installation guide
 
 Use `-UpdateReconnect enable/keep/disable` to opt into, preserve or remove the event-only future-update rule. `-NonInteractive -NoPause` makes the command-line installation unattended at the script level; OS installer consent can still appear. Installation preserves wallpaper settings and does not launch or close Codex. The built entry records PowerShell, Node and supplied FFmpeg/uv executable paths so desktop launches do not depend on a refreshed PATH.
 
+From alpha.2, `-LoginStartup enable/keep/disable` controls the separate current-user login path; the default `keep` makes no change. Enabling backs up and disables the matching official native startup task and creates a managed shortcut to the stable wallpaper entry. `windows/Set-LoginStartup.ps1 -Root <data directory> -Mode inspect` is read-only; `enable` and `disable` configure or restore the managed login path. Disable this feature before moving/removing the data directory. See [login startup](LOGIN-STARTUP.zh-CN.md) for ownership checks, restoration and acceptance limits.
+
 | Variable | Use |
 | --- | --- |
 | `CODEX_WALLPAPER_DATA_DIR` | Absolute data directory. Defaults to the user's local application data folder, `CodexWallpaperBridge`. Keep it outside the repository. |

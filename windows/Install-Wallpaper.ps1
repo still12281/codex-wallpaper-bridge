@@ -2,6 +2,7 @@
 param([string]$DataDirectory,[switch]$CheckOnly,[switch]$SkipDependencyInstall,[switch]$SkipPreparation,[switch]$NoShortcuts,
   [ValidateSet('ask','separate','replace','none')][string]$ShortcutMode='ask',
   [ValidateSet('ask','enable','keep','disable')][string]$UpdateReconnect='ask',
+  [ValidateSet('enable','keep','disable')][string]$LoginStartup='keep',
   [switch]$NonInteractive,[switch]$NoPause)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'InstallSupport.ps1')
@@ -38,7 +39,7 @@ try{
     if($executable){$installResolved[$spec.name]=$executable}else{$installMissing+=$spec}
   }
   if($CheckOnly){
-    [ordered]@{checkOnly=$true;codex="$($installCodex.Version)";dataDirectory=$installDataRoot;dependencies=$installResolved;missing=@($installMissing|ForEach-Object package);choices=$installChoices;willStartClient=$false} | ConvertTo-Json -Depth 4
+    [ordered]@{checkOnly=$true;codex="$($installCodex.Version)";dataDirectory=$installDataRoot;dependencies=$installResolved;missing=@($installMissing|ForEach-Object package);choices=$installChoices;loginStartup=$LoginStartup;willStartClient=$false} | ConvertTo-Json -Depth 4
     if($installMissing.Count){exit 2};exit 0
   }
   if($installMissing.Count -and $SkipDependencyInstall){throw ('Missing dependencies: '+(($installMissing|ForEach-Object package)-join ', '))}
@@ -103,7 +104,11 @@ try{
     & $installResolved.pwsh @updateArguments
     if($LASTEXITCODE -ne 0){throw 'Base installation completed, but the update-recovery task could not be changed. See docs/INSTALL.zh-CN.md.'}
   }
-  [ordered]@{installed=$true;source=$installDirectory;entry=$installEntry;dataDirectory=$installDataRoot;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect;preparationSkipped=[bool]$SkipPreparation;clientStarted=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $installDataRoot 'install-status.json') -Encoding UTF8 -ErrorAction Stop
+  if($LoginStartup -ne 'keep'){
+    & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Set-LoginStartup.ps1') -Root $installDataRoot -Mode $LoginStartup
+    if($LASTEXITCODE -ne 0){throw 'Base installation completed, but login startup could not be changed. See docs/LOGIN-STARTUP.zh-CN.md.'}
+  }
+  [ordered]@{installed=$true;source=$installDirectory;entry=$installEntry;dataDirectory=$installDataRoot;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect;loginStartup=$LoginStartup;preparationSkipped=[bool]$SkipPreparation;clientStarted=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $installDataRoot 'install-status.json') -Encoding UTF8 -ErrorAction Stop
   Write-Host ''
   Write-Host 'Installed. Save drafts, exit ordinary Codex normally, then open the selected wallpaper entry.' -ForegroundColor Green
   Write-Host ('Entry: '+$installEntry)

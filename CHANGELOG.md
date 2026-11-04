@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0-alpha.2 — 2026-11-04
+
+- Add opt-in current-user login startup through the stable wallpaper entry, preventing the official ordinary startup task from opening an unattachable client first. Back up the exact original native State, preserve unrelated registry values, check shortcut ownership, support read-only inspection and guarded restoration, and roll back failed setup. Default install/upgrade behavior remains `keep`; no client is closed or watcher installed. Include isolated startup regressions in CI and document the pending real-login acceptance.
+
 ## 0.1.0-alpha.1 — 2026-10-29
 
 - Resolve native terminal theme managers by one validated interface in the already loaded module instead of fixed bundle/export names. Distinguish armed/zero terminals from actual adaptation, recover delayed module loading, and report terminal theme status separately from wallpaper readiness.

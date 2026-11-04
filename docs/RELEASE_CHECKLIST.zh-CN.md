@@ -1,5 +1,7 @@
 # 发布前信息清单
 
+当前发布状态：仓库已在用户授权后公开，alpha.0/alpha.1 已发布；下文“必须保持私有/等待公开授权”为 2026-10-28 历史准备记录，已被后续公开发布取代。2026-11-04 用户授权更新 GitHub，本轮准备 alpha.2 登录自启动修复；沿用版本化 ZIP、四项资产校验、prerelease 与明确的实机验收边界，见[发布流程](RELEASING.zh-CN.md)与[登录说明](LOGIN-STARTUP.zh-CN.md)。
+
 本轮用户已明确授权上传 GitHub，但必须保持私有，待用户审核合格后再决定公开。[私有仓库](https://github.com/still12281/codex-wallpaper-bridge)已上传main；v0.1.0-alpha.0安装包采用固定版本 ZIP 和 SHA-256，Release 保持草稿。不得擅自公开仓库或发布对外安装命令。
 
 ## 2026-10-28 准备状态

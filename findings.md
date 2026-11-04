@@ -141,3 +141,6 @@ Bounded native capture acceptance: raw command-line escaping was the first failu
 ## 2026-10-27 当前续接结果
 
 C属性/输入与内嵌字体、D真实口径/高刷/4K R=1/有界缓存、E逻辑轮播/失败恢复/备份已部署v18。运行34个src模块一致，9条库与配置保留，官方客户端未重启。30分钟隔离资源结果结束，内存早末private commit497→533MiB且末段26MiB跃升未完全归因；不能宣称无泄漏。具体T01—T14未完成项与证据见docs/PACKAGE-E-20261027.zh-CN.md；Web不绕CSP，正常冷启/睡眠/任务栏等留用户正常操作。
+## 登录自启动修复，2026-11-04
+
+官方 Store 包的 windows.startupTask 可直接启动普通客户端，绕过壁纸入口；现有更新事件任务不处理登录。修复采用当前用户 Startup 文件夹中的稳定 CodexEntry.exe 快捷方式，并备份、关闭对应官方启动任务。Windows StartupTaskState 定义 1 为 DisabledByUser、2 为 Enabled；不改组策略、不关闭客户端、不加入监控。来源：https://learn.microsoft.com/en-us/uwp/api/windows.applicationmodel.startuptaskstate 及 https://support.microsoft.com/en-gb/windows/experience/startup-boot/configure-startup-applications-in-windows 。
