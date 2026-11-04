@@ -104,8 +104,8 @@
     },
     {
       "path": "docs/ENDPOINT-RECOVERY-20261104.zh-CN.md",
-      "utf8Bytes": 2471,
-      "sha256": "273a7d658350ea18f6c559f9f861a27280074a0de6bb1ec9b361178de9747531"
+      "utf8Bytes": 3294,
+      "sha256": "33d1c163e50a6e6d67af6fb014f90c001c5b159b35ae4b6f15eebf6a74eb0684"
     },
     {
       "path": "docs/EXECUTION-PLAN-20261026.zh-CN.md",
@@ -360,8 +360,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 31763,
-      "sha256": "220775b33b7cd37c9b3b35fb0d33b79d9a9e653d069cc5c53487299210d4801a"
+      "utf8Bytes": 32535,
+      "sha256": "eea5c0cfce34b57f5f892154dc66b1ba40acf9e88dafa1ca9e1ad9132b90bdc8"
     },
     {
       "path": "settings.example.json",
@@ -570,8 +570,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 44040,
-      "sha256": "a6f0a5032267e00d3fc749bd0c9fca3329fa6fa6113a581e47a10aeee06263c2"
+      "utf8Bytes": 44237,
+      "sha256": "b2066ac764d7b1f93e8ce875dc96750114750a49526663744739c08d7fd7ec31"
     },
     {
       "path": "test/appearance.test.mjs",
