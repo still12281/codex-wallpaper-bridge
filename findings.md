@@ -144,3 +144,6 @@ C属性/输入与内嵌字体、D真实口径/高刷/4K R=1/有界缓存、E逻�
 ## 登录自启动修复，2026-11-04
 
 官方 Store 包的 windows.startupTask 可直接启动普通客户端，绕过壁纸入口；现有更新事件任务不处理登录。修复采用当前用户 Startup 文件夹中的稳定 CodexEntry.exe 快捷方式，并备份、关闭对应官方启动任务。Windows StartupTaskState 定义 1 为 DisabledByUser、2 为 Enabled；不改组策略、不关闭客户端、不加入监控。来源：https://learn.microsoft.com/en-us/uwp/api/windows.applicationmodel.startuptaskstate 及 https://support.microsoft.com/en-gb/windows/experience/startup-boot/configure-startup-applications-in-windows 。
+## 退出重开恢复缺陷，2026-11-04
+
+本机错误日志明确记录 prelaunch 普通客户端错误及 recovery=normal-client-reopened；当前普通主进程的父进程是该轮 bootstrap，证实入口失败分支在旧实例消失后主动打开了无调试参数的客户端。原 catch 无条件在进程空时打开普通客户端，未区分本轮是否曾创建客户端；原预检也把退出中的辅助进程计入普通实例。此缺陷独立于已修复的登录启动来源，不能用重复退出重开代替修正。

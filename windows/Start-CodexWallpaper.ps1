@@ -16,6 +16,7 @@ $taskStatus = [ordered]@{launchId=[guid]::NewGuid().ToString();startedAt=[DateTi
 $taskStatus.helperStartedAtUtc=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o')
 $taskStatus.lifecycle='one-shot-no-supervisor'
 $taskOwnedRoot = $null
+$taskCreatedVerifiedClient=$false
 $taskBootstrapLock=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridgeBootstrap')
 $taskLockOwned=$false
 try{$taskLockOwned=$taskBootstrapLock.WaitOne(0)}catch [Threading.AbandonedMutexException]{$taskLockOwned=$true}
@@ -86,6 +87,7 @@ try {
   $taskPort=9335
   $taskInitial=@(Get-TaskSnapshot)
   $taskStatus.initialProcessIds=@($taskInitial.Id)
+  $taskStatus.initialMainProcessIds=@($taskInitial | Where-Object IsMain | ForEach-Object Id)
   $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes $taskInitial
   if($InspectOnly){$taskStatus.phase='inspect-only';$taskStatus.updatedAt=[DateTimeOffset]::UtcNow.ToString('o');$taskStatus | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $taskRoot 'entry-inspect-status.json') -Encoding utf8 -ErrorAction Stop;$taskStatus | ConvertTo-Json -Depth 8;exit 0}
   $taskIdentity=Get-DreamSkinVerifiedCdpIdentity -Port $taskPort -Codex $taskCodex
@@ -137,7 +139,15 @@ try {
       }
       $taskInitial=@()
     }
-    if($taskInitial.Count -gt 0) {
+    if($taskInitial.Count -gt 0 -and -not $WaitForClientExit -and -not $RestartCurrent -and -not $AfterUpdate){
+      Save-TaskPhase 'waiting-for-previous-client-shutdown'
+      $taskDrain=Wait-WallpaperStartupDrain -Initial $taskInitial -ReadSnapshot {Get-TaskSnapshot}
+      $taskStatus.shutdownDrain=$taskDrain.reason
+      $taskInitial=@($taskDrain.remaining)
+      if($taskDrain.reason -eq 'new-client-preserved'){throw '退出清理期间出现新的 Codex 主实例，已保留该实例；未关闭或重新打开它。'}
+      $taskStatus.preservedOrphanProcessIds=@($taskInitial | Where-Object {-not $_.IsMain} | ForEach-Object Id)
+    }
+    if(@($taskInitial | Where-Object IsMain).Count -gt 0) {
       if(-not $RestartCurrent){throw '检测到普通 Codex 已在运行，未开放壁纸连接；更新自动重开也可能进入此状态。请正常退出后再从现有 Codex 一体入口打开，将自动识别新版并恢复已保存壁纸；当前客户端和配置已保留。'}
       Save-TaskPhase 'closing-existing-client-gracefully'
       Close-TaskSnapshot $taskInitial
@@ -155,6 +165,7 @@ try {
     $taskLaunchNotBefore=[DateTime]::UtcNow.Ticks
     $taskLaunchedId=if($AfterUpdate){Start-DreamSkinCodexDirect -Codex $taskCodex -Arguments $taskArguments}else{Start-DreamSkinCodex -Codex $taskCodex -Arguments $taskArguments}
     $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
+    $taskCreatedVerifiedClient=$true
     $taskStatus.launchStrategy=if($AfterUpdate){'after-update-validated-direct-once'}else{'package-activation'}
     $taskIdentity=Wait-TaskIdentity -Port $taskPort
     if($null -eq $taskIdentity) {
@@ -171,6 +182,7 @@ try {
       $taskLaunchNotBefore=[DateTime]::UtcNow.Ticks
       $taskLaunchedId=Start-DreamSkinCodexDirect -Codex $taskCodex -Arguments $taskArguments
       $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
+      $taskCreatedVerifiedClient=$true
       $taskStatus.launchStrategy='validated-store-executable'
       $taskIdentity=Wait-TaskIdentity -Port $taskPort
       if($null -eq $taskIdentity){throw '直接启动后仍无已验证的 CDP 端点；当前 Codex 版本不支持此接入路径。'}
@@ -254,12 +266,13 @@ try {
   try {
     if($AfterUpdate){$taskOwnedRoot=$null;$taskStatus.recovery='after-update-no-close-no-retry';Save-TaskPhase 'failed';exit 1}
     if($null -ne $taskOwnedRoot){Close-TaskSnapshot @($taskOwnedRoot);$taskOwnedRoot=$null}
-    if(@(Get-TaskSnapshot).Count -eq 0){
+    $taskStatus.recovery=Get-WallpaperFailureRecovery -CreatedVerifiedClient $taskCreatedVerifiedClient -Remaining @(Get-TaskSnapshot)
+    if($taskStatus.recovery -eq 'reopen-normal-client'){
       Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
       $taskNormalId=Start-DreamSkinCodex -Codex $taskCodex -Arguments @()
       Start-Sleep -Seconds 2
       $taskStatus.recovery=if($null -ne (Get-TaskLaunchedRoot $taskNormalId)){'normal-client-reopened'}else{'normal-client-not-confirmed'}
-    }else{$taskStatus.recovery='existing-client-preserved'}
+    }
   }catch{$taskStatus.recovery='client-left-available-or-close-not-confirmed';$taskStatus.recoveryError=$_.Exception.Message}
   Save-TaskPhase 'failed'
   exit 1

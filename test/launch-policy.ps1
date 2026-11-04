@@ -53,3 +53,23 @@ foreach($bad in @(($data+'-foreign\versions\release-bbbbbbbbbbbbbbbb\src\video-c
   Assert-Policy (-not (Test-WallpaperHostScript ('node.exe "'+$bad+'"') $data $code)) 'Host path boundary failed'
 }
 Write-Output 'PASS: old/new roots blocked; renderer allowed; foreign session/path excluded; official default profile retained.'
+
+$snapshot=[pscustomobject]@{Id=201;Created=100;Path='verified-client';IsMain=$true}
+$helper=[pscustomobject]@{Id=202;Created=101;Path='verified-client';IsMain=$false}
+$script:drainRead=0
+$drained=Wait-WallpaperStartupDrain -Initial @($snapshot,$helper) -Checks 4 -Pause {} -ReadSnapshot {
+  $script:drainRead++
+  if($script:drainRead -eq 1){$snapshot;$helper}elseif($script:drainRead -eq 2){$helper}
+}
+Assert-Policy ($drained.reason -eq 'exit-completed' -and -not $drained.remaining.Count) 'A closing client was not allowed to finish shutdown'
+$replacement=[pscustomobject]@{Id=201;Created=200;Path='verified-client';IsMain=$true}
+$drained=Wait-WallpaperStartupDrain -Initial @($snapshot) -Pause {throw 'Must not wait for another activation'} -ReadSnapshot {$replacement}
+Assert-Policy ($drained.reason -eq 'new-client-preserved') 'PID reuse hid a new main process'
+$drained=Wait-WallpaperStartupDrain -Initial @($helper) -Checks 1 -Pause {} -ReadSnapshot {$helper}
+Assert-Policy ($drained.reason -eq 'helpers-only') 'A lingering renderer was classified as a live client root'
+$drained=Wait-WallpaperStartupDrain -Initial @($snapshot) -Checks 1 -Pause {} -ReadSnapshot {$snapshot}
+Assert-Policy ($drained.reason -eq 'client-still-running') 'An ordinary client was allowed to be replaced'
+Assert-Policy ((Get-WallpaperFailureRecovery -CreatedVerifiedClient $false) -eq 'no-client-started-before-failure') 'Prelaunch failure reopened an ordinary client'
+Assert-Policy ((Get-WallpaperFailureRecovery -CreatedVerifiedClient $true) -eq 'reopen-normal-client') 'Owned failed launch lost ordinary recovery'
+Assert-Policy ((Get-WallpaperFailureRecovery -CreatedVerifiedClient $true -Remaining @($snapshot)) -eq 'existing-client-preserved') 'Failure replaced a remaining client'
+Write-Output 'PASS: bounded shutdown drain, helper-only leftovers, new-main/PID-reuse preservation and recovery only after a verified owned launch.'

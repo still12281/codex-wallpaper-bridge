@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2180,
-      "sha256": "16c286c589e89c8fb16580ae92f3373140d9db8d8804c674bc2ecd39cdb7dd37"
+      "utf8Bytes": 2199,
+      "sha256": "c23afe069ea1fbed292bec0abada94c9c08aef1f19f3d4b3ccf2b8aa96b4f58b"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 10793,
-      "sha256": "583cde0183d0600f429102b891a299ceb07875adeb0dca75dff0e485c79d3016"
+      "utf8Bytes": 11281,
+      "sha256": "089abfeb2b93eb6f44922a6773d1e2d15500323d92fc3dcdb7d059f062c5fdeb"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -199,8 +199,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 6798,
-      "sha256": "8ac1a0f79c6f6d8556cf9b061553fd26d3c112ab946dcd229587956cfb37d843"
+      "utf8Bytes": 7355,
+      "sha256": "e10e94f6428101f1b7528c466a42c17bddf03e86ee97781504a0eb7233b1df9a"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -340,8 +340,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 23371,
-      "sha256": "42ee13f8ce215050a0d9c8aa0fa4eb3ac9c8cb349b289ce5a2ac14cf122ea8f0"
+      "utf8Bytes": 23912,
+      "sha256": "e213ffde170284e174097234f6d13f46ce1eda8c92ad237d997462b14996ec01"
     },
     {
       "path": "package.json",
@@ -350,8 +350,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 28584,
-      "sha256": "135a06090da741f2355c5a1befba58361516b338bd00e38e10799c74b6b3f669"
+      "utf8Bytes": 29719,
+      "sha256": "bb1d453b56e8b0fcd192251d06280340eafba7899ba19e7af7531dc3bb6ae241"
     },
     {
       "path": "settings.example.json",
@@ -560,8 +560,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 42175,
-      "sha256": "2f9f0e95f54e759b2ea2b73601da9fc6ba8500a74cd9744b52622a39c04c8780"
+      "utf8Bytes": 42815,
+      "sha256": "676da07ff3e301fca9ba77486e68312797a7994be897d9c12d87a601237e9ef9"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -650,8 +650,8 @@
     },
     {
       "path": "test/launch-policy.ps1",
-      "utf8Bytes": 5063,
-      "sha256": "e034952716d2075e180cc18a69acb055dca674d9e7cd5a28f9cd9c47712de5dd"
+      "utf8Bytes": 6983,
+      "sha256": "82783b950fb85f6c2f42f9e7bb89a3a28fcbff1809993f600887d8cc73ae4f7f"
     },
     {
       "path": "test/launcher-runtime.ps1",
@@ -742,6 +742,11 @@
       "path": "test/startup-health.ps1",
       "utf8Bytes": 4158,
       "sha256": "d8975626541e5a779a12f8dcee5ddbcb0cd8b0efae75ff871ced5ce44300be00"
+    },
+    {
+      "path": "test/startup-shutdown.ps1",
+      "utf8Bytes": 3698,
+      "sha256": "015d6ad356ae7173c57bee03368e4f397398359ca3b878f5fb087dcf4d42a57c"
     },
     {
       "path": "test/surfaces.test.mjs",
@@ -965,8 +970,8 @@
     },
     {
       "path": "windows/LaunchPolicy.ps1",
-      "utf8Bytes": 5531,
-      "sha256": "4500b0c700616316e20e826aca5c3564b15e3c2d40f0fe282a3dfc52f989018f"
+      "utf8Bytes": 6910,
+      "sha256": "d23c237d755d32b72ecbc3516745c540009e8b285d7079bc62bf183d063fc6e7"
     },
     {
       "path": "windows/LoginStartup.ps1",
@@ -1025,8 +1030,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 19151,
-      "sha256": "2dff3f341f0df950b5091418af42c780f407e5865fb4880df91d240ee7636615"
+      "utf8Bytes": 20124,
+      "sha256": "4f8385006bdad683ef15ec3e2014f9f2fa9d0945c529b0d9ad88a9fb78f71535"
     },
     {
       "path": "windows/StartupHealth.ps1",

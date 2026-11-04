@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix exit/reopen races: wait briefly for a preceding explicit client shutdown, distinguish helper leftovers from live main processes, preserve new activations, and stop prelaunch errors from reopening ordinary Codex without wallpaper arguments. Ordinary fallback now requires a client created and verified by that same bootstrap. Add a real-bootstrap regression with isolated process/package/launch fixtures; actual updated-client first-frame acceptance remains pending.
+
 ## 0.1.0-alpha.2 — 2026-11-04
 
 - Add opt-in current-user login startup through the stable wallpaper entry, preventing the official ordinary startup task from opening an unattachable client first. Back up the exact original native State, preserve unrelated registry values, check shortcut ownership, support read-only inspection and guarded restoration, and roll back failed setup. Default install/upgrade behavior remains `keep`; no client is closed or watcher installed. Include isolated startup regressions in CI and document the pending real-login acceptance.

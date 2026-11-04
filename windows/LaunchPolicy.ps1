@@ -79,3 +79,27 @@ function Get-WallpaperDebugArguments([int]$Port) {
   # the official profile and its native single-instance mechanism.
   @('--remote-debugging-address=127.0.0.1',"--remote-debugging-port=$Port")
 }
+
+# An explicit entry click can overlap the preceding client's shutdown. Wait a
+# bounded number of times without closing anything; a newly appearing main
+# process belongs to another activation and must be preserved immediately.
+function Wait-WallpaperStartupDrain {
+  param([object[]]$Initial,[scriptblock]$ReadSnapshot,[int]$Checks=48,
+    [scriptblock]$Pause={Start-Sleep -Milliseconds 250})
+  $identities=@($Initial | ForEach-Object {'{0}|{1}|{2}' -f $_.Id,$_.Created,$_.Path})
+  for($index=0;$index -le $Checks;$index++){
+    $current=@(& $ReadSnapshot)
+    $mains=@($current | Where-Object {-not $_.PSObject.Properties['IsMain'] -or $_.IsMain})
+    $newMains=@($mains | Where-Object {('{0}|{1}|{2}' -f $_.Id,$_.Created,$_.Path) -notin $identities})
+    if($newMains.Count){return [pscustomobject]@{reason='new-client-preserved';remaining=$current}}
+    if(-not $current.Count){return [pscustomobject]@{reason='exit-completed';remaining=@()}}
+    if($index -eq $Checks){return [pscustomobject]@{reason=$(if($mains.Count){'client-still-running'}else{'helpers-only'});remaining=$current}}
+    & $Pause
+  }
+}
+function Get-WallpaperFailureRecovery {
+  param([bool]$CreatedVerifiedClient,[object[]]$Remaining=@())
+  if($Remaining.Count){return 'existing-client-preserved'}
+  if($CreatedVerifiedClient){return 'reopen-normal-client'}
+  return 'no-client-started-before-failure'
+}
