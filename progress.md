@@ -178,3 +178,5 @@ E轮播逻辑分组、GPU/原版保存引用、坏项跳过/保存与恢复失�
 87 项 Node 单元测试、8 项 PowerShell 启动/安装/更新/下载策略脚本及可选运行时路径验证通过；新增登录用例包含权限拒绝和独立回滚、停用提交失败、升级恢复链。只读 manifest 发现及安装器显式 enable + CheckOnly 保持现有原生状态与启动文件夹一致。只读子代理复核发现的回滚中断问题已修复并复核通过。alpha.2 源码与四项发布资产准备中；当前客户端不重启，真实下一次登录仍待验收。
 
 独立目录安装（跳过已准备组件、不创建外部快捷方式、保留更新任务与登录设置）完成版本化部署和原生入口构建；未启动客户端。207 文件/206 清单项与第三方来源检查通过。GitHub CLI 直连出现 TLS EOF，改用系统已配置的本地代理后 API 与 Git 远端读取恢复；没有修改全局网络设置。
+
+源码提交 db605c7a871f6356baced748fa7553c58a25da7b 已推送 main，[Windows Node22/24 CI](https://github.com/still12281/codex-wallpaper-bridge/actions/runs/41795011452) 全部通过。[v0.1.0-alpha.2](https://github.com/still12281/codex-wallpaper-bridge/releases/tag/v0.1.0-alpha.2) 已按该提交发布为 prerelease，四项资产回读 SHA256 与本地一致；ZIP 为 bd376349bdbd12ea05092b51cd5c4af3b366e0e6aff4c76f3edeb9a7410766f4，引导脚本为 0fea907240e1868fb7df888bbde434b90cbc199138ef50895e990cece74d0f4a。无登录凭据的下载、脚本校验、ZIP 校验、解压及 CheckOnly 全链通过；本机 Windows TLS 默认协商出现 EOF，验收进程使用既有代理并限定 TLS1.2，未修改全局配置或关闭证书校验。当前客户端身份与壁纸配置哈希保持。发布资产不覆盖，后续仅同步此回执；真实下一次 Windows 登录仍待验收。

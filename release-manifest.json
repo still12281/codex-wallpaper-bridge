@@ -184,8 +184,8 @@
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
-      "utf8Bytes": 5339,
-      "sha256": "6bf07c653dead08c3d204e84ca8a5060c08b0df9dd5ab1f5b59e32ec50ba16cc"
+      "utf8Bytes": 5519,
+      "sha256": "2d876829b04dc836f939f1257fab915d85b0e966abf9469efb3c742eed2a3cfa"
     },
     {
       "path": "docs/RELEASING.zh-CN.md",
@@ -350,8 +350,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 27680,
-      "sha256": "95c58b905ad9de21fd02cd5fa218d2728c052aacc125194f53762681916cb0e1"
+      "utf8Bytes": 28584,
+      "sha256": "135a06090da741f2355c5a1befba58361516b338bd00e38e10799c74b6b3f669"
     },
     {
       "path": "settings.example.json",
@@ -560,8 +560,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 42102,
-      "sha256": "15328fb772d91b87ff576a78688124c1412b76d115c435bb0a0f9110c0381538"
+      "utf8Bytes": 42175,
+      "sha256": "2f9f0e95f54e759b2ea2b73601da9fc6ba8500a74cd9744b52622a39c04c8780"
     },
     {
       "path": "test/appearance.test.mjs",

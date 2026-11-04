@@ -327,4 +327,4 @@ Authorized 2026-10-24. Baseline: 1c1036e. Preserve the official client and the e
 - [x] 核实官方登录启动会绕过壁纸入口，明确保持现有客户端与配置。
 - [x] 添加显式启用、检查与恢复的登录自启动配置，接入安装器。
 - [x] 隔离验证冲突、重复执行、恢复与失败回滚，更新公开文档；发布清单随提交生成。
-- [ ] 提交并推送 GitHub main，检查远端 CI；真实下次登录验收单列。
+- [x] 提交并推送 GitHub main，Windows Node22/24 CI 通过；alpha.2 四项资产回读及公网下载/CheckOnly 通过，真实下次登录仍待验收。
