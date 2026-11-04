@@ -1,9 +1,9 @@
 // Serialized into the trusted app page. The opaque wallpaper receives only
 // validated resource bytes; it never obtains access to this cache or app data.
 export function installSceneResourceCache(){
- if(window.__cwbSceneResources?.version===7)return;
- const limit=512*1024*1024,maxFile=256*1024*1024,buffers=new Map(),writes=new Map(),stats={hits:0,misses:0,bytesFromCache:0,bytesTransferred:0,bytesFromFile:0,evictions:0,cacheErrors:0,cacheSkipped:0};let writeQueue=Promise.resolve(),queuedBytes=0;
- const cachePromise=Promise.resolve().then(()=>caches.open('codex-wallpaper-resources-v1')).catch(()=>{stats.cacheErrors++;return null;});
+ if(window.__cwbSceneResources?.version===8)return;
+ const limit=512*1024*1024,maxFile=256*1024*1024,buffers=new Map(),writes=new Map(),stats={hits:0,misses:0,bytesFromCache:0,bytesTransferred:0,bytesFromFile:0,evictions:0,cacheErrors:0,cacheSkipped:0,cacheBypasses:0};let writeQueue=Promise.resolve(),queuedBytes=0,readyCache=null;
+ const cachePromise=Promise.resolve().then(()=>caches.open('codex-wallpaper-resources-v1')).then(cache=>readyCache=cache).catch(()=>{stats.cacheErrors++;return null;});
  // Cache API keys are identifiers only. No network fetch is made to this URL.
  const url=key=>{if(!/^[a-f0-9]{64}$/.test(key))throw Error('资源缓存键无效');return 'https://cwb-cache.invalid/resource/'+key;};
  const take=id=>{const value=buffers.get(id);if(!value)throw Error('资源缓冲已失效');return value;};
@@ -11,7 +11,7 @@ export function installSceneResourceCache(){
  const deliver=(bytes,info)=>{if(info.media){if(!window.__cwbPendingMedia||window.__cwbPendingMedia.candidateId!==info.candidateId)throw Error('壁纸候选已关闭');window.__cwbPendingMedia.bytes=bytes;return;}const frame=document.querySelector('[data-cwb-renderer-id="'+info.rendererId+'"]')?.shadowRoot?.querySelector('iframe');if(!frame)throw Error('壁纸渲染页已关闭');frame.contentWindow.postMessage({token:info.token,resource:{id:info.id,bytes}},'*',[bytes.buffer]);};
  const prune=async(cache,incoming,size)=>{const keys=await cache.keys();let total=size;const entries=[];for(const key of keys){if(key.url===incoming)continue;const response=await cache.match(key),size=Number(response?.headers.get('Content-Length'))||0;entries.push({key,size});total+=size;}while(entries.length>=128||total>limit){const oldest=entries.shift();if(!oldest)break;await cache.delete(oldest.key);total-=oldest.size;stats.evictions++;}};
  const enqueue=(cache,key,size,response)=>{queuedBytes+=size;const job=writeQueue.then(async()=>{const put=async()=>{await prune(cache,url(key),size);await cache.put(url(key),response);};if(navigator.locks?.request)await navigator.locks.request('codex-wallpaper-resource-cache',put);else await put();}).catch(()=>{stats.cacheErrors++;}).finally(()=>{queuedBytes-=size;if(writes.get(key)===job)writes.delete(key);});writes.set(key,job);writeQueue=job;};
- window.__cwbSceneResources={version:7,stats,abort,
+ window.__cwbSceneResources={version:8,stats,abort,
   begin(id,key,size){url(key);if(!Number.isSafeInteger(size)||size<0||size>512*1024*1024)throw Error('资源缓冲大小无效');abort(id);buffers.set(id,{key,bytes:new Uint8Array(size),timer:setTimeout(()=>abort(id),120000)});},
   receive(id,data,offset){const {bytes}=take(id);if(typeof bytes.setFromBase64==='function')stats.bytesTransferred+=bytes.subarray(offset).setFromBase64(data).written;else{const chunk=atob(data);for(let i=0;i<chunk.length;i++)bytes[offset+i]=chunk.charCodeAt(i);stats.bytesTransferred+=chunk.length;}},
   async readFile(id,key,file,size,modified){
@@ -26,12 +26,33 @@ export function installSceneResourceCache(){
    }catch(error){if(buffers.get(id)===value)abort(id);throw error;}
    finally{value.reader=null;reader.onload=reader.onerror=reader.onabort=null;}
   },
-  async cached(key,size,info){const cache=await cachePromise;await writes.get(key);if(cache&&size<=maxFile)try{const response=await cache.match(url(key));if(response){const bytes=new Uint8Array(await response.arrayBuffer());if(bytes.length===size){deliver(bytes,info);stats.hits++;stats.bytesFromCache+=size;return true;}await cache.delete(url(key));}}catch{stats.cacheErrors++;}stats.misses++;return false;},
-  async complete(id,info){const value=take(id);abort(id);const cache=await cachePromise,size=value.bytes.length;let response;
+  async cached(key,size,info){
+   url(key);if(!Number.isSafeInteger(size)||size<0||size>maxFile){stats.misses++;return false;}
+   let active=true,reader,timer;
+   // Optional cache work has a page-side budget. A timed-out read can never
+   // deliver later after the caller has adopted the original-file fallback.
+   const operation=(async()=>{
+    const cache=await cachePromise;if(!active||!cache)return null;await writes.get(key);if(!active)return null;
+    const response=await cache.match(url(key));if(!active){void response?.body?.cancel().catch(()=>{});return null;}if(!response)return null;
+    let bytes;
+    if(response.body?.getReader){
+     reader=response.body.getReader();bytes=new Uint8Array(size);let offset=0;
+     for(;;){const chunk=await reader.read();if(!active)return null;if(chunk.done)break;if(offset+chunk.value.length>size){void reader.cancel().catch(()=>{});return null;}bytes.set(chunk.value,offset);offset+=chunk.value.length;}
+     if(offset!==size)return null;
+    }else bytes=new Uint8Array(await response.arrayBuffer());
+    if(!active)return null;if(bytes.length===size)return bytes;void cache.delete(url(key)).catch(()=>{});return null;
+   })().catch(()=>{if(active)stats.cacheErrors++;return null;});
+   const budgetMs=Math.min(2000,250+Math.ceil(size/(1024*1024))*8);
+   const timeout=new Promise(resolve=>{timer=setTimeout(()=>{active=false;stats.cacheBypasses++;void reader?.cancel().catch(()=>{});resolve(null);},budgetMs);});
+   const bytes=await Promise.race([operation,timeout]);clearTimeout(timer);active=false;
+   if(bytes){deliver(bytes,info);stats.hits++;stats.bytesFromCache+=size;return true;}stats.misses++;return false;
+  },
+  async complete(id,info){const value=take(id);abort(id);const cache=readyCache,size=value.bytes.length;let response;
    if(cache&&size<=maxFile&&!writes.has(value.key)){
     if(queuedBytes+size>limit||writes.size>=128)stats.cacheSkipped++;
     else try{response=new Response(value.file||value.bytes,{headers:{'Content-Type':'application/octet-stream','Content-Length':String(size)}});}catch{stats.cacheErrors++;}
    }
+   else if(!cache&&size<=maxFile)stats.cacheBypasses++;
    try{deliver(value.bytes,info);if(response)enqueue(cache,value.key,size,response);}finally{value.bytes=null;value.file=null;}
    return true;
   },

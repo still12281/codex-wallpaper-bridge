@@ -39,6 +39,28 @@ try{
  await c.evaluate('__cwbSceneResources.begin("fallback",'+JSON.stringify('b'.repeat(64))+',4);__cwbSceneResources.receive("fallback","BQYHCA==",0);true');
  await call('__cwbSceneResources.complete("fallback",'+JSON.stringify(info)+')');await call('__cwbSceneResources.flush()');await until(()=>c.evaluate('__delivery.length===3'));
  assert.deepEqual(await c.evaluate('__delivery[2]'),[5,6,7,8]);result.base64FallbackBytesMatch=true;
- await c.evaluate('__cwbSceneResources.begin("aborted",'+JSON.stringify(key)+',4);__cwbSceneResources.abort("aborted");true');await assert.rejects(call('__cwbSceneResources.complete("aborted",'+JSON.stringify(info)+')'));result.abortedBufferRejected=true;result.passed=true;
+ await c.evaluate('__cwbSceneResources.begin("aborted",'+JSON.stringify(key)+',4);__cwbSceneResources.abort("aborted");true');await assert.rejects(call('__cwbSceneResources.complete("aborted",'+JSON.stringify(info)+')'));result.abortedBufferRejected=true;
+ const reset=async open=>{await c.evaluate('delete window.__cwbSceneResources;Object.defineProperty(window,"caches",{value:{open:'+open+'},configurable:true});('+installSceneResourceCache.toString()+')();true');};
+ const fallback=async handle=>{await call('__cwbSceneResources.readFile('+JSON.stringify(handle)+','+JSON.stringify(key)+',__file,4,1234)');await call('__cwbSceneResources.complete('+JSON.stringify(handle)+','+JSON.stringify(info)+')');};
+ const count=()=>c.evaluate('__delivery.length');
+ await reset('()=>new Promise(resolve=>window.__releaseOpen=resolve)');
+ let before=await count(),started=performance.now();
+ assert.equal(await call('__cwbSceneResources.cached('+JSON.stringify(key)+',4,'+JSON.stringify(info)+')'),false);
+ await fallback('open-fallback');assert(performance.now()-started<1500);await until(async()=>await count()===before+1);
+ await c.evaluate('__releaseOpen({keys:async()=>[],match:async()=>new Response(new Uint8Array([1,1,1,1])),put:async()=>{},delete:async()=>true});true');await sleep(100);
+ assert.equal(await count(),before+1);assert.deepEqual(await c.evaluate('__delivery.at(-1)'),[4,3,2,1]);result.pendingOpenBypassedWithoutLateDelivery=true;
+ await reset('async()=>({keys:async()=>[],match:()=>new Promise(resolve=>window.__releaseMatch=resolve),put:async()=>{},delete:async()=>true})');
+ before=await count();assert.equal(await call('__cwbSceneResources.cached('+JSON.stringify(key)+',4,'+JSON.stringify(info)+')'),false);
+ await fallback('match-fallback');await until(async()=>await count()===before+1);
+ await c.evaluate('__releaseMatch(new Response(new Uint8Array([1,1,1,1])));true');await sleep(100);assert.equal(await count(),before+1);result.lateMatchCannotDuplicateFallback=true;
+ await reset('async()=>({keys:async()=>[],match:async()=>new Response(new ReadableStream({start(controller){window.__bodyController=controller},cancel(){window.__bodyCancelled=true}})),put:async()=>{},delete:async()=>true})');
+ before=await count();assert.equal(await call('__cwbSceneResources.cached('+JSON.stringify(key)+',4,'+JSON.stringify(info)+')'),false);
+ assert.equal(await c.evaluate('__bodyCancelled'),true);await fallback('body-fallback');await until(async()=>await count()===before+1);await sleep(100);assert.equal(await count(),before+1);result.stalledBodyCancelledBeforeFallback=true;
+ await c.evaluate('window.__longPut=new Promise(resolve=>window.__releasePut=resolve);true');
+ await reset('async()=>({keys:async()=>[],match:async()=>new Response(new Uint8Array([4,3,2,1])),put:async()=>{await __longPut},delete:async()=>true})');
+ await fallback('pending-original');await until(()=>c.evaluate('__cwbSceneResources.stats.bytesFromFile===4'));
+ before=await count();assert.equal(await call('__cwbSceneResources.cached('+JSON.stringify(key)+',4,'+JSON.stringify(info)+')'),false);
+ await fallback('pending-fallback');await until(async()=>await count()===before+1);
+ await c.evaluate('__releasePut();true');await call('__cwbSceneResources.flush()');await sleep(100);assert.equal(await count(),before+1);result.pendingWriteBudgetAndNoLateDelivery=true;result.passed=true;
 }catch(e){result.error=e.stack;process.exitCode=1}
 finally{if(c){await c.call('Browser.close').catch(()=>{});c.close()}browser.kill();console.log(JSON.stringify(result,null,2))}

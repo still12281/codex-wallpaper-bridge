@@ -15,6 +15,8 @@ $taskStatusPath = Join-Path $taskRoot 'launch-status.json'
 $taskStatus = [ordered]@{launchId=[guid]::NewGuid().ToString();startedAt=[DateTimeOffset]::Now.ToString('o');phase='preparing';helperPid=$PID;sessionId=(Get-Process -Id $PID).SessionId;appFilesModified=$false;configModified=$false}
 $taskStatus.helperStartedAtUtc=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o')
 $taskStatus.lifecycle='one-shot-no-supervisor'
+$taskPhaseClock=[Diagnostics.Stopwatch]::StartNew()
+$taskStatus.phaseHistory=@()
 $taskOwnedRoot = $null
 $taskCreatedVerifiedClient=$false
 $taskBootstrapLock=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridgeBootstrap')
@@ -30,6 +32,7 @@ $taskStatus.profileMode='official-default'
 function Save-TaskPhase([string]$Phase) {
   $taskStatus.phase = $Phase
   $taskStatus.updatedAt = [DateTimeOffset]::Now.ToString('o')
+  $taskStatus.phaseHistory=@($taskStatus.phaseHistory | Select-Object -Last 23)+@([ordered]@{phase=$Phase;at=$taskStatus.updatedAt;afterMs=[math]::Round($taskPhaseClock.Elapsed.TotalMilliseconds,1)})
   $taskTemp=$taskStatusPath+'.next'
   $taskStatus | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $taskTemp -Encoding utf8 -ErrorAction Stop
   # PowerShell can marshal $null to an empty backup path for File.Replace.
