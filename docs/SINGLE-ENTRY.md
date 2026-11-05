@@ -28,6 +28,6 @@ After building into an isolated data directory, run `pwsh -NoProfile -File test/
 
 ## Existing-client activation, 2026-10-26
 
-An already verified browser/root is reactivated through the official package activation API, then the exact main CDP page is brought forward. Detached pages cannot substitute for the main page. The deployed app/src host path is recognized as the existing host. Real activation retained the same client/browser/main target and took approximately 1.25 seconds in the latest bounded check. Closing the real main window and cold-start acceptance remain pending; the current Codex was never force-closed or restarted.
+An already verified browser/root is reactivated through the official package activation API, then the exact main CDP page is brought forward. Detached pages cannot substitute for the main page. The deployed app/src host path is recognized as the existing host. Real activation retained the same client/browser/main target and took approximately 1.25 seconds. A later one-shot reopen restored both wallpaper windows and successfully reused the saved fallback endpoint.
 
 The unused supervisor source and its deployed executables were retired; the exact disabled legacy scheduled task was removed. No new resident supervisor or monitoring service was added.

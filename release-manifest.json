@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 12540,
-      "sha256": "a10a5b2e97da1d50b6fcd08dc171c1294d98a85127585cb4ef0ae74a61e76827"
+      "utf8Bytes": 12428,
+      "sha256": "baa62fdf2a4a977ff2bede08ac4e9fd78b1e61c788823e6fba3a65bb11982c0e"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -104,8 +104,8 @@
     },
     {
       "path": "docs/ENDPOINT-RECOVERY-20261104.zh-CN.md",
-      "utf8Bytes": 5152,
-      "sha256": "c91f95c101dea426550e3333a5e6f4e2d853732ed8e16ba2937c37855ce8cfd4"
+      "utf8Bytes": 1776,
+      "sha256": "b8562f00c774e6d4f97521992caf920ddf06c5ffd6422977ed2642cd7536c6a7"
     },
     {
       "path": "docs/EXECUTION-PLAN-20261026.zh-CN.md",
@@ -204,8 +204,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 7355,
-      "sha256": "e10e94f6428101f1b7528c466a42c17bddf03e86ee97781504a0eb7233b1df9a"
+      "utf8Bytes": 7310,
+      "sha256": "b2bd5de7b7ee2445b41f0e2d751296f2901463c8c56e5157e4334020361e1732"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -214,8 +214,8 @@
     },
     {
       "path": "docs/STARTUP-PERFORMANCE-20261104.zh-CN.md",
-      "utf8Bytes": 3477,
-      "sha256": "249c1b329327bb5e00079158be4b1cfb9a4926e04c5824b6355ec97a926286ce"
+      "utf8Bytes": 1361,
+      "sha256": "80c21c11d4cc252d3fb068b812eb49ad2082a3c8b9802517398c6c779b08b959"
     },
     {
       "path": "docs/STARTUP-UPDATE-20261027.zh-CN.md",
@@ -350,8 +350,8 @@
     },
     {
       "path": "findings.md",
-      "utf8Bytes": 25008,
-      "sha256": "dfb39ae7c84c83f9a44300a46885a993333a1c2256e0f4bc4386a450496d0555"
+      "utf8Bytes": 25152,
+      "sha256": "deacaa5b8cbe624d3d2cf28468d0a3167e52250150356b42ac84e938f24ca151"
     },
     {
       "path": "package.json",
@@ -360,8 +360,8 @@
     },
     {
       "path": "progress.md",
-      "utf8Bytes": 32535,
-      "sha256": "eea5c0cfce34b57f5f892154dc66b1ba40acf9e88dafa1ca9e1ad9132b90bdc8"
+      "utf8Bytes": 27124,
+      "sha256": "5e3ff2558d26dda81a16cdfab721fa5d27ff0af99e80f135b9741fee5634892e"
     },
     {
       "path": "settings.example.json",
@@ -570,8 +570,8 @@
     },
     {
       "path": "task_plan.md",
-      "utf8Bytes": 44237,
-      "sha256": "b2066ac764d7b1f93e8ce875dc96750114750a49526663744739c08d7fd7ec31"
+      "utf8Bytes": 42483,
+      "sha256": "254c84a0fa0edf58a564790689c68a7141e6b8695d1633a282c6353d77918803"
     },
     {
       "path": "test/appearance.test.mjs",
