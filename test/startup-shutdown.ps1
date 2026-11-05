@@ -2,7 +2,7 @@ $ErrorActionPreference='Stop'
 $fixture=Join-Path ([IO.Path]::GetTempPath()) ('cwb-exit-race-'+[guid]::NewGuid())
 $code=Join-Path $fixture 'code';$data=Join-Path $fixture 'data'
 foreach($folder in @((Join-Path $code 'windows'),(Join-Path $code 'vendor/codex-dynamic-skin/scripts'),$data)){[void][IO.Directory]::CreateDirectory($folder)}
-foreach($file in @('Start-CodexWallpaper.ps1','LaunchPolicy.ps1','StartupHealth.ps1','Runtime.ps1')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot "../windows/$file") -Destination (Join-Path $code "windows/$file") -ErrorAction Stop}
+foreach($file in @('Start-CodexWallpaper.ps1','LaunchPolicy.ps1','StartupHealth.ps1','Runtime.ps1','CleanProcess.ps1','CleanProcess.cs')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot "../windows/$file") -Destination (Join-Path $code "windows/$file") -ErrorAction Stop}
 # Real bootstrap, fixture process snapshots and no-op launches. The old root
 # persists through the bounded drain, then vanishes just as catch runs.
 $common=@'

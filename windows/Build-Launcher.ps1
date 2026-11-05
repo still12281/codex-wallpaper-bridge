@@ -16,7 +16,7 @@ if (-not $NoIcon) {
   [void](Copy-WallpaperOfficialIcon $buildCodex $buildIconPath)
   $buildArguments += ('/win32icon:' + $buildIconPath)
 }
-$buildArguments += (Join-Path $PSScriptRoot 'CodexEntry.cs')
+$buildArguments += (Join-Path $PSScriptRoot 'CleanProcess.cs'),(Join-Path $PSScriptRoot 'CodexEntry.cs')
 & $buildCompiler @buildArguments
 if ($LASTEXITCODE -ne 0) { throw 'Launcher compilation failed' }
 & $buildCompiler /nologo /target:exe /platform:x64 ('/out:' + (Join-Path $buildDataRoot 'Align-Taskbar.exe')) (Join-Path $PSScriptRoot 'TaskbarIdentity.cs') (Join-Path $PSScriptRoot 'Align-Taskbar.cs')

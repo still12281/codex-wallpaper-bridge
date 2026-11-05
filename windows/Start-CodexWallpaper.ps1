@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 if($AfterUpdate -and ($RestartCurrent -or $WaitForClientExit -or $TaskName)){throw 'Automatic update mode cannot close clients or wait for their lifetime'}
 $taskCodeRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'Runtime.ps1')
+. (Join-Path $PSScriptRoot 'CleanProcess.ps1')
 . (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')
 . (Join-Path $PSScriptRoot 'StartupHealth.ps1')
 $taskRoot = Get-WallpaperDataRoot
@@ -172,7 +173,7 @@ try {
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
     if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '所选壁纸连接端口在启动前被占用，已保留占用者，请重新点击入口。'}
     $taskLaunchNotBefore=[DateTime]::UtcNow.Ticks
-    $taskLaunchedId=if($AfterUpdate){Start-DreamSkinCodexDirect -Codex $taskCodex -Arguments $taskArguments}else{Start-DreamSkinCodex -Codex $taskCodex -Arguments $taskArguments}
+    $taskLaunchedId=if($AfterUpdate){Start-WallpaperCodexDirect -Codex $taskCodex -Arguments $taskArguments}else{Start-DreamSkinCodex -Codex $taskCodex -Arguments $taskArguments}
     $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
     $taskCreatedVerifiedClient=$true
     $taskStatus.launchStrategy=if($AfterUpdate){'after-update-validated-direct-once'}else{'package-activation'}
@@ -197,7 +198,7 @@ try {
       Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
       if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '回退连接端口被占用，已停止启动并保留占用者。'}
       $taskLaunchNotBefore=[DateTime]::UtcNow.Ticks
-      $taskLaunchedId=Start-DreamSkinCodexDirect -Codex $taskCodex -Arguments $taskArguments
+      $taskLaunchedId=Start-WallpaperCodexDirect -Codex $taskCodex -Arguments $taskArguments
       $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
       $taskCreatedVerifiedClient=$true
       $taskStatus.launchStrategy='validated-store-executable'
@@ -250,7 +251,7 @@ try {
   }
   if($taskConflictingHost){throw '已有壁纸宿主仍在运行，但状态过期、不可读或身份不匹配；已停止重复启动。请稍后重试，或正常退出 Codex 后重新打开壁纸入口。'}
   if(-not $taskHostAlreadyRunning){
-    $taskHost=Start-Process -FilePath $taskNode -ArgumentList @('--expose-gc','--max-old-space-size=64','--max-semi-space-size=4',('"{0}"' -f (Join-Path $taskCodeRoot 'src/video-cdp-host.mjs')),'--cdp-port',"$taskPort") -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $taskRoot 'video-output.log') -RedirectStandardError (Join-Path $taskRoot 'video-error.log') -ErrorAction Stop
+    $taskHost=Start-WallpaperCleanProcess -FilePath $taskNode -ArgumentList @('--expose-gc','--max-old-space-size=64','--max-semi-space-size=4',(Join-Path $taskCodeRoot 'src/video-cdp-host.mjs'),'--cdp-port',"$taskPort") -Hidden -StandardOutput (Join-Path $taskRoot 'video-output.log') -StandardError (Join-Path $taskRoot 'video-error.log')
     $taskStatus.hostPid=$taskHost.Id
   }
   else {$taskStatus.hostPid=[int]$taskPrevious.pid}

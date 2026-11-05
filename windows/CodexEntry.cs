@@ -41,7 +41,7 @@ internal static class CodexEntry {
     string runner=Path.Combine(Path.GetDirectoryName(bootstrap),"AfterUpdateReconnect.ps1");
     if(!File.Exists(runner))throw new FileNotFoundException("Update reconnect runner unavailable");
     var updateInfo=new ProcessStartInfo{FileName=FindPowerShell(),Arguments="-NoProfile -NonInteractive -File \""+runner+"\" -Root \""+dataRoot.TrimEnd(Path.DirectorySeparatorChar)+"\" -EventRecordId "+record,UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=Path.GetDirectoryName(runner)};
-    using(var update=Process.Start(updateInfo)){if(!update.WaitForExit(180000)){Environment.ExitCode=1;return;}Environment.ExitCode=update.ExitCode;}return;
+    using(var update=WallpaperCleanProcess.Start(updateInfo)){if(!update.WaitForExit(180000)){Environment.ExitCode=1;return;}Environment.ExitCode=update.ExitCode;}return;
    }
    if(!inspect){
    SetCurrentProcessExplicitAppUserModelID(WallpaperIdentity.AppId);
@@ -59,8 +59,8 @@ internal static class CodexEntry {
    info.EnvironmentVariables["CODEX_WALLPAPER_DATA_DIR"]=dataRoot;
    info.EnvironmentVariables["CODEX_WALLPAPER_PWSH"]=FindPowerShell();
    string node=FindNode();info.EnvironmentVariables["CODEX_WALLPAPER_NODE"]=node;
-   if(inspect){info.RedirectStandardOutput=true;info.RedirectStandardError=true;}
-   using(var process=Process.Start(info)) {
+   string inspectOut=Path.Combine(dataRoot,"entry-runtime-stdout.log"),inspectError=Path.Combine(dataRoot,"entry-runtime-stderr.log");
+   using(var process=inspect?WallpaperCleanProcess.Start(info,inspectOut,inspectError):WallpaperCleanProcess.Start(info)) {
     if(!inspect)AllowSetForegroundWindow(process.Id);
     if(!inspect){
      if(!process.WaitForExit(180000))throw new IOException("壁纸启动尚未完成，请查看 launch-status.json；现有 Codex 已保留。");
@@ -72,7 +72,7 @@ internal static class CodexEntry {
     }
     if(inspect){
      if(!process.WaitForExit(45000)){process.Kill();throw new IOException("运行环境自检超时，已停止本次自检进程。");}
-     string output=process.StandardOutput.ReadToEnd(),error=process.StandardError.ReadToEnd();
+     string output=File.ReadAllText(inspectOut),error=File.ReadAllText(inspectError);
      File.WriteAllText(Path.Combine(dataRoot,"entry-runtime-check.log"),output+error);
      var result=new System.Collections.Generic.Dictionary<string,object>{{"powerShell",info.FileName},{"node",node},{"exitCode",process.ExitCode},{"inspectOnly",true},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};
      File.WriteAllText(Path.Combine(dataRoot,"entry-runtime-check.json"),new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(result));

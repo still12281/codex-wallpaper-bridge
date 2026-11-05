@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2214,
-      "sha256": "e91c5c936c5d96561a511a24a104739ef43879f5f6a55dd4ebb9a2cfbc06007c"
+      "utf8Bytes": 2230,
+      "sha256": "0ec48f5dd0b4b6dbef8564efcfbea48a3f262827ae3b9323c84bf31d73f56927"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 12166,
-      "sha256": "889763b9aaefc21dc3537b30df3214edcbe87136daf47a3efe58871b5a645b7a"
+      "utf8Bytes": 12540,
+      "sha256": "a10a5b2e97da1d50b6fcd08dc171c1294d98a85127585cb4ef0ae74a61e76827"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -54,8 +54,8 @@
     },
     {
       "path": "README.md",
-      "utf8Bytes": 13329,
-      "sha256": "73385922bc44a21e575056290741818c33eba12cfff8eb3c1997a2cab76d7317"
+      "utf8Bytes": 13744,
+      "sha256": "b3cdda079183ddcd32f35e4b8e62ead43114749d6ebcd867f22d8a63fb2e549f"
     },
     {
       "path": "README.zh-CN.md",
@@ -104,8 +104,8 @@
     },
     {
       "path": "docs/ENDPOINT-RECOVERY-20261104.zh-CN.md",
-      "utf8Bytes": 3294,
-      "sha256": "33d1c163e50a6e6d67af6fb014f90c001c5b159b35ae4b6f15eebf6a74eb0684"
+      "utf8Bytes": 5152,
+      "sha256": "c91f95c101dea426550e3333a5e6f4e2d853732ed8e16ba2937c37855ce8cfd4"
     },
     {
       "path": "docs/EXECUTION-PLAN-20261026.zh-CN.md",
@@ -594,6 +594,11 @@
       "sha256": "a71726007d2e83e5477e27b4b2de76fa1d6942892fa9e9f106200a4aaad71b90"
     },
     {
+      "path": "test/clean-process.ps1",
+      "utf8Bytes": 3851,
+      "sha256": "8c6a25152d2fd4fb917d9851eb1d3975c71b39ac42acc7819e3c596945ee049a"
+    },
+    {
       "path": "test/client-window.ps1",
       "utf8Bytes": 1093,
       "sha256": "31fae8e8f07de38ecf6734ad3872e05289b23539e526d78ecde53c5ac8ce5c04"
@@ -612,6 +617,11 @@
       "path": "test/display-tiers.test.mjs",
       "utf8Bytes": 8592,
       "sha256": "b0008e6a8dac394ebfb2e2587261dac553ab07ae0988f92f73b7e84ef07e647a"
+    },
+    {
+      "path": "test/fixtures/socket-inheritance.cs",
+      "utf8Bytes": 3520,
+      "sha256": "0b6d2d506c8d4de900013d722c85b25e4c2d4cc9d1a7d0578e810b210b68403b"
     },
     {
       "path": "test/import-cancellation.test.mjs",
@@ -765,8 +775,8 @@
     },
     {
       "path": "test/startup-shutdown.ps1",
-      "utf8Bytes": 5239,
-      "sha256": "2b89ca6325d40d8c078186c927db443dec83ffd1c10b6b23e39976269d2f6efc"
+      "utf8Bytes": 5276,
+      "sha256": "b62ef8e4321f16857491ce9e54838d50a908e04c6d025e058484eb04b66b8d10"
     },
     {
       "path": "test/surfaces.test.mjs",
@@ -950,8 +960,8 @@
     },
     {
       "path": "windows/AfterUpdateReconnect.ps1",
-      "utf8Bytes": 7744,
-      "sha256": "e60de235ad819158c09d090819742b08ca6af1beb6e7aa671d35cefff313d1ae"
+      "utf8Bytes": 7824,
+      "sha256": "857afd53fb4472a89b66156c33ffbd3aa6b0f7b68fb0bb298a936b9031d23d00"
     },
     {
       "path": "windows/Align-Taskbar.cs",
@@ -960,8 +970,18 @@
     },
     {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 2561,
-      "sha256": "b1a9c794dee73ae5af2caccf0204cd6ca0f4483b83e6d56633ff48f5b63ef404"
+      "utf8Bytes": 2605,
+      "sha256": "c6f25c6889a61314b39c9221d6fd0506892024386f6c5c1e9964e6d1cc4195d5"
+    },
+    {
+      "path": "windows/CleanProcess.cs",
+      "utf8Bytes": 7581,
+      "sha256": "7f852c1cafd7bc0d2ea5ca505d060945724a90865a730e7ed863b219d02d12c3"
+    },
+    {
+      "path": "windows/CleanProcess.ps1",
+      "utf8Bytes": 1222,
+      "sha256": "946312d2ee24e4497c861bdd17e75b7b845f0d8f94fde521a083dacbfc0c1423"
     },
     {
       "path": "windows/ClientWindow.cs",
@@ -970,8 +990,8 @@
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 7413,
-      "sha256": "7c2671007bd6ad6d42cd5dd7aac57b1707fa40c1ff263a9f1d8e36763c8cbbd4"
+      "utf8Bytes": 7551,
+      "sha256": "69edfc1964b24f4de762072f4f1ceeb5a79c9899118b9652b2b3be5f41b202a1"
     },
     {
       "path": "windows/Install-UpdateReconnect.ps1",
@@ -1050,8 +1070,13 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 21928,
-      "sha256": "f19e9fc9ca1ab05e79a140e0a00196e68589ca2112329c54adfeb3718c2ea9ec"
+      "utf8Bytes": 21920,
+      "sha256": "eab79fbb410d8eb0f90a614f4e325bfe31c2ccbf1d2f691eaca2a1e16f95adf3"
+    },
+    {
+      "path": "windows/Start-ExternalApp.ps1",
+      "utf8Bytes": 508,
+      "sha256": "3f787e1332c335013bd4e34b316fd9a24617e2b986260fe1f75a21ccaa45ec62"
     },
     {
       "path": "windows/StartupHealth.ps1",

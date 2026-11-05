@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Launch entry, inspection, update, host and validated direct-client helpers with native handle isolation. Use an explicit standard-stream handle list for log redirection, preserve short-lived exit status, and provide a one-shot external-app launch utility. Add Windows socket regressions that keep the child alive after its parent exits and verify immediate port release.
+
 - Recover from an occupied/stale default debugging port by preserving its owner and selecting a free loopback port from 9335–9354. Persist only a verified endpoint hint, recheck same-session main-process identity on reuse, pass the port to taskbar/update recovery, and recheck availability before launch. Preserve ordinary running clients and stable entry mutexes; no process termination or public binding is introduced.
 
 - Prioritize and publish the main wallpaper before detached/embedded synchronization, defer taskbar alignment, and poll briefly while the initial shell is pending. Add bounded optional-cache reads with cancellation and original-file fallback; cache initialization no longer gates resource delivery. Keep render quality and limits unchanged, record startup phases, and test suspended auxiliary pages, delayed shells and late cache results in isolated browsers.

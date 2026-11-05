@@ -60,7 +60,8 @@ try{
   $state.phase='starting-integrated-bootstrap';Save-WallpaperUpdateState $Root $state
   $info=[Diagnostics.ProcessStartInfo]::new();$info.FileName=$runtime.powerShell;$info.Arguments='-NoProfile -NonInteractive -File "'+$bootstrap+'" -AfterUpdate';$info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.WindowStyle=[Diagnostics.ProcessWindowStyle]::Hidden;$info.WorkingDirectory=Split-Path -Parent $bootstrap
   $info.EnvironmentVariables['CODEX_WALLPAPER_DATA_DIR']=$Root;$info.EnvironmentVariables['CODEX_WALLPAPER_PWSH']=$runtime.powerShell;$info.EnvironmentVariables['CODEX_WALLPAPER_NODE']=$runtime.node
-  $child=[Diagnostics.Process]::Start($info)
+  . (Join-Path $PSScriptRoot 'CleanProcess.ps1');Import-WallpaperCleanProcess
+  $child=[WallpaperCleanProcess]::Start($info)
   try{if(-not $child.WaitForExit(110000)){$state.phase='bootstrap-timeout-client-preserved';return};$bootstrapExit=$child.ExitCode}finally{$child.Dispose()}
   $launch=Get-Content -LiteralPath (Join-Path $Root 'launch-status.json') -Raw -ErrorAction Stop|ConvertFrom-Json
   $state.phase=if($bootstrapExit -eq 0 -and $launch.phase -eq 'background-rendered' -and ([DateTimeOffset]$launch.updatedAt) -ge ([DateTimeOffset]$state.attempt.at)){'reconnect-finished'}else{'reconnect-failed-client-preserved'}

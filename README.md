@@ -168,7 +168,9 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1
 
 ## 开发
 
-直接从源码运行时，先准备依赖和渲染组件，再执行 `windows/Build-Launcher.ps1` 与 `windows/Prepare-TaskbarEntry.ps1`；一键安装器已包含这些步骤。源码路径变动后需重建直接构建的入口。已通过一体入口开启本机 CDP 会话时，可用 `npm start` 重接宿主；调试端口保持在 loopback 9335。
+直接从源码运行时，先准备依赖和渲染组件，再执行 `windows/Build-Launcher.ps1` 与 `windows/Prepare-TaskbarEntry.ps1`；一键安装器已包含这些步骤。源码路径变动后需重建直接构建的入口。实际端口读取数据目录的 `cdp-endpoint.json`；`npm start` 是默认 loopback 9335 的手动开发命令，使用后备端口时需向宿主显式传入实际端口。
+
+从带调试连接的客户端代开其它长期运行的应用，可使用 `windows/Start-ExternalApp.ps1 -FilePath <绝对可执行文件路径>`，只传递该应用所需参数，避免监听句柄随普通子进程启动传播。该工具启动后退出，不新增常驻，详见[句柄继承与端口恢复](docs/ENDPOINT-RECOVERY-20261104.zh-CN.md)。
 
 ```powershell
 npm test
