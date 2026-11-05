@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.3 — 2026-11-04
 
 - Launch entry, inspection, update, host and validated direct-client helpers with native handle isolation. Use an explicit standard-stream handle list for log redirection, preserve short-lived exit status, and provide a one-shot external-app launch utility. Add Windows socket regressions that keep the child alive after its parent exits and verify immediate port release.
 
