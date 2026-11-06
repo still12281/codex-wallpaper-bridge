@@ -26,15 +26,14 @@ See the [Chinese screenshot gallery](README.md#效果展示) and [capture proven
 - Separate message and composer space to keep transparent input controls readable.
 - Silent video playback, pause on loss of focus, adjustable resolution/frame limits, and hot application after conversion.
 - One current playback file per wallpaper; previous playback copies are replaced after successful decode.
-- Optional hidden Windows launcher. Its build uses the locally installed client icon; no OpenAI icon is redistributed.
+- A unified Windows entry starts Codex and the wallpaper host. The installer creates shortcuts with the installed client's official icon.
 
 ## Requirements
 
 - Windows 10/11, x64, with the official Microsoft Store Codex client installed.
-- Node.js 22 or later and PowerShell 7.
-- FFmpeg with H.264 and WebP encoders, supplied separately. Set `CODEX_WALLPAPER_FFMPEG` if it is not on PATH or discoverable from a local WinGet installation.
+- The installer detects or prepares Node.js 22+, PowerShell 7, FFmpeg and uv. For a manually supplied FFmpeg, set `CODEX_WALLPAPER_FFMPEG` when it is outside PATH and local WinGet locations.
 - Wallpaper Engine only for Wallpaper Engine library features. Local image/video imports do not require it.
-- .NET Framework C# compiler for the optional GUI launcher.
+- The unified entry is built with the Windows .NET Framework C# compiler, which the installer checks before building.
 
 There are no production npm dependencies. The required parsing and Windows helper sources are vendored with their original licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
 
@@ -66,6 +65,8 @@ See the [complete installation guide](docs/INSTALL.zh-CN.md) for custom director
 The unified entry selects and records a local debugging port, preferring 9335 and using an available fallback through 9354 when needed. For manual development diagnostics, read `cdpPort` in the data directory's `runtime-status.json` and pass it to `node src/video-cdp-host.mjs --cdp-port <port>`; `npm start` uses only the diagnostic default 9335. These commands do not enable debugging on an ordinary running client. Do not expose the port to a network or start another host alongside the unified entry's host.
 
 ## Manual recovery after a client update
+
+When enabled, the [automatic update recovery task](docs/AFTER-UPDATE-RECONNECT.zh-CN.md) handles each new package version once. It reuses a healthy connection, reconnects a missing host, or requests normal exit of the verified update-created client before reopening through the unified entry. A refused close, timeout or new client stops that run and preserves the client. Startup colors apply after the CDP connection is established; Codex draws the earlier native window.
 
 Click the wallpaper entry once to check/reconnect the host. If the wallpaper is still missing, save work and exit Codex normally, including background instances. Run `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd` from Win+R, or use `Repair.cmd` inside your custom data directory. Confirm you have exited the client, then the tool opens the stable `CodexEntry.exe` entry using the current registered package. It does not close processes or reset settings. The executable and `Codex.lnk` in the same directory are also available if desktop shortcuts are missing.
 

@@ -35,7 +35,7 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1
 | 生成入口 | 使用已安装 Codex 的官方图标，按选择新建专用入口或备份后替换已识别的原快捷方式 |
 | 保留用户数据 | 保留已有壁纸库、设置和旧版本；安装不启动/关闭 Codex，只在明确选择启用时安装更新事件任务，无自有常驻监控 |
 
-首次安装需要下载依赖，耗时取决于网络。依赖安装使用 [WinGet 标准安装命令](https://learn.microsoft.com/en-us/windows/package-manager/winget/install)，会接受指定依赖及软件源的安装协议；系统安装程序可能请求管理员授权。
+首次安装需要下载依赖，耗时取决于网络。依赖安装使用 [WinGet 标准安装命令](https://learn.microsoft.com/en-us/windows/package-manager/winget/install)，会接受指定依赖及软件源的安装协议；需要提升权限的系统安装步骤会请求管理员授权。
 
 ## 快捷方式怎么选
 
@@ -93,7 +93,7 @@ $script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).
 
 ## 更新后壁纸消失：手动恢复
 
-自动重连失败后仍可手动恢复。手动启动走普通入口，不读取自动任务的“该版本已尝试”限制。
+自动任务的版本记录只用于事件去重。手动入口独立运行，正常退出后重新识别当前包并恢复已保存壁纸。
 
 1. **先重新点一次壁纸入口。** 专用模式用 Codex Wallpaper，替换模式用原名称的 Codex；如果只是壁纸宿主断开，入口会检查并补接。
 2. **仍无壁纸时，保存内容并正常退出 Codex。** 关闭全部窗口，并从应用退出菜单结束仍在后台的实例。不要在任务管理器中强制结束来代替正常退出。
@@ -157,7 +157,7 @@ node ./tools/prepare-media-bridge.mjs
 
 ## 可选：更新后一次重连
 
-安装时选 `y` 即可启用；无需再手动执行本节命令。每次从壁纸入口启动都会重新识别当前注册包。事件任务用于处理更新直接重开客户端、未经过壁纸入口的情况；只在未来更新后尝试一次正常关闭/重连，不用于平常启动时重启客户端。失败后按上面的手动恢复流程处理。
+安装时选 `y` 即可启用；无需再手动执行本节命令。每次从壁纸入口启动都会重新识别当前注册包。事件任务用于处理更新直接重开客户端、未经过壁纸入口的情况；在后续新版更新事件到达时执行一次正常关闭/重连流程，普通启动不触发此任务。失败后按上面的手动恢复流程处理。
 
 在 PowerShell 7 中运行：
 
@@ -167,7 +167,7 @@ $script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).
 & (Join-Path (Split-Path -Parent $script) 'Install-UpdateReconnect.ps1') -Root $root
 ```
 
-自定义安装时将 `$root` 改为你的数据目录。这会注册更新事件任务，只在后续更新时尝试一次正常重连，不增加自有常驻监控。移除时为同一命令加 `-Uninstall`。详见[更新重连说明](AFTER-UPDATE-RECONNECT.zh-CN.md)。
+自定义安装时将 `$root` 改为你的数据目录。这会注册更新事件任务，在后续新版更新时执行一次正常重连流程，完成后退出。移除时为同一命令加 `-Uninstall`。详见[更新重连说明](AFTER-UPDATE-RECONNECT.zh-CN.md)。
 
 ## 安装失败怎么处理
 
@@ -228,6 +228,6 @@ $env:CODEX_WALLPAPER_UV = 'D:\Tools\uv\uv.exe'
 - **升级**：下载新版本并重新双击安装；自定义安装盘时继续传相同 `-DataDirectory`。
 - **备份**：使用[本地维护](MAINTENANCE.zh-CN.md)中的完整库备份/恢复；外观预设 JSON 只保存外观。
 - **停用**：正常退出 Codex 后，使用原来的官方入口启动。
-- **卸载**：先备份需要的内容；若用过替换模式，先恢复原快捷方式。移除自己安装的更新任务，正常退出客户端，删除自己创建的壁纸快捷方式，再手动删除本项目数据目录。不会要求卸载 Node、PowerShell、FFmpeg 或 uv，它们可能被其它软件使用。
+- **卸载**：先备份需要的内容；若用过替换模式，先恢复原快捷方式。移除自己安装的更新任务，正常退出客户端，删除自己创建的壁纸快捷方式，再手动删除本项目数据目录。不会要求卸载 Node、PowerShell、FFmpeg 或 uv，这些运行与转换依赖独立于桥接程序保留。
 
 不要在 Issues 中上传整个数据目录、settings.json、账号 profile 或未经脱敏的日志。

@@ -52,4 +52,4 @@ $login = Join-Path (Split-Path -Parent $bootstrap) 'Set-LoginStartup.ps1'
 
 隔离测试覆盖启用/停用、原值为 0/1/2 或不存在、重复执行、其它注册表值保留、同名冲突、用户修改、策略拒绝、写入拒绝、回滚失败后的独立清理、启用/停用提交失败，以及升级快捷方式后的原始恢复链。安装器显式传入 `-LoginStartup enable -CheckOnly` 后原生状态及启动文件夹内容保持一致。实际已注册 Codex 包与 manifest 任务发现通过只读检查；当前客户端未重启。
 
-下一次真实 Windows 登录、全新机器以及未来 Codex/Windows 版本仍待验收。此设置不保证系统恢复应用、用户另建入口或更新重新激活时都经过壁纸入口。
+验证状态：真实 Windows 登录与全新机器检查未执行。此设置管理当前用户 Startup 文件夹中的壁纸入口；系统恢复应用、用户自行创建的入口和包更新激活各走自己的启动路径，更新激活由[自动更新恢复任务](AFTER-UPDATE-RECONNECT.zh-CN.md)处理。

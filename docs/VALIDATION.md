@@ -1,52 +1,58 @@
-# Validation boundaries
+# Validation record
 
-The opt-in [Chromium Web source](BROWSER-WEB-20261027.zh-CN.md) has bounded headless pipe/lifecycle evidence. The current 26.1023 client has no listening wallpaper CDP endpoint, so this source's adoption and visible presentation in that client are pending; older native acceptance below must not be applied to it.
+## Status recorded on 2026-11-06
 
-Current follow-up: [4K, DSH source reuse, resource and flashing evidence](USABILITY-20261026.md). Earlier measurements below retain their original scope and do not describe the new 4K profile.
-
-## Native highest-tier follow-up, 2026-10-26
-
-In the existing verified Codex session, the original complete scene ran at 1920x1320 with a 30 FPS capture cap and JPEG quality 92, without restarting Codex or changing desktop engine settings. Native fonts/date/time and effects were visible; a quiet, owned four-second system-audio fixture produced the original circular bars. No user-player queue or playback controls were invoked. This accepts one scene's native route, not universal wallpaper parity.
-
-The short accepted sample produced 27.07 canvas updates per second and a sampled capture-callback-to-draw P95 of 90.76ms. The callback begins after the native source has produced a frame, and canvas draw is earlier than physical screen presentation. These are proxy measurements, not source Present FPS, full audio-to-display latency or physical display latency. Source-frame timing and user visual comparison remain separate.
-
-A malformed candidate JPEG was rejected while retaining the previous renderer object and layer. A second real Codex window with an injected 500ms draw delay updated at 3.49 FPS while the main window retained 27.77 FPS. The temporary delay was removed and the saved focus preference retained. Source encoding of the same locally sampled frame fell from roughly 18ms to 6ms by passing contiguous BGRA instead of a strided three-channel view, with identical JPEG bytes.
-
-Resource evidence includes the complete Codex/engine/helper process group and per-process GPU engine counters. It includes the pre-existing desktop Wallpaper Engine scenes and ordinary Codex workloads, so its approximately 4 GiB summed working set and short roughly 18% machine CPU sample must not be described as the wallpaper's incremental cost. Shared pages, GPU memory and workload variation prevent that inference. GPU engine counters are reported separately rather than added into one GPU percentage.
-
-The maintenance tool completed a seven-entry/nine-file private-library roundtrip into a separate directory, refused an existing destination, and supports offline native/WebGL reference relocation. A focused fixture additionally checks corrupted assets, traversal and Windows short-path canonicalization. No backup files are distributed.
-
-The earlier statements below retain historical acceptance boundaries. Taskbar visual grouping, a new machine/client-version matrix, source-native mouse forwarding, exact physical latency and arbitrary-script parity remain unaccepted. Startup animation and WebGL Web loading remain deferred.
-
-The realtime scene/web feature has local native capture and canvas-playback evidence for one installed scene, with offscreen capture, profile switching and restoration to the original media background. Measured output remains below some requested FPS caps; see [REALTIME.md](REALTIME.md). This does not prove general GPU performance, every wallpaper or fresh-machine startup. A generated animated Web wallpaper was also captured natively with changing frames and source cleanup. WebGL Scene has separate native sample acceptance; see [WEBWALLGL.md](WEBWALLGL.md).
-
-The development implementation was visually checked in the official Windows Codex client version `26.1016.8622.0` for wallpaper rendering, in-app management, settings styling, separate composer space and hot 12/24 FPS application. Those private screenshots/logs are intentionally not distributed.
-
-This portable source candidate changes dependency discovery and storage locations. Its clean-room synthetic/unit checks do not prove every official client version or startup path works. Full cold startup, taskbar pin replacement/grouping, and a fresh-machine install remain manual release gates. Startup animation is out of scope.
-
-Checks available in this candidate:
-
-| Check | What it establishes | What it does not establish |
+| Area | Environment | Result |
 | --- | --- | --- |
-| `npm test` | Fresh empty settings, bounded folder discovery, token/path handling, managed deletion and source safeguards using synthetic files | Native client behavior |
-| `npm run check:privacy` | Expected files only, content patterns, manifest hashes and no bundled media/profile/binaries | Absence of every possible sensitive string in future changes or Git history |
-| `npm run test:integration` | Isolated Chromium UI and generated media, local conversion/hot application, embedded panel resizing/persistence, presets, rotation, effects, paged filtering and empty-library cleanup | Login, real client permissions, cold startup or taskbar integration |
-| PowerShell parse / launcher compile | Script syntax and C# compilation | Working native client launch |
+| Unit checks | GitHub Actions, Windows, Node 22 and 24 | 88 checks passed |
+| Installer, process identity, startup and update policy | Windows, PowerShell 7 and generated child processes | Passed; includes duplicate events, close-once handling, timeout, PID reuse, path loss and configuration preservation |
+| Normal exit followed immediately by one taskbar-entry click | Installed Codex 26.1103.3517.0 | Passed: the entry waited for the previous root to exit, then restored main and detached wallpapers |
+| Startup page replacement, early colors and wallpaper handoff | Isolated Chrome with generated pages and an SVG wallpaper | Passed: new-page palette applied in 47.7 ms, subsequent document palette preceded parser JavaScript, native animation retained, real wallpaper adopted, unrelated page unchanged |
+| Late native theme initialization | Isolated Chrome, generated native-shell structure | Passed: text color, theme-guard settling, snapshot restoration and wallpaper continuity |
+| WebGL browser-disconnect cleanup | Isolated Chrome and a generated scene | Passed: host exited in 97.4 ms |
+| Repaired automatic recovery during a new Microsoft Store package update | Installed Codex | Not run |
+| Fresh-machine installation and cross-DPI taskbar grouping | Fresh Windows installation / multiple DPI settings | Not run |
 
-Before a public release, a maintainer should use a disposable profile and original test media on a fresh Windows installation, test ordinary exit/start, focus pause, settings navigation, narrow windows and multiline/attachment composer sizes. Preserve drafts and never force-close a live user's client for acceptance tests.
+The recorded normal-exit launch reported host readiness at 10.34 seconds and launcher confirmation at 11.71 seconds, measured from helper-process creation. These are host/status milestones. Chat UI readiness and physical screen presentation were not sampled in that run.
 
-Do not replace this status with an unqualified “all supported” claim merely because tests are green.
+Source and installation assets for [alpha.4](https://github.com/still12281/codex-wallpaper-bridge/releases/tag/v0.1.0-alpha.4) passed Windows Node 22/24 CI, four-asset readback hashes, and the public download/ZIP verification/extraction/installer `-CheckOnly` path. The check reported no missing dependencies and `willStartClient=false`.
 
-Follow-up checks: 24 unit tests; isolated UI import tests include duplicate upload/folder reminders, checked-item partial-success batches and explicit preview/apply. Installed Codex accepted thumbnail preview, visible renderer inspection, two-item batch saving, repeat-batch duplicate summaries, duplicate modal and deletion with the prior wallpaper retained. Real nonzero system spectrum changed a generated Scene and its zero-state restored. Player-control acceptance is partial due to Windows current-session changes; see SYSTEM-MEDIA.md.
+## Repeatable checks
 
-Resource follow-up: 34 unit tests pass, including capture ownership across windows, focus debounce, stale startup cancellation, complete media clearing and preset failure restoration. Isolated UI conversion confirms the power button saves 960/12 FPS plus pause-on-blur and produces actual 12 FPS video without duplicate copies. Isolated WebGL tests exercise event-driven pause/resume and retain media delivery for scenes without audio processing. Installed Codex accepted video mode with zero captured frames, no closed-panel refreshes, fresh properties on panel reopen, audio startup for an original generated Scene, zero continuing frequency deliveries while paused, restart on resume and restoration to the original video/settings. The GUI browser instance remained unchanged. These checks establish the lifecycle policy; they do not establish a universal CPU/GPU saving percentage or exact performance for arbitrary Workshop scenes.
+| Command or check | Environment and assertions |
+| --- | --- |
+| `npm test` | Generated files: empty settings, bounded discovery, tokens, paths, deletion ownership and source checks |
+| `npm run check:privacy` | Release file allowlist, content patterns, source hashes and reviewed image hashes |
+| `npm run test:integration` | Isolated Chromium and generated media: import, conversion, hot application, resizing, presets, rotation, effects and empty-library cleanup |
+| `node test/startup-transition-integration.mjs` | Generated page replacement, document-start palette, native animation, wallpaper handoff and unrelated-page checks |
+| `node test/startup-priority-integration.mjs --scenario early-shell` | Early real-image paint, late shell/menu creation, native theme initialization and restoration |
+| `node test/startup-priority-integration.mjs --webgl-exit-only` | Generated WebGL startup and browser-disconnect cleanup |
+| `test/update-reconnect.ps1` and `test/update-runner.ps1` | Event filtering, close-once decisions, full generated runner, duplicate-event consumption and saved-settings preservation |
 
-Embedded-browser input regression: the isolated integration reproduces a transparent main pane intercepting input above a body-portaled guest with the former root z-index, then verifies routed mouse clicks and wheel scrolling after restoring the root's native stacking level. In installed Codex, three points previously hit the transparent pane and subsequently hit the visible native browser guest. The same browser tab, wallpaper and settings were preserved without a client restart. Direct guest scrolling alone is not evidence that physical pointer input can reach that guest.
+Manual validation on a fresh Windows installation uses original test media and a disposable profile: install, normal exit/start, focus pause, settings navigation, narrow windows, attachment/multiline composer sizing and taskbar grouping. Save drafts and use normal client exit during these checks.
+
+## Historical native rendering measurements, 2026-10-23 through 2026-10-26
+
+The installed Codex 26.1016.8622.0 session was checked for rendering, management, settings styling, composer space, thumbnails, two-item batch saving, duplicate summaries, deletion and hot 12/24 FPS application. Native WebGL checks rendered two locally owned Scene packages, changing pixels, pause/resume and cleanup. [WebGL details](WEBWALLGL.md) and [media-control coverage](SYSTEM-MEDIA.md) list the individual cases.
+
+One original complete scene ran through WGC and Codex canvas at 1920×1320, a 30 FPS capture cap and JPEG quality 92. Fonts, date/time and effects were visible. An owned four-second system-audio fixture drove the original circular bars; the user's player queue and controls were unchanged. The short sample measured 27.07 canvas updates/s and capture-callback-to-draw P95 90.76 ms. The callback starts after source-frame production; draw completion precedes physical presentation.
+
+A malformed JPEG retained the previous renderer and layer. A detached window with an injected 500 ms draw delay updated at 3.49 FPS while the main window retained 27.77 FPS; the delay was then removed. Encoding the same sampled source frame with contiguous BGRA reduced approximately 18 ms to 6 ms and produced identical JPEG bytes.
+
+The resource sample included the complete Codex/engine/helper group, the existing desktop Wallpaper Engine scenes and ordinary Codex workloads: approximately 4 GiB summed working set and roughly 18% machine CPU during the short sample. It did not isolate incremental wallpaper cost. Per-engine GPU counters were recorded separately.
+
+The backup tool completed a seven-entry/nine-file roundtrip into a separate directory, rejected an existing destination and relocated native/WebGL references. Generated checks covered corrupted assets, traversal and Windows short-path canonicalization.
+
+A generated animated Web wallpaper produced changing native-capture frames and released its source. The separate Chromium Web source received headless pipe and lifecycle checks on 2026-10-27, when the installed 26.1023 client had no wallpaper CDP listener. Visible adoption of that source in Codex was not run in that session; [manual recovery](AFTER-UPDATE-RECONNECT.zh-CN.md) records the later successful client launch.
+
+Lifecycle checks covered shared capture ownership, focus debounce, cancellation, media clearing and preset restoration. The power preset generated 960-pixel/12 FPS video. Installed checks covered zero capture in video mode, closed-panel inactivity, property refresh, audio response, paused frequency delivery, resume and return to the saved video/settings.
+
+The embedded-browser regression reproduced a transparent main pane intercepting clicks and wheel input in an isolated browser, then verified native stacking. Installed-client hit testing changed three sampled points from that pane to the visible guest, with the same tab, wallpaper and settings.
 
 ## Fixed-duration native stability and source failure
 
-The single 905.84-second actual-Codex run averaged 27.30 canvas updates per second with sampled callback-to-draw P95 88.81ms. All 181 samples retained advancing frames without target errors. Heap-used first/middle/last-minute medians were approximately 10.5/10.4/11.1 MiB; RSS varied and its endpoint rose, so no indefinite leak-free claim is made. Temporary focus-pause overrides were restored. This finite diagnostic does not install a resident monitor.
+A 905.84-second installed-Codex run averaged 27.30 canvas updates/s and callback-to-draw P95 88.81 ms. All 181 samples retained advancing frames and no target errors. Heap-used first/middle/last-minute medians were 10.5/10.4/11.1 MiB; RSS varied and ended higher. Focus-pause overrides were restored after the run.
 
-Closing only the unique project-owned source window triggered automatic return to the previous video. Native state cleared and the owned Python capture processes exited. The original Codex process and start time remained unchanged. The full native scene was subsequently restored. Real normal-exit/cold-start, taskbar visual grouping, system sleep/wake and physical screen/audio latency remain separate acceptance items.
+Closing the project-owned source window returned to the previous video, cleared native state and released the owned Python capture processes. Codex retained its process identity and the full native scene was subsequently restored.
 
-Final edge-case review preserved native aspect/JPEG quality during manual FPS edits and quarantined timed-out renderer targets. An actual 1900ms target-delay check sent exactly two remote draws before quarantine, left the main window at 28.04 updates/second, and recovered on explicit reapplication. These late failure-path changes received focused verification; the 15-minute run is evidence for the preceding common rendering path, not a second full-duration run of every final edge case.
+A later injected 1900 ms target delay sent exactly two draws before quarantine, retained 28.04 updates/s on the main window and recovered on explicit reapplication. This focused check followed the 905.84-second common-rendering run.

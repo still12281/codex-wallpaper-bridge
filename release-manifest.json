@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 16811,
-      "sha256": "ae944f29b6ad56ac14115cb21144a947fa02aa554cd76ce975c612b3165b8908"
+      "utf8Bytes": 16817,
+      "sha256": "de729eb3dbd5ba09929bba9bd21070afb80c0da934b421713a0329b65acd24f7"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 11285,
-      "sha256": "026e0f0ead1443a21d406e9206978bad2202b86b151e9692a855339eca7ddc26"
+      "utf8Bytes": 11828,
+      "sha256": "6d6135a10be64f4dde75d8e729d3bb40a0e9e3c3e5f143b29e869d3e599b1d25"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 13954,
-      "sha256": "897a2f0a55b4b950f892b7bc5a12829234fa20e4460a9f27566b48b716b1d193"
+      "utf8Bytes": 14108,
+      "sha256": "af23c9990c7a9d1736029c998e6b16335317712a9214ee6e384d1cb16fccdcb2"
     },
     {
       "path": "README.zh-CN.md",
@@ -79,8 +79,8 @@
     },
     {
       "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
-      "utf8Bytes": 8532,
-      "sha256": "d08e6d1e41eaa31ff33b5c937653859cdccdd7ef44c57f2c8abc2379f042a68f"
+      "utf8Bytes": 4702,
+      "sha256": "d21f07dcd2fe16bb4f1870202ab78d759a57f6c4b920e8880a04a8eada3406a5"
     },
     {
       "path": "docs/ARCHITECTURE.md",
@@ -94,13 +94,13 @@
     },
     {
       "path": "docs/CONFIGURATION.md",
-      "utf8Bytes": 6581,
-      "sha256": "c0423ac154f76a47354afc94f6d8f23b756cc77d5a9128529a4b1bb01045b96f"
+      "utf8Bytes": 6639,
+      "sha256": "1f805fb5a4aea8148587d9e5b6af135fd0e552b84a75e9e1701d0400a8a39ccf"
     },
     {
       "path": "docs/DISPLAY-TIERS.md",
-      "utf8Bytes": 7277,
-      "sha256": "ef9fb2e956d81b5922c86a8898716fd4b70c6b65a13a25e8e92d758a5b33c96d"
+      "utf8Bytes": 7244,
+      "sha256": "422bf5178cc3bbb2a754909487c54cb969f038ac6b900c70a067b8fe19aaa762"
     },
     {
       "path": "docs/ENDPOINT-RECOVERY-20261104.zh-CN.md",
@@ -109,8 +109,8 @@
     },
     {
       "path": "docs/EXECUTION-PLAN-20261026.zh-CN.md",
-      "utf8Bytes": 20447,
-      "sha256": "471f7f36f21ec73a63a0874f9823ba658e54019a93f79d6beca814550e936360"
+      "utf8Bytes": 20314,
+      "sha256": "a8e2bcb4ad9335dfe06ebd5fae355673810cd5a91bbf3db243751b111d26dde6"
     },
     {
       "path": "docs/FEATURE-MIGRATION.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 16252,
-      "sha256": "81eb46eebbacb3cdff2fb6539ad824c8fa23ec18930f2a5bebba6ece0b650241"
+      "utf8Bytes": 16312,
+      "sha256": "2be35472ac5d594e12374a266a6b84679f643284a5e342d3e3654a3667c78d97"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -134,8 +134,8 @@
     },
     {
       "path": "docs/LOGIN-STARTUP.zh-CN.md",
-      "utf8Bytes": 4343,
-      "sha256": "fbdc986e8966cdd87a97651716d98f26fad3caaed7351def9605009d1e14ea3a"
+      "utf8Bytes": 4459,
+      "sha256": "ce2e67514be31b3eb5f66822776bf3a48b1f0530ebee816c3b868cbb4d749777"
     },
     {
       "path": "docs/MAINTENANCE.zh-CN.md",
@@ -155,7 +155,7 @@
     {
       "path": "docs/PACKAGE-B-20261026.zh-CN.md",
       "utf8Bytes": 6053,
-      "sha256": "0020ecf9b5245e6296fc599f42a783f636a7fe653729f1e7378c47e91228db67"
+      "sha256": "d347b32b215a32b81235b30e25a295142657710e2538f24eaba1e215adfd4211"
     },
     {
       "path": "docs/PACKAGE-C-20261027.zh-CN.md",
@@ -184,13 +184,13 @@
     },
     {
       "path": "docs/REALTIME.md",
-      "utf8Bytes": 5109,
-      "sha256": "6019b70ec9d6a019c850ecb6855c6ed20a61f96c274e24688a1ec310640ec529"
+      "utf8Bytes": 5054,
+      "sha256": "b7d52fafe8a763bdaad34ab2ca7b4e4da128c6199a0b29e17a958099c5c59c5f"
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
-      "utf8Bytes": 5519,
-      "sha256": "2d876829b04dc836f939f1257fab915d85b0e966abf9469efb3c742eed2a3cfa"
+      "utf8Bytes": 1499,
+      "sha256": "97131780ec4ab880677e1b77c7c2573b76a6df9069cce31d07f4a10a3dd19294"
     },
     {
       "path": "docs/RELEASING.zh-CN.md",
@@ -204,8 +204,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 7310,
-      "sha256": "b2bd5de7b7ee2445b41f0e2d751296f2901463c8c56e5157e4334020361e1732"
+      "utf8Bytes": 7261,
+      "sha256": "3c7ebef41bcaf9439523416865e04c2c83214c5588799f8d40cdd06f7fbfbb6a"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -234,8 +234,8 @@
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
-      "utf8Bytes": 9806,
-      "sha256": "30b0d57111c75a97e3b89d93889224903f045a1f2d15579ea7551147660ae377"
+      "utf8Bytes": 9837,
+      "sha256": "dc40cba68c0eb352014d22a13df19893392ac0a33e75b6bbe5401c5f2e0f6051"
     },
     {
       "path": "docs/TASKBAR-REOPEN-20261028.zh-CN.md",
@@ -269,13 +269,13 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "utf8Bytes": 9068,
-      "sha256": "52f454502f70e7693b194773328d09e97e358d523840dee1c0f7fbcf5600c0e2"
+      "utf8Bytes": 7299,
+      "sha256": "b5941d92b3a9cacecb95076d6d9f4881e07fd881865a626151cb7e25393457a4"
     },
     {
       "path": "docs/WEBWALLGL.md",
-      "utf8Bytes": 7933,
-      "sha256": "2ac2631b4e28fc13508f2a2b7a033efa56f5b591dd7ff27aacdb786bfb8d21ee"
+      "utf8Bytes": 7710,
+      "sha256": "cc64946dff9a12f119e14e08f908dc5fc460baa7174192deda618de0c868ece8"
     },
     {
       "path": "docs/images/01-overview.png",

@@ -10,8 +10,8 @@
 - Keep the wallpaper theme consistent when native shell hydration changes root theme attributes after an early first frame. Observe only root theme/class/style changes, repair only mismatched theme signals, preserve unrelated native state and restore the initial theme snapshot when wallpaper is disabled. Verify actual native text colours, late hydration, observer settling and disposal in the generated early-startup fixture. Record host handoff, endpoint revalidation and process-start stages separately for future cold-start measurements.
 - Avoid recompiling the native process/TCP helpers on each entry by using an optional locally built support assembly. Check both source hashes and the DLL hash, use a fixed cache path, and fall back to source when missing, stale, damaged, incompatible, or partially loaded. Add a support-only build mode that leaves the entry executable untouched. Consolidate endpoint validation into one listener/process check before and after HTTP inspection, preserving app-target requirements and native process identity checks.
 - Fix rapid exit/reopen handoff: closed CDP sockets immediately reject pending/new calls so WebGL cleanup does not wait for remote timeouts; allow an old wallpaper host to finish naturally before rechecking ownership. Once a client is verified, later setup failures preserve it without closing or reopening it. Add an attach-only recovery path and accept a ready visible detached window when the main page is intentionally deferred while hidden. Include generated WebGL disconnect, host-handoff, and verified-client failure regressions.
-- Read fresh IPv4/IPv6 TCP listener ownership through the Windows IP Helper API during entry startup, retaining PID/address verification without repeated slow networking-provider queries. Cold starts launch the validated Store executable with debugging arguments directly, defer shortcut maintenance until the wallpaper is ready, and include query time in the shutdown-drain deadline. Windows socket and real-bootstrap fixtures cover listener identity, released ports, direct-first cold launch, single package discovery and existing-client preservation. Actual taskbar cold-start timing still requires normal-exit acceptance.
-- Prepare the wallpaper host as soon as the newly launched browser exposes a verified loopback endpoint, bound to that launch's exact process identity. Mount backgrounds when the exact app document has a body/head, allowing preparation to overlap native shell initialization. Keep native terminal adaptation behind shell readiness and place late menu controls through the existing observer. Generated-browser fixtures verify that a real image paints before the shell and survives late shell/menu creation; the latest change still needs real-client cold-start acceptance.
+- Read fresh IPv4/IPv6 TCP listener ownership through the Windows IP Helper API during entry startup, retaining PID/address verification without repeated slow networking-provider queries. Cold starts launch the validated Store executable with debugging arguments directly, defer shortcut maintenance until the wallpaper is ready, and include query time in the shutdown-drain deadline. Windows socket and real-bootstrap fixtures cover listener identity, released ports, direct-first cold launch, single package discovery and existing-client preservation. Normal exit followed by one taskbar-entry click restored the installed client wallpaper on 2026-11-06.
+- Prepare the wallpaper host as soon as the newly launched browser exposes a verified loopback endpoint, bound to that launch's exact process identity. Mount backgrounds when the exact app document has a body/head, allowing preparation to overlap native shell initialization. Keep native terminal adaptation behind shell readiness and place late menu controls through the existing observer. Generated-browser fixtures verify that a real image paints before the shell and survives late shell/menu creation; real-client normal-exit recovery was recorded on 2026-11-06.
 
 ## 0.1.0-alpha.3 — 2026-11-04
 
@@ -45,8 +45,8 @@
 
 - Make the root README Chinese, retain an English translation, and document a reviewed demonstration-image workflow without publishing real chat screenshots or wallpaper assets.
 - Reuse version-validated media fingerprints and bounded previews, deliver scene bytes before disk-cache persistence, and use file-backed cache responses to reduce transient copies. Keep dimensions, FPS limits and effects unchanged.
-- Restore verified native Codex windows on explicit launcher clicks and require visible, non-minimized foreground readback. Match the main page geometry or a process/target-bound handle rather than treating CDP Page.bringToFront as native-window restoration; healthy main pages no longer request redundant package activation. Actual taskbar-click and cross-DPI acceptance remain pending.
-- Offer opt-in event-driven recovery for a future package update: one graceful attempt, no force termination, no custom resident watcher and no promise of update immunity.
+- Restore verified native Codex windows on explicit launcher clicks and require visible, non-minimized foreground readback. Match the main page geometry or a process/target-bound handle rather than treating CDP Page.bringToFront as native-window restoration; healthy main pages no longer request redundant package activation. At this release stage, read-only native window matching passed; taskbar-click and cross-DPI checks had not run.
+- Offer opt-in event-driven recovery for a future package update: one normal-close request per new version, a persisted handled-version record and exit after event processing.
 
 - Use the official default Codex profile for future launches, scan main instances across Store versions, and stop rather than open a second root when identity or graceful exit cannot be confirmed. Rediscover the registered package before launch; preserve the original taskbar pin and document its cold-start limitation.
 - Replace the periodic process supervisor with a one-shot entry/bootstrap. Validate bootstrap/client identities on explicit clicks, and exit the wallpaper bridge on browser disconnect. Keep the necessary wallpaper/media connection while the client is running.
@@ -82,9 +82,9 @@
 - Dedicated-window cleanup, first-frame rollback and capture-error fallback to the last media wallpaper.
 - Pinned Python capture dependencies and explicit setup; manual acceptance steps in docs/REALTIME.md.
 
-The development runtime was exercised with native capture, canvas playback, offscreen source windows and targeted source-close recovery. At a 1280/24 output cap the measured presented rate was approximately 18 FPS; this is not a universal performance guarantee or acceptance of every scene. See docs/VALIDATION.md for the portable candidate's remaining boundaries.
+The development runtime was exercised with native capture, canvas playback, offscreen source windows and targeted source-close recovery. At a 1280/24 output cap the tested scene measured approximately 18 canvas updates/s. Scene, environment and measurement records are listed in docs/VALIDATION.md.
 
-## 0.1.0-alpha.0 — unpublished source candidate
+## 0.1.0-alpha.0 — initial source preparation
 
 - Static/animated media backgrounds, in-app management and wallpaper-derived colors.
 - Wallpaper Engine library discovery, bounded folder search and optional ordinary media search.
@@ -93,7 +93,7 @@ The development runtime was exercised with native capture, canvas playback, offs
 - Portable dependency discovery, external runtime data directory and no automatic screenshot capture.
 - Minimal vendored dependencies, synthetic tests, privacy allowlist and release documentation.
 
-Full native cold-start and taskbar integration for this portable candidate remain unverified. No public release or push has occurred during preparation.
+Initial preparation record: native cold-start and taskbar integration checks had not run at that stage. Public release followed this preparation.
 # 2026-10-24
 
 - Add an optional, separately prepared WebWallGL 3.0.0 Scene renderer with sandboxed scripts, bounded project reads, first-frame adoption, pointer and pause forwarding, and explicit native/WebGL selection.
