@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 16295,
-      "sha256": "7425a9acb4103a33cc052e8c859c9e4c3762e7a0e96f856970ef5cacb83c718c"
+      "utf8Bytes": 16778,
+      "sha256": "1f74d5ae2ef53d1e08269bed5e85aafc272a11fddedcacd4073d71fa6d3d32c0"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -54,8 +54,8 @@
     },
     {
       "path": "README.md",
-      "utf8Bytes": 13702,
-      "sha256": "a031a224d72273a2960adda753df5a2a2ec675c9d7fa7e45e237b526f82d07ec"
+      "utf8Bytes": 13954,
+      "sha256": "3005225fe223c4bb799ae0c00b2c730f522a726f778cc2a97f5e49f360df4861"
     },
     {
       "path": "README.zh-CN.md",
@@ -79,8 +79,8 @@
     },
     {
       "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
-      "utf8Bytes": 8194,
-      "sha256": "ab70d06956d8b9fe95b0b396d12970fe5b7c6d00c9fffd5f108008b93dd29bb9"
+      "utf8Bytes": 8532,
+      "sha256": "d08e6d1e41eaa31ff33b5c937653859cdccdd7ef44c57f2c8abc2379f042a68f"
     },
     {
       "path": "docs/ARCHITECTURE.md",
@@ -504,6 +504,11 @@
       "sha256": "6c99b9d51b4a43ed9277dc3fe9f2fad7d1003b32295676c534f7139a792049dd"
     },
     {
+      "path": "src/startup-appearance.mjs",
+      "utf8Bytes": 3175,
+      "sha256": "ea6394c14742b997360997d426c62fa6e820b318958d493e2a9354f15b31daf7"
+    },
+    {
       "path": "src/system-media.mjs",
       "utf8Bytes": 6612,
       "sha256": "85090705adced1f22cba6139d9b9c3a220a94850873621458b1557dad5e31517"
@@ -515,8 +520,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 42226,
-      "sha256": "2b2565c779f28b38b8a6430e5d82921083ac7d43e4552b559d04c7e28853fbe7"
+      "utf8Bytes": 44213,
+      "sha256": "67c78592d405c6011c7828930bbab2a9c29440ef73b41302d0bd301cefcf3fa1"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -545,8 +550,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 13454,
-      "sha256": "7dd66975473cae5492a502b3a5e36d9e3c78c0d2982dfc2a2697d36b22854b10"
+      "utf8Bytes": 13497,
+      "sha256": "772f59447f6177ebfe46a813fb6506f4598771c9d135685ce4b4c6173f4e57f6"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -790,8 +795,8 @@
     },
     {
       "path": "test/startup-priority-integration.mjs",
-      "utf8Bytes": 12861,
-      "sha256": "1b5db1ef797f62b595d6fad97ceef96846c3942f3a8efa2e70501d51d3999d3d"
+      "utf8Bytes": 12960,
+      "sha256": "2c83a07230489628f5751446b542bb6959342e84a07ac0e8ddac888c259d8df2"
     },
     {
       "path": "test/startup-shutdown.ps1",
@@ -802,6 +807,11 @@
       "path": "test/startup-support.ps1",
       "utf8Bytes": 3632,
       "sha256": "4d719e04bb4237a6f8b2d0bbf8923ffe23333a71f0cb9bd2d8243c5f4906411a"
+    },
+    {
+      "path": "test/startup-transition-integration.mjs",
+      "utf8Bytes": 7848,
+      "sha256": "b21d9d4ba2ee514415f5ba761b743d28df32d3f4f4069d591c9db62ec1d6144c"
     },
     {
       "path": "test/surfaces.test.mjs",

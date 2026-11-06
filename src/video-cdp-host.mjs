@@ -23,6 +23,7 @@ import {libraryGroups} from './library-model.mjs';
 import {playbackMetrics} from './playback-metrics.mjs';
 import {installSceneResourceCache,callSceneResourceCache} from './scene-resource-cache.mjs';
 import {bindMediaFile} from './media-file-source.mjs';
+import {syncStartupAppearance,clearStartupAppearance} from './startup-appearance.mjs';
 
 const codeRoot=path.dirname(fileURLToPath(import.meta.url));
 const preparationClock=performance.now(),preparation=[];
@@ -46,6 +47,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const sessions=new Map(),embeddedSessions=new Map();let busy=false,stopped=false,acting=false,importPreparing=false,actionQueue=Promise.resolve(),selectionRevision=0,activeSelection=null;
 let realtime=null,realtimeKey=null,streamTimer=null,streaming=false,timer=null,rotationTimer=null,spectrumTimer=null,mediaPower=null;
 const selectionEpoch=randomUUID();
+const startupPalette=()=>settings.library.some(e=>e.id===settings.selectedId)?displaySettings(settings).palette:null;
+const syncStartup=async c=>{try{await syncStartupAppearance(c,startupPalette(),appUrl);delete c.startupPaletteError;}catch(error){c.startupPaletteError=error.message;}};
 function scheduleStream(delay){clearTimeout(streamTimer);if(stopped)return;streamTimer=setTimeout(stream,delay);streamTimer.unref();}
 async function stop(){
  if(stopped)return;stopped=true;
@@ -53,7 +56,7 @@ async function stop(){
  // Native capture cleanup can need 2s for Python plus 8s for its owned engine window.
  const deadline=setTimeout(()=>process.exit(0),12000);deadline.unref();
  const cleanups=[];
- for(const c of [...sessions.values(),...embeddedSessions.values()]){try{cleanups.push(Promise.resolve(c.webPlayer?.dispose()),actions.disposeOwner(c));c.close()}catch{}}
+ for(const c of [...sessions.values(),...embeddedSessions.values()]){try{cleanups.push(Promise.resolve(c.webPlayer?.dispose()),actions.disposeOwner(c),clearStartupAppearance(c).finally(()=>c.close()))}catch{c.close()}}
  browserLifetime.close();
  try{await Promise.allSettled([...cleanups,stopRealtime(),mediaPower?.stop()]);status.phase='stopped';status.targets=[];await save();}finally{process.exit(0)}
 }
@@ -103,6 +106,7 @@ async function stream(){
 streamTimer=setTimeout(stream,1000);
 async function applyAppearance(){
  const {paintShell}=await import('./wallpaper-style.mjs?v='+(await stat(path.join(codeRoot,'wallpaper-style.mjs'))).mtimeMs);
+ for(const c of sessions.values())await syncStartup(c);
  for(const c of sessions.values())await c.evaluate('(()=>{const config='+JSON.stringify(settings)+';window.__codexWallpaperBridge?.setPauseOnBlur?.(config.pauseOnBlur);document.getElementById("codex-wallpaper-controls")?.__cwbRenderConfig?.(config);return ('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')})()');
 }
 function activeWallpaperKey(){const entry=settings.library.find(e=>e.id===settings.selectedId);return JSON.stringify([entry,entry?.mode==='webwallgl'?!!settings.systemMedia?.audio:null]);}
@@ -161,6 +165,7 @@ function startVideo(config){
 }
 
 async function mount(c,target){c.playbackReading=null;
+ await syncStartup(c);
  const ticket=activeSelection??selectionRevision,selectionStamp=selectionEpoch+':'+ticket,isCurrent=()=>ticket===selectionRevision;
  const assertCurrent=()=>{if(!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
 
@@ -221,18 +226,24 @@ async function tick(){
   const webTargets=list.filter(t=>t.type==='webview'&&t.url.startsWith('https://chatgpt.com/'));
   for(const [id,c]of embeddedSessions)if(!webTargets.some(t=>t.id===id)){c.close();embeddedSessions.delete(id)}
   if(!targets.length){await stopRealtime();status.phase='waiting-for-target';status.targets=[];await save()}
-  for(const [id,c]of sessions)if(!targets.some(t=>t.id===id)){await actions.disposeOwner(c);await c.webPlayer?.dispose();c.webPlayer=null;c.close();sessions.delete(id)}
+  for(const [id,c]of sessions)if(!targets.some(t=>t.id===id)){await actions.disposeOwner(c);await c.webPlayer?.dispose();c.webPlayer=null;await clearStartupAppearance(c);c.close();sessions.delete(id)}
   for(const target of targets){
    const targetState={targetId:target.id,url:target.url,installed:false,ready:false,phase:'waiting-for-shell'};observations.push(targetState);
    if(!new RegExp('^ws://127\\.0\\.0\\.1:'+port+'/devtools/page/[A-Za-z0-9-]+$').test(target.webSocketDebuggerUrl))continue;
    let c=sessions.get(target.id);if(!c||c.ws.readyState!==1){c=await connectCdp(target.webSocketDebuggerUrl);sessions.set(target.id,c);c.token=randomUUID();c.ws.addEventListener('close',()=>void actions.disposeOwner(c),{once:true});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});c.ws.addEventListener('message',event=>{let e;try{e=JSON.parse(event.data)}catch{return}if(e.method!=='Runtime.bindingCalled')return;if(e.params.name==='__cwbMediaActivitySend'){try{const a=JSON.parse(e.params.payload);if(a.token===c.token)c.mediaActivity=a;}catch{}return;}if(e.params.name!=='__codexWallpaperSend')return;let req;try{req=JSON.parse(e.params.payload)}catch{return}if(req.token!==c.token)return;if(req.action==='import-cancel'){void actions(c,req).then(result=>c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:true,...result})+');true')).catch(()=>{});return;}try{actions.beginImport(c,req);}catch(error){void c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:false,error:error.message,code:error.code})+');true').catch(()=>{});return;}const ticket=['select','rotation-next'].includes(req.action)?++selectionRevision:null;if(ticket!==null){rotationAt=Date.now()+(settings.rotation.intervalSeconds||60)*1000;for(const page of sessions.values())page.evaluate('window.__cwbSelectionStamp='+JSON.stringify(selectionEpoch+':'+ticket)+';'+(req.action==='select'?'window.__cwbDesiredWallpaperId='+JSON.stringify(req.selectedId)+';':'')+'true').catch(()=>{});}actionQueue=actionQueue.then(async()=>{while(busy||streaming)await sleep(25);if(ticket!==null&&ticket!==selectionRevision){await c.evaluate('window.__cwbReply?.('+Number(req.id)+',{ok:true,superseded:true})').catch(()=>{});return;}acting=true;activeSelection=ticket;try{const result=await actions(c,req);await c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify({ok:true,...result})+')')}catch(error){await c.evaluate('window.__cwbReply?.('+Number(req.id)+','+JSON.stringify(error.code==='CWB_SELECTION_SUPERSEDED'?{ok:true,superseded:true}:{ok:false,error:error.message,code:error.code})+')').catch(()=>{})}finally{await reportMedia(c).catch(()=>{});activeSelection=null;acting=false}})})}
+   if(!c.startupNavigationObserved){
+    c.startupNavigationObserved=true;
+    c.ws.addEventListener('message',event=>{let message;try{message=JSON.parse(event.data)}catch{return;}if(message.method==='Page.frameNavigated'&&!message.params.frame.parentId)requestTargetTick();});
+    await c.call('Page.enable');
+   }
+   await syncStartup(c);
    // Background/layout/panel adapters all observe later shell additions. Mount
    // as soon as the app document exists instead of waiting for React's sidebar.
    const page=await c.evaluate('({body:!!document.body&&!!document.head,shell:!!document.querySelector("aside.app-shell-left-panel")&&!!document.querySelector("main[data-app-shell-main-surface],main[class*=\\"_MainContentSurface_\\"],main.main-surface")})');
    if(!page.body)continue;
    const tree=await c.call('Page.getFrameTree');
    if(tree.frameTree.frame.url!==target.url)continue;
-   if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.captureBlocked=false;c.failed=false;c.retryAt=0;c.failures=0;c.mediaActivity=null;c.needsTaskbar=true;c.shellObserved=false;startupEvent('page-ready',target.id);await c.call('Runtime.addBinding',{name:'__cwbMediaActivitySend'});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});}
+   if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.captureBlocked=false;c.failed=false;c.retryAt=0;c.failures=0;c.mediaActivity=null;c.needsTaskbar=true;c.shellObserved=false;c.readyObserved=false;startupEvent('page-ready',target.id);await c.call('Runtime.addBinding',{name:'__cwbMediaActivitySend'});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});}
    if(page.shell&&!c.shellObserved){c.shellObserved=true;startupEvent('shell-ready',target.id);if(c.installed)await c.evaluate('window.__cwbApplyWidgets?.('+JSON.stringify(displaySettings(settings))+');window.__cwbPanelHost?.__cwbPlace?.();true');}
    if(c.retryAt&&Date.now()<c.retryAt){Object.assign(targetState,{phase:'background-retrying',error:c.lastError,retryAt:new Date(c.retryAt).toISOString()});continue;}
    try{
@@ -245,6 +256,7 @@ async function tick(){
     const observed=await c.evaluate('(()=>{const value=window.__codexWallpaperBridge?.sample();return value?{...value,terminalTheme:window.__cwbWidgets?.status,viewportWidth:innerWidth,viewportHeight:innerHeight}:null})()');
     if(!observed){c.installed=false;continue}
     targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':observed.paused?'realtime-capture-paused':realtime?.kind!=='chromium-web'&&Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed,mountMs:c.mountMs,webglStartup:c.webPlayer?.startup,...(c.isRealtime?{delivery:c.captureTiming,deliveryError:c.captureError}:{} )});
+    if(targetReady(targetState)&&!c.readyObserved){c.readyObserved=true;startupEvent('page-wallpaper-ready',target.id);}
     if(targetReady(targetState)&&status.startup.firstReadyMs===null){status.startup.firstReadyMs=performance.now()-startupClock;startupEvent('first-wallpaper-ready',target.id);}
     if(targetReady(targetState)&&target.url===appUrl&&status.startup.mainReadyMs===null){status.startup.mainReadyMs=performance.now()-startupClock;startupEvent('main-wallpaper-ready',target.id);}
     // Publish the primary first frame before optional windows or integrations.
@@ -299,9 +311,18 @@ rotationTimer=setInterval(()=>{
   finally{if(acquired){acting=false;activeSelection=null;}rotating=false;}
  });
 },1000);rotationTimer.unref();
+let targetWakePending=false,pollStarted=false;
+function schedulePoll(delay){clearTimeout(timer);if(!stopped){timer=setTimeout(poll,delay);timer.unref();}}
+function requestTargetTick(){if(stopped)return;targetWakePending=true;if(pollStarted&&!busy)schedulePoll(0);}
+browserLifetime.ws.addEventListener('message',event=>{let message;try{message=JSON.parse(event.data)}catch{return;}const info=message.params?.targetInfo;
+ if(['Target.targetCreated','Target.targetInfoChanged'].includes(message.method)&&info?.type==='page'&&(info.url===appUrl||(appUrl==='app://-/index.html'&&info.url.startsWith('app://-/detached-window.html'))))requestTargetTick();
+ if(message.method==='Target.targetDestroyed'&&sessions.has(message.params.targetId))requestTargetTick();
+});
+try{await browserLifetime.call('Target.setDiscoverTargets',{discover:true});}catch(error){status.targetDiscoveryError=error.message;}
 await save();await tick();await configureMedia(settings.systemMedia).catch(()=>{});
 let spectrumBusy=false;
 async function pumpSpectrum(){if(spectrumBusy||stopped||busy||(acting&&!importPreparing)||streaming)return;spectrumBusy=true;try{await mediaPower.tick();}catch(error){status.mediaDeliveryError=error.message;}finally{spectrumBusy=false;}}
 spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(effectiveMediaSettings(settings).audioFps));spectrumTimer.unref();
-async function poll(){await tick();if(!stopped){const main=status.targets.find(t=>t.url===appUrl),pending=main?!targetReady(main):!status.targets.some(targetReady);timer=setTimeout(poll,pending?250:5000);timer.unref();}}
-if(!stopped){const main=status.targets.find(t=>t.url===appUrl),pending=main?!targetReady(main):!status.targets.some(targetReady);timer=setTimeout(poll,pending?250:5000);timer.unref();}
+const primaryPending=()=>{const main=status.targets.filter(t=>t.url===appUrl);return main.length?main.some(t=>!targetReady(t)):!status.targets.some(targetReady);};
+async function poll(){if(stopped)return;if(busy||acting||streaming){schedulePoll(targetWakePending?250:5000);return;}targetWakePending=false;await tick();if(!stopped)schedulePoll(targetWakePending?0:primaryPending()?250:5000);}
+pollStarted=true;if(!stopped)schedulePoll(targetWakePending?0:primaryPending()?250:5000);

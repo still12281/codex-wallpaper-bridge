@@ -14,7 +14,8 @@ let chrome=process.env.CODEX_WALLPAPER_TEST_CHROME;
 for(const base of [process.env.ProgramFiles,process.env['ProgramFiles(x86)'],process.env.LOCALAPPDATA].filter(Boolean)){if(chrome)break;const file=path.join(base,'Google/Chrome/Application/chrome.exe');try{await access(file);chrome=file}catch{}}
 if(!chrome)throw Error('Isolated Chrome fixture unavailable');
 const baseline=process.argv.includes('--baseline'),results=[];
-for(const scenario of process.argv.includes('--webgl-exit-only')?['webgl-exit']:['auxiliary','shell','early-shell']){
+const scenarioArg=process.argv.indexOf('--scenario');
+for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.includes('--webgl-exit-only')?['webgl-exit']:['auxiliary','shell','early-shell']){
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-startup-')),data=path.join(root,'data');await mkdir(data);
  const html=path.join(root,'shell.html'),blockerHtml=path.join(root,'auxiliary.html');
  await writeFile(html,'<!doctype html><body><aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Generated startup fixture</main></body>');
