@@ -1,8 +1,9 @@
 [CmdletBinding()]
-param([switch]$RestartCurrent,[switch]$WaitForClientExit,[switch]$InspectOnly,[string]$TaskName,[switch]$AfterUpdate)
+param([switch]$RestartCurrent,[switch]$WaitForClientExit,[switch]$InspectOnly,[string]$TaskName,[switch]$AfterUpdate,[switch]$AttachOnly)
 
 $ErrorActionPreference = 'Stop'
 if($AfterUpdate -and ($RestartCurrent -or $WaitForClientExit -or $TaskName)){throw 'Automatic update mode cannot close clients or wait for their lifetime'}
+if($AttachOnly -and ($RestartCurrent -or $WaitForClientExit -or $AfterUpdate)){throw 'Attach-only recovery cannot close or launch clients'}
 $taskCodeRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'Runtime.ps1')
 . (Join-Path $PSScriptRoot 'CleanProcess.ps1')
@@ -12,6 +13,7 @@ $taskRoot = Get-WallpaperDataRoot
 Import-WallpaperOptionalRuntimes -Root $taskRoot
 $taskNode = Get-WallpaperNode
 . (Join-Path $taskCodeRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')
+. (Join-Path $PSScriptRoot 'FastTcp.ps1')
 $taskStatusPath = Join-Path $taskRoot 'launch-status.json'
 $taskStatus = [ordered]@{launchId=[guid]::NewGuid().ToString();startedAt=[DateTimeOffset]::Now.ToString('o');phase='preparing';helperPid=$PID;sessionId=(Get-Process -Id $PID).SessionId;appFilesModified=$false;configModified=$false}
 $taskStatus.helperStartedAtUtc=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o')
@@ -19,7 +21,10 @@ $taskStatus.lifecycle='one-shot-no-supervisor'
 $taskPhaseClock=[Diagnostics.Stopwatch]::StartNew()
 $taskStatus.phaseHistory=@()
 $taskOwnedRoot = $null
+$taskVerifiedRoot=$null
+$taskRootHandlePinned=$false
 $taskCreatedVerifiedClient=$false
+$taskPreserveVerifiedClient=$false
 $taskBootstrapLock=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridgeBootstrap')
 $taskLockOwned=$false
 try{$taskLockOwned=$taskBootstrapLock.WaitOne(0)}catch [Threading.AbandonedMutexException]{$taskLockOwned=$true}
@@ -77,17 +82,23 @@ function Get-TaskLaunchedRoot([int]$ProcessId,[long]$NotBefore=0) {
   if(-not $taskSnapshot[0].IsMain -or $taskSnapshot[0].Created -lt $NotBefore){throw '启动请求转交给了已有实例，已保留它，不将其当成本轮创建的进程。'}
   return $taskSnapshot[0]
 }
-function Wait-TaskIdentity([int]$Port,[int]$Seconds=25) {
+function Wait-TaskIdentity([int]$Port,$ExpectedRoot,[int]$Seconds=25) {
   $taskDeadline=[DateTimeOffset]::UtcNow.AddSeconds($Seconds)
   do {
-    $taskIdentity=Get-WallpaperVerifiedEndpoint -Port $Port -Codex $taskCodex
-    if($null -ne $taskIdentity){return $taskIdentity}
+    $taskIdentity=Get-WallpaperVerifiedEndpoint -Port $Port -Codex $taskCodex -AllowPendingPage
+    if($null -ne $taskIdentity){
+      if($null -eq $ExpectedRoot -or $taskIdentity.RootProcessId -ne $ExpectedRoot.Id -or
+        [math]::Abs(([DateTimeOffset]::Parse($taskIdentity.RootCreatedAtUtc)).UtcTicks-$ExpectedRoot.Created) -gt 10 -or
+        $taskIdentity.RootExecutable -ine $ExpectedRoot.Path){throw '壁纸连接不是本轮启动的实例，已保留客户端并停止接入。'}
+      return $taskIdentity
+    }
     Start-Sleep -Milliseconds 500
   }while([DateTimeOffset]::UtcNow -lt $taskDeadline)
   return $null
 }
 
 try {
+  if(-not $InspectOnly){Save-TaskPhase 'package-resolved'}
   $taskPort=9335
   $taskInitial=@(Get-TaskSnapshot)
   $taskStatus.initialProcessIds=@($taskInitial.Id)
@@ -101,9 +112,10 @@ try {
   $taskIdentity=$taskEndpoint.identity
   $taskReuseExisting=$null -ne $taskIdentity
   $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes $taskInitial -HasVerifiedCdp $taskReuseExisting
-  try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot -CodexAppId $taskCodex.AppUserModelId)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
+  # Shortcut maintenance belongs after the first frame, not before the window.
   Save-TaskPhase 'startup-checked'
   if($null -eq $taskIdentity) {
+    if($AttachOnly){throw '当前没有可验证的壁纸连接；仅恢复模式已停止，没有启动或关闭客户端。'}
     if($taskInitial.Count -gt 0 -and $WaitForClientExit) {
       $taskInitialIds=@($taskInitial.Id)
       $taskRoots=@($taskInitial | Where-Object {$_.Parent -notin $taskInitialIds})
@@ -159,7 +171,7 @@ try {
     }
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
     # Store may have registered an update while an older client was exiting.
-    $taskCodex=Get-WallpaperRegisteredCodex
+    if($taskStatus.shutdownDrain -or $WaitForClientExit -or $RestartCurrent){$taskCodex=Get-WallpaperRegisteredCodex;Set-WallpaperTrustedPackageRoots @($taskCodex)}
     $taskStatus.codexVersion="$($taskCodex.Version)"
     $taskStatus.packageFullName="$($taskCodex.PackageFullName)"
     $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes @()
@@ -173,11 +185,13 @@ try {
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
     if(-not (Test-DreamSkinPortAvailable -Port $taskPort)){throw '所选壁纸连接端口在启动前被占用，已保留占用者，请重新点击入口。'}
     $taskLaunchNotBefore=[DateTime]::UtcNow.Ticks
-    $taskLaunchedId=if($AfterUpdate){Start-WallpaperCodexDirect -Codex $taskCodex -Arguments $taskArguments}else{Start-DreamSkinCodex -Codex $taskCodex -Arguments $taskArguments}
+    # Package activation can turn debug flags into codex:// links, costing a
+    # full CDP timeout and a second launch. Use the freshly validated Store exe.
+    $taskLaunchedId=Start-WallpaperCodexDirect -Codex $taskCodex -Arguments $taskArguments
     $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
     $taskCreatedVerifiedClient=$true
-    $taskStatus.launchStrategy=if($AfterUpdate){'after-update-validated-direct-once'}else{'package-activation'}
-    $taskIdentity=Wait-TaskIdentity -Port $taskPort
+    $taskStatus.launchStrategy=if($AfterUpdate){'after-update-validated-direct-once'}else{'validated-store-executable-first'}
+    $taskIdentity=Wait-TaskIdentity -Port $taskPort -ExpectedRoot $taskOwnedRoot
     if($null -eq $taskIdentity) {
       if($AfterUpdate){$taskOwnedRoot=$null;throw 'Update reconnect opened the client but no verified CDP; no retry or close will follow'}
       $taskArgumentStatus=Get-DreamSkinCodexDebugArgumentStatus -Processes @(Get-DreamSkinCodexProcesses -Codex $taskCodex) -Port $taskPort
@@ -202,7 +216,7 @@ try {
       $taskOwnedRoot=Get-TaskLaunchedRoot $taskLaunchedId $taskLaunchNotBefore
       $taskCreatedVerifiedClient=$true
       $taskStatus.launchStrategy='validated-store-executable'
-      $taskIdentity=Wait-TaskIdentity -Port $taskPort
+      $taskIdentity=Wait-TaskIdentity -Port $taskPort -ExpectedRoot $taskOwnedRoot
       if($null -eq $taskIdentity){throw '直接启动后仍无已验证的 CDP 端点；当前 Codex 版本不支持此接入路径。'}
     }
   }
@@ -210,51 +224,55 @@ try {
   $taskStatus.debugRootPid=[int](@(Get-DreamSkinPortListeners -Port $taskPort)[0].OwningProcess)
   Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses) $taskStatus.debugRootPid
   $taskVerifiedRoot=Get-Process -Id $taskStatus.debugRootPid -ErrorAction Stop
+  try{[void]$taskVerifiedRoot.Handle;$taskRootHandlePinned=$true}catch{$taskStatus.rootHandleFallback=$_.Exception.Message}
   $taskStatus.rootStartedAtUtc=$taskVerifiedRoot.StartTime.ToUniversalTime().ToString('o')
   $taskStatus.rootExecutable=$taskVerifiedRoot.MainModule.FileName
   if($taskIdentity.RootProcessId -ne $taskStatus.debugRootPid -or $taskIdentity.RootCreatedAtUtc -ne $taskStatus.rootStartedAtUtc -or $taskIdentity.RootExecutable -ine $taskStatus.rootExecutable){throw '壁纸连接的客户端身份在验证后发生变化，已保留客户端。'}
+  # Once the browser is available, host/setup failures must never close it or
+  # reopen an ordinary client if the user exits while setup is pending.
+  $taskPreserveVerifiedClient=$true;$taskOwnedRoot=$null
   try{Save-WallpaperCdpEndpoint -Root $taskRoot -Port $taskPort -Identity $taskIdentity}catch{$taskStatus.endpointRecordWarning=$_.Exception.Message}
   if($taskReuseExisting){
     if(-not (Test-DreamSkinPathEqual -Left $taskStatus.rootExecutable -Right "$($taskCodex.Executable)")){throw '现有客户端与已注册包版本不同，保留现有客户端并停止跨版本激活。'}
     $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId --no-wait
     if($LASTEXITCODE -eq 2){
+      if($AttachOnly){throw '未找到现有 Codex 主页面；仅恢复模式已停止，没有启动或关闭客户端。'}
       $taskStatus.reactivationPid=Start-DreamSkinCodex -Codex $taskCodex -Arguments @()
       Start-Sleep -Milliseconds 500
       $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId
     }
     if($LASTEXITCODE -ne 0){throw '未找到可唤回的 Codex 主页面，已有客户端已保留。'}
-    $taskAfterActivation=Get-WallpaperVerifiedEndpoint -Port $taskPort -Codex $taskCodex
-    $taskSameRoot=Get-Process -Id $taskStatus.debugRootPid -ErrorAction Stop
+    # activate-client already verifies the exact app target and BrowserId; bind
+    # its result back to the retained root without repeating CIM discovery.
+    $taskAfterActivation=Get-WallpaperKnownRootEndpoint -Process $taskVerifiedRoot -Identity $taskIdentity -Port $taskPort -Codex $taskCodex -HasRetainedHandle:$taskRootHandlePinned
+    $taskSameRoot=$taskVerifiedRoot
     if($null -eq $taskAfterActivation -or $taskAfterActivation.BrowserId -ne $taskIdentity.BrowserId -or $taskSameRoot.StartTime.ToUniversalTime().ToString('o') -ne $taskStatus.rootStartedAtUtc){throw '唤回时客户端身份发生变化，未关闭或替换任何客户端。'}
     $taskMain=$taskActivationResult|ConvertFrom-Json
     $taskStatus.mainTargetId=$taskMain.mainTarget
-    $taskStatus.nativeActivation=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -MainTarget $taskMain.mainTarget -GeometryJson ($taskMain.geometry|ConvertTo-Json -Compress)
+    $taskStatus.nativeActivation=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -MainTarget $taskMain.mainTarget -GeometryJson ($taskMain.geometry|ConvertTo-Json -Compress) -RememberOnly:$AttachOnly
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses) $taskStatus.debugRootPid
-    $taskStatus.existingMainWindowReopened=$true
+    $taskStatus.existingMainWindowReopened=-not $AttachOnly
   }
   Save-TaskPhase 'cdp-verified-starting-wallpaper-host'
   $taskRuntime=Join-Path $taskRoot 'runtime-status.json'
-  $taskHostAlreadyRunning=$false
-  $taskConflictingHost=$false
-  if(Test-Path -LiteralPath $taskRuntime){
-    try{$taskPrevious=Get-Content -LiteralPath $taskRuntime -Raw -ErrorAction Stop|ConvertFrom-Json
-      $taskProcessInfo=Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$taskPrevious.pid)" -ErrorAction Stop
-      $taskHostDecision=Get-WallpaperHostDecision -Process $taskProcessInfo -Status $taskPrevious -Root $taskRoot -CodeRoot $taskCodeRoot -Node $taskNode -BrowserId $taskIdentity.BrowserId
-      $taskHostAlreadyRunning=$taskHostDecision -eq 'reuse'
-      $taskConflictingHost=$taskHostDecision -eq 'conflict'
-    }catch{}
+  $taskReadHost={Get-WallpaperHostState -Processes @(Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction Stop) -Root $taskRoot -CodeRoot $taskCodeRoot -Node $taskNode -BrowserId $taskIdentity.BrowserId}
+  $taskHostState=& $taskReadHost
+  if($taskHostState.mode -eq 'conflict'){
+    Save-TaskPhase 'waiting-for-previous-wallpaper-host-exit'
+    $taskHostState=Wait-WallpaperHostDrain -ReadState $taskReadHost
   }
-  if(-not $taskHostAlreadyRunning -and -not $taskConflictingHost){
-    # A missing/partially written status must never hide an existing owned host.
-    $taskUnverifiedHosts=@(Select-WallpaperOwnedHosts @(Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction Stop) $taskRoot $taskCodeRoot)
-    $taskConflictingHost=$taskUnverifiedHosts.Count -gt 0
-  }
-  if($taskConflictingHost){throw '已有壁纸宿主仍在运行，但状态过期、不可读或身份不匹配；已停止重复启动。请稍后重试，或正常退出 Codex 后重新打开壁纸入口。'}
+  if($taskHostState.mode -eq 'conflict'){throw '旧壁纸宿主尚未完成退出，已保留当前 Codex；未重复启动宿主或关闭客户端。'}
+  Save-TaskPhase 'wallpaper-host-slot-ready'
+  $taskHostAlreadyRunning=$taskHostState.mode -eq 'reuse'
+  $taskFreshIdentity=Get-WallpaperKnownRootEndpoint -Process $taskVerifiedRoot -Identity $taskIdentity -Port $taskPort -Codex $taskCodex -HasRetainedHandle:$taskRootHandlePinned -AllowPendingPage
+  if(-not $taskFreshIdentity -or $taskFreshIdentity.BrowserId -ne $taskIdentity.BrowserId -or $taskFreshIdentity.RootProcessId -ne $taskStatus.debugRootPid -or $taskFreshIdentity.RootCreatedAtUtc -ne $taskStatus.rootStartedAtUtc){throw '等待宿主退出期间客户端已变化，已停止接入并保留当前状态。'}
+  Save-TaskPhase 'wallpaper-host-endpoint-reverified'
   if(-not $taskHostAlreadyRunning){
     $taskHost=Start-WallpaperCleanProcess -FilePath $taskNode -ArgumentList @('--expose-gc','--max-old-space-size=64','--max-semi-space-size=4',(Join-Path $taskCodeRoot 'src/video-cdp-host.mjs'),'--cdp-port',"$taskPort") -Hidden -StandardOutput (Join-Path $taskRoot 'video-output.log') -StandardError (Join-Path $taskRoot 'video-error.log')
     $taskStatus.hostPid=$taskHost.Id
   }
-  else {$taskStatus.hostPid=[int]$taskPrevious.pid}
+  else {$taskStatus.hostPid=[int]$taskHostState.pid}
+  Save-TaskPhase 'wallpaper-host-started'
   $taskDeadline=[DateTimeOffset]::UtcNow.AddSeconds(45)
   $taskRendered=$false
   do {
@@ -263,8 +281,10 @@ try {
         $taskAge=([DateTimeOffset]::UtcNow-([DateTimeOffset]$taskRuntimeState.updatedAt)).TotalSeconds
         $taskFresh=$taskAge -ge 0 -and $taskAge -lt 12
         $taskGoodPhase=$taskRuntimeState.phase -in @('background-rendered','background-disabled','realtime-capture-active','realtime-capture-paused')
-        $taskReadyTargets=@($taskRuntimeState.targets | Where-Object {$_.installed -and ($_.ready -or $_.disabled) -and ($_.mode -ne 'realtime' -or $_.frames -gt 0) -and ($(if($taskStatus.mainTargetId){$_.targetId -eq $taskStatus.mainTargetId}else{$_.url -eq 'app://-/index.html'}))})
-        if($taskGoodPhase -and $taskReadyTargets.Count -gt 0 -and $taskRuntimeState.pid -eq $taskStatus.hostPid -and $taskRuntimeState.browserId -eq $taskIdentity.BrowserId -and $taskFresh){$taskRendered=$true;break}
+        $taskReadyChoice=Select-WallpaperReadyTargets -Targets @($taskRuntimeState.targets) -MainTarget $taskStatus.mainTargetId
+        $taskReadyTargets=@($taskReadyChoice.targets)
+        $taskStatus.mainTargetDeferred=$taskReadyChoice.mainDeferred
+        if($taskGoodPhase -and $taskReadyTargets.Count -gt 0 -and $taskRuntimeState.pid -eq $taskStatus.hostPid -and $taskRuntimeState.browserId -eq $taskIdentity.BrowserId -and $taskFresh){$taskRendered=$true;$taskStatus.readyTargetId=$taskReadyTargets[0].targetId;$taskStatus.readyTargetUrl=$taskReadyTargets[0].url;break}
       }catch{}
     }
     Start-Sleep -Milliseconds 500
@@ -277,6 +297,8 @@ try {
   }
   Save-TaskPhase $(if($taskRendered){'background-rendered'}else{'cdp-ready-background-not-yet-rendered'})
   if(-not $taskRendered){$taskOwnedRoot=$null;throw 'Codex 已打开，但壁纸首帧未就绪；客户端已保留，请检查壁纸宿主日志。'}
+  try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot -CodexAppId $taskCodex.AppUserModelId)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
+  Save-TaskPhase 'background-rendered'
   if($taskLockOwned){$taskBootstrapLock.ReleaseMutex();$taskLockOwned=$false}
   if($TaskName -and $taskRendered -and $taskStatus.hostPid){Wait-Process -Id $taskStatus.hostPid -ErrorAction SilentlyContinue}
 }catch {
@@ -285,6 +307,7 @@ try {
   Save-TaskPhase 'failed'
   try {
     if($AfterUpdate){$taskOwnedRoot=$null;$taskStatus.recovery='after-update-no-close-no-retry';Save-TaskPhase 'failed';exit 1}
+    if($taskPreserveVerifiedClient){$taskStatus.recovery='client-preserved-after-cdp';Save-TaskPhase 'failed';exit 1}
     if($null -ne $taskOwnedRoot){Close-TaskSnapshot @($taskOwnedRoot);$taskOwnedRoot=$null}
     $taskStatus.recovery=Get-WallpaperFailureRecovery -CreatedVerifiedClient $taskCreatedVerifiedClient -Remaining @(Get-TaskSnapshot)
     if($taskStatus.recovery -eq 'reopen-normal-client'){
@@ -297,6 +320,7 @@ try {
   Save-TaskPhase 'failed'
   exit 1
 }finally {
+  if($null -ne $taskVerifiedRoot){$taskVerifiedRoot.Dispose()}
   if($taskLockOwned){$taskBootstrapLock.ReleaseMutex()}
   $taskBootstrapLock.Dispose()
   if($TaskName){try{Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction Stop|Out-Null}catch{}}

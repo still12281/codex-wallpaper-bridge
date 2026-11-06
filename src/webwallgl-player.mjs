@@ -21,7 +21,7 @@ function initializeRenderer(project,options,binding,dshSource){
  try{void globalThis.caches}catch{Object.defineProperty(globalThis,'caches',{value:undefined,configurable:true});}
  const zeros=new Float32Array(64),silentSource={snapshot:()=>({left:zeros,right:zeros})};state.audioResponseEnabled=options.audioResponse===true;
  const host=document.getElementById('wp'),instance=WebWallGL.createScene(host,{fit:'cover',fps:options.fps,renderDpr:options.renderDpr||Math.min(1,options.maxWidth/innerWidth),videoTexScale:options.videoTexScale??.5,autoQuality:false,volume:0,scripts:options.scripts===true,bake:false,media:null,quality:options.quality||{},properties:options.properties||{},audio:state.audioResponseEnabled?silentSource:null,
-  onReady:()=>{state.ready=true;},onError:error=>{state.error=String(error?.message||error);},onDiagnostic:(message,level)=>{if(/跳过效果.*编译失败|effect shader.*(?:缺少|missing)|webglcontextlost/i.test(String(message)))state.error='场景关键效果失败：'+String(message).slice(0,1800);state.diagnostics.push({message:String(message).slice(0,240),level});state.diagnostics=state.diagnostics.slice(-20);}});
+  onReady:()=>{state.ready=true;globalThis[binding](JSON.stringify({status:'renderer-ready'}));},onError:error=>{state.error=String(error?.message||error);},onDiagnostic:(message,level)=>{if(/跳过效果.*编译失败|effect shader.*(?:缺少|missing)|webglcontextlost/i.test(String(message)))state.error='场景关键效果失败：'+String(message).slice(0,1800);state.diagnostics.push({message:String(message).slice(0,240),level});state.diagnostics=state.diagnostics.slice(-20);}});
  state.instance=instance;let freeze;
  const getFreeze=()=>freeze||(freeze=globalThis.__cwbFrameFreeze(host.querySelector('canvas'),host));
  const source={key:options.key,project:async()=>project,sceneDir:async()=>{if(!/\.json$/i.test(project.file||''))return null;return await read(project.file)?{entry:project.file,read}:null;},scenePkg:async()=>{for(const name of [...(/\.pkg$/i.test(project.file||'')?[project.file]:[]),'scene.pkg','scenes/scene.pkg','gifscene.pkg']){const bytes=await read(name);if(bytes)return bytes;}throw Error('项目没有可读取的场景包');}};
@@ -51,16 +51,19 @@ function createCandidate(id,limits){
 }
 
 export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurrent=()=>true,selectionStamp}){
+ const started=performance.now(),startup={stages:{},resources:{requests:0,cacheHits:0,queueMs:0,transferMs:0}};
+ const mark=stage=>{startup.stages[stage]=performance.now()-started;};
  let adopted=false;const assertCurrent=()=>{if(!adopted&&!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
  const reader=await createProjectReader(entry.projectRoot);const properties=effectivePropertyValues(reader.project,entry.userProperties||{});
- await c.evaluate('window.__cwbInstallWallpaperPointer='+installWallpaperPointer.toString()+';true');
- await c.evaluate('('+installSceneResourceCache.toString()+')();true');
+ await c.evaluate('window.__cwbInstallWallpaperPointer='+installWallpaperPointer.toString()+';('+installSceneResourceCache.toString()+')();true');
  if(reader.project.type==='web')throw Error('当前沙箱资源通道尚未通过网页脚本验收，请选择原生实时模式');
  const enginePath=process.env.CODEX_WALLPAPER_WEBWALLGL||path.join(dataRoot,'engines','webwallgl-3.0.0','webwallgl.global.min.js');
- let engine;try{engine=await readFile(enginePath,'utf8');}catch{throw Error('WebWallGL 未准备，请先运行 npm run prepare:webwallgl');}
- const dshSource=await readFile(new URL('../vendor/dsh-wallpaper/renderer.js',import.meta.url),'utf8');
+ const engineRead=readFile(enginePath,'utf8').catch(()=>{throw Error('WebWallGL 未准备，请先运行 npm run prepare:webwallgl');});
+ const [engine,dshSource]=await Promise.all([engineRead,readFile(new URL('../vendor/dsh-wallpaper/renderer.js',import.meta.url),'utf8')]);mark('sourcePrepared');
  const id='cwb-webgl-'+randomUUID(),binding='cwbAsset'+randomUUID().replaceAll('-',''),controlToken=randomUUID(),candidate=await c.evaluate('('+createCandidate.toString()+')('+JSON.stringify(id)+','+JSON.stringify(entry.limits||{})+')');
- let contextId,sessionId,closed=false,listener,transferQueue=Promise.resolve();const pending=new Set();
+ let contextId,sessionId,closed=false,listener,transferQueue=Promise.resolve(),readyNotice=false,readyWaiter;const pending=new Set();
+ const noticeReady=()=>{readyNotice=true;readyWaiter?.();};
+ const waitForReady=async()=>{if(readyNotice){readyNotice=false;return;}await new Promise(resolve=>{const done=()=>{clearTimeout(timer);readyWaiter=null;readyNotice=false;resolve();},timer=setTimeout(done,200);readyWaiter=done;});};
  const evaluate=expression=>c.evaluate(expression,contextId,sessionId);
  const cacheCall=(method,args)=>callSceneResourceCache(c,method,args,{isCurrent:()=>adopted||isCurrent()});
  const cleanup=async()=>{if(closed)return;closed=true;if(listener)c.ws.removeEventListener('message',listener);for(const requestId of pending)await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(binding+'-'+requestId)+');true').catch(()=>{});const connected=await c.evaluate('!!document.querySelector('+JSON.stringify('[data-cwb-renderer-id="'+id+'"]')+')').catch(()=>false);if(connected)await c.call('Runtime.evaluate',{expression:'globalThis.__cwbWebGL?.dispose();true',contextId,returnByValue:true},sessionId,1000).catch(()=>{});if(sessionId)await c.call('Target.detachFromTarget',{sessionId},undefined,1000).catch(()=>{});await c.evaluate('(()=>{const s=window.__codexWallpaperBridge;if(s?.rendererId==='+JSON.stringify(id)+'){s.dispose?.();delete window.__codexWallpaperBridge}const layer=document.querySelector('+JSON.stringify('[data-cwb-renderer-id="'+id+'"]')+');layer?.__cwbCandidateDispose?.();layer?.remove();URL.revokeObjectURL('+JSON.stringify(candidate.url)+');return true})()').catch(()=>{});};
@@ -72,27 +75,29 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurr
    if(frame)break;await sleep(100);
   }
   if(!frame){const tree=await c.call('Page.getFrameTree'),inventory=(await c.call('Target.getTargets')).targetInfos,dom=await c.evaluate('(()=>{const layer=document.getElementById('+JSON.stringify(id)+');return {ready:document.readyState,url:location.href,layer:!!layer,frame:layer?.shadowRoot?.querySelector("iframe")?.src}})()');throw Error('壁纸沙箱 iframe 未导航：'+JSON.stringify({dom,tree:tree.frameTree,targets:inventory.filter(t=>t.type==='iframe')}));}
-  ({executionContextId:contextId}=await c.call('Page.createIsolatedWorld',{frameId:frame.id,worldName:id},sessionId));
+  mark('frameReady');({executionContextId:contextId}=await c.call('Page.createIsolatedWorld',{frameId:frame.id,worldName:id},sessionId));
   await c.call('Runtime.addBinding',{name:binding,executionContextId:contextId},sessionId);
   listener=event=>{let msg;try{msg=JSON.parse(event.data);}catch{return;}if(msg.method!=='Runtime.bindingCalled'||msg.params.name!==binding||msg.sessionId!==sessionId||msg.params.executionContextId!==contextId)return;
-   let request;try{request=JSON.parse(msg.params.payload);}catch{return;}if(!Number.isInteger(request.id)||pending.has(request.id))return;if(pending.size>=512){evaluate('__cwbWebGL.complete('+request.id+',"壁纸资源请求过多");true').catch(()=>{});return;}pending.add(request.id);
-   transferQueue=transferQueue.then(async()=>{const handle=binding+'-'+request.id;try{
+   let request;try{request=JSON.parse(msg.params.payload);}catch{return;}if(request.status==='renderer-ready'){noticeReady();return;}if(!Number.isInteger(request.id)||pending.has(request.id))return;if(pending.size>=512){evaluate('__cwbWebGL.complete('+request.id+',"壁纸资源请求过多");true').catch(()=>{});return;}pending.add(request.id);
+   const queuedAt=performance.now();startup.resources.requests++;
+   transferQueue=transferQueue.then(async()=>{startup.resources.queueMs+=performance.now()-queuedAt;const handle=binding+'-'+request.id;try{
     if(closed)return;assertCurrent();const metadata=await reader.metadata(request.name);if(!metadata){await evaluate('__cwbWebGL.complete('+request.id+',null,null);true');return;}
     const key=createHash('sha256').update(JSON.stringify([reader.root,request.name,metadata.etag])).digest('hex'),info={rendererId:id,token:controlToken,id:request.id};
-    if(await cacheCall('cached',[key,metadata.size,info]))return;
-    if(closed)return;await transferSceneResource(c,reader,request.name,metadata,{handle,key,isCurrent:()=>!closed&&(adopted||isCurrent())});
+    if(await cacheCall('cached',[key,metadata.size,info])){startup.resources.cacheHits++;return;}
+    if(closed)return;const transferStart=performance.now();await transferSceneResource(c,reader,request.name,metadata,{handle,key,isCurrent:()=>!closed&&(adopted||isCurrent())});startup.resources.transferMs+=performance.now()-transferStart;
     if(!closed)await cacheCall('complete',[handle,info]);
    }catch(error){await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(handle)+');true').catch(()=>{});if(!closed)await evaluate('__cwbWebGL.complete('+request.id+','+JSON.stringify(error.message)+');true').catch(()=>{});}finally{pending.delete(request.id);if(!pending.size)setImmediate(()=>global.gc?.());}}).catch(()=>{});
   };c.ws.addEventListener('message',listener);
-  const runtimeSource=codexRuntimeSource(engine);await evaluate(runtimeSource.source);await evaluate('globalThis.__cwbFrameFreeze='+installFrameFreeze.toString()+';true');await evaluate('('+initializeRenderer.toString()+')('+JSON.stringify(reader.project)+','+JSON.stringify({fps:entry.limits?.fps||24,maxWidth:entry.limits?.maxWidth||1280,renderDpr:entry.limits?.exactResolution?2:undefined,fontBuffers:runtimeSource.fontBuffers,fontAdapterExpected:engine.includes('new FontFace('),scripts:entry.scripts===true,quality:entry.quality,properties,videoTexScale:entry.videoTexScale,audioResponse:config.systemMedia?.audio===true,key:entry.workshopId||entry.id,controlToken})+','+JSON.stringify(binding)+','+JSON.stringify(dshSource)+')');
+  const runtimeSource=codexRuntimeSource(engine);await evaluate(runtimeSource.source+'\n;globalThis.__cwbFrameFreeze='+installFrameFreeze.toString()+';('+initializeRenderer.toString()+')('+JSON.stringify(reader.project)+','+JSON.stringify({fps:entry.limits?.fps||24,maxWidth:entry.limits?.maxWidth||1280,renderDpr:entry.limits?.exactResolution?2:undefined,fontBuffers:runtimeSource.fontBuffers,fontAdapterExpected:engine.includes('new FontFace('),scripts:entry.scripts===true,quality:entry.quality,properties,videoTexScale:entry.videoTexScale,audioResponse:config.systemMedia?.audio===true,key:entry.workshopId||entry.id,controlToken})+','+JSON.stringify(binding)+','+JSON.stringify(dshSource)+')');mark('engineInitialized');
   const end=Date.now()+90000;let sample;
-  while(Date.now()<end){assertCurrent();sample=await evaluate('__cwbWebGL.sample()');if(sample.error)throw Error(sample.error);if(sample.ready&&sample.width>0)break;await sleep(200);}
+  while(Date.now()<end){assertCurrent();sample=await evaluate('__cwbWebGL.sample()');if(sample.error)throw Error(sample.error);if(sample.ready&&sample.width>0)break;await waitForReady();}
   if(!sample?.ready||!sample.width)throw Error('WebWallGL 等待首帧超时');
+  mark('rendererReady');
  const player={id,entryId:entry.id,reader,async assetStats(){return c.evaluate('({...window.__cwbSceneResources.stats})');},async sample(){return evaluate('__cwbWebGL.sample()');},async graphics(){return evaluate('(()=>{const canvas=document.querySelector("#wp canvas"),gl=canvas.getContext("webgl2")||canvas.getContext("webgl"),ext=gl?.getExtension("WEBGL_debug_renderer_info");return {vendor:ext?gl.getParameter(ext.UNMASKED_VENDOR_WEBGL):null,renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):null,lost:gl?.isContextLost()}})()');},async setSystemSpectrum(payload){const systemSpectrum={audioAvailable:payload.audioAvailable===true,bands:(payload.bands||[]).slice(0,64).map(n=>Math.max(0,Math.min(255,Number(n)||0)))};return c.evaluate('document.querySelector('+JSON.stringify('[data-cwb-renderer-id="'+id+'"]')+').shadowRoot.querySelector("iframe").contentWindow.postMessage('+JSON.stringify({token:controlToken,systemSpectrum})+',"*");true');},async signature(){const result=await c.call('Runtime.evaluate',{expression:'new Promise(resolve=>requestAnimationFrame(()=>resolve(document.querySelector("#wp canvas").toDataURL())))',awaitPromise:true,returnByValue:true,contextId},sessionId);return result.result?.value;},async pause(value){return evaluate('__cwbWebGL.pause('+!!value+');true');},async setProperties(values){return evaluate('__cwbWebGL.instance.setProperties('+JSON.stringify(values)+');JSON.parse(JSON.stringify(__cwbWebGL.instance.getProperties()))');},async getProperties(){return evaluate('__cwbWebGL.instance.getProperties()');},async setFps(fps){return evaluate('__cwbWebGL.instance.setFps('+Number(fps)+');__cwbWebGL.configuredFps='+Number(fps)+';true');},async pointer(u,v,buttons=0){return evaluate('__cwbWebGL.instance.pushPointer('+u+','+v+','+buttons+');true');},dispose:cleanup};
-  if(probe)return player;
+  player.startup=startup;if(probe)return player;
   const palette=await evaluate('(()=>{try{const tiny=document.createElement("canvas");tiny.width=tiny.height=8;const ctx=tiny.getContext("2d");ctx.drawImage(document.querySelector("#wp canvas"),0,0,8,8);const d=ctx.getImageData(0,0,8,8).data;let r=0,g=0,b=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2]}r/=64;g/=64;b/=64;const dark=.2126*r+.7152*g+.0722*b<145,t=v=>Math.round(dark?v*.18:220+v*.12);return {r:t(r),g:t(g),b:t(b),dark}}catch{return null}})()');
   assertCurrent();const accepted=await c.evaluate('('+adoptRenderer.toString()+')('+JSON.stringify({selectionStamp,entryId:entry.id,id,url:candidate.url,controlToken,palette:palette||config.palette,fps:entry.limits?.fps||24,type:reader.project.type,pauseOnBlur:!!config.pauseOnBlur,supportsAudio:reader.project.general?.supportsaudioprocessing!==false})+')');
-  if(!accepted)throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});adopted=true;
+  if(!accepted)throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});adopted=true;mark('adopted');
   // cleanup must target the adopted layer after a successful swap.
   player.dispose=cleanup;
   return player;

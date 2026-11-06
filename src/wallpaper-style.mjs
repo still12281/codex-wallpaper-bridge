@@ -2,7 +2,16 @@ export function paintShell(config){
  const state=window.__codexWallpaperBridge;if(!state?.ready)return false;
  const palette=config.palette||{r:30,g:38,b:49,dark:true};
  const dark=palette.dark;
- document.documentElement.setAttribute('data-theme',dark?'dark':'light');document.documentElement.classList.toggle('dark',dark);document.documentElement.style.colorScheme=dark?'dark':'light';
+ // Native hydration can replace data-theme after the first wallpaper frame.
+ // Align theme signals without delaying paint or replacing semantic colours.
+ if(!window.__cwbThemeGuard){
+  const html=document.documentElement,original={theme:html.getAttribute('data-theme'),dark:html.classList.contains('dark'),scheme:html.style.getPropertyValue('color-scheme'),priority:html.style.getPropertyPriority('color-scheme')};
+  let wanted=dark,disposed=false;
+  const apply=()=>{if(disposed||!window.__codexWallpaperBridge?.ready)return;const theme=wanted?'dark':'light';if(html.getAttribute('data-theme')!==theme)html.setAttribute('data-theme',theme);if(html.classList.contains('dark')!==wanted)html.classList.toggle('dark',wanted);if(html.style.colorScheme!==theme)html.style.colorScheme=theme;};
+  const observer=new MutationObserver(apply);observer.observe(html,{attributes:true,attributeFilter:['data-theme','class','style']});
+  window.__cwbThemeGuard={update(value){wanted=!!value;apply();},dispose(){if(disposed)return;disposed=true;observer.disconnect();if(original.theme===null)html.removeAttribute('data-theme');else html.setAttribute('data-theme',original.theme);html.classList.toggle('dark',original.dark);if(original.scheme)html.style.setProperty('color-scheme',original.scheme,original.priority);else html.style.removeProperty('color-scheme');delete window.__cwbThemeGuard;}};
+ }
+ window.__cwbThemeGuard.update(dark);
  const shade=[palette.r,palette.g,palette.b].join(',');
  const ink=dark?'#e9eff5':'#15212c',secondary=dark?'#b8c5d1':'#405262';
  const overlay=dark?config.darkOverlay:config.lightOverlay;

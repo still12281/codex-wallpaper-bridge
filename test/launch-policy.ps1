@@ -73,3 +73,8 @@ Assert-Policy ((Get-WallpaperFailureRecovery -CreatedVerifiedClient $false) -eq 
 Assert-Policy ((Get-WallpaperFailureRecovery -CreatedVerifiedClient $true) -eq 'reopen-normal-client') 'Owned failed launch lost ordinary recovery'
 Assert-Policy ((Get-WallpaperFailureRecovery -CreatedVerifiedClient $true -Remaining @($snapshot)) -eq 'existing-client-preserved') 'Failure replaced a remaining client'
 Write-Output 'PASS: bounded shutdown drain, helper-only leftovers, new-main/PID-reuse preservation and recovery only after a verified owned launch.'
+$script:slowReads=0
+$drained=Wait-WallpaperStartupDrain -Initial @($snapshot) -TimeoutMilliseconds 1 -Pause {throw 'Deadline was ignored'} -ReadSnapshot {
+  $script:slowReads++;Start-Sleep -Milliseconds 5;$snapshot
+}
+Assert-Policy ($drained.reason -eq 'client-still-running' -and $script:slowReads -eq 1) 'Slow snapshot costs were excluded from the shutdown deadline'

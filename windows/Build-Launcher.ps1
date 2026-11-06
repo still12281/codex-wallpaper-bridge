@@ -1,11 +1,14 @@
 [CmdletBinding()]
-param([switch]$NoIcon)
+param([switch]$NoIcon,[switch]$SupportOnly)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Runtime.ps1')
 $buildDataRoot = Get-WallpaperDataRoot
 $buildRepoRoot = Split-Path -Parent $PSScriptRoot
 $buildCompiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 if (-not (Test-Path -LiteralPath $buildCompiler)) { throw '.NET Framework C# compiler not found' }
+. (Join-Path $PSScriptRoot 'StartupSupport.ps1')
+Build-WallpaperStartupSupport -Root $buildDataRoot
+if($SupportOnly){Write-Output "Built optional startup support in $buildDataRoot; entry/client unchanged.";return}
 $buildArguments = @('/nologo','/target:winexe','/platform:x64','/reference:System.Web.Extensions.dll','/reference:System.Windows.Forms.dll',('/out:' + (Join-Path $buildDataRoot 'CodexEntry.exe')),(Join-Path $PSScriptRoot 'TaskbarIdentity.cs'))
 if (-not $NoIcon) {
   . (Join-Path $buildRepoRoot 'vendor/codex-dynamic-skin/scripts/common-windows.ps1')

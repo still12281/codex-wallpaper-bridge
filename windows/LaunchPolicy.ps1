@@ -1,4 +1,14 @@
 # Keep launch policy independent of package version and of the wallpaper profile.
+if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'StartupSupport.ps1')){. (Join-Path $PSScriptRoot 'StartupSupport.ps1')}
+function Get-WallpaperTcpListeners([int]$Port) {
+  if(-not ('CodexWallpaperBridge.TcpListeners' -as [type])){
+    $cached=(Get-Command Import-WallpaperStartupSupport -ErrorAction SilentlyContinue) -and (Import-WallpaperStartupSupport 'CodexWallpaperBridge.TcpListeners')
+    if(-not $cached){Add-Type -Path (Join-Path $PSScriptRoot 'TcpListeners.cs') -ErrorAction Stop}
+  }
+  # Read fresh IPv4/IPv6 owner tables on EVERY call; never cache listener identity.
+  @([CodexWallpaperBridge.TcpListeners]::Read($Port))
+}
+
 function Get-WallpaperRegisteredCodex {
   $installed=@(Get-DreamSkinRegisteredCodexInstalls | Where-Object {$_.PackageFamilyName -ceq 'OpenAI.Codex_2p2nqsd0c76g0' -and $_.SignatureKind -eq 'Store'})
   if(-not $installed.Count){throw 'The verified official OpenAI.Codex package is not installed for this user.'}
@@ -50,6 +60,45 @@ function Select-WallpaperOwnedHosts([object[]]$Processes,[string]$Root,[string]$
   @($Processes | Where-Object {$_.Name -ieq 'node.exe' -and (Test-WallpaperHostScript $_.CommandLine $Root $CodeRoot)})
 }
 
+function Get-WallpaperHostState {
+  param([object[]]$Processes,[string]$Root,[string]$CodeRoot,[string]$Node,[string]$BrowserId)
+  $owned=@(Select-WallpaperOwnedHosts $Processes $Root $CodeRoot)
+  if(-not $owned.Count){return [pscustomobject]@{mode='absent';pid=0}}
+  if($owned.Count -eq 1){
+    try{
+      $record=Get-Content -LiteralPath (Join-Path $Root 'runtime-status.json') -Raw -ErrorAction Stop|ConvertFrom-Json -ErrorAction Stop
+      if((Get-WallpaperHostDecision $owned[0] $record $Root $CodeRoot $Node $BrowserId) -eq 'reuse'){
+        return [pscustomobject]@{mode='reuse';pid=[int]$owned[0].ProcessId}
+      }
+    }catch{}
+  }
+  [pscustomobject]@{mode='conflict';pid=0}
+}
+
+function Wait-WallpaperHostDrain {
+  param([scriptblock]$ReadState,[int]$TimeoutMilliseconds=14000,[scriptblock]$Pause={Start-Sleep -Milliseconds 250})
+  $clock=[Diagnostics.Stopwatch]::StartNew()
+  do{
+    $state=& $ReadState
+    if($state.mode -ne 'conflict' -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds){return $state}
+    & $Pause
+  }while($true)
+}
+
+function Select-WallpaperReadyTargets {
+  param([object[]]$Targets,[string]$MainTarget)
+  $usable=@($Targets | Where-Object {$_.installed -and ($_.ready -or $_.disabled) -and ($_.mode -ne 'realtime' -or $_.frames -gt 0)})
+  $isMain={if($MainTarget){$_.targetId -eq $MainTarget}else{$_.url -eq 'app://-/index.html'}}
+  $ready=@($usable | Where-Object $isMain);$deferred=$false
+  # This phase is emitted only after the host reads document.hidden=true.
+  $hiddenMain=@($Targets | Where-Object $isMain | Where-Object phase -eq 'waiting-for-visible-page')
+  if(-not $ready.Count -and $hiddenMain.Count){
+    $ready=@($usable | Where-Object {$_.hidden -eq $false -and $_.url -like 'app://-/detached-window.html*'})
+    $deferred=$ready.Count -gt 0
+  }
+  [pscustomobject]@{targets=$ready;mainDeferred=$deferred}
+}
+
 function Select-WallpaperCodexProcesses([object[]]$Processes,[int]$SessionId) {
   foreach($candidate in @($Processes | Where-Object {$_.Name -ieq 'ChatGPT.exe' -and [int]$_.SessionId -eq $SessionId})){
     if(-not $candidate.ExecutablePath){throw '无法确认现有 ChatGPT 进程的路径，已停止启动，避免重复实例。'}
@@ -85,7 +134,8 @@ function Get-WallpaperDebugArguments([int]$Port) {
 # process belongs to another activation and must be preserved immediately.
 function Wait-WallpaperStartupDrain {
   param([object[]]$Initial,[scriptblock]$ReadSnapshot,[int]$Checks=48,
-    [scriptblock]$Pause={Start-Sleep -Milliseconds 250})
+    [scriptblock]$Pause={Start-Sleep -Milliseconds 250},[int]$TimeoutMilliseconds=12000)
+  $clock=[Diagnostics.Stopwatch]::StartNew()
   $identities=@($Initial | ForEach-Object {'{0}|{1}|{2}' -f $_.Id,$_.Created,$_.Path})
   for($index=0;$index -le $Checks;$index++){
     $current=@(& $ReadSnapshot)
@@ -93,7 +143,7 @@ function Wait-WallpaperStartupDrain {
     $newMains=@($mains | Where-Object {('{0}|{1}|{2}' -f $_.Id,$_.Created,$_.Path) -notin $identities})
     if($newMains.Count){return [pscustomobject]@{reason='new-client-preserved';remaining=$current}}
     if(-not $current.Count){return [pscustomobject]@{reason='exit-completed';remaining=@()}}
-    if($index -eq $Checks){return [pscustomobject]@{reason=$(if($mains.Count){'client-still-running'}else{'helpers-only'});remaining=$current}}
+    if($index -eq $Checks -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds){return [pscustomobject]@{reason=$(if($mains.Count){'client-still-running'}else{'helpers-only'});remaining=$current}}
     & $Pause
   }
 }
@@ -119,7 +169,7 @@ function Get-WallpaperCdpProbePorts([string]$Root) {
   @($ports+@(9335)|Select-Object -Unique)
 }
 function Get-WallpaperVerifiedEndpoint {
-  param([int]$Port,$Codex)
+  param([int]$Port,$Codex,[switch]$AllowPendingPage)
   $listeners=@(Get-DreamSkinPortListeners -Port $Port)
   if(-not $listeners.Count -or @($listeners|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count){return $null}
   $owners=@($listeners.OwningProcess|Select-Object -Unique)
@@ -128,8 +178,17 @@ function Get-WallpaperVerifiedEndpoint {
   $session=(Get-Process -Id $PID -ErrorAction Stop).SessionId
   if(-not $owner -or $owner.SessionId -ne $session -or $owner.CommandLine -match '--type=|--monitor-self' -or
     -not (Test-DreamSkinPathEqual -Left "$($owner.ExecutablePath)" -Right "$($Codex.Executable)")){return $null}
-  $identity=Get-DreamSkinVerifiedCdpIdentity -Port $Port -Codex $Codex
-  if(-not $identity){return $null}
+  # A newly created, owned browser can expose CDP before its app page exists.
+  # The host waits for the exact app URL; do not delay host startup for UI boot.
+  $browser=Get-DreamSkinCdpBrowserIdentity -Port $Port
+  if(-not $browser){return $null}
+  $targets=if($AllowPendingPage){@()}else{@(Get-DreamSkinCdpTargets -Port $Port)}
+  if(-not $AllowPendingPage -and -not $targets.Count){return $null}
+  $identity=[pscustomobject]@{BrowserId=$browser.BrowserId;BrowserWebSocketDebuggerUrl=$browser.WebSocketDebuggerUrl;Browser=$browser.Browser;TargetCount=$targets.Count}
+  $afterListeners=@(Get-DreamSkinPortListeners -Port $Port)
+  $afterOwners=@($afterListeners.OwningProcess|Select-Object -Unique)
+  if(-not $afterListeners.Count -or @($afterListeners|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count -or
+    $afterOwners.Count -ne 1 -or $afterOwners[0] -ne $owners[0]){return $null}
   $fresh=Get-CimInstance Win32_Process -Filter "ProcessId = $([int]$owners[0])" -ErrorAction SilentlyContinue
   if(-not $fresh -or $fresh.CreationDate -ne $owner.CreationDate -or $fresh.SessionId -ne $session -or $fresh.ExecutablePath -ine $owner.ExecutablePath){return $null}
   $native=$null
@@ -151,6 +210,47 @@ function Select-WallpaperCdpEndpoint {
   }
   foreach($port in $Candidates){if(& $Available $port){return [pscustomobject]@{port=$port;identity=$null;reason=$(if($port -eq 9335){'default-port-available'}else{'occupied-port-preserved'})}}}
   throw '壁纸连接候选端口 9335–9354 均不可用；未结束或修改任何占用进程。'
+}
+
+# Only for a root already verified by Get-WallpaperVerifiedEndpoint in this
+# bootstrap. A retained OS handle keeps identity stable even if a PID is reused.
+function Get-WallpaperReverifiedEndpoint {
+  param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex)
+  $sameRoot={
+    try{
+      [void]$Process.Handle
+      $Process.Refresh()
+      $matches=-not $Process.HasExited -and $Process.Id -eq $Identity.RootProcessId -and
+        $Process.SessionId -eq $Identity.SessionId -and
+        $Process.StartTime.ToUniversalTime().ToString('o') -ceq $Identity.RootCreatedAtUtc -and
+        $Process.MainModule.FileName -ieq $Identity.RootExecutable -and
+        $Identity.RootExecutable -ieq $Codex.Executable
+      return $matches -and -not $Process.HasExited
+    }catch{return $false}
+  }
+  $sameListener={
+    $rows=@(Get-DreamSkinPortListeners -Port $Port)
+    $owners=@($rows.OwningProcess|Select-Object -Unique)
+    return $rows.Count -gt 0 -and -not @($rows|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count -and
+      $owners.Count -eq 1 -and $owners[0] -eq $Identity.RootProcessId
+  }
+  if(-not (& $sameRoot) -or -not (& $sameListener)){return $null}
+  $browser=Get-DreamSkinCdpBrowserIdentity -Port $Port
+  if(-not $browser -or $browser.BrowserId -cne $Identity.BrowserId){return $null}
+  if(-not (& $sameListener) -or -not (& $sameRoot)){return $null}
+  return $Identity
+}
+
+function Get-WallpaperKnownRootEndpoint {
+  param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex,[switch]$HasRetainedHandle,[switch]$AllowPendingPage)
+  # A less-privileged entry may be able to inspect a process but not retain its
+  # full Process.Handle. Keep the original complete verification in that case.
+  $verified=if($HasRetainedHandle){Get-WallpaperReverifiedEndpoint -Process $Process -Identity $Identity -Port $Port -Codex $Codex}
+    else{Get-WallpaperVerifiedEndpoint -Port $Port -Codex $Codex -AllowPendingPage:$AllowPendingPage}
+  if(-not $verified -or $verified.RootProcessId -ne $Identity.RootProcessId -or
+    $verified.RootCreatedAtUtc -cne $Identity.RootCreatedAtUtc -or $verified.RootExecutable -ine $Identity.RootExecutable -or
+    $verified.SessionId -ne $Identity.SessionId -or $verified.BrowserId -cne $Identity.BrowserId){return $null}
+  return $verified
 }
 function Get-WallpaperVerifiedEndpointForAnyRegistered([string]$Root) {
   foreach($port in @(Get-WallpaperCdpProbePorts $Root)){

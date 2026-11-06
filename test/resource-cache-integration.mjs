@@ -17,16 +17,17 @@ let c;const result={kind:'isolated-cache-delivery-order-and-byte-integrity'},sle
 const until=async fn=>{for(let n=0;n<100;n++){try{if(await fn())return}catch{}await sleep(25)}throw Error('Cache fixture timeout')};
 try{
  await until(async()=>{const target=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url);if(target){c=await connectCdp(target.webSocketDebuggerUrl);return true}});
+ await until(()=>c.evaluate('location.href==='+JSON.stringify(url)+'&&document.readyState==="complete"&&!!document.body'));
  await c.evaluate(`(()=>{
   const layer=document.createElement('div');layer.dataset.cwbRendererId='fixture';const frame=document.createElement('iframe');layer.attachShadow({mode:'open'}).append(frame);document.body.append(layer);
   window.__cacheRows=new Map();window.__cacheGate=new Promise(r=>window.__releaseCache=r);window.__cacheWritten=false;
   Object.defineProperty(window,'caches',{value:{open:async()=>({keys:async()=>[],match:async key=>__cacheRows.get(key)?.clone(),delete:async()=>true,put:async(key,response)=>{await __cacheGate;__cacheRows.set(key,response.clone());__cacheWritten=true;}})},configurable:true});
-  window.__delivery=[];addEventListener('message',e=>{if(e.source===frame.contentWindow&&e.data?.received)window.__delivery.push(e.data.received)});
-  frame.srcdoc='<script>addEventListener("message",e=>{if(e.data.resource)parent.postMessage({received:Array.from(e.data.resource.bytes.slice(0,4))},"*")})<\/script>';
+  window.__delivery=[];window.__cacheFrameReady=false;addEventListener('message',e=>{if(e.source!==frame.contentWindow)return;if(e.data?.ready)window.__cacheFrameReady=true;if(e.data?.received)window.__delivery.push(e.data.received)});
+  frame.srcdoc='<script>addEventListener("message",e=>{if(e.data.resource)parent.postMessage({received:Array.from(e.data.resource.bytes.slice(0,4))},"*")});parent.postMessage({ready:true},"*")<\/script>';
   window.__file=new File([new Uint8Array([4,3,2,1])],'fixture.pkg',{lastModified:1234});
   return true;
  })()`);
- await sleep(100);await c.evaluate('('+installSceneResourceCache.toString()+')();true');
+ await until(()=>c.evaluate('__cacheFrameReady'));await c.evaluate('('+installSceneResourceCache.toString()+')();true');
  const call=async expr=>{const r=await c.call('Runtime.evaluate',{expression:expr,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.text);return r.result.value};
  const key='a'.repeat(64),info={rendererId:'fixture',id:1,token:'fixture'};
  await call('__cwbSceneResources.readFile("first",'+JSON.stringify(key)+',__file,4,1234)');

@@ -1,5 +1,8 @@
 function Import-WallpaperCleanProcess {
-  if(-not ('WallpaperCleanProcess' -as [type])){Add-Type -Path (Join-Path $PSScriptRoot 'CleanProcess.cs') -ErrorAction Stop}
+  if(-not ('WallpaperCleanProcess' -as [type])){
+    $cached=(Get-Command Import-WallpaperStartupSupport -ErrorAction SilentlyContinue) -and (Import-WallpaperStartupSupport 'WallpaperCleanProcess')
+    if(-not $cached){Add-Type -Path (Join-Path $PSScriptRoot 'CleanProcess.cs') -ErrorAction Stop}
+  }
 }
 function Start-WallpaperCleanProcess {
   param([Parameter(Mandatory)][string]$FilePath,[string[]]$ArgumentList=@(),[string]$WorkingDirectory,[switch]$Hidden,[string]$StandardOutput,[string]$StandardError)

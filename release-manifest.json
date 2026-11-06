@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2230,
-      "sha256": "0ec48f5dd0b4b6dbef8564efcfbea48a3f262827ae3b9323c84bf31d73f56927"
+      "utf8Bytes": 2299,
+      "sha256": "6ad0f312a3e785a24366f14b36dea43738e1f14e1dcf691ff238cbbda3c8a403"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 12446,
-      "sha256": "b8d7652d12875d3d1be1bd88b9797acd6e5485799a5b7e101f50c2a0cd602f1b"
+      "utf8Bytes": 15762,
+      "sha256": "f8d69e601b71ac45c6abeca2563322ad5ef72ea7a4576a42cda3edf22abe0a72"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -395,8 +395,8 @@
     },
     {
       "path": "src/cdp-client.mjs",
-      "utf8Bytes": 1673,
-      "sha256": "ea1feb1e2e5d06dafadd3f6eadd55ad38335f4b454c8340168b7ac7bbb44107f"
+      "utf8Bytes": 1937,
+      "sha256": "62053cbd97f15025fb1801cc3113da6ddb0f1d3fb0bfcff25543520214d80db3"
     },
     {
       "path": "src/cdp-pipe.mjs",
@@ -515,8 +515,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 41173,
-      "sha256": "9963e14c55fbf25324702ff3b2bc27bf140f129c24c17be82ba6c1adb2a21bd8"
+      "utf8Bytes": 42226,
+      "sha256": "2b2565c779f28b38b8a6430e5d82921083ac7d43e4552b559d04c7e28853fbe7"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -545,8 +545,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 12222,
-      "sha256": "50a06a01d78ee313b87de14d0ceefea30139866676ca8e3467787a934fa2c35f"
+      "utf8Bytes": 13454,
+      "sha256": "7dd66975473cae5492a502b3a5e36d9e3c78c0d2982dfc2a2697d36b22854b10"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -555,8 +555,8 @@
     },
     {
       "path": "src/webwallgl-player.mjs",
-      "utf8Bytes": 21235,
-      "sha256": "fba504f7fff6299be142698c07085853093876ee5c7be7c53c09c2eaf3f7d902"
+      "utf8Bytes": 22219,
+      "sha256": "75c4c40960a26f1d522379af500de197ef6cfd1bcda05d2fd91aa7790aec559f"
     },
     {
       "path": "src/webwallgl-runtime.mjs",
@@ -589,9 +589,14 @@
       "sha256": "d8697c54830bf20e62921e0bf58b6f04e21585a054936e5b358df526c2f8c8d6"
     },
     {
+      "path": "test/cdp-client.test.mjs",
+      "utf8Bytes": 1111,
+      "sha256": "a400a49c9b1a114e523226155501ee710729efab7334c7e76899f8d15e36883c"
+    },
+    {
       "path": "test/cdp-endpoint.ps1",
-      "utf8Bytes": 5781,
-      "sha256": "a71726007d2e83e5477e27b4b2de76fa1d6942892fa9e9f106200a4aaad71b90"
+      "utf8Bytes": 9420,
+      "sha256": "1c5d187d99f8cd3aa9e2dbebd8f9cbb63fb064e90ae3b9bf38de8d1f9b4645b9"
     },
     {
       "path": "test/clean-process.ps1",
@@ -622,6 +627,11 @@
       "path": "test/fixtures/socket-inheritance.cs",
       "utf8Bytes": 3520,
       "sha256": "0b6d2d506c8d4de900013d722c85b25e4c2d4cc9d1a7d0578e810b210b68403b"
+    },
+    {
+      "path": "test/host-handoff.ps1",
+      "utf8Bytes": 5850,
+      "sha256": "063d2de00362f4c28916f180c6962b76ec254503bc71e025242014f95119ab6b"
     },
     {
       "path": "test/import-cancellation.test.mjs",
@@ -675,8 +685,8 @@
     },
     {
       "path": "test/launch-policy.ps1",
-      "utf8Bytes": 6983,
-      "sha256": "82783b950fb85f6c2f42f9e7bb89a3a28fcbff1809993f600887d8cc73ae4f7f"
+      "utf8Bytes": 7351,
+      "sha256": "038402df8bce364ae6bd3c5aedf656aa635aba4287f7b790bdcae5e4e7e15ea0"
     },
     {
       "path": "test/launcher-runtime.ps1",
@@ -755,8 +765,13 @@
     },
     {
       "path": "test/resource-cache-integration.mjs",
-      "utf8Bytes": 8204,
-      "sha256": "d672c3114994779fe90e452239a549baa6ac3d9130eca4af835c9444eeadd400"
+      "utf8Bytes": 8484,
+      "sha256": "bfc861af6b570cff82a62f35bac115a0d959d634efe0c66f2241e7315a0dafb5"
+    },
+    {
+      "path": "test/root-revalidation.ps1",
+      "utf8Bytes": 5109,
+      "sha256": "1cc2451c1965a9612009d3c63cd9f1d69f95f43bacd4ff93390f6d41bc6a928c"
     },
     {
       "path": "test/rotation-host-integration.mjs",
@@ -770,13 +785,18 @@
     },
     {
       "path": "test/startup-priority-integration.mjs",
-      "utf8Bytes": 7050,
-      "sha256": "bb1733eee1a0f4a07ecfd7a3beecf337aaae8eef138e84600e166c9006abcc02"
+      "utf8Bytes": 12861,
+      "sha256": "1b5db1ef797f62b595d6fad97ceef96846c3942f3a8efa2e70501d51d3999d3d"
     },
     {
       "path": "test/startup-shutdown.ps1",
-      "utf8Bytes": 5276,
-      "sha256": "b62ef8e4321f16857491ce9e54838d50a908e04c6d025e058484eb04b66b8d10"
+      "utf8Bytes": 6489,
+      "sha256": "b160b4eab2ca33bbdbd6c71aa88a2fa25a66b84ccd87c5da019e37a4716d68bc"
+    },
+    {
+      "path": "test/startup-support.ps1",
+      "utf8Bytes": 3632,
+      "sha256": "4d719e04bb4237a6f8b2d0bbf8923ffe23333a71f0cb9bd2d8243c5f4906411a"
     },
     {
       "path": "test/surfaces.test.mjs",
@@ -787,6 +807,11 @@
       "path": "test/system-media.test.mjs",
       "utf8Bytes": 4551,
       "sha256": "f3a48ae1ba3881f9515f132db2a001adfd7618599efb603ded4b538d948e33c1"
+    },
+    {
+      "path": "test/tcp-listeners.ps1",
+      "utf8Bytes": 1172,
+      "sha256": "4c8f6b7e88055c836b5aa90cffd7107a793123e5dc27a46aeef0e071ed97e2bb"
     },
     {
       "path": "test/update-reconnect.ps1",
@@ -970,8 +995,8 @@
     },
     {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 2605,
-      "sha256": "c6f25c6889a61314b39c9221d6fd0506892024386f6c5c1e9964e6d1cc4195d5"
+      "utf8Bytes": 2840,
+      "sha256": "4ea5b5e3507dd1e2ad006dc3d7f6fd1574e74a8fc01336e1209f189326bf540c"
     },
     {
       "path": "windows/CleanProcess.cs",
@@ -980,8 +1005,8 @@
     },
     {
       "path": "windows/CleanProcess.ps1",
-      "utf8Bytes": 1222,
-      "sha256": "946312d2ee24e4497c861bdd17e75b7b845f0d8f94fde521a083dacbfc0c1423"
+      "utf8Bytes": 1397,
+      "sha256": "a441e8517489e94804aaf4e2fa45a80ffe1d56efb41117ccb4dfc89a54054235"
     },
     {
       "path": "windows/ClientWindow.cs",
@@ -992,6 +1017,11 @@
       "path": "windows/CodexEntry.cs",
       "utf8Bytes": 7551,
       "sha256": "69edfc1964b24f4de762072f4f1ceeb5a79c9899118b9652b2b3be5f41b202a1"
+    },
+    {
+      "path": "windows/FastTcp.ps1",
+      "utf8Bytes": 181,
+      "sha256": "ad965d325c1d63f585a5eaa52dc7fd17b83bd11f116c2fb58fcb790b79ed0e11"
     },
     {
       "path": "windows/Install-UpdateReconnect.ps1",
@@ -1010,8 +1040,8 @@
     },
     {
       "path": "windows/LaunchPolicy.ps1",
-      "utf8Bytes": 11517,
-      "sha256": "8546e703635ce5d17e44953c345e489a461ad8d3d84df6a160d8a09daeb38c66"
+      "utf8Bytes": 17258,
+      "sha256": "0f7e133434bc193154309b1fecd758d86a6d2e1afd6d0e0fdd1dcd0275a86e76"
     },
     {
       "path": "windows/LoginStartup.ps1",
@@ -1070,8 +1100,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 21920,
-      "sha256": "eab79fbb410d8eb0f90a614f4e325bfe31c2ccbf1d2f691eaca2a1e16f95adf3"
+      "utf8Bytes": 24215,
+      "sha256": "4519700600fde9f72bcaa823c7b6df5477f149de7d1bb1056769f2e8eb6a91aa"
     },
     {
       "path": "windows/Start-ExternalApp.ps1",
@@ -1084,9 +1114,19 @@
       "sha256": "c1a71f4e46de6b719fb4a5ec52ca0789294a7815459c0461aa456f43a05c691b"
     },
     {
+      "path": "windows/StartupSupport.ps1",
+      "utf8Bytes": 2931,
+      "sha256": "3ede5e5580dab0716239724a57007aaf921b498f4dcf6c6437435dd46e8dbfeb"
+    },
+    {
       "path": "windows/TaskbarIdentity.cs",
       "utf8Bytes": 5142,
       "sha256": "b331ed0d6482e39dc833a0e30f86777baa2557607207d3aafd6f76fbf170637c"
+    },
+    {
+      "path": "windows/TcpListeners.cs",
+      "utf8Bytes": 2587,
+      "sha256": "01cfc34653d74be2b197ce5115592aaa565abb64e6730d0b2e68806ef62b524a"
     },
     {
       "path": "windows/UpdateReconnectPolicy.ps1",
