@@ -28,6 +28,7 @@ $blocked=$false;try{Assert-WallpaperClientAbsent @($old,$new,$child) 101}catch{$
 Assert-Policy $blocked 'CDP owner reuse hid a second root'
 $unknown=Client '26.1021.3705.0' 106
 $unknown.ExecutablePath=$null
+$unknown.ProcessId=$PID # A live unreadable/mismatched identity must block; a gone fixture PID may now drain safely.
 $blocked=$false;try{Select-WallpaperCodexProcesses @($unknown) 1}catch{$blocked=$true}
 Assert-Policy $blocked 'Unreadable identity was ignored'
 $arguments=@(Get-WallpaperDebugArguments 9335)

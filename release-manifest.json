@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2299,
-      "sha256": "6ad0f312a3e785a24366f14b36dea43738e1f14e1dcf691ff238cbbda3c8a403"
+      "utf8Bytes": 2334,
+      "sha256": "28e7272b4abaae630fc5cd96a64f73487142e1cc1c8b877841c39b30b5d50259"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 15762,
-      "sha256": "f8d69e601b71ac45c6abeca2563322ad5ef72ea7a4576a42cda3edf22abe0a72"
+      "utf8Bytes": 16295,
+      "sha256": "7425a9acb4103a33cc052e8c859c9e4c3762e7a0e96f856970ef5cacb83c718c"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -79,8 +79,8 @@
     },
     {
       "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
-      "utf8Bytes": 6587,
-      "sha256": "cc0f1de37e3ced1a31cf2376dd50bcd4fa54b2f459ea9d7776fbfa257edd2e09"
+      "utf8Bytes": 8194,
+      "sha256": "ab70d06956d8b9fe95b0b396d12970fe5b7c6d00c9fffd5f108008b93dd29bb9"
     },
     {
       "path": "docs/ARCHITECTURE.md",
@@ -685,8 +685,8 @@
     },
     {
       "path": "test/launch-policy.ps1",
-      "utf8Bytes": 7351,
-      "sha256": "038402df8bce364ae6bd3c5aedf656aa635aba4287f7b790bdcae5e4e7e15ea0"
+      "utf8Bytes": 7468,
+      "sha256": "8a7c0ffdcdc5bf9139cea7ed4bff88cf7d6fa0558a1cf2b10ec58f019beb173f"
     },
     {
       "path": "test/launcher-runtime.ps1",
@@ -749,6 +749,11 @@
       "sha256": "4add6a776d50743ca13eb6ad5ef0022083f881014500bec80fd677f524870696"
     },
     {
+      "path": "test/process-snapshot.ps1",
+      "utf8Bytes": 5060,
+      "sha256": "cf62ed794ac556ac93818573b33f57a6f50f433af55184a46341319927377818"
+    },
+    {
       "path": "test/release-images.test.mjs",
       "utf8Bytes": 1538,
       "sha256": "22dc20183f29e235f0ae24483fe9f623a739ce8217b1c4844b942be11f997277"
@@ -790,8 +795,8 @@
     },
     {
       "path": "test/startup-shutdown.ps1",
-      "utf8Bytes": 6489,
-      "sha256": "b160b4eab2ca33bbdbd6c71aa88a2fa25a66b84ccd87c5da019e37a4716d68bc"
+      "utf8Bytes": 8743,
+      "sha256": "0d32680204984cddb48e1cfd82b3fe4c2ef84285bb9c72de1021ec4dc5dc046b"
     },
     {
       "path": "test/startup-support.ps1",
@@ -815,8 +820,13 @@
     },
     {
       "path": "test/update-reconnect.ps1",
-      "utf8Bytes": 6414,
-      "sha256": "bed9eaa59e3c6635b468cff85d430096e478da3bce490581050c774226f95b16"
+      "utf8Bytes": 7340,
+      "sha256": "35ab5b1fb178c0db6fc15c64e9f25a3614433e3b95fba44ca996018ddcf194ed"
+    },
+    {
+      "path": "test/update-runner.ps1",
+      "utf8Bytes": 7952,
+      "sha256": "ee6634ac2ffff236d5ab9b8f8f51d4d127fa0d37d1e0ffc494671ac84302878e"
     },
     {
       "path": "test/wallpaper-properties.test.mjs",
@@ -985,8 +995,8 @@
     },
     {
       "path": "windows/AfterUpdateReconnect.ps1",
-      "utf8Bytes": 7824,
-      "sha256": "857afd53fb4472a89b66156c33ffbd3aa6b0f7b68fb0bb298a936b9031d23d00"
+      "utf8Bytes": 7854,
+      "sha256": "618a952287f39ec14d65cb6b343d9cdd5b644ee2d304f25d5a47c6b2ff8b0124"
     },
     {
       "path": "windows/Align-Taskbar.cs",
@@ -1040,8 +1050,8 @@
     },
     {
       "path": "windows/LaunchPolicy.ps1",
-      "utf8Bytes": 17258,
-      "sha256": "0f7e133434bc193154309b1fecd758d86a6d2e1afd6d0e0fdd1dcd0275a86e76"
+      "utf8Bytes": 20762,
+      "sha256": "5839608ef3051420cbffb0dd6a76bf3d41f00ea61ffa0f1ba55847d64d8e8267"
     },
     {
       "path": "windows/LoginStartup.ps1",
@@ -1100,8 +1110,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 24215,
-      "sha256": "4519700600fde9f72bcaa823c7b6df5477f149de7d1bb1056769f2e8eb6a91aa"
+      "utf8Bytes": 24354,
+      "sha256": "46a6042e001f8ff7d580a419714607637e537634edfcf83321b1095a4992fa29"
     },
     {
       "path": "windows/Start-ExternalApp.ps1",
@@ -1130,8 +1140,8 @@
     },
     {
       "path": "windows/UpdateReconnectPolicy.ps1",
-      "utf8Bytes": 5981,
-      "sha256": "2762a59644328a00627b041a662c84daf5ccc682654cf4ce85b442cdeff35161"
+      "utf8Bytes": 6017,
+      "sha256": "1410c96678a4b38dab4f7c9f45b6e668a41f76782121929d15d110f3f33cbee6"
     }
   ]
 }

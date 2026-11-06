@@ -35,13 +35,10 @@ function Get-WallpaperUpdateClientDecision {
 
 function Get-WallpaperExactUpdateSnapshot {
   param($Cim)
-  $process=Get-Process -Id $Cim.ProcessId -ErrorAction Stop
-  try{
-    $started=$process.StartTime.ToUniversalTime();$path=$process.MainModule.FileName
-    # Win32_Process CreationDate truncates native FILETIME to microseconds.
-    if($path -ine $Cim.ExecutablePath -or [math]::Abs($started.Ticks-$Cim.CreationDate.ToUniversalTime().Ticks) -gt 9){throw 'Process identity changed during snapshot'}
-    [pscustomobject]@{id=[int]$Cim.ProcessId;path=$path;createdAt=$started.ToString('o');ticks=$started.Ticks}
-  }finally{$process.Dispose()}
+  if(-not (Get-Command Get-WallpaperNativeProcessSnapshot -ErrorAction SilentlyContinue)){. (Join-Path $PSScriptRoot 'LaunchPolicy.ps1')}
+  # The same exit-race handling applies after enumeration, not just to a
+  # missing CIM path. Keep full native FILETIME precision for the close guard.
+  Get-WallpaperNativeProcessSnapshot $Cim
 }
 
 function Invoke-WallpaperUpdateCloseOnce {
@@ -49,8 +46,14 @@ function Invoke-WallpaperUpdateCloseOnce {
   if(-not (& $Close)){return 'close-not-accepted'}
   $deadline=(& $Now).AddSeconds(20)
   do{
-    if(& $NewRoot){return 'new-client-preserved'}
-    if(-not (& $Remaining)){return 'ready-to-relaunch'}
+    try{
+      if(& $NewRoot){return 'new-client-preserved'}
+      if(-not (& $Remaining)){return 'ready-to-relaunch'}
+    }catch{
+      if(-not $_.Exception.Data['WallpaperPathPending']){throw}
+      # Keep waiting within the original close deadline. A pathless live
+      # helper is not absent and must not trigger another close or launch.
+    }
     & $Sleep
   }while((& $Now) -lt $deadline)
   return 'close-timeout-client-preserved'

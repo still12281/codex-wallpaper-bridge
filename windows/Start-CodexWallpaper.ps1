@@ -46,8 +46,8 @@ function Save-TaskPhase([string]$Phase) {
   [IO.File]::Move($taskTemp,$taskStatusPath,$true)
   Save-WallpaperStartupHealth -Root $taskRoot -Status $taskStatus
 }
-function Get-TaskSnapshot {
-  @(Get-WallpaperCodexProcesses | ForEach-Object {
+function Get-TaskSnapshot([switch]$WaitForTransientExit) {
+  @(Get-WallpaperCodexProcesses -WaitForTransientExit:$WaitForTransientExit | ForEach-Object {
     [pscustomobject]@{Id=[int]$_.ProcessId;Parent=[int]$_.ParentProcessId;Created=$_.CreationDate.ToUniversalTime().Ticks;Path="$($_.ExecutablePath)";IsMain=("$($_.CommandLine)" -notmatch '--type=|--monitor-self')}
   })
 }
@@ -100,7 +100,7 @@ function Wait-TaskIdentity([int]$Port,$ExpectedRoot,[int]$Seconds=25) {
 try {
   if(-not $InspectOnly){Save-TaskPhase 'package-resolved'}
   $taskPort=9335
-  $taskInitial=@(Get-TaskSnapshot)
+  $taskInitial=@(Get-TaskSnapshot -WaitForTransientExit:(-not $InspectOnly -and -not $AttachOnly))
   $taskStatus.initialProcessIds=@($taskInitial.Id)
   $taskStatus.initialMainProcessIds=@($taskInitial | Where-Object IsMain | ForEach-Object Id)
   $taskStatus.startupCheck=Get-WallpaperStartupCheck -Root $taskRoot -Codex $taskCodex -Processes $taskInitial

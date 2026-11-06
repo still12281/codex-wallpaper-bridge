@@ -39,6 +39,13 @@ $script:closed=0;$result=Invoke-WallpaperUpdateCloseOnce -Close {$script:closed+
 Assert-Update ($result -eq 'close-timeout-client-preserved' -and $script:closed -eq 1) 'Timeout retried or did not stop'
 $script:closed=0;$result=Invoke-WallpaperUpdateCloseOnce -Close {$script:closed++;$true} -Remaining {throw 'new root must be preserved'} -NewRoot {$true}
 Assert-Update ($result -eq 'new-client-preserved' -and $script:closed -eq 1) 'New instance would be replaced'
+$pending=[InvalidOperationException]::new('Generated exiting helper');$pending.Data['WallpaperPathPending']=$true
+$script:closed=0;$script:reads=0;$script:clock=$now
+$result=Invoke-WallpaperUpdateCloseOnce -Close {$script:closed++;$true} -Remaining {$false} -NewRoot {$script:reads++;if($script:reads -eq 1){throw $pending};$false} -Now {$script:clock} -Sleep {$script:clock=$script:clock.AddSeconds(5)}
+Assert-Update ($result -eq 'ready-to-relaunch' -and $script:closed -eq 1 -and $script:reads -eq 2) 'Transient path loss broke one-shot update drain'
+$script:closed=0;$script:clock=$now
+$result=Invoke-WallpaperUpdateCloseOnce -Close {$script:closed++;$true} -Remaining {$true} -NewRoot {throw $pending} -Now {$script:clock} -Sleep {$script:clock=$script:clock.AddSeconds(5)}
+Assert-Update ($result -eq 'close-timeout-client-preserved' -and $script:closed -eq 1) 'Unreadable live process exceeded the original close budget'
 $entry='E:\generated fixture\CodexEntry.exe';[xml]$xml=New-WallpaperUpdateTaskXml -UserId 'S-1-5-21-1' -Entry $entry -Root 'E:\generated fixture'
 Assert-Update ($xml.Task.Actions.Exec.Command -eq $entry -and $xml.Task.Actions.Exec.Arguments -ceq '--after-update-event $(UpdateRecordId)') 'Native hidden entry or literal event substitution lost'
 Assert-Update (-not $xml.Task.Triggers.EventTrigger.Repetition -and $xml.Task.Settings.AllowHardTerminate -eq 'false' -and $xml.Task.Principals.Principal.LogonType -eq 'InteractiveToken') 'Resident/repeating/forceful task settings introduced'

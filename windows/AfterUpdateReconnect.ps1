@@ -33,7 +33,7 @@ try{
   try{$bootstrapOwned=$bootstrapMutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$bootstrapOwned=$true}
   if(-not $bootstrapOwned){$state.phase='bootstrap-busy-preserved';return}
   function UpdateRoots {
-    @(Get-WallpaperCodexProcesses | Where-Object {$_.CommandLine -notmatch '--type=|--monitor-self'} | ForEach-Object {Get-WallpaperExactUpdateSnapshot $_})
+    @(Get-WallpaperCodexProcesses | Where-Object {$_.CommandLine -notmatch '--type=|--monitor-self'} | ForEach-Object {Get-WallpaperExactUpdateSnapshot $_} | Where-Object {$null -ne $_})
   }
   $roots=@(UpdateRoots)
   $healthyInfo=Get-WallpaperVerifiedEndpointForAnyRegistered -Root $Root

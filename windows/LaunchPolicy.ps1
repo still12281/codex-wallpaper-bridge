@@ -99,22 +99,78 @@ function Select-WallpaperReadyTargets {
   [pscustomobject]@{targets=$ready;mainDeferred=$deferred}
 }
 
+function Get-WallpaperNativeProcessSnapshot {
+  param($Cim,[scriptblock]$ReadNative={param($Id)
+    $process=Get-Process -Id $Id -ErrorAction Stop
+    try{
+      $process.Refresh();if($process.HasExited){throw 'Process has exited'}
+      $result=[pscustomobject]@{id=$process.Id;path=$process.MainModule.FileName;ticks=$process.StartTime.ToUniversalTime().Ticks;session=$process.SessionId}
+      $process.Refresh();if($process.HasExited){throw 'Process exited during identity read'}
+      return $result
+    }finally{$process.Dispose()}
+  },[scriptblock]$ReadCurrent={param($Id) Get-CimInstance Win32_Process -Filter "ProcessId = $Id" -ErrorAction Stop})
+  $identityChanged=$false
+  try{
+    $native=& $ReadNative ([int]$Cim.ProcessId)
+    if($native.id -ne [int]$Cim.ProcessId -or $native.session -ne [int]$Cim.SessionId -or
+      ($Cim.CreationDate -and [math]::Abs($native.ticks-$Cim.CreationDate.ToUniversalTime().Ticks) -gt 9) -or
+      ($Cim.ExecutablePath -and $native.path -and $native.path -ine $Cim.ExecutablePath)){$identityChanged=$true;throw 'Process identity changed'}
+    if(-not $native.path -or -not $Cim.CreationDate){throw 'Process identity is unreadable'}
+    [pscustomobject]@{id=[int]$native.id;path=$native.path;createdAt=([datetime]::new($native.ticks,[DateTimeKind]::Utc)).ToString('o');ticks=$native.ticks;session=$native.session}
+  }catch{
+    $reason=$_.Exception.Message
+    # An exiting renderer may still appear in a CIM enumeration with no path.
+    # Ignore it only after a fresh PID query confirms it is gone. A live or
+    # reused PID, access denial, or failed query must continue to block launch.
+    $current=@(& $ReadCurrent ([int]$Cim.ProcessId))
+    if(-not $current.Count){return $null}
+    $failure=[InvalidOperationException]::new("无法核验 ChatGPT 进程身份（PID=$($Cim.ProcessId)，native-snapshot）：$reason；已保留进程并停止启动。")
+    $sameCim=$current.Count -eq 1 -and $Cim.CreationDate -and $current[0].CreationDate -and
+      $current[0].ProcessId -eq $Cim.ProcessId -and $current[0].Name -ieq $Cim.Name -and $current[0].SessionId -eq $Cim.SessionId -and
+      $current[0].CreationDate.ToUniversalTime().Ticks -eq $Cim.CreationDate.ToUniversalTime().Ticks
+    $failure.Data['WallpaperPathPending']=(-not $identityChanged -and -not $Cim.ExecutablePath -and $sameCim)
+    throw $failure
+  }
+}
+
 function Select-WallpaperCodexProcesses([object[]]$Processes,[int]$SessionId) {
+  $resolved=@()
   foreach($candidate in @($Processes | Where-Object {$_.Name -ieq 'ChatGPT.exe' -and [int]$_.SessionId -eq $SessionId})){
-    if(-not $candidate.ExecutablePath){throw '无法确认现有 ChatGPT 进程的路径，已停止启动，避免重复实例。'}
+    if(-not $candidate.ExecutablePath){
+      $native=Get-WallpaperNativeProcessSnapshot $candidate
+      if($null -eq $native){continue}
+      $candidate=$candidate | Select-Object *
+      $candidate.ExecutablePath=$native.path
+    }
     if($candidate.ExecutablePath -imatch '\\OpenAI\.Codex_\d+\.\d+\.\d+\.\d+_(x64|arm64)__2p2nqsd0c76g0\\app\\ChatGPT\.exe$' -and -not (Test-WallpaperOfficialCodexPath $candidate.ExecutablePath)){
       throw '已有类似官方 Codex 的进程，但安装根不在当前可信登记中；已保留该进程并停止启动第二份。'
     }
+    $resolved+=$candidate
   }
-  @($Processes | Where-Object {
+  @($resolved | Where-Object {
     $_.Name -ieq 'ChatGPT.exe' -and [int]$_.SessionId -eq $SessionId -and
     (Test-WallpaperOfficialCodexPath "$($_.ExecutablePath)")
   })
 }
 
-function Get-WallpaperCodexProcesses {
+function Wait-WallpaperProcessScan {
+  param([scriptblock]$Read,[int]$TimeoutMilliseconds=12000,[int]$Checks=48,[scriptblock]$Pause={Start-Sleep -Milliseconds 250})
+  $clock=[Diagnostics.Stopwatch]::StartNew()
+  for($index=0;$index -le $Checks;$index++){
+    try{return @(& $Read)}catch{
+      # Only the same still-live, pathless CIM identity may be allowed to
+      # settle. Never treat it as absent, and never retry a provider failure,
+      # changed identity or untrusted path. This is a bounded entry wait.
+      if(-not $_.Exception.Data['WallpaperPathPending'] -or $index -eq $Checks -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds){throw}
+      & $Pause
+    }
+  }
+}
+
+function Get-WallpaperCodexProcesses([switch]$WaitForTransientExit) {
   $currentSession=(Get-Process -Id $PID -ErrorAction Stop).SessionId
-  Select-WallpaperCodexProcesses @(Get-CimInstance Win32_Process -Filter "Name = 'ChatGPT.exe'" -ErrorAction Stop) $currentSession
+  $read={Select-WallpaperCodexProcesses @(Get-CimInstance Win32_Process -Filter "Name = 'ChatGPT.exe'" -ErrorAction Stop) $currentSession}
+  if($WaitForTransientExit){Wait-WallpaperProcessScan -Read $read}else{& $read}
 }
 
 function Assert-WallpaperClientAbsent([object[]]$Processes,[int]$AllowedProcessId=0) {
@@ -138,7 +194,11 @@ function Wait-WallpaperStartupDrain {
   $clock=[Diagnostics.Stopwatch]::StartNew()
   $identities=@($Initial | ForEach-Object {'{0}|{1}|{2}' -f $_.Id,$_.Created,$_.Path})
   for($index=0;$index -le $Checks;$index++){
-    $current=@(& $ReadSnapshot)
+    try{$current=@(& $ReadSnapshot)}catch{
+      if(-not $_.Exception.Data['WallpaperPathPending'] -or $index -eq $Checks -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds){throw}
+      & $Pause
+      continue
+    }
     $mains=@($current | Where-Object {-not $_.PSObject.Properties['IsMain'] -or $_.IsMain})
     $newMains=@($mains | Where-Object {('{0}|{1}|{2}' -f $_.Id,$_.Created,$_.Path) -notin $identities})
     if($newMains.Count){return [pscustomobject]@{reason='new-client-preserved';remaining=$current}}
