@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.4 — 2026-11-06
+
 - Wake the existing host when a trusted main/detached page appears or navigates, rather than waiting for the healthy-page idle interval. Apply a temporary palette before scene preparation and on subsequent document loads, retaining native animation and input; remove it after real wallpaper styling takes over. Restrict it to allowed top-level app documents and preserve the original native phase before CDP becomes available. Include one focused generated-browser transition check.
 - Recover missing CIM process paths through an exact native PID/session/start-time/path snapshot, and ignore stale enumeration rows only after a fresh query confirms exit. During entry startup and graceful update shutdown, allow the same unreadable live identity to settle within bounded waits, preserving new or unverifiable clients. Manual recovery remains independent of consumed automatic-update state and launches the current registered package with the saved configuration. Add focused exit-race and update-runner regressions.
 - Revalidate already verified clients through a retained native process handle, checking exact start time, executable, session, loopback listener ownership and browser identity before reuse. Fall back to full discovery when a native handle cannot be retained. Batch independent renderer setup work and wake readiness checks through the existing validated binding while preserving sampled readiness, cancellation and timeout fallback. Keep render resolution, FPS, effects and resource boundaries unchanged.

@@ -1,6 +1,6 @@
 {
   "name": "codex-wallpaper-bridge",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "Experimental local wallpaper backgrounds for Codex desktop on Windows",
   "type": "module",
   "private": true,
