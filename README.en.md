@@ -28,6 +28,8 @@ See the [Chinese screenshot gallery](README.md#效果展示) and [capture proven
 - One current playback file per wallpaper; previous playback copies are replaced after successful decode.
 - A unified Windows entry starts Codex and the wallpaper host. The installer creates shortcuts with the installed client's official icon.
 
+When Codex remains in the tray, the taskbar entry restores the existing main window through Codex's own display flow, including page visibility and input. It keeps the current chat, wallpaper and settings.
+
 ## Requirements
 
 - Windows 10/11, x64, with the official Microsoft Store Codex client installed.
@@ -42,10 +44,10 @@ There are no production npm dependencies. The required parsing and Windows helpe
 On Windows 10/11 x64, install and sign in to the official Microsoft Store Codex app, then run this in PowerShell:
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1.0-alpha.4/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.1.0-alpha.5/install.ps1' | iex
 ```
 
-This downloads the fixed **v0.1.0-alpha.4** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
+This downloads the fixed **v0.1.0-alpha.5** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
 
 If direct GitHub downloads are unavailable, install manually:
 

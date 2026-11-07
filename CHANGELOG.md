@@ -1,10 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.5 — 2026-11-06
 
 - Restore tray-resident clients through Codex's own current-main-window display message, then verify internal visibility and native foreground state. Reuse a verified native main-window binding before the full bootstrap; reconnect a stale wallpaper host after the window is shown. Keep the current chat and client process.
 - Bind cached main HWNDs to a per-window cookie and exact process/session/browser identity, retaining the binding across renderer-target replacement and rejecting reused, foreign or destroyed windows. Refresh the binding after the real main shell is ready.
 - Add focused activation transport and hidden-native-window regressions. Real tray close/taskbar reopen completed in 0.874 seconds and the user confirmed working clicks and scrolling.
+
 ## 0.1.0-alpha.4 — 2026-11-06
 
 - Wake the existing host when a trusted main/detached page appears or navigates, rather than waiting for the healthy-page idle interval. Apply a temporary palette before scene preparation and on subsequent document loads, retaining native animation and input; remove it after real wallpaper styling takes over. Restrict it to allowed top-level app documents and preserve the original native phase before CDP becomes available. Include one focused generated-browser transition check.
