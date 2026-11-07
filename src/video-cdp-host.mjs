@@ -135,9 +135,9 @@ async function captureStatic(entry){
  const file='media/still-'+entry.id+'-'+randomUUID()+'.png';await writeFile(path.join(root,file),bytes,{flag:'wx'});return file;
 }
 const actions=createActions(root,settings,applySelected,applyAppearance,{configureMedia,captureStatic,updateFrameRate:async fps=>{let applied=false;for(const page of sessions.values())if(page.webPlayer?.entryId===settings.selectedId&&page.installed){await page.webPlayer.setFps(fps);page.activeKey=activeWallpaperKey();applied=true;}return applied;},updateProperties:async values=>{let applied=false;for(const page of sessions.values())if(page.webPlayer?.entryId===settings.selectedId&&page.installed){await page.webPlayer.setProperties(values);page.activeKey=activeWallpaperKey();applied=true;}return applied;},setImportPreparing:value=>{importPreparing=value;},onImportProgress:async(c,progress)=>{if(c?.ws?.readyState===1)await c.evaluate('window.__cwbPanelHost?.__cwbImportProgress?.('+JSON.stringify(progress)+');true');},isSelectedHealthy:async c=>!!c?.installed&&!c.captureBlocked&&(!c.isRealtime||!!realtime&&!realtime.error&&!realtime.closed)&&await c.evaluate('!!window.__codexWallpaperBridge?.ready&&!window.__codexWallpaperBridge?.error'),nativeProfile:async(c,projectRoot)=>nativeFullProfile(projectRoot),controlMedia:async(command,sourceId)=>{if(!settings.systemMedia.enabled||!mediaPower.backend)throw Error('歌曲信息与播放控制未启用');await mediaPower.backend.control(command,{sourceId});}});
-async function alignTaskbar(){if(appUrl!=='app://-/index.html'||process.platform!=='win32')return;try{await stat(path.join(root,'Align-Taskbar.exe'))}catch{return}try{const r=await promisify(execFile)(path.join(root,'Align-Taskbar.exe'),['--apply','--port',String(port)],{windowsHide:true,timeout:8000});status.taskbar={updatedAt:new Date().toISOString(),result:r.stdout.trim()};}catch(e){status.taskbar={error:e.message}}}
-let taskbarRunning=false;
-function scheduleTaskbar(){if(taskbarRunning||stopped)return;taskbarRunning=true;void alignTaskbar().finally(()=>{taskbarRunning=false});}
+async function alignTaskbar(binding){if(appUrl!=='app://-/index.html'||process.platform!=='win32')return false;try{await stat(path.join(root,'Align-Taskbar.exe'))}catch{return false;}try{const args=['--apply','--port',String(port)];if(binding)args.push('--main-target',binding.targetId,'--browser-id',status.browserId,'--geometry',JSON.stringify(binding.geometry));const r=await promisify(execFile)(path.join(root,'Align-Taskbar.exe'),args,{windowsHide:true,timeout:8000});status.taskbar={updatedAt:new Date().toISOString(),result:r.stdout.trim()};return true;}catch(e){status.taskbar={error:e.message};return false;}}
+let taskbarRunning=false,pendingMainBinding=null;
+function scheduleTaskbar(binding=null){if(binding)pendingMainBinding=binding;if(taskbarRunning||stopped)return;taskbarRunning=true;const requested=pendingMainBinding;pendingMainBinding=null;void alignTaskbar(requested).then(ok=>{const c=requested&&sessions.get(requested.targetId);if(ok&&requested&&c?.loaderId===requested.loaderId)c.mainBindingPending=false;}).finally(()=>{taskbarRunning=false;if(pendingMainBinding&&!stopped)scheduleTaskbar();});}
 
 function prepareLayer(size,mime,candidateId){
  window.__cwbPendingMedia?.dispose?.();document.getElementById('codex-wallpaper-bridge-pending')?.remove();
@@ -243,7 +243,7 @@ async function tick(){
    if(!page.body)continue;
    const tree=await c.call('Page.getFrameTree');
    if(tree.frameTree.frame.url!==target.url)continue;
-   if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.captureBlocked=false;c.failed=false;c.retryAt=0;c.failures=0;c.mediaActivity=null;c.needsTaskbar=true;c.shellObserved=false;c.readyObserved=false;startupEvent('page-ready',target.id);await c.call('Runtime.addBinding',{name:'__cwbMediaActivitySend'});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});}
+   if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.captureBlocked=false;c.failed=false;c.retryAt=0;c.failures=0;c.mediaActivity=null;c.needsTaskbar=true;c.mainBindingPending=true;c.shellObserved=false;c.readyObserved=false;startupEvent('page-ready',target.id);await c.call('Runtime.addBinding',{name:'__cwbMediaActivitySend'});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});}
    if(page.shell&&!c.shellObserved){c.shellObserved=true;startupEvent('shell-ready',target.id);if(c.installed)await c.evaluate('window.__cwbApplyWidgets?.('+JSON.stringify(displaySettings(settings))+');window.__cwbPanelHost?.__cwbPlace?.();true');}
    if(c.retryAt&&Date.now()<c.retryAt){Object.assign(targetState,{phase:'background-retrying',error:c.lastError,retryAt:new Date(c.retryAt).toISOString()});continue;}
    try{
@@ -253,7 +253,7 @@ async function tick(){
     if(!healthy)c.installed=false;
     if(!c.installed&&effectiveEntry(settings.library.find(e=>e.id===settings.selectedId))?.mode==='webwallgl'&&await c.evaluate('document.hidden')){Object.assign(targetState,{phase:'waiting-for-visible-page',hidden:true});continue;}
     if(!c.installed){const mountStart=performance.now();await mount(c,target);c.mountMs=performance.now()-mountStart;c.activeKey=activeWallpaperKey();}
-    const observed=await c.evaluate('(()=>{const value=window.__codexWallpaperBridge?.sample();return value?{...value,terminalTheme:window.__cwbWidgets?.status,viewportWidth:innerWidth,viewportHeight:innerHeight}:null})()');
+    const observed=await c.evaluate('(()=>{const value=window.__codexWallpaperBridge?.sample();return value?{...value,hidden:document.hidden,terminalTheme:window.__cwbWidgets?.status,viewportWidth:innerWidth,viewportHeight:innerHeight,windowGeometry:{x:screenX,y:screenY,width:outerWidth,height:outerHeight,dpr:devicePixelRatio}}:null})()');
     if(!observed){c.installed=false;continue}
     targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':observed.paused?'realtime-capture-paused':realtime?.kind!=='chromium-web'&&Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed,mountMs:c.mountMs,webglStartup:c.webPlayer?.startup,...(c.isRealtime?{delivery:c.captureTiming,deliveryError:c.captureError}:{} )});
     if(targetReady(targetState)&&!c.readyObserved){c.readyObserved=true;startupEvent('page-wallpaper-ready',target.id);}
@@ -261,7 +261,8 @@ async function tick(){
     if(targetReady(targetState)&&target.url===appUrl&&status.startup.mainReadyMs===null){status.startup.mainReadyMs=performance.now()-startupClock;startupEvent('main-wallpaper-ready',target.id);}
     // Publish the primary first frame before optional windows or integrations.
     await publishTargets(observations);
-    if(targetReady(targetState)&&c.needsTaskbar){c.needsTaskbar=false;scheduleTaskbar();}
+    if(targetReady(targetState)&&c.mainBindingPending&&page.shell&&target.url===appUrl&&observed.hidden===false){c.needsTaskbar=false;scheduleTaskbar({targetId:target.id,loaderId:c.loaderId,geometry:observed.windowGeometry});}
+    else if(targetReady(targetState)&&c.needsTaskbar){c.needsTaskbar=false;scheduleTaskbar();}
     await reportMedia(c);
     if(observed.width&&observed.height){
      const entry=settings.library.find(e=>e.id===settings.selectedId),metrics=playbackMetrics(entry,observed,c.playbackReading);c.playbackReading=metrics.reading;targetState.playback=metrics.data;const note=metrics.text;

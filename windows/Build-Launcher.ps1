@@ -19,10 +19,10 @@ if (-not $NoIcon) {
   [void](Copy-WallpaperOfficialIcon $buildCodex $buildIconPath)
   $buildArguments += ('/win32icon:' + $buildIconPath)
 }
-$buildArguments += (Join-Path $PSScriptRoot 'CleanProcess.cs'),(Join-Path $PSScriptRoot 'CodexEntry.cs')
+$buildArguments += (Join-Path $PSScriptRoot 'CleanProcess.cs'),(Join-Path $PSScriptRoot 'ClientWindow.cs'),(Join-Path $PSScriptRoot 'TcpListeners.cs'),(Join-Path $PSScriptRoot 'CodexEntry.cs')
 & $buildCompiler @buildArguments
 if ($LASTEXITCODE -ne 0) { throw 'Launcher compilation failed' }
-& $buildCompiler /nologo /target:exe /platform:x64 ('/out:' + (Join-Path $buildDataRoot 'Align-Taskbar.exe')) (Join-Path $PSScriptRoot 'TaskbarIdentity.cs') (Join-Path $PSScriptRoot 'Align-Taskbar.cs')
+& $buildCompiler /nologo /target:exe /platform:x64 /reference:System.Web.Extensions.dll ('/out:' + (Join-Path $buildDataRoot 'Align-Taskbar.exe')) (Join-Path $PSScriptRoot 'TaskbarIdentity.cs') (Join-Path $PSScriptRoot 'ClientWindow.cs') (Join-Path $PSScriptRoot 'Align-Taskbar.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Taskbar helper compilation failed' }
 $buildPowerShell=(Get-Process -Id $PID -ErrorAction Stop).Path
 if($PSVersionTable.PSVersion.Major -lt 7 -or [IO.Path]::GetFileName($buildPowerShell) -ine 'pwsh.exe'){throw 'Build using PowerShell 7 so its actual runtime path can be recorded.'}

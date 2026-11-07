@@ -7,6 +7,8 @@
 | Unit checks | GitHub Actions, Windows, Node 22 and 24 | 88 checks passed |
 | Installer, process identity, startup and update policy | Windows, PowerShell 7 and generated child processes | Passed; includes duplicate events, close-once handling, timeout, PID reuse, path loss and configuration preservation |
 | Normal exit followed immediately by one taskbar-entry click | Installed Codex 26.1103.3517.0 | Passed: the entry waited for the previous root to exit, then restored main and detached wallpapers |
+| Close the window to tray, then reopen through the same taskbar entry | Installed Codex 26.1103.3517.0 | Passed: 0.874 seconds in the activation record; user confirmed immediate display, working clicks and scrolling; original client process and saved settings retained |
+| Native window binding and activation transport | Hidden Win32 fixture windows and a generated CDP peer | Passed: role-cookie reuse, target replacement, foreign/destroyed windows, bridge payload, hidden-view failure and browser-identity checks |
 | Startup page replacement, early colors and wallpaper handoff | Isolated Chrome with generated pages and an SVG wallpaper | Passed: new-page palette applied in 47.7 ms, subsequent document palette preceded parser JavaScript, native animation retained, real wallpaper adopted, unrelated page unchanged |
 | Late native theme initialization | Isolated Chrome, generated native-shell structure | Passed: text color, theme-guard settling, snapshot restoration and wallpaper continuity |
 | WebGL browser-disconnect cleanup | Isolated Chrome and a generated scene | Passed: host exited in 97.4 ms |

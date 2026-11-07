@@ -9,6 +9,14 @@ internal static class WallpaperIdentity {
  // Use the same stable desktop ID on our shortcut and every owned Codex window.
  internal const string AppId="CodexWallpaperBridge.Codex";
  internal const string RequestEvent="Local\\CodexWallpaperBridge.Reconnect.9335";
+ internal static void SaveMainWindow(string root,Process p,string browser,string target,long handle){
+  Guid id;if(!Guid.TryParse(browser,out id)||String.IsNullOrEmpty(target)||!System.Text.RegularExpressions.Regex.IsMatch(target,"^[a-fA-F0-9]+$"))throw new InvalidOperationException("Invalid main window binding identity");
+  long cookie=WallpaperClientWindow.Bind(handle,p.Id);
+  var record=new Dictionary<string,object>{{"schemaVersion",2},{"clientId",p.Id},{"startedAt",p.StartTime.ToUniversalTime().ToString("o")},{"executable",p.MainModule.FileName},{"sessionId",p.SessionId},{"browserId",browser},{"mainTarget",target},{"handle",handle},{"cookie",cookie.ToString(System.Globalization.CultureInfo.InvariantCulture)}};
+  string file=Path.Combine(root,"main-window.json"),next=Path.Combine(root,"main-window-"+Guid.NewGuid().ToString("N")+".next");
+  File.WriteAllText(next,new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(record));
+  try{if(File.Exists(file))File.Replace(next,file,null);else File.Move(next,file);}catch(IOException){if(File.Exists(next)&&File.Exists(file))File.Replace(next,file,null);else throw;}
+ }
  [StructLayout(LayoutKind.Sequential)] struct Key {public Guid fmt;public uint id;public Key(uint n){fmt=new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3");id=n;}}
  [StructLayout(LayoutKind.Explicit,Size=24)] struct Value {[FieldOffset(0)]public ushort vt;[FieldOffset(8)]public IntPtr ptr;}
  [ComImport,Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] interface Store {

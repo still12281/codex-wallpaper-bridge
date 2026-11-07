@@ -234,12 +234,14 @@ try {
   try{Save-WallpaperCdpEndpoint -Root $taskRoot -Port $taskPort -Identity $taskIdentity}catch{$taskStatus.endpointRecordWarning=$_.Exception.Message}
   if($taskReuseExisting){
     if(-not (Test-DreamSkinPathEqual -Left $taskStatus.rootExecutable -Right "$($taskCodex.Executable)")){throw '现有客户端与已注册包版本不同，保留现有客户端并停止跨版本激活。'}
-    $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId --no-wait
+    if(-not $AttachOnly){if(-not ('WallpaperClientWindow' -as [type])){Add-Type -Path (Join-Path $PSScriptRoot 'ClientWindow.cs')};[void][WallpaperClientWindow]::GrantForeground($taskStatus.debugRootPid)}
+    $taskShowArguments=if($AttachOnly){@()}else{@('--show-current')}
+    $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId --no-wait @taskShowArguments
     if($LASTEXITCODE -eq 2){
       if($AttachOnly){throw '未找到现有 Codex 主页面；仅恢复模式已停止，没有启动或关闭客户端。'}
       $taskStatus.reactivationPid=Start-DreamSkinCodex -Codex $taskCodex -Arguments @()
       Start-Sleep -Milliseconds 500
-      $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId
+      $taskActivationResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId @taskShowArguments
     }
     if($LASTEXITCODE -ne 0){throw '未找到可唤回的 Codex 主页面，已有客户端已保留。'}
     # activate-client already verifies the exact app target and BrowserId; bind
@@ -249,7 +251,7 @@ try {
     if($null -eq $taskAfterActivation -or $taskAfterActivation.BrowserId -ne $taskIdentity.BrowserId -or $taskSameRoot.StartTime.ToUniversalTime().ToString('o') -ne $taskStatus.rootStartedAtUtc){throw '唤回时客户端身份发生变化，未关闭或替换任何客户端。'}
     $taskMain=$taskActivationResult|ConvertFrom-Json
     $taskStatus.mainTargetId=$taskMain.mainTarget
-    $taskStatus.nativeActivation=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -MainTarget $taskMain.mainTarget -GeometryJson ($taskMain.geometry|ConvertTo-Json -Compress) -RememberOnly:$AttachOnly
+    $taskStatus.nativeActivation=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -BrowserId $taskIdentity.BrowserId -MainTarget $taskMain.mainTarget -GeometryJson ($taskMain.geometry|ConvertTo-Json -Compress) -RememberOnly:$AttachOnly
     Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses) $taskStatus.debugRootPid
     $taskStatus.existingMainWindowReopened=-not $AttachOnly
   }
@@ -292,7 +294,7 @@ try {
   if($taskRendered -and -not $taskReuseExisting){
     try{
       $taskHintResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId --no-wait
-      if($LASTEXITCODE -eq 0){$taskHint=$taskHintResult|ConvertFrom-Json;$taskStatus.mainWindowHint=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -MainTarget $taskHint.mainTarget -GeometryJson ($taskHint.geometry|ConvertTo-Json -Compress) -RememberOnly}
+      if($LASTEXITCODE -eq 0){$taskHint=$taskHintResult|ConvertFrom-Json;$taskStatus.mainWindowHint=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -BrowserId $taskIdentity.BrowserId -MainTarget $taskHint.mainTarget -GeometryJson ($taskHint.geometry|ConvertTo-Json -Compress) -RememberOnly}
     }catch{$taskStatus.mainWindowHintError=$_.Exception.Message}
   }
   Save-TaskPhase $(if($taskRendered){'background-rendered'}else{'cdp-ready-background-not-yet-rendered'})
