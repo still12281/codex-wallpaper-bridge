@@ -37,6 +37,9 @@ jobs:
           & $binary -version
           if ($LASTEXITCODE -ne 0) { throw 'Test FFmpeg is not executable' }
       - run: npm test
+      - name: Wallpaper control entry regression
+        if: matrix.node == 24
+        run: node test/panel-entry-integration.mjs
       - name: Installer and startup policy regressions
         if: matrix.node == 24
         shell: pwsh

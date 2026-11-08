@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2374,
-      "sha256": "73c831143d3053707aa1cd4fc67d1fc53bdeb31c73a8256b466a1e889cdeee7f"
+      "utf8Bytes": 2504,
+      "sha256": "d40663b3ba73ddc28f0cb4617349ed2ded02c543cf0908aa97ec9e9d3d1a14d5"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 17600,
-      "sha256": "b442dfc3ef37a7db6d4c179ebac955be7d731aaa5ce44e7c3b5a7152e8e4d947"
+      "utf8Bytes": 18286,
+      "sha256": "2658ec7dfcff62d449a42e858978e3aecae363c250bd997c642cbb4d3105baf4"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -269,8 +269,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "utf8Bytes": 7818,
-      "sha256": "1824fc4e5d878bd027c7ebc1f67d95475aec0e44c4aafadd984fd4d27ab66a0e"
+      "utf8Bytes": 8825,
+      "sha256": "38d2bf8f2d4d6e4715ecd3a3932d35e6da8c680e2038f174770dd8de589a56e5"
     },
     {
       "path": "docs/WEBWALLGL.md",
@@ -520,8 +520,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 45119,
-      "sha256": "aa9814ac5abc78e625b1d10d0daed889552c14b886652cc85901c930728fd8ba"
+      "utf8Bytes": 45232,
+      "sha256": "bc039ed470e6641cb1dfaa787a51c60bc15db1601273d86ef452fbd9bbb81438"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -535,8 +535,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 34687,
-      "sha256": "ff2445f8b46c729689b2551b1a2300402ab944f7ba2618e3b5eceb16f7dd751d"
+      "utf8Bytes": 36023,
+      "sha256": "e10e32e6d51f44f6c8b49001b301f1c30f7858ae376dc12561da191e14d8d055"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -747,6 +747,11 @@
       "path": "test/panel-controls-integration.mjs",
       "utf8Bytes": 31442,
       "sha256": "92bf0d2c4a3bbfafbfc79035996d2290e7ad1ceeb36346231b474964d833d439"
+    },
+    {
+      "path": "test/panel-entry-integration.mjs",
+      "utf8Bytes": 6525,
+      "sha256": "9712899431c2a61eaaebc08dbe7475653e11880a6dc53501f212fe3003c29683"
     },
     {
       "path": "test/performance-reuse.test.mjs",

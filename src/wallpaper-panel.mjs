@@ -1,17 +1,21 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===23){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===24){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=23;let features=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=24;let features=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
- const anchorSelector='[class*="_ApplicationMenuTopBar_"] > [role="menubar"]';
- const place=()=>{const menu=document.querySelector(anchorSelector);if(menu){if(host.parentElement!==menu.parentElement||host.previousElementSibling!==menu)menu.after(host)}else if(!host.isConnected){host.style.display='none';document.body.append(host)}host.style.display=menu?'inline-flex':'none'};
- let placementQueued=false;
- const observer=new MutationObserver(changes=>{if(!host.isConnected||changes.some(c=>[...c.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('[class*="_ApplicationMenuTopBar_"],[role="menubar"]')||n.querySelector?.(anchorSelector))))){if(!placementQueued){placementQueued=true;requestAnimationFrame(()=>{placementQueued=false;place()})}}});
- observer.observe(document.body,{childList:true,subtree:true});host.__cwbPlace=place;host.__cwbDispose=()=>observer.disconnect();place();
+ const anchorSelector='[class*="ApplicationMenuTopBar"] > [role="menubar"]';
+ const findMenu=()=>{const native=document.getElementById('application-menu-trigger-file-menu')?.closest('[role="menubar"]');if(native)return native;const matches=document.querySelectorAll(anchorSelector);return matches.length===1?matches[0]:null;};
+ let menuAnchor=null,placementQueued=false,disposed=false;
+ const place=()=>{if(disposed)return;const candidate=findMenu(),rect=candidate?.getBoundingClientRect();const menu=rect?.width>0&&rect.height>0?candidate:null;menuAnchor=menu;if(menu){host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';if(host.parentElement!==menu.parentElement||host.previousElementSibling!==menu)menu.after(host);}else{host.style.cssText='position:fixed;display:inline-flex;align-items:center;top:4px;right:clamp(8px,11vw,144px);z-index:2147483000;app-region:no-drag;-webkit-app-region:no-drag';if(host.parentElement!==document.body)document.body.append(host);}host.dataset.cwbPlacement=menu?'menu':'fallback';};
+ const queuePlace=()=>{if(placementQueued||disposed)return;placementQueued=true;requestAnimationFrame(()=>{placementQueued=false;place();});};
+ const relevant='[class*="ApplicationMenuTopBar"],[role="menubar"],#application-menu-trigger-file-menu';
+ const observer=new MutationObserver(changes=>{if(!host.isConnected||(menuAnchor&&!menuAnchor.isConnected)||changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(n.matches?.(relevant)||n.querySelector?.(relevant)))))queuePlace();});
+ observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('resize',queuePlace);host.__cwbPlace=place;host.__cwbDispose=()=>{disposed=true;observer.disconnect();window.removeEventListener('resize',queuePlace);};
+ host.__cwbEntryState=()=>{const button=s.getElementById('toggle'),r=button?.getBoundingClientRect(),style=getComputedStyle(host);return {visible:!!(host.isConnected&&r?.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight&&style.display!=='none'&&style.visibility!=='hidden'),placement:host.dataset.cwbPlacement};};place();
  s.innerHTML=`<style>:host{font:13px system-ui;color:#e6edf5}button,select,input{font:inherit}button,select{color:inherit;background:#18283de8;border:1px solid #5c849b70;border-radius:8px;padding:8px 12px;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #6cd9e8;outline-offset:2px}button:disabled{opacity:.5;cursor:wait}dialog{color:inherit;background:#0d1927f5;border:1px solid #5886a480;border-radius:16px;width:min(390px,80vw);padding:24px;box-shadow:0 18px 70px #0008}dialog::backdrop{background:#0005}h2{font-size:19px;margin:0 0 6px}p{color:#9fb3c8;line-height:1.6}label{display:block;margin-top:20px}select,input[type=range]{width:100%;box-sizing:border-box;margin-top:8px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:24px}#status{min-height:38px;font-size:12px}#close{float:right;background:none;border:0;padding:4px}output{float:right;color:#87d7e5}</style>
  <button id="toggle" aria-label="打开壁纸设置" style="height:28px;padding:0 10px">壁纸</button><dialog aria-labelledby="title"><button id="close" aria-label="关闭">✕</button><h2 id="title">壁纸与外观</h2><label>我的壁纸<select id="library"></select></label><label>遮罩浓度 <output id="opacity"></output><input id="shade" type="range" min="25" max="85" step="5"></label><label><input id="pause" type="checkbox"> 仅聚焦 Codex 时播放动态壁纸</label><p id="status" role="status" aria-live="polite">就绪</p><footer><button id="import">导入图片 / 视频</button><button id="done">完成</button></footer><input id="file" type="file" hidden accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"></dialog>`;
  const playback=document.createElement('section');
