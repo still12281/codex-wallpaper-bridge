@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.6 — 2026-11-07
 
 - Restore the wallpaper control entry when the native application-menu CSS class format changes. Locate the native menu by its trigger and menubar role, retain both known class formats, and keep a visible fallback when the menu is absent. Reposition after native-menu removal, replacement or late creation without restarting the client or wallpaper renderer.
 - Report control-entry visibility separately from wallpaper readiness. Add a focused generated-browser regression for pointer opening, the appearance action roundtrip, menu changes and preservation of the background and draft; run it in Windows CI. Record control-entry checks separately from installer checks.
+- Restore the control entry in the installed client without replacing the wallpaper renderer or changing settings. The user confirmed that the real control panel opens, operates and closes normally.
 
 ## 0.1.0-alpha.5 — 2026-11-06
 

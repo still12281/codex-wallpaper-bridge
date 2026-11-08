@@ -4,7 +4,7 @@
 
 | Area | Environment | Result |
 | --- | --- | --- |
-| Wallpaper control entry after native menu class change | Installed Codex 26.1103.3517.0 | Restored after Help in the native menu row; actual button has a 48×28 bounding box and passes the page hit test. The existing wallpaper layer, renderer object, client process and saved configuration are retained. |
+| Wallpaper control entry after native menu class change | Installed Codex 26.1103.3517.0 | Restored after Help in the native menu row; actual button has a 48×28 bounding box and passes the page hit test. The user confirmed that the real panel opens, operates and closes normally. The existing wallpaper layer, renderer object, client process and saved configuration are retained. |
 | Control entry and interaction regression | Isolated Chrome, generated shell | Passed: both known class formats, native-menu semantics after a class rename, visible fallback, pointer opening, appearance action roundtrip, closing, late/replaced menus, and preserved background/draft. |
 
 The previous control host was connected but had `display:none` because its menu selector required `_ApplicationMenuTopBar_`, while the installed shell uses `ApplicationMenuTopBar-…`. Wallpaper readiness alone did not expose this missing entry. Runtime records now include control-entry visibility and placement separately.
