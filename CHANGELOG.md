@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Apply shared wallpaper CSS to trusted shell pages, owned webviews and nested frames through document lifecycle events. Remove ChatGPT-only selection and repeated embedded-style polling. Keep native-shell startup ahead of optional surface integration, and retain semantic colours, images and native input.
+- Use persistent constructed stylesheets under strict CSP, with one bounded read-before-write neutral-background pass per embedded document; skip that pass on native shells. Cover opaque native guest parents structurally rather than by provider name. Exclude wallpaper renderers and unrelated browser pages, restore all contexts on disable/removal, and send only theme parameters to embedded content.
+- Replace theme repair observers with explicit theme writes and persistent text tokens; install startup colours before parser scripts without a DOM observer. Unknown late hardcoded content remains outside automatic guarantees.
+
 ## 0.1.0-alpha.6 — 2026-11-07
 
 - Restore the wallpaper control entry when the native application-menu CSS class format changes. Locate the native menu by its trigger and menubar role, retain both known class formats, and keep a visible fallback when the menu is absent. Reposition after native-menu removal, replacement or late creation without restarting the client or wallpaper renderer.

@@ -2,14 +2,14 @@ export function paintShell(config){
  const state=window.__codexWallpaperBridge;if(!state?.ready)return false;
  const palette=config.palette||{r:30,g:38,b:49,dark:true};
  const dark=palette.dark;
- // Native hydration can replace data-theme after the first wallpaper frame.
- // Align theme signals without delaying paint or replacing semantic colours.
- if(!window.__cwbThemeGuard){
+ // Align theme at explicit paint/navigation boundaries, without a live theme
+ // observer. Persistent CSS tokens cover later components automatically.
+ if(window.__cwbThemeGuard?.version!==2){
+  window.__cwbThemeGuard?.dispose();
   const html=document.documentElement,original={theme:html.getAttribute('data-theme'),dark:html.classList.contains('dark'),scheme:html.style.getPropertyValue('color-scheme'),priority:html.style.getPropertyPriority('color-scheme')};
   let wanted=dark,disposed=false;
   const apply=()=>{if(disposed||!window.__codexWallpaperBridge?.ready)return;const theme=wanted?'dark':'light';if(html.getAttribute('data-theme')!==theme)html.setAttribute('data-theme',theme);if(html.classList.contains('dark')!==wanted)html.classList.toggle('dark',wanted);if(html.style.colorScheme!==theme)html.style.colorScheme=theme;};
-  const observer=new MutationObserver(apply);observer.observe(html,{attributes:true,attributeFilter:['data-theme','class','style']});
-  window.__cwbThemeGuard={update(value){wanted=!!value;apply();},dispose(){if(disposed)return;disposed=true;observer.disconnect();if(original.theme===null)html.removeAttribute('data-theme');else html.setAttribute('data-theme',original.theme);html.classList.toggle('dark',original.dark);if(original.scheme)html.style.setProperty('color-scheme',original.scheme,original.priority);else html.style.removeProperty('color-scheme');delete window.__cwbThemeGuard;}};
+  window.__cwbThemeGuard={version:2,update(value){wanted=!!value;apply();},dispose(){if(disposed)return;disposed=true;if(original.theme===null)html.removeAttribute('data-theme');else html.setAttribute('data-theme',original.theme);html.classList.toggle('dark',original.dark);if(original.scheme)html.style.setProperty('color-scheme',original.scheme,original.priority);else html.style.removeProperty('color-scheme');delete window.__cwbThemeGuard;}};
  }
  window.__cwbThemeGuard.update(dark);
  const shade=[palette.r,palette.g,palette.b].join(',');
@@ -22,7 +22,7 @@ export function paintShell(config){
  // Native browser guests are portaled beside #root. A positive root z-index
  // would place its transparent pane above the guest and intercept mouse input.
  style.textContent=`html,body{background:transparent!important}body{isolation:isolate}#root,#app{position:relative;background:transparent!important}
- :root{--color-text-primary:${ink};--color-text-secondary:${secondary};--color-text-tertiary:${secondary};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
+ :root{--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--color-text-primary:${ink};--color-text-secondary:${secondary};--color-text-tertiary:${secondary};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
  :root{--color-surface:transparent;--color-surface-canvas:transparent;--color-surface-secondary:rgba(${shade},.22);--color-surface-tertiary:rgba(${shade},.35);--color-surface-card:rgba(${shade},.55);--color-surface-elevated:rgba(${shade},.96);--color-surface-elevated-secondary:rgba(${shade},.92)}
  [role="dialog"],[role="menu"],[role="listbox"],[role="tooltip"],[data-slot="popover-content"],[data-slot="hover-card-content"],[data-radix-popper-content-wrapper]{--color-surface:var(--color-surface-elevated);--color-surface-canvas:var(--color-surface-elevated);--color-surface-secondary:var(--color-surface-elevated-secondary);--app-color-background-elevated-secondary-opaque:rgb(${shade});--app-color-background-elevated-tertiary-opaque:rgb(${shade});--app-color-text-foreground:${ink};--app-color-text-foreground-secondary:${secondary};--color-text:${ink};color:${ink}}
  [role="dialog"],[role="menu"],[role="listbox"],[data-slot="popover-content"],[data-slot="hover-card-content"]{background:var(--color-surface-elevated)!important;color:${ink}!important}
@@ -65,15 +65,4 @@ export function paintShell(config){
  window.__cwbDecorate?.(config);
  window.__cwbStartupAppearance?.dispose();
  return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? .48 : null,surfaces:sync};
-}
-
-export function paintEmbedded(config){
- if(location.origin!=='https://chatgpt.com')return {applied:false,reason:'not-chatgpt'};
- const id='codex-wallpaper-embedded-style',enabled=config.enabled!==false&&config.surfaceSync?.embedded!==false;
- let style=document.getElementById(id);if(!enabled){style?.remove();if(window.__cwbEmbeddedOriginal){document.documentElement.style.colorScheme=window.__cwbEmbeddedOriginal.scheme;document.documentElement.classList.toggle('dark',window.__cwbEmbeddedOriginal.dark);delete window.__cwbEmbeddedOriginal}return {applied:false,reason:'disabled'}}
- const p=config.palette||{r:20,g:22,b:28,dark:true},shade=[p.r,p.g,p.b].join(','),ink=p.dark?'#e9eff5':'#15212c';
- window.__cwbEmbeddedOriginal??={scheme:document.documentElement.style.colorScheme,dark:document.documentElement.classList.contains('dark')};document.documentElement.style.colorScheme=p.dark?'dark':'light';document.documentElement.classList.toggle('dark',!!p.dark);
- if(!style){style=document.createElement('style');style.id=id;(document.head||document.documentElement).append(style)}
- style.textContent=`:root{--main-surface-primary:transparent;--main-surface-secondary:rgba(${shade},.4);--main-surface-tertiary:rgba(${shade},.5);--sidebar-surface-primary:transparent;--sidebar-surface-secondary:rgba(${shade},.3);--text-primary:${ink};--text-secondary:${ink}}html,body,#root,#__next,main,[data-sidebar-container],[class~="bg-token-main-surface-primary"],[class~="bg-token-sidebar-surface-primary"]{background:transparent!important;color:${ink}}[role="dialog"],[role="menu"],[class~="bg-token-main-surface-secondary"]{background:rgba(${shade},.97)!important}[data-testid="composer"],[id="composer-background"]{background:rgba(${shade},.6)!important}`;
- return {applied:true,dark:p.dark};
 }

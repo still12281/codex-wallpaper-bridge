@@ -9,12 +9,11 @@ export function installStartupAppearance(palette,appUrl){
  window.__cwbStartupAppearance?.dispose();
  const values=[palette.r,palette.g,palette.b].map(v=>Number.isFinite(v)?Math.round(Math.max(0,Math.min(255,v))):24);
  const shade=values.join(','),dark=palette.dark!==false,ink=dark?'#e9eff5':'#15212c',secondary=dark?'#b8c5d1':'#405262';
- const style=document.createElement('style');style.id='codex-wallpaper-startup-style';
- style.textContent=`:root{color-scheme:${dark?'dark':'light'}!important;--color-text-primary:${ink}!important;--color-text-secondary:${secondary}!important;--color-text-tertiary:${secondary}!important;--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--color-surface:rgb(${shade})!important;--color-surface-canvas:rgb(${shade})!important;--color-surface-secondary:rgb(${shade})!important;--color-bg-primary:rgb(${shade})!important;--color-bg-secondary:rgb(${shade})!important}html,body,#root,#app,[data-app-shell-page-surface],aside.app-shell-left-panel,main[data-app-shell-main-surface]{background:rgb(${shade})!important;color:${ink}!important}`;
+ const sheet=new CSSStyleSheet();
+ sheet.replaceSync(`:root{color-scheme:${dark?'dark':'light'}!important;--color-text-primary:${ink}!important;--color-text-secondary:${secondary}!important;--color-text-tertiary:${secondary}!important;--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--color-surface:rgb(${shade})!important;--color-surface-canvas:rgb(${shade})!important;--color-surface-secondary:rgb(${shade})!important;--color-bg-primary:rgb(${shade})!important;--color-bg-secondary:rgb(${shade})!important}html,body,#root,#app,[data-app-shell-page-surface],aside.app-shell-left-panel,main[data-app-shell-main-surface]{background:rgb(${shade})!important;color:${ink}!important}`);
  let disposed=false;
- const place=()=>{if(!disposed&&!style.isConnected&&(document.head||document.documentElement))(document.head||document.documentElement).appendChild(style);};
- const observer=new MutationObserver(place);observer.observe(document,{childList:true,subtree:true});place();
- const state={dispose(){if(disposed)return;disposed=true;observer.disconnect();style.remove();if(window.__cwbStartupAppearance===state)delete window.__cwbStartupAppearance;}};
+ document.adoptedStyleSheets=[...document.adoptedStyleSheets,sheet];
+ const state={dispose(){if(disposed)return;disposed=true;document.adoptedStyleSheets=document.adoptedStyleSheets.filter(s=>s!==sheet);if(window.__cwbStartupAppearance===state)delete window.__cwbStartupAppearance;}};
  window.__cwbStartupAppearance=state;
  return true;
 }

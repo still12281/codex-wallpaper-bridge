@@ -59,13 +59,13 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
   if(webgl){assert(state.targets.some(t=>t.mode==='webwallgl'&&t.ready));observation.realWebglCleanup=true;}
   if(early){
    assert(await main.evaluate('!document.querySelector("aside")&&!!window.__codexWallpaperBridge?.ready&&!!document.getElementById("codex-wallpaper-bridge-style")&&!window.__cwbWidgets'),'Wallpaper did not paint before shell, or native widgets initialized too early');
-   await main.evaluate('window.__earlyLayer=document.getElementById("codex-wallpaper-bridge-layer");document.body.insertAdjacentHTML("beforeend",\'<aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Late shell</main><div class="_ApplicationMenuTopBar_fixture"><div role="menubar"></div></div>\');true');
+   await main.evaluate('window.__earlyLayer=document.getElementById("codex-wallpaper-bridge-layer");document.body.insertAdjacentHTML("beforeend",\'<aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Late shell</main><div class="_ApplicationMenuTopBar_fixture"><div role="menubar"><button>Generated File</button></div></div>\');true');
    await until(()=>main.evaluate('document.getElementById("codex-wallpaper-controls")?.previousElementSibling?.getAttribute("role")==="menubar"'));
    assert(await main.evaluate('window.__earlyLayer===document.getElementById("codex-wallpaper-bridge-layer")&&window.__codexWallpaperBridge.ready'),'Late shell replaced the ready wallpaper');
    observation.wallpaperBeforeShell=true;observation.panelPlacedAfterShell=true;
    // Reproduce native hydration changing the theme AFTER an early first frame.
    await main.evaluate('window.__earlyGuard=window.__cwbThemeGuard;window.__themeMutations=0;window.__themeCounter=new MutationObserver(m=>__themeMutations+=m.length);__themeCounter.observe(document.documentElement,{attributes:true});document.documentElement.setAttribute("data-theme","light");document.documentElement.classList.remove("dark");document.documentElement.style.colorScheme="light";document.documentElement.style.setProperty("--native-fixture-value","preserved");true');
-   await until(()=>main.evaluate('document.documentElement.getAttribute("data-theme")==="dark"&&document.documentElement.classList.contains("dark")&&getComputedStyle(document.body).color==="rgb(223, 223, 223)"'));
+   assert(await main.evaluate('document.documentElement.getAttribute("data-theme")==="light"&&!document.documentElement.classList.contains("dark")&&getComputedStyle(document.body).color==="rgb(233, 239, 245)"'),'Persistent CSS did not preserve text colour without observing native theme attributes');
    const mutations=await main.evaluate('__themeMutations');await sleep(100);assert.equal(await main.evaluate('__themeMutations'),mutations,'Theme repair did not settle');
    for(const dark of [false,true]){
     await main.evaluate('('+paintShell.toString()+')('+JSON.stringify({palette:{r:20,g:22,b:28,dark},darkOverlay:.4,lightOverlay:.4})+')');
@@ -74,7 +74,7 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
    await main.evaluate('__themeCounter.disconnect();__cwbThemeGuard.dispose();true');
    assert(await main.evaluate('!document.documentElement.hasAttribute("data-theme")&&!document.documentElement.classList.contains("dark")&&document.documentElement.classList.contains("native-fixture")&&document.documentElement.style.colorScheme==="light"&&document.documentElement.style.getPropertyPriority("color-scheme")==="important"&&document.documentElement.style.getPropertyValue("--native-fixture-value")==="preserved"'),'Theme disposal lost original theme/priority or unrelated native state');
    await main.evaluate('document.documentElement.setAttribute("data-theme","light");true');await sleep(50);assert.equal(await main.evaluate('document.documentElement.getAttribute("data-theme")'),'light');
-   observation.lateNativeThemeRepaired=true;observation.nativeTextColourVerified=true;observation.themeObserverSettled=true;observation.themeSnapshotRestored=true;
+   observation.lateNativeThemeCoveredByCss=true;observation.nativeTextColourVerified=true;observation.noThemeRepairObserver=true;observation.themeSnapshotRestored=true;
   }
   if(aux&&!baseline){
    await main.evaluate('window.__fixtureReply=null;const reply=window.__cwbReply;window.__cwbReply=(id,result)=>{if(id===999999)window.__fixtureReply=result;reply(id,result)};window.__codexWallpaperSend(JSON.stringify({token:document.getElementById("codex-wallpaper-controls").__cwbToken,id:999999,action:"surface-sync",region:"embedded",enabled:false}));true');
