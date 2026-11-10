@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2504,
-      "sha256": "d40663b3ba73ddc28f0cb4617349ed2ded02c543cf0908aa97ec9e9d3d1a14d5"
+      "utf8Bytes": 2737,
+      "sha256": "24ae147472def3f3c38f13894f002a1fcbf0647ef45e2000935ce602758e0cf5"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 18503,
-      "sha256": "7fe0fa28fc1f6a00b9c16b41b28bca792dc1a87e7b8b1008ec5d00ab9ab5b68b"
+      "utf8Bytes": 19800,
+      "sha256": "66ab61cebd59b611fd06ca2015e50acd758ddd62cb7aba1eaf9d7bb1f18cb5e8"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 12035,
-      "sha256": "8cea257364e466519faf1fbb6d71ae48b9b3ca25ca0bcbcfaa10403a7cac9f9d"
+      "utf8Bytes": 12605,
+      "sha256": "0009bafae8207a8135bfec222e3ba09b028f853b118cfddd505bc2e4527da886"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 14263,
-      "sha256": "a8c99cd54986c9ebaa2459cc0002cf240c92ca66ce0a48499f12ee44d38af91e"
+      "utf8Bytes": 14859,
+      "sha256": "cf8bde05ed76f140f07bfb48553628d155580b0977e20d3ddf2183831ba31977"
     },
     {
       "path": "README.zh-CN.md",
@@ -125,7 +125,7 @@
     {
       "path": "docs/INSTALL.zh-CN.md",
       "utf8Bytes": 16312,
-      "sha256": "0527e8c60fd338f7534e28d00d17081385d3365d092a0c1a74fcdcfaedb9b64f"
+      "sha256": "4731e04d3b32d1537918c2d5343d600235884c657f1eedb45218511849364a91"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -229,8 +229,8 @@
     },
     {
       "path": "docs/SURFACE-COVERAGE.md",
-      "utf8Bytes": 4261,
-      "sha256": "9de9cdc91ed44c8b63a9b5384da57cb0391675a386efd4b0147da65ca4d55518"
+      "utf8Bytes": 6522,
+      "sha256": "a55078fc39b868f57314c5f5fc4f053121b291454265f597dbfea8c8b8c542ce"
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
@@ -356,7 +356,7 @@
     {
       "path": "package.json",
       "utf8Bytes": 1027,
-      "sha256": "8367f87e35bafcac6eef86bd119f7a586687f7ba2d55e26c0f4c04ec91d3ccf9"
+      "sha256": "74418881957450d02baf5d1126d997729a78d687f456f988ca587579a49b5fe0"
     },
     {
       "path": "progress.md",
@@ -377,6 +377,11 @@
       "path": "src/appearance-model.mjs",
       "utf8Bytes": 4714,
       "sha256": "65a6682b2fd1f28d2bd1993fceb06add0b028748b9315aaa5f7c7381e96e24fa"
+    },
+    {
+      "path": "src/automatic-surfaces.mjs",
+      "utf8Bytes": 14187,
+      "sha256": "4c3b4a7328387f0e7cba1335efc2c6fd3aea03f9fdee4f46888aa7a9d3c8eee0"
     },
     {
       "path": "src/browser-web-source.mjs",
@@ -505,8 +510,8 @@
     },
     {
       "path": "src/startup-appearance.mjs",
-      "utf8Bytes": 3175,
-      "sha256": "ea6394c14742b997360997d426c62fa6e820b318958d493e2a9354f15b31daf7"
+      "utf8Bytes": 2964,
+      "sha256": "b8ab2e9e34e544c2418dc6ef6d93fded294ece413daa4d0a0a962dc811d26d24"
     },
     {
       "path": "src/system-media.mjs",
@@ -520,13 +525,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 45232,
-      "sha256": "bc039ed470e6641cb1dfaa787a51c60bc15db1601273d86ef452fbd9bbb81438"
+      "utf8Bytes": 44269,
+      "sha256": "24ae188dba1c118a63903cb7a6c8e7db1ecf8fc4802d2410acd31082ba315fd3"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 41142,
-      "sha256": "6cdd6dcec2a08a7ebc48328ed1e89cefa8e413597f201014255b93ed9599e821"
+      "utf8Bytes": 41921,
+      "sha256": "f67d9a03b059b72a02d53a20da31e279ee26864286d41875db3fa879e481d01e"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -535,8 +540,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 36023,
-      "sha256": "e10e32e6d51f44f6c8b49001b301f1c30f7858ae376dc12561da191e14d8d055"
+      "utf8Bytes": 37378,
+      "sha256": "93bee7a4dea4236f6d763bd98cbd0e9d50d396dd75c544ff40151bdb38faf678"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -550,8 +555,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 13497,
-      "sha256": "772f59447f6177ebfe46a813fb6506f4598771c9d135685ce4b4c6173f4e57f6"
+      "utf8Bytes": 11714,
+      "sha256": "42abd69fda76784d43d578aa63e94ecaea5242c96ec6505dec3c910a046b80a3"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -587,6 +592,16 @@
       "path": "test/appearance.test.mjs",
       "utf8Bytes": 5264,
       "sha256": "18e7c9556d77da2249fe333854ea30759d562d37d9e09543ae0cc137cd68154a"
+    },
+    {
+      "path": "test/automatic-surfaces-integration.mjs",
+      "utf8Bytes": 9504,
+      "sha256": "a01d73af86bd77146bf0727590258d4238e62599d74c2a2244774f64d8e2b294"
+    },
+    {
+      "path": "test/automatic-surfaces.test.mjs",
+      "utf8Bytes": 1447,
+      "sha256": "c15b2428a2c7bce8f3682bfcb09f29f876d35bbb70de612960b8cb21ea2a6cf8"
     },
     {
       "path": "test/browser-web-integration.mjs",
@@ -750,8 +765,8 @@
     },
     {
       "path": "test/panel-entry-integration.mjs",
-      "utf8Bytes": 7031,
-      "sha256": "28d7d50ebe727a811ba3d0fc280aee95a930927a9ca5a72894d77feb38c61282"
+      "utf8Bytes": 8423,
+      "sha256": "67ae69ac74f649e0ee9b9c5fe51c1eec3b87858429411b2ef9c2c7d5abf1299d"
     },
     {
       "path": "test/performance-reuse.test.mjs",
@@ -810,8 +825,8 @@
     },
     {
       "path": "test/startup-priority-integration.mjs",
-      "utf8Bytes": 12960,
-      "sha256": "2c83a07230489628f5751446b542bb6959342e84a07ac0e8ddac888c259d8df2"
+      "utf8Bytes": 13083,
+      "sha256": "0bc2e2501fd48c2c3a1622ee6ed0f9dae71358c8f2ba9d14ee9b771c73464498"
     },
     {
       "path": "test/startup-shutdown.ps1",
@@ -825,13 +840,13 @@
     },
     {
       "path": "test/startup-transition-integration.mjs",
-      "utf8Bytes": 7848,
-      "sha256": "b21d9d4ba2ee514415f5ba761b743d28df32d3f4f4069d591c9db62ec1d6144c"
+      "utf8Bytes": 7713,
+      "sha256": "1a69dcb4513bda6c083909a5a699f1100b912d974ea6127daf6cfc0b4cf9c1cc"
     },
     {
       "path": "test/surfaces.test.mjs",
-      "utf8Bytes": 1554,
-      "sha256": "285acfea68b7ca17320380bd629214cc1e3ff6a012ed811742d00f4be98606f0"
+      "utf8Bytes": 2409,
+      "sha256": "940bbd4ee10e7387fa23543695877ba786a02d1111842d3ca7d6eabe4ed9f6b5"
     },
     {
       "path": "test/system-media.test.mjs",

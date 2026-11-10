@@ -1,4 +1,18 @@
-# Native surface coverage — 2026-10-23
+# Surface coverage
+
+## alpha.7 update — 2026-11-09
+
+Coverage now follows trusted main/detached app documents and the parent chain of their webviews and nested frames, rather than a ChatGPT-only list. Main-window routes such as chat, settings, projects and side panels share the shell stylesheet; they are not a list of separately hardcoded pages. Unrelated browser pages and the wallpaper's own renderers are excluded.
+
+Shared tokens and structural surface CSS apply to later matching components. Owned embedded documents receive one bounded neutral-background pass after load. Native shells skip this automatic pass. The wallpaper panel's **扫描并适配** button explicitly rescans all currently open owned documents, including shell content and narrower side panels, once per click. The result reports new adaptations, native/disabled skips, failures and pass limits; no recurring adaptation scan or theme repair observer is installed.
+
+Code/terminal native-background preferences and embedded-content opt-outs remain effective, including same-process nested frames. Buttons, menus/dialogs, semantic colours, editor contents, images, gradients and canvas pixels are protected from the heuristic pass. Native guest parents are handled structurally, without provider-specific names.
+
+Focused generated-browser checks passed for cross-origin creation/navigation, strict CSP, late shell/frame backgrounds, narrow panels, manual-call coalescing, disable/restore, input, semantic/media preservation, wallpaper/external-page exclusion and idle stability. Actual Windows-client checks confirmed Notion's nested content reveals the wallpaper. The real panel action checked 10 open documents, preserved the existing wallpaper layer and exact settings bytes, and reported its limits. The client was retained while the local wallpaper host was reloaded.
+
+This is presentation evidence, not acceptance of every application operation. Late independent hardcoded backgrounds can still require the manual button; closed components, painted canvas content and arbitrary future rendering are not guaranteed. Per-pass limits cannot preempt an individual synchronous browser style/layout calculation. Real-client cold-start timing was not measured in this iteration.
+
+## Historical native-page sweep — 2026-10-23
 
 The development runtime was checked in the installed Windows client (26.1016.8622.0). Pages were actually opened, their rendered backgrounds/foregrounds inspected, and representative screenshots reviewed. This checks wallpaper presentation, not every business operation or every possible future remote state.
 

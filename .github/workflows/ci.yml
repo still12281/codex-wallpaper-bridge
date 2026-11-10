@@ -40,6 +40,11 @@ jobs:
       - name: Wallpaper control entry regression
         if: matrix.node == 24
         run: node test/panel-entry-integration.mjs
+      - name: Owned document and manual surface scan regression
+        if: matrix.node == 24
+        env:
+          CODEX_WALLPAPER_TEST_WORK: ${{ runner.temp }}/cwb-surface
+        run: node test/automatic-surfaces-integration.mjs
       - name: Installer and startup policy regressions
         if: matrix.node == 24
         shell: pwsh

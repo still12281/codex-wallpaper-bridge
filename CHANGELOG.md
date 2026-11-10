@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.7 — 2026-11-09
 
 - Add a “扫描并适配” control for a one-shot rescan of all currently open owned documents, including the native shell and nested plugin frames. Report newly adapted backgrounds, skipped/failed documents and bounded-pass limits; preserve wallpaper playback, settings and native opt-outs. No recurring scan is scheduled.
 
