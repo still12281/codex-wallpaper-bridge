@@ -9,6 +9,8 @@ import {createAutomaticSurfaces} from '../src/automatic-surfaces.mjs';
 
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const wait=async(fn)=>{for(let i=0;i<100;i++){const value=await fn().catch(()=>false);if(value)return value;await pause(50);}throw Error('surface integration timed out');};
+// Theme installation can finish before the parser builds the fixture elements.
+const fixtureReady='document.readyState==="complete"&&!!document.querySelector(".new-page-container")&&window.__cwbAutomaticSurface?.snapshot().analyzed';
 let chrome,cdp,browser,manager;
 const result={kind:'isolated-chromium-surface-lifecycle'};
 const server=createServer((req,res)=>{
@@ -28,7 +30,7 @@ try{
  const target=await wait(async()=>(await(await fetch(endpoint+'/json/list')).json()).find(t=>t.url===shellUrl));cdp=await connectCdp(target.webSocketDebuggerUrl);
  let config={enabled:true,palette:{r:20,g:22,b:28,dark:true},surfaceSync:{embedded:true}};
  const errors=[];manager=createAutomaticSurfaces(browser,{appUrl:shellUrl,getConfig:()=>config,onStatus:s=>{if(s.error)errors.push(s.error);}});await manager.start();
- await wait(()=>cdp.evaluate('window.__cwbAutomaticSurface?.snapshot().analyzed'));
+ await wait(()=>cdp.evaluate(fixtureReady));
  assert.equal(await cdp.evaluate('getComputedStyle(document.querySelector(".new-page-container")).backgroundColor'),'rgba(0, 0, 0, 0)');
  assert.equal(await cdp.evaluate('getComputedStyle(document.querySelector(".semantic")).backgroundColor'),'rgb(200, 30, 20)');
  assert.notEqual(await cdp.evaluate('getComputedStyle(document.querySelector(".image")).backgroundImage'),'none');
@@ -40,11 +42,11 @@ try{
  const child=await wait(async()=>(await(await fetch(endpoint+'/json/list')).json()).find(t=>t.type==='iframe'&&t.url===childUrl));
  const guest=await connectCdp(child.webSocketDebuggerUrl);
  try{
-  await wait(()=>guest.evaluate('window.__cwbAutomaticSurface?.snapshot().analyzed'));assert.equal(await guest.evaluate('getComputedStyle(document.body).backgroundColor'),'rgba(0, 0, 0, 0)');
+  await wait(()=>guest.evaluate(fixtureReady));assert.equal(await guest.evaluate('getComputedStyle(document.body).backgroundColor'),'rgba(0, 0, 0, 0)');
   await guest.evaluate('document.getElementById("button").click();document.getElementById("input").value="works";true');assert.equal(await guest.evaluate('document.getElementById("button").dataset.clicked'),'1');
   // Page.reload is top-level only. Navigate the owning iframe element instead.
   await cdp.evaluate('document.getElementById("guest").src='+JSON.stringify(childUrl+'?reload=1')+';true');
-  await wait(()=>guest.evaluate('location.search==="?reload=1"&&window.__cwbAutomaticSurface?.snapshot().analyzed'));result.crossOriginCreationReloadAndInput=true;
+  await wait(()=>guest.evaluate('location.search==="?reload=1"&&'+fixtureReady));result.crossOriginCreationReloadAndInput=true;
   const before=manager.snapshot();const sample=await guest.evaluate('JSON.stringify(window.__cwbAutomaticSurface.snapshot())');await pause(500);
   assert.deepEqual(manager.snapshot(),before);assert.equal(await guest.evaluate('JSON.stringify(window.__cwbAutomaticSurface.snapshot())'),sample);result.noIdleReanalysis=true;
   await guest.evaluate('(()=>{const later=document.createElement("div");later.id="late-hardcoded";later.style.cssText="position:fixed;inset:0;background:rgb(30,30,30)";document.body.append(later);return true;})()');
