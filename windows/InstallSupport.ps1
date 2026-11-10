@@ -89,10 +89,16 @@ function Install-WallpaperReplacementShortcuts {
 }
 function Publish-WallpaperInstallShortcut([string]$Source,[string]$Destination,[string]$Entry) {
   $shell=New-Object -ComObject WScript.Shell
+  try{
   if(Test-Path -LiteralPath $Destination){
     $existing=$shell.CreateShortcut($Destination)
-    if(-not $existing.TargetPath -or [IO.Path]::GetFullPath($existing.TargetPath) -ine [IO.Path]::GetFullPath($Entry)){throw "Shortcut belongs to another program; preserved: $Destination"}
+    try{if(-not $existing.TargetPath -or [IO.Path]::GetFullPath($existing.TargetPath) -ine [IO.Path]::GetFullPath($Entry) -or $existing.Arguments){throw "Shortcut belongs to another program or has custom arguments; preserved: $Destination"}}finally{[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($existing)}
   }
   [void](New-Item -ItemType Directory -Path (Split-Path -Parent $Destination) -Force -ErrorAction Stop)
   Copy-Item -LiteralPath $Source -Destination $Destination -Force -ErrorAction Stop
+  $root=Split-Path -Parent $Entry;$recordPath=Join-Path $root 'managed-shortcuts.json'
+  $links=if(Test-Path -LiteralPath $recordPath){@((Get-Content -LiteralPath $recordPath -Raw -ErrorAction Stop|ConvertFrom-Json).links)}else{@()}
+  $links=@($links|Where-Object {$_.path -ine [IO.Path]::GetFullPath($Destination)})+@([ordered]@{path=[IO.Path]::GetFullPath($Destination);entry=[IO.Path]::GetFullPath($Entry);sha256=(Get-FileHash -LiteralPath $Destination -Algorithm SHA256 -ErrorAction Stop).Hash})
+  [IO.File]::WriteAllText($recordPath,(@{schemaVersion=1;links=$links}|ConvertTo-Json -Depth 5),[Text.UTF8Encoding]::new($false))
+  }finally{[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)}
 }

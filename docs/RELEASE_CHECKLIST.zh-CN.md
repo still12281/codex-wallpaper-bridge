@@ -13,7 +13,8 @@
 ## 安装资产
 
 - 从指定提交归档，前缀为 `CodexWallpaperBridge/`。
-- 同时提供 ZIP、ZIP SHA-256、`install.ps1` 和脚本 SHA-256。
+- 同时提供 EXE、EXE SHA-256、ZIP、ZIP SHA-256、`install.ps1` 和脚本 SHA-256。
+- EXE 与 ZIP 来自同一提交；核对实际安装、重复安装、Windows Apps 注册、卸载及数据保留。
 - 引导脚本固定版本与 ZIP 哈希，安装沿用现有数据目录。
 - 草稿资产回读后逐一比对哈希，CI 通过后发布。
 - 公开下载并执行 `-CheckOnly`，核对下载、解压、依赖检测与 `willStartClient=false`。

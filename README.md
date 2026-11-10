@@ -102,7 +102,16 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 
 **准备：Windows 10/11 x64，已安装并登录官方 Microsoft Store 版 Codex，保持联网。**
 
-### 命令行一键安装
+### 推荐：双击安装程序
+
+1. 下载 [CodexWallpaperBridge-0.2.1-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.1/CodexWallpaperBridge-0.2.1-Setup.exe)，双击打开安装向导。
+2. 选择程序目录和壁纸数据目录。从旧 ZIP 安装升级时，确认数据目录指向原壁纸库。
+3. 选择快捷方式、更新恢复和登录启动选项，等待依赖准备与安装完成。
+4. 保存工作、正常退出 Codex，再从壁纸入口打开。以后可以在 Windows“已安装的应用”中卸载；卸载保留壁纸库和设置。
+
+安装程序提供简体中文和英文向导。个人数据默认位于 `%LOCALAPPDATA%\CodexWallpaperBridge`，安装程序文件默认位于 `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`；两者独立存放。对应 `.exe.sha256` 用于核对下载完整性。
+
+### 命令行安装（可选）
 
 打开 **PowerShell**，复制执行：
 
@@ -114,7 +123,7 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2
 
 安装成功后，保存工作并正常退出原 Codex，再打开所选壁纸入口。安装器不会自动关闭当前客户端。无法连接 GitHub 时使用下方手动下载方式。
 
-### 下载安装包
+### ZIP 手动部署（可选）
 
 1. 从本仓库的 [Releases](https://github.com/still12281/codex-wallpaper-bridge/releases) 下载固定版本的 `CodexWallpaperBridge-*.zip` 安装包，解压到本地文件夹。对应 `.sha256` 文件用于核对下载完整性。
 2. 双击 **[`Install.cmd`](Install.cmd)**。选择 **1：新建 Codex Wallpaper 专用入口**，或 **2：备份并替换识别到的原 Codex 快捷方式**。

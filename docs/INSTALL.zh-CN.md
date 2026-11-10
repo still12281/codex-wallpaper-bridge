@@ -1,5 +1,18 @@
 # Windows 安装与配置
 
+## 推荐：EXE 安装向导
+
+适用于 Windows 10/11 x64。先安装并登录官方 Microsoft Store 版 Codex，下载并双击 [CodexWallpaperBridge-0.2.1-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.1/CodexWallpaperBridge-0.2.1-Setup.exe)。
+
+1. 选择安装程序文件的位置，默认 `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`。
+2. 确认壁纸数据目录，默认 `%LOCALAPPDATA%\CodexWallpaperBridge`。向导优先沿用已有 EXE 安装记录，也会识别环境变量或现有壁纸快捷方式指向的数据目录。旧 ZIP 自选目录未被识别时，在此选择原目录。
+3. 选择独立入口、备份替换原快捷方式或不创建快捷方式；更新恢复和登录启动默认沿用现有设置。
+4. 保持联网，等待依赖与运行组件准备完成。安装结束后保存工作，正常退出 Codex，再从壁纸入口打开。
+
+从新版 EXE 升级时再次运行安装向导，沿用原数据目录。数据迁移使用壁纸库备份恢复工具；程序目录与数据目录必须分开。Windows“已安装的应用”提供卸载入口；卸载撤销经过归属核验的快捷方式、登录启动和更新任务，保留用户修改的集成及整个数据目录。依赖组件独立保留。
+
+安装日志：`%LOCALAPPDATA%\CodexWallpaperBridge-setup.log`；卸载日志：`%LOCALAPPDATA%\CodexWallpaperBridge-uninstall.log`。这两项可能含本机路径，报告问题前请脱敏。
+
 ## 命令行一键部署
 
 适用于 Windows 10/11 x64；先安装并登录官方 Microsoft Store 版 Codex。打开 PowerShell，执行：
@@ -14,7 +27,7 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2
 
 每条命令对应固定版本；升级时使用新版 README/Release 提供的命令。脚本或下载被网络拦截时，按下文手动下载，不需要关闭安全软件。希望先审阅脚本，可在 [Release](https://github.com/still12281/codex-wallpaper-bridge/releases/tag/v0.2.1) 下载 `install.ps1` 和对应 `.sha256`；脚本的 `-CheckOnly` 选项只下载校验并检查安装条件，不执行安装。
 
-## 推荐：双击安装
+## ZIP 手动部署
 
 1. 安装官方 Microsoft Store 版 Codex，正常打开一次并登录。
 2. 从仓库 [Releases](https://github.com/still12281/codex-wallpaper-bridge/releases) 下载固定版本的 `CodexWallpaperBridge-*.zip` 和对应 `.sha256`，解压到本地文件夹。不要在压缩包预览中直接运行。
@@ -228,6 +241,7 @@ $env:CODEX_WALLPAPER_UV = 'D:\Tools\uv\uv.exe'
 - **升级**：下载新版本并重新双击安装；自定义安装盘时继续传相同 `-DataDirectory`。
 - **备份**：使用[本地维护](MAINTENANCE.zh-CN.md)中的完整库备份/恢复；外观预设 JSON 只保存外观。
 - **停用**：正常退出 Codex 后，使用原来的官方入口启动。
-- **卸载**：先备份需要的内容；若用过替换模式，先恢复原快捷方式。移除自己安装的更新任务，正常退出客户端，删除自己创建的壁纸快捷方式，再手动删除本项目数据目录。不会要求卸载 Node、PowerShell、FFmpeg 或 uv，这些运行与转换依赖独立于桥接程序保留。
+- **EXE 卸载**：在 Windows“已安装的应用”中选择 Codex Wallpaper Bridge。卸载只移除安装程序管理的文件与经过归属核验的集成，保留数据目录与独立依赖。
+- **ZIP 卸载**：先备份需要的内容；若用过替换模式，先恢复原快捷方式。移除自己安装的更新任务和壁纸登录启动，正常退出客户端，删除自己创建的壁纸快捷方式。数据目录由用户按需处理，Node、PowerShell、FFmpeg 和 uv 可继续供其它程序使用。
 
 不要在 Issues 中上传整个数据目录、settings.json、账号 profile 或未经脱敏的日志。

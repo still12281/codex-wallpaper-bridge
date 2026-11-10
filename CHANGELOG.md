@@ -2,6 +2,7 @@
 
 ## 0.2.1 — 2026-11-10
 
+- Add an English/Simplified Chinese EXE setup wizard with separate program/data folders, existing-install discovery and shortcut/startup choices. Register Windows Apps uninstall, restore owned integrations and preserve wallpaper data and user-modified shortcuts.
 - Put wallpaper selection and its preview first in the control panel. Group wallpaper-library browsing and local imports below the preview, and return to the selector when reopening the panel.
 - Group display tiers, renderer selection and custom playback settings under “播放与画质”. Move the one-shot scan into “页面适配与原生底色” and keep library management below appearance settings.
 

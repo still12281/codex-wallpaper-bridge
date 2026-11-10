@@ -1,5 +1,7 @@
 # Third-party notices
 
+The Windows EXE installer is generated with [Inno Setup](https://jrsoftware.org/), Copyright (C) 1997-2026 Jordan Russell, portions Copyright (C) 2000-2026 Martijn Laan. Its embedded setup/uninstall components retain their original copyright notices and website links under the [Inno Setup license](https://jrsoftware.org/files/is/license.txt). The compiler is a separate build tool; it is not included in the source archive.
+
 Visual design references: [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md), commit `3b605329240ce735b510037cca322f1831fdd7f8` (MIT), specifically its Linear and Raycast design analyses, informed the panel surface hierarchy, spacing and control density. The implementation is project-specific CSS; no reference document, proprietary font, logo, illustration or website source is redistributed. See [the design adaptation record](docs/UI-DESIGN-20261028.zh-CN.md).
 
 Optional browser rendering uses npm `webwallgl@3.0.0` (MIT, oneincase), prepared separately by `tools/prepare-webwallgl.mjs` using a pinned SHA-512 package digest. The browser bundle and wallpaper assets are not redistributed here. The runtime preparation preserves the original license beside the script. Source: https://github.com/oneincase/webwallgl .
