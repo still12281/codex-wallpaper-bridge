@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 21049,
-      "sha256": "356fc8be309558bc0f28f99a798703855fba58262187eb41a2e04c8faf6f8ce0"
+      "utf8Bytes": 20561,
+      "sha256": "0357131442994b0681ae93a1e777f519dc2c1016280f4ad4bc99dea83be95e41"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -269,8 +269,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "utf8Bytes": 12331,
-      "sha256": "06d200f26f0af7e0a3082fd64d31df678928515f99cb18d3bb40a6d962711032"
+      "utf8Bytes": 13289,
+      "sha256": "ceb262a98f9e57e2ab6e96460df90b2711b4ce3eac815c951ff215838e6614d5"
     },
     {
       "path": "docs/WEBWALLGL.md",

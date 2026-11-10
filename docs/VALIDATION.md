@@ -1,23 +1,30 @@
 # Validation record
 
-## 0.2.0 core acceptance — 2026-11-09
+## 0.2.0 compatibility and regression checks — 2026-11-09
 
-The declared core flows below passed on the installed Windows Codex **26.1103.4239.0**. Acceptance was performed by the agent against the actual client, with the current chat retained. The regular 0.2.0 release includes the accumulated earlier alpha features and the native-entry correction found during this acceptance; it does not claim that alpha.7's existing features are newly implemented again.
+Test environment: Windows, installed Codex **26.1103.4239.0**. Release source: [`12a0206`](https://github.com/still12281/codex-wallpaper-bridge/commit/12a020694d4ebd147b5cc8d51c09d468dc4c6469). The table distinguishes installed-client observations from generated-environment regressions. Timing samples come from one installation and are not general performance bounds.
 
 | Core flow | Actual result |
 | --- | --- |
 | GPU scene → existing video → original GPU scene | Passed. Both main and detached documents adopted the video; nonzero video dimensions, advancing media time and decoded-frame count were verified. The original scene resumed with active GPU rendering. Host action roundtrips were 2.040 s to video and 1.861 s back to GPU, including both documents, not physical-display timing guarantees. |
 | State and rejection safety | Passed. A nonexistent wallpaper selection was rejected while the current layer remained ready. Original library entries, selection and all non-derived preferences were restored. The client browser identity remained unchanged. |
-| Unified native entry | An initial background invocation exposed a foreground-grant handoff issue and misleading failure modal. After the correction, launching the installed entry through an Explorer address-bar input chain produced a fresh `foreground=true`, permission-granted result in 527.5 ms. Client and wallpaper host were reused; the entry exited without a failure modal. |
+| Unified native entry | Launching the rebuilt entry from Explorer produced a fresh `foreground=true`, permission-granted result in 527.5 ms. Client and wallpaper host were reused; the entry exited without a failure modal. Background invocation alone is not evidence of a user-input launch path. |
 | Independent document recovery | Passed. The unused detached document was checked for drafts/messages before reload. Wallpaper, visible control entry and automatic adapter recovered in 732 ms; saved settings bytes were unchanged. The main chat was not reloaded. |
-| Panel, Notion and manual repair | Reused unchanged alpha.7 actual-client evidence: Notion's nested content revealed the wallpaper; the visible scan control checked 10 owned documents, preserved the layer and exact settings bytes, reported its bounded-pass limits, and scheduled no repeat scan. |
+| Panel, Notion and manual repair | The implementation is unchanged from alpha.7. Installed-client checks showed Notion's nested content revealing the wallpaper; the visible scan control checked 10 owned documents, preserved the layer and exact settings bytes, reported its bounded-pass limits, and scheduled no repeat scan. |
 | Native window ownership/geometry and runtime paths | Passed focused native regressions. The installed rebuilt entry invoked its recorded Node/PowerShell with empty PATH, stayed inspect-only and preserved client identities. |
 
 The corrected entry retains foreground permission for the actual Codex process. A visible, restored window denied foreground by Windows is recorded as `restored-without-foreground`, not as successful focus and not as a reason to rebuild the client. Genuine restore/identity failures remain failures with fresh diagnostics. No forced keystroke or system foreground-lock setting is added to the product.
 
-New-machine installation, a future natural Microsoft Store update, all DPI combinations, historical/future client structures, every third-party scene and arbitrary late hardcoded/closed/canvas UI are outside this acceptance. Experimental Chromium Web mode remains explicitly experimental. These limits do not prevent shipping the accepted core. This run did not close/restart the main client process or measure a new real-client cold boot.
+Not covered by these checks: fresh-machine installation, a subsequent natural Microsoft Store update, the full DPI matrix, other client versions, every third-party scene, and arbitrary late hardcoded/closed/canvas UI. Chromium Web mode remains experimental. Main-client process cold boot was not measured in this run.
 
-Release notes link the exact final commit and CI run, four fixed-version asset hashes and the public download/ZIP verification/extraction/installer `-CheckOnly` result for the final package. Private screenshots and configuration snapshots remain outside this repository.
+Release integrity: [Windows Node 22/24 CI](https://github.com/still12281/codex-wallpaper-bridge/actions/runs/42758204214) passed for the release commit. All four uploaded assets matched their local hashes after download; the archive's 234 reviewed files matched its manifest. The public bootstrap download and `-CheckOnly` path passed ZIP verification, extraction and dependency checks with `missing=[]` and `willStartClient=false`.
+
+### Reproduction notes
+
+- In the installed client, switch from a saved GPU scene to a saved video and back. Check actual video dimensions, advancing media time/decoded frames and resumed scene rendering, then compare library entries and preferences.
+- Run the installed `CodexEntry.exe` from Explorer. Check the new `activation-status.json` timestamp, window state and activation outcome, plus unchanged client/host identities. A background shell invocation may be subject to different Windows foreground restrictions.
+- Reload an unused detached document and check wallpaper readiness, control-entry visibility and adapter restoration. Preserve documents containing drafts or conversation content.
+- Use the wallpaper panel's scan control after adding a late neutral background. Verify the result count, retained wallpaper layer, settings and idle scan counter. Generated cases for cross-origin frames and native-background opt-outs are in `test/automatic-surfaces-integration.mjs`.
 
 ## Status recorded on 2026-11-07
 
