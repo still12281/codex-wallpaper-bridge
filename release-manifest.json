@@ -765,8 +765,8 @@
     },
     {
       "path": "test/panel-entry-integration.mjs",
-      "utf8Bytes": 8539,
-      "sha256": "143dbff68db7e043c3ebee0e447b732979b260ef68f0187cc6467ca5fb090491"
+      "utf8Bytes": 9486,
+      "sha256": "a77d92b16b55e5d48f781b89368c627d5bbb1704bf0006b7374afc2eea51b166"
     },
     {
       "path": "test/performance-reuse.test.mjs",

@@ -1,9 +1,9 @@
 // Generated shell only. Never connects to the installed Codex client.
-import {mkdtemp,writeFile,access,mkdir} from 'node:fs/promises';
+import {mkdtemp,writeFile,access,mkdir,realpath} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
-import {pathToFileURL} from 'node:url';
+import {pathToFileURL,fileURLToPath} from 'node:url';
 import {createServer} from 'node:net';
 import assert from 'node:assert/strict';
 import {connectCdp} from '../src/cdp-client.mjs';
@@ -11,7 +11,7 @@ import {installPanel} from '../src/wallpaper-panel.mjs';
 import {installPanelWindow} from '../src/panel-window.mjs';
 import {libraryGroups} from '../src/library-model.mjs';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function until(fn){const end=Date.now()+5000;while(Date.now()<end){const value=await fn().catch(()=>false);if(value)return value;await sleep(30);}throw Error('Panel entry fixture timed out');}
+async function until(fn,timeoutMs=5000){const end=Date.now()+timeoutMs;let lastError;while(Date.now()<end){const value=await fn().catch(error=>{lastError=error;return false});if(value)return value;await sleep(30);}throw Error('Panel entry fixture timed out'+(lastError?': '+lastError.message:''));}
 let chrome=process.env.CODEX_WALLPAPER_TEST_CHROME;
 for(const base of [process.env.ProgramFiles,process.env['ProgramFiles(x86)'],process.env.LOCALAPPDATA].filter(Boolean)){
  if(chrome)break;
@@ -23,10 +23,20 @@ const root=await mkdtemp(path.join(scratch,'cwb-panel-entry-'));
 const html=path.join(root,'fixture.html');
 await writeFile(html,'<!doctype html><style>body{margin:0}#native-bar{display:flex;height:36px;align-items:center}#native-bar>[role=menubar]{display:flex;height:24px;align-items:center}#background{position:fixed;inset:36px 0 0;z-index:-1;background:#345}</style><div id="native-bar" class="_ApplicationMenuTopBar_old"><div role="menubar"><button role="menuitem">Generated File</button></div></div><div id="background"></div><input id="native-input" value="generated draft">');
 const listener=createServer();await new Promise(r=>listener.listen(0,'127.0.0.1',r));const port=listener.address().port;await new Promise(r=>listener.close(r));
-let browser,c;
+let browser,c,browserError='',browserStderr='',observedTargets=[];
 try{
- browser=spawn(chrome,['--headless=new','--no-first-run','--disable-extensions','--disable-background-networking','--window-size=1000,800','--remote-debugging-address=127.0.0.1','--remote-debugging-port='+port,'--user-data-dir='+path.join(root,'profile'),pathToFileURL(html).href],{windowsHide:true,stdio:'ignore'});
- const target=await until(async()=>(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===pathToFileURL(html).href));
+ browser=spawn(chrome,['--headless=new','--no-first-run','--disable-extensions','--disable-background-networking','--window-size=1000,800','--remote-debugging-address=127.0.0.1','--remote-debugging-port='+port,'--user-data-dir='+path.join(root,'profile'),pathToFileURL(html).href],{windowsHide:true,stdio:['ignore','ignore','pipe']});
+ browser.once('error',error=>{browserError=error.message});browser.stderr.on('data',chunk=>{browserStderr=(browserStderr+chunk).slice(-1600)});
+ const fixturePath=(await realpath(html)).toLowerCase();
+ let target;
+ try{target=await until(async()=>{
+  const list=await(await fetch('http://127.0.0.1:'+port+'/json/list',{signal:AbortSignal.timeout(2000)})).json();observedTargets=list.map(t=>({type:t.type,url:t.url}));
+  // Chromium may expand Windows short paths; compare the actual file identity.
+  for(const candidate of list)if(candidate.type==='page'&&candidate.url.startsWith('file:')){
+   if((await realpath(fileURLToPath(candidate.url)).catch(()=>'' )).toLowerCase()===fixturePath)return candidate;
+  }
+  return false;
+ },30000);}catch(error){throw Error(error.message+'; browser='+JSON.stringify({exitCode:browser.exitCode,error:browserError,targets:observedTargets,stderr:browserStderr}));}
  c=await connectCdp(target.webSocketDebuggerUrl);
  await until(()=>c.evaluate('document.readyState==="complete"&&!!document.getElementById("native-input")&&!!document.querySelector("[role=menubar]")'));
  await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__fixtureConfig={library:[],selectedId:null,darkOverlay:.55,pauseOnBlur:true,visual:{theme:"dark"}};window.__codexWallpaperSend=raw=>{const message=JSON.parse(raw);window.__fixtureAction=message.action;if(message.action==="surface-rescan"){window.__fixtureScanReply=()=>window.__cwbReply(message.id,{ok:true,scan:{scanned:2,added:1},message:"已扫描 2 个页面，新增适配 1 处背景。"});return;}if(message.action==="appearance")Object.assign(window.__fixtureConfig,{darkOverlay:message.darkOverlay,pauseOnBlur:message.pauseOnBlur});queueMicrotask(()=>window.__cwbReply(message.id,{ok:true,config:window.__fixtureConfig}));};('+installPanel.toString()+')(window.__fixtureConfig,"fixture-token");true');
