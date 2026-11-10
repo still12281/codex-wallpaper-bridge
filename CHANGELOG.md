@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Put wallpaper selection and its preview first in the control panel. Group wallpaper-library browsing and local imports below the preview, and return to the selector when reopening the panel.
+- Group display tiers, renderer selection and custom playback settings under “播放与画质”. Move the one-shot scan into “页面适配与原生底色” and keep library management below appearance settings.
+
 ## 0.2.0 — 2026-11-09
 
 - Carry forward automatic theme installation for owned documents and nested frames, plus the on-demand surface scan introduced in alpha.7, into the regular 0.2.0 release.

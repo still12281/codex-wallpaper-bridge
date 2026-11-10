@@ -24,7 +24,7 @@ See the [Chinese screenshot gallery](README.md#效果展示) and [capture proven
 - Optional folder search for Wallpaper projects or ordinary images/videos.
 - Wallpaper-derived colors across the chat, sidebar, and common settings surfaces.
 - Event-driven theme installation for owned plugin guests and nested documents, shared CSS for later components, and one bounded fallback pass after document load. No adaptation polling or continuous DOM scanning. Late hardcoded backgrounds, closed components and canvas rendering can still require exceptions.
-- A “扫描并适配” button at the top of the wallpaper panel manually rescans all open owned documents, including the native shell. It reports new adaptations and partial results, respects native-background preferences, and schedules no recurring work.
+- Expand “页面适配与原生底色” in the wallpaper panel and click “扫描并适配” to rescan all open owned documents, including the native shell. It reports new adaptations and partial results, respects native-background preferences, and schedules no recurring work.
 - Separate message and composer space to keep transparent input controls readable.
 - Silent video playback, pause on loss of focus, adjustable resolution/frame limits, and hot application after conversion.
 - One current playback file per wallpaper; previous playback copies are replaced after successful decode.
@@ -84,7 +84,7 @@ The official Codex login startup task can bypass the wallpaper entry. From alpha
 
 Open **壁纸** in the client. The current UI is in Chinese.
 
-- **搜索 Wallpaper 壁纸 / 图片 / 视频** defaults to Wallpaper Engine + discovered global libraries. Change to a folder to search a particular project/library.
+- **浏览壁纸库** defaults to Wallpaper Engine + discovered global libraries. Change to a folder to search a particular project/library.
 - **其它图片 / 视频** searches a chosen folder and its descendants. It does not scan every image/video on every drive by default.
 - My-library selection previews a thumbnail and renderer label; apply and delete are explicit buttons. Selected import inspection stays beside its preview.
 - Checked imports save the whole selection without changing the active background. Duplicate items prompt or appear in a batch summary; file content hashes distinguish renamed copies from changed contents.

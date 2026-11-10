@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 20561,
-      "sha256": "0357131442994b0681ae93a1e777f519dc2c1016280f4ad4bc99dea83be95e41"
+      "utf8Bytes": 20987,
+      "sha256": "4fa74fac98bbec7779332534d49e495136e95f21438a2112680a3a339155e271"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 12589,
-      "sha256": "13b0daab0195ddd1c5f1a046634ee631629ea33d4950214ec4933d4eeb2564c0"
+      "utf8Bytes": 12587,
+      "sha256": "18b8d669ae0cd2aae5d5a42f3e0da7f1b0e8825120c5a0539488806cb88617c5"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 14843,
-      "sha256": "954e00475d868d9cabfc9cd4f3b77e2897262c14ceb962b06adba575c29855a3"
+      "utf8Bytes": 14886,
+      "sha256": "66c10abb65960485ba91d62499d8692dfbd44abc3ebba267bf1367336943074d"
     },
     {
       "path": "README.zh-CN.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 16296,
-      "sha256": "b58a68c3e429634aca8323d4e11cf9f5cfe238d9fb07e8210fa71005d4ed4589"
+      "utf8Bytes": 16270,
+      "sha256": "e64a8181c931c01ab67502402f22ba0b96ac780c33818ed6333abe1d19a97378"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -540,8 +540,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 37378,
-      "sha256": "93bee7a4dea4236f6d763bd98cbd0e9d50d396dd75c544ff40151bdb38faf678"
+      "utf8Bytes": 38654,
+      "sha256": "93bf05e5d609ab9baa7ab690b04364decafc8f78f1a4c0dacef00aa02a20dcfb"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -760,13 +760,13 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 31442,
-      "sha256": "92bf0d2c4a3bbfafbfc79035996d2290e7ad1ceeb36346231b474964d833d439"
+      "utf8Bytes": 33198,
+      "sha256": "c129873e318edf68cc9089fd0e4c115c7c57502194440decae4318c9cbdfa546"
     },
     {
       "path": "test/panel-entry-integration.mjs",
-      "utf8Bytes": 8423,
-      "sha256": "67ae69ac74f649e0ee9b9c5fe51c1eec3b87858429411b2ef9c2c7d5abf1299d"
+      "utf8Bytes": 8539,
+      "sha256": "143dbff68db7e043c3ebee0e447b732979b260ef68f0187cc6467ca5fb090491"
     },
     {
       "path": "test/performance-reuse.test.mjs",

@@ -42,7 +42,7 @@ try{
  for(const type of ['mousePressed','mouseReleased'])await c.call('Input.dispatchMouseEvent',{type,x:fallback.x,y:fallback.y,button:'left',clickCount:1});
  assert.equal(await c.evaluate('window.__cwbPanelHost.shadowRoot.querySelector("dialog").open'),true);
  assert(await c.evaluate('(()=>{const button=window.__cwbPanelHost.shadowRoot.getElementById("cwb-surface-scan");return !!button.closest(".cwb-window-body")&&!button.closest(".cwb-titlebar");})()'));
- const scanPoint=await c.evaluate('(()=>{const r=window.__cwbPanelHost.shadowRoot.getElementById("cwb-surface-scan").getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()');
+ const scanPoint=await c.evaluate('(()=>{const s=window.__cwbPanelHost.shadowRoot;s.getElementById("surface-options").open=true;const button=s.getElementById("cwb-surface-scan");button.scrollIntoView({block:"center"});const r=button.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()');
  for(const type of ['mousePressed','mouseReleased'])await c.call('Input.dispatchMouseEvent',{type,...scanPoint,button:'left',clickCount:1});
  await until(()=>c.evaluate('window.__fixtureAction==="surface-rescan"'));
  assert(await c.evaluate('(()=>{const s=window.__cwbPanelHost.shadowRoot;return s.getElementById("cwb-surface-scan").disabled&&s.getElementById("cwb-surface-scan").textContent==="正在扫描…";})()'));
