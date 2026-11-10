@@ -7,7 +7,7 @@ using System.Windows.Forms;
 internal static class CodexEntry {
  [DllImport("shell32.dll", CharSet=CharSet.Unicode)]
  private static extern int SetCurrentProcessExplicitAppUserModelID(string id);
- [DllImport("user32.dll")]private static extern bool AllowSetForegroundWindow(int processId);
+ [DllImport("user32.dll",SetLastError=true)]private static extern bool AllowSetForegroundWindow(int processId);
  private static string FindRuntime(string environmentName,string setting,string executable,string standard) {
   string configured=Environment.GetEnvironmentVariable(environmentName);
   if(!String.IsNullOrEmpty(configured)&&Path.IsPathRooted(configured)&&File.Exists(configured))return configured;
@@ -24,7 +24,7 @@ internal static class CodexEntry {
  static System.Collections.Generic.Dictionary<string,object> Read(string root,string file){return new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(Path.Combine(root,file)));}
  static bool Starting(string root){try{var s=Read(root,"launch-status.json");string phase=Convert.ToString(s["phase"]);if(phase=="failed"||phase=="inspect-only"||phase=="background-rendered"||phase=="cdp-ready-background-not-yet-rendered")return false;double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)s["updatedAt"])).TotalSeconds;if(age<0||age>150)return false;using(var p=Process.GetProcessById(Convert.ToInt32(s["helperPid"])))return !p.HasExited&&String.Equals(p.MainModule.FileName,FindPowerShell(),StringComparison.OrdinalIgnoreCase)&&p.StartTime.ToUniversalTime().ToString("o")==(string)s["helperStartedAtUtc"];}catch{return false;}}
  static bool TryWarm(string root,bool inspect,out bool repair){
-  repair=true;bool attempted=false;var clock=Stopwatch.StartNew();
+  repair=true;bool attempted=false,foregroundGranted=false;int foregroundGrantError=0,verifiedPid=0;long verifiedHandle=0;var clock=Stopwatch.StartNew();
   try{
    var hint=Read(root,"main-window.json");var endpoint=Read(root,"cdp-endpoint.json");
    if(Convert.ToInt32(hint["schemaVersion"])!=2||Convert.ToInt32(endpoint["schemaVersion"])!=1||Convert.ToString(endpoint["address"])!="127.0.0.1")return false;
@@ -34,16 +34,18 @@ internal static class CodexEntry {
    using(var p=Process.GetProcessById(pid)){
     var pinned=p.Handle;if(p.HasExited||!WallpaperIdentity.Official(p)||p.SessionId!=Process.GetCurrentProcess().SessionId||p.SessionId!=Convert.ToInt32(hint["sessionId"])||p.StartTime.ToUniversalTime().Ticks!=ticks||!String.Equals(p.MainModule.FileName,executable,StringComparison.OrdinalIgnoreCase)||!WallpaperClientWindow.Bound(handle,pid,cookie))return false;
     var listeners=CodexWallpaperBridge.TcpListeners.Read(port);if(listeners.Length==0)return false;foreach(var listener in listeners)if(listener.OwningProcess!=pid||(listener.LocalAddress!="127.0.0.1"&&listener.LocalAddress!="::1"))return false;
-    if(!inspect){attempted=true;AllowSetForegroundWindow(pid);ShowCurrentMain(root,port,browser);if(WallpaperClientWindow.Visible(handle)&&!WallpaperClientWindow.Minimized(handle)&&!WallpaperClientWindow.Foreground(handle))WallpaperClientWindow.Activate(handle,pid,executable,ticks,cookie);var wait=Stopwatch.StartNew();while(wait.ElapsedMilliseconds<600&&(!WallpaperClientWindow.Visible(handle)||WallpaperClientWindow.Minimized(handle)||!WallpaperClientWindow.Foreground(handle)))System.Threading.Thread.Sleep(10);
-     if(!WallpaperClientWindow.Visible(handle)||WallpaperClientWindow.Minimized(handle)||!WallpaperClientWindow.Foreground(handle))throw new IOException("已向原 Codex 主窗口发送唤回请求，但尚未取得前台；现有客户端已保留。");
+    verifiedPid=pid;verifiedHandle=handle;
+    if(!inspect){attempted=true;foregroundGranted=AllowSetForegroundWindow(pid);if(!foregroundGranted)foregroundGrantError=Marshal.GetLastWin32Error();ShowCurrentMain(root,port,browser);if(WallpaperClientWindow.Visible(handle)&&!WallpaperClientWindow.Minimized(handle)&&!WallpaperClientWindow.Foreground(handle))WallpaperClientWindow.Activate(handle,pid,executable,ticks,cookie);var wait=Stopwatch.StartNew();while(wait.ElapsedMilliseconds<600&&(!WallpaperClientWindow.Visible(handle)||WallpaperClientWindow.Minimized(handle)||!WallpaperClientWindow.Foreground(handle)))System.Threading.Thread.Sleep(10);
+     if(!WallpaperClientWindow.Visible(handle)||WallpaperClientWindow.Minimized(handle))throw new IOException("Codex 主窗口尚未恢复显示；现有客户端已保留。");
     }
     p.Refresh();if(p.HasExited||!WallpaperClientWindow.Bound(handle,pid,cookie))throw new IOException("唤回期间主窗口身份发生变化，现有客户端已保留。");
     try{var state=Read(root,"runtime-status.json");double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)state["updatedAt"])).TotalSeconds;string phase=Convert.ToString(state["phase"]);repair=age<0||age>12||Convert.ToString(state["browserId"])!=browser||Convert.ToInt32(state["cdpPort"])!=port||Array.IndexOf(new[]{"background-rendered","background-disabled","realtime-capture-active","realtime-capture-paused"},phase)<0;}catch{repair=true;}
-    var report=new System.Collections.Generic.Dictionary<string,object>{{"kind","native-existing-main-window"},{"activationMode",inspect?"inspection":"codex-native-show-bridge"},{"sameClient",true},{"rootPid",pid},{"handle",handle},{"inspectOnly",inspect},{"visible",WallpaperClientWindow.Visible(handle)},{"minimized",WallpaperClientWindow.Minimized(handle)},{"foreground",WallpaperClientWindow.Foreground(handle)},{"repairNeeded",repair},{"elapsedMs",clock.Elapsed.TotalMilliseconds},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};
+    bool foreground=WallpaperClientWindow.Foreground(handle);
+    var report=new System.Collections.Generic.Dictionary<string,object>{{"kind","native-existing-main-window"},{"activationMode",inspect?"inspection":"codex-native-show-bridge"},{"activationResult",inspect?"inspected":foreground?"foreground":"restored-without-foreground"},{"foregroundPermissionGranted",foregroundGranted},{"foregroundPermissionError",foregroundGrantError},{"sameClient",true},{"rootPid",pid},{"handle",handle},{"inspectOnly",inspect},{"visible",WallpaperClientWindow.Visible(handle)},{"minimized",WallpaperClientWindow.Minimized(handle)},{"foreground",foreground},{"repairNeeded",repair},{"elapsedMs",clock.Elapsed.TotalMilliseconds},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};
     try{File.WriteAllText(Path.Combine(root,inspect?"entry-warm-check.json":"activation-status.json"),new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(report));}catch{}
     return true;
    }
-  }catch{if(attempted)throw;return false;}
+  }catch(Exception error){if(attempted){try{var failed=new System.Collections.Generic.Dictionary<string,object>{{"kind","native-existing-main-window"},{"activationResult","failed"},{"clientPreserved",true},{"rootPid",verifiedPid},{"handle",verifiedHandle},{"foregroundPermissionGranted",foregroundGranted},{"foregroundPermissionError",foregroundGrantError},{"visible",WallpaperClientWindow.Visible(verifiedHandle)},{"minimized",WallpaperClientWindow.Minimized(verifiedHandle)},{"foreground",WallpaperClientWindow.Foreground(verifiedHandle)},{"error",error.Message},{"elapsedMs",clock.Elapsed.TotalMilliseconds},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};File.WriteAllText(Path.Combine(root,"activation-status.json"),new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(failed));}catch{}throw;}return false;}
  }
  static void ShowCurrentMain(string root,int port,string browser){
   string bootstrap=File.ReadAllText(Path.Combine(root,"launch-script.txt")).Trim(),helper=Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(bootstrap)),"src","activate-client.mjs");
@@ -51,7 +53,9 @@ internal static class CodexEntry {
   string token=Guid.NewGuid().ToString("N"),output=Path.Combine(root,"activation-"+token+".out"),error=Path.Combine(root,"activation-"+token+".err");
   var info=new ProcessStartInfo{FileName=FindNode(),Arguments="\""+helper+"\" --cdp-port "+port+" --browser-id "+browser+" --no-wait --show-current",UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=Path.GetDirectoryName(helper)};
   try{using(var child=WallpaperCleanProcess.Start(info,output,error)){
-   AllowSetForegroundWindow(child.Id);if(!child.WaitForExit(6000))throw new IOException("Codex 内部显示状态未及时恢复，现有客户端已保留。");
+   // Keep the foreground grant with Codex. Granting the transport helper would
+   // revoke it from Codex; this Node child never activates a native window.
+   if(!child.WaitForExit(6000))throw new IOException("Codex 内部显示状态未及时恢复，现有客户端已保留。");
    if(child.ExitCode!=0)throw new IOException("Codex 内部显示状态恢复失败，现有客户端已保留。详情："+File.ReadAllText(error));
    var result=new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(output));
    var restored=result.ContainsKey("nativeRestore")?result["nativeRestore"] as System.Collections.Generic.Dictionary<string,object>:null;

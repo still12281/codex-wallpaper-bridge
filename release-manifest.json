@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 19800,
-      "sha256": "66ab61cebd59b611fd06ca2015e50acd758ddd62cb7aba1eaf9d7bb1f18cb5e8"
+      "utf8Bytes": 21049,
+      "sha256": "356fc8be309558bc0f28f99a798703855fba58262187eb41a2e04c8faf6f8ce0"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 12605,
-      "sha256": "0009bafae8207a8135bfec222e3ba09b028f853b118cfddd505bc2e4527da886"
+      "utf8Bytes": 12589,
+      "sha256": "13b0daab0195ddd1c5f1a046634ee631629ea33d4950214ec4933d4eeb2564c0"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 14859,
-      "sha256": "cf8bde05ed76f140f07bfb48553628d155580b0977e20d3ddf2183831ba31977"
+      "utf8Bytes": 14843,
+      "sha256": "954e00475d868d9cabfc9cd4f3b77e2897262c14ceb962b06adba575c29855a3"
     },
     {
       "path": "README.zh-CN.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 16312,
-      "sha256": "4731e04d3b32d1537918c2d5343d600235884c657f1eedb45218511849364a91"
+      "utf8Bytes": 16296,
+      "sha256": "b58a68c3e429634aca8323d4e11cf9f5cfe238d9fb07e8210fa71005d4ed4589"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -204,8 +204,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 7438,
-      "sha256": "7cb76984bf91fd51778f8178b4fdb68f95d1de36a9fcfc145f204a118047b989"
+      "utf8Bytes": 7774,
+      "sha256": "0165ab74cb876d6ad8beaa12f833676057ddfeb3fb963082d8793f96c2063128"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -269,8 +269,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "utf8Bytes": 8901,
-      "sha256": "ab184dfa794c76dcb8d10feedd14e2d4bf9928ce2609d87a308e947af30b53ab"
+      "utf8Bytes": 12331,
+      "sha256": "06d200f26f0af7e0a3082fd64d31df678928515f99cb18d3bb40a6d962711032"
     },
     {
       "path": "docs/WEBWALLGL.md",
@@ -355,8 +355,8 @@
     },
     {
       "path": "package.json",
-      "utf8Bytes": 1027,
-      "sha256": "74418881957450d02baf5d1126d997729a78d687f456f988ca587579a49b5fe0"
+      "utf8Bytes": 1006,
+      "sha256": "227af15ed821dbe42912d4dcdcd452dbcffecbe935e977554391bad8fbc71e0d"
     },
     {
       "path": "progress.md",
@@ -1065,8 +1065,8 @@
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 14443,
-      "sha256": "209de291b943dab461bc7b31d4eae6a0471ef3e2777fd29010ca152862a8950d"
+      "utf8Bytes": 15742,
+      "sha256": "0aaab53bf5c171fb12884ff0cc4e568adf90bdf2c5b7ad66eb052be271d22dbe"
     },
     {
       "path": "windows/FastTcp.ps1",

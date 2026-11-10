@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 — 2026-11-09
+
+- Publish the accumulated wallpaper feature set as a regular 0.2.0 release: unified Windows entry, media and GPU scene playback, in-app library/appearance controls, owned-document automatic adaptation and one-click surface repair. The alpha.7 entries below describe the adaptation features already available in that prerelease; they are not presented as newly added since alpha.7.
+- Fix the native existing-client entry's foreground permission handoff: retain the grant for Codex instead of transferring it to the Node transport helper. Record fresh permission and activation outcomes, including failures. A restored visible window that Windows declines to foreground is reported separately instead of opening a misleading startup-failure modal; hidden/minimized or identity-changed windows still fail without rebuilding the client.
+- Complete actual-client acceptance on Windows with Codex 26.1103.4239.0: GPU/video/GPU roundtrip with real decoding/rendering, native entry activation through an Explorer input chain, independent detached-document reload, preserved library/preferences/client, and the previously verified Notion/manual-adaptation controls. See [validation](docs/VALIDATION.md) for measurements and limits.
+
 ## 0.1.0-alpha.7 — 2026-11-09
 
 - Add a “扫描并适配” control for a one-shot rescan of all currently open owned documents, including the native shell and nested plugin frames. Report newly adapted backgrounds, skipped/failed documents and bounded-pass limits; preserve wallpaper playback, settings and native opt-outs. No recurring scan is scheduled.
