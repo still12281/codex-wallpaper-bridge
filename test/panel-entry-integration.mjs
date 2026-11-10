@@ -29,7 +29,7 @@ try{
  const target=await until(async()=>(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===pathToFileURL(html).href));
  c=await connectCdp(target.webSocketDebuggerUrl);
  await until(()=>c.evaluate('document.readyState==="complete"&&!!document.getElementById("native-input")&&!!document.querySelector("[role=menubar]")'));
- await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__fixtureConfig={library:[],selectedId:null,darkOverlay:.55,pauseOnBlur:true,visual:{theme:"dark"}};window.__codexWallpaperSend=raw=>{const message=JSON.parse(raw);window.__fixtureAction=message.action;if(message.action==="appearance")Object.assign(window.__fixtureConfig,{darkOverlay:message.darkOverlay,pauseOnBlur:message.pauseOnBlur});queueMicrotask(()=>window.__cwbReply(message.id,{ok:true,config:window.__fixtureConfig}));};('+installPanel.toString()+')(window.__fixtureConfig,"fixture-token");true');
+ await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__fixtureConfig={library:[],selectedId:null,darkOverlay:.55,pauseOnBlur:true,visual:{theme:"dark"}};window.__codexWallpaperSend=raw=>{const message=JSON.parse(raw);window.__fixtureAction=message.action;if(message.action==="surface-rescan"){window.__fixtureScanReply=()=>window.__cwbReply(message.id,{ok:true,scan:{scanned:2,added:1},message:"已扫描 2 个页面，新增适配 1 处背景。"});return;}if(message.action==="appearance")Object.assign(window.__fixtureConfig,{darkOverlay:message.darkOverlay,pauseOnBlur:message.pauseOnBlur});queueMicrotask(()=>window.__cwbReply(message.id,{ok:true,config:window.__fixtureConfig}));};('+installPanel.toString()+')(window.__fixtureConfig,"fixture-token");true');
  const state=()=>c.evaluate('(()=>{const h=window.__cwbPanelHost,r=h.shadowRoot.getElementById("toggle").getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {...h.__cwbEntryState(),parent:h.parentElement.id,count:document.querySelectorAll("#codex-wallpaper-controls").length,x:r.x+r.width/2,y:r.y+r.height/2,hit:hit===h,hitTag:hit?.tagName,hitId:hit?.id,rect:{x:r.x,y:r.y,width:r.width,height:r.height},menuCount:document.querySelectorAll("[role=menubar]").length,readyState:document.readyState,viewport:{width:innerWidth,height:innerHeight}}})()');
  const assertVisible=async placement=>{let last;try{const value=await until(async()=>{last=await state();return last.visible&&last.hit&&last.placement===placement&&last;});assert.equal(value.count,1);return value;}catch(error){throw Error(error.message+'; expected='+placement+'; observed='+JSON.stringify(last));}};
  await assertVisible('menu');
@@ -41,6 +41,13 @@ try{
  const fallback=await assertVisible('fallback');
  for(const type of ['mousePressed','mouseReleased'])await c.call('Input.dispatchMouseEvent',{type,x:fallback.x,y:fallback.y,button:'left',clickCount:1});
  assert.equal(await c.evaluate('window.__cwbPanelHost.shadowRoot.querySelector("dialog").open'),true);
+ assert(await c.evaluate('(()=>{const button=window.__cwbPanelHost.shadowRoot.getElementById("cwb-surface-scan");return !!button.closest(".cwb-window-body")&&!button.closest(".cwb-titlebar");})()'));
+ const scanPoint=await c.evaluate('(()=>{const r=window.__cwbPanelHost.shadowRoot.getElementById("cwb-surface-scan").getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()');
+ for(const type of ['mousePressed','mouseReleased'])await c.call('Input.dispatchMouseEvent',{type,...scanPoint,button:'left',clickCount:1});
+ await until(()=>c.evaluate('window.__fixtureAction==="surface-rescan"'));
+ assert(await c.evaluate('(()=>{const s=window.__cwbPanelHost.shadowRoot;return s.getElementById("cwb-surface-scan").disabled&&s.getElementById("cwb-surface-scan").textContent==="正在扫描…";})()'));
+ await c.evaluate('window.__fixtureScanReply();true');await until(()=>c.evaluate('!window.__cwbPanelHost.shadowRoot.getElementById("cwb-surface-scan").disabled'));
+ assert.equal(await c.evaluate('window.__cwbPanelHost.shadowRoot.getElementById("cwb-surface-scan-result").textContent'),'已扫描 2 个页面，新增适配 1 处背景。');
  await c.evaluate('(()=>{const s=window.__cwbPanelHost.shadowRoot;s.getElementById("shade").value="65";s.getElementById("shade").dispatchEvent(new Event("change"));return true})()');
  await until(()=>c.evaluate('window.__fixtureAction==="appearance"&&window.__fixtureConfig.darkOverlay===.65&&!window.__cwbPanelHost.shadowRoot.querySelector("dialog").getAttribute("aria-busy").includes("true")'));
  await c.evaluate('window.__cwbPanelHost.shadowRoot.getElementById("done").click();true');
@@ -52,5 +59,5 @@ try{
  assert.equal(await c.evaluate('document.getElementById("native-input").value'),'generated draft');
  assert.equal(await c.evaluate('getComputedStyle(document.getElementById("background")).backgroundColor'),'rgb(51, 68, 85)');
  assert.equal(await c.evaluate('document.querySelectorAll("#codex-wallpaper-controls").length'),1);
- console.log(JSON.stringify({passed:true,kind:'generated-shell-controls-regression',oldAndCurrentClass:true,semanticClassRename:true,missingMenuFallback:true,nativePointerOpenedDialog:true,appearanceActionRoundtrip:true,lateAndReplacementMenu:true,backgroundAndDraftPreserved:true}));
+ console.log(JSON.stringify({passed:true,kind:'generated-shell-controls-regression',oldAndCurrentClass:true,semanticClassRename:true,missingMenuFallback:true,nativePointerOpenedDialog:true,manualScanPointerBusyAndResult:true,appearanceActionRoundtrip:true,lateAndReplacementMenu:true,backgroundAndDraftPreserved:true}));
 }finally{c?.close();if(browser?.exitCode===null)browser.kill();}

@@ -24,6 +24,7 @@ See the [Chinese screenshot gallery](README.md#效果展示) and [capture proven
 - Optional folder search for Wallpaper projects or ordinary images/videos.
 - Wallpaper-derived colors across the chat, sidebar, and common settings surfaces.
 - Event-driven theme installation for owned plugin guests and nested documents, shared CSS for later components, and one bounded fallback pass after document load. No adaptation polling or continuous DOM scanning. Late hardcoded backgrounds, closed components and canvas rendering can still require exceptions.
+- A “扫描并适配” button at the top of the wallpaper panel manually rescans all open owned documents, including the native shell. It reports new adaptations and partial results, respects native-background preferences, and schedules no recurring work.
 - Separate message and composer space to keep transparent input controls readable.
 - Silent video playback, pause on loss of focus, adjustable resolution/frame limits, and hot application after conversion.
 - One current playback file per wallpaper; previous playback copies are replaced after successful decode.

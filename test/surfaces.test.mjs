@@ -21,3 +21,10 @@ test('native surface preferences persist and roll back on appearance failures',a
  assert.deepEqual(config.surfaceSync,{code:false,embedded:true});
  await assert.rejects(actions({}, {action:'surface-sync',region:'navigation',enabled:false}),/分区设置无效/);
 });
+
+test('manual surface scan reports partial results without saving settings or restarting wallpaper',async()=>{
+ const config=defaultSettings();config.library=[{id:'current',file:'media/current.png'}];config.selectedId='current';const saved=structuredClone(config);let calls=0;
+ const action=createActions('missing-scan-directory',config,async()=>{throw Error('must not restart wallpaper')},undefined,{scanSurfaces:async()=>{calls++;return {scanned:3,added:2,skipped:1,failed:1,limited:1};}});
+ const result=await action({}, {action:'surface-rescan'});assert.equal(calls,1);assert.equal(result.scan.added,2);assert.match(result.message,/3 个页面/);assert.match(result.message,/未完成/);assert.deepEqual(config,saved);
+ config.selectedId=null;await assert.rejects(action({}, {action:'surface-rescan'}),/先选择并启用/);assert.equal(calls,1);
+});

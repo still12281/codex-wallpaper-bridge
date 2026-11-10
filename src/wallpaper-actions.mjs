@@ -48,6 +48,13 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
  const execute=async function action(c,req){
+  if(req.action==='surface-rescan'){
+   if(!settings.library.some(e=>e.id===settings.selectedId)||settings.enabled===false)throw Error('请先选择并启用一张壁纸，再扫描界面');
+   if(!services.scanSurfaces)throw Error('页面适配服务尚未就绪，请稍后再试');
+   const scan=await services.scanSurfaces();
+   if(!scan.scanned&&scan.failed)throw Error('扫描未完成：页面暂时不可用，请稍后再试');
+   return {scan,message:'已扫描 '+scan.scanned+' 个页面，新增适配 '+scan.added+' 处背景。'+(scan.skipped?' '+scan.skipped+' 个页面保留原样。':'')+(scan.failed?' '+scan.failed+' 个页面未完成，可稍后重试。':'')+(scan.limited?' 部分页面达到单次识别限额，仍可能有未适配区域。':'')};
+  }
   if(['wallpaper-properties-read','wallpaper-properties-save','wallpaper-properties-reset'].includes(req.action)){
    if(req.selectedId!==settings.selectedId)throw Error('当前壁纸已切换，请重新打开作者属性');
    const group=libraryGroups(settings.library,settings.selectedId).find(g=>g.entries.some(e=>e.id===settings.selectedId));
