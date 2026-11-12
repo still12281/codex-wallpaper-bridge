@@ -13,7 +13,11 @@ export function paintShell(config){
  }
  window.__cwbThemeGuard.update(dark);
  const shade=[palette.r,palette.g,palette.b].join(',');
- const ink=dark?'#e9eff5':'#15212c',secondary=dark?'#b8c5d1':'#405262';
+ const ink=dark?'#e9eff5':'#15212c',secondary=dark?'#b8c5d1':'#405262',inverse=dark?'#15212c':'#e9eff5';
+ // Native hydration restores data-theme and precomputed app tokens after our
+ // first paint. Keep neutral foreground/background pairs in persistent CSS;
+ // changing only foreground also changes the native solid-button background.
+ const themeTokens=`color-scheme:${dark?'dark':'light'}!important;--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--app-color-text-foreground-tertiary:${secondary}!important;--app-color-icon-primary:${ink}!important;--app-color-icon-secondary:${secondary}!important;--app-color-icon-tertiary:${secondary}!important;--app-color-text-button-primary:${inverse}!important;--app-color-text-button-secondary:${ink}!important;--app-color-text-button-tertiary:${secondary}!important;--app-color-background-button-primary:${ink}!important;--app-color-text-primary-solid:${inverse}!important;--color-text-primary-solid:${inverse}!important;--color-text-primary:${ink}!important;--color-text-secondary:${secondary}!important;--color-text-tertiary:${secondary}!important`;
  const overlay=dark?config.darkOverlay:config.lightOverlay;
  const sync={composer:true,context:true,menus:false,settings:true,navigation:true,panels:true,code:true,embedded:true,...config.surfaceSync};
  const mediaRoot=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot;
@@ -22,7 +26,8 @@ export function paintShell(config){
  // Native browser guests are portaled beside #root. A positive root z-index
  // would place its transparent pane above the guest and intercept mouse input.
  style.textContent=`html,body{background:transparent!important}body{isolation:isolate}#root,#app{position:relative;background:transparent!important}
- :root{--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--color-text-primary:${ink};--color-text-secondary:${secondary};--color-text-tertiary:${secondary};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
+ :root{${themeTokens};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
+ [data-composer-surface-variant]{--composer-editor-placeholder-opacity:1!important}
  :root{--color-surface:transparent;--color-surface-canvas:transparent;--color-surface-secondary:rgba(${shade},.22);--color-surface-tertiary:rgba(${shade},.35);--color-surface-card:rgba(${shade},.55);--color-surface-elevated:rgba(${shade},.96);--color-surface-elevated-secondary:rgba(${shade},.92)}
  [role="dialog"],[role="menu"],[role="listbox"],[role="tooltip"],[data-slot="popover-content"],[data-slot="hover-card-content"],[data-radix-popper-content-wrapper]{--color-surface:var(--color-surface-elevated);--color-surface-canvas:var(--color-surface-elevated);--color-surface-secondary:var(--color-surface-elevated-secondary);--app-color-background-elevated-secondary-opaque:rgb(${shade});--app-color-background-elevated-tertiary-opaque:rgb(${shade});--app-color-text-foreground:${ink};--app-color-text-foreground-secondary:${secondary};--color-text:${ink};color:${ink}}
  [role="dialog"],[role="menu"],[role="listbox"],[data-slot="popover-content"],[data-slot="hover-card-content"]{background:var(--color-surface-elevated)!important;color:${ink}!important}

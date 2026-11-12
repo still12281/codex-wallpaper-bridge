@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Keep solid-button labels, neutral text and icons paired with the wallpaper theme when native theme settings load after startup. Preserve composer placeholder visibility through the startup-to-wallpaper handoff.
+
 ## 0.2.1 — 2026-11-10
 
 - Add an English/Simplified Chinese EXE setup wizard with separate program/data folders, existing-install discovery and shortcut/startup choices. Register Windows Apps uninstall, restore owned integrations and preserve wallpaper data and user-modified shortcuts.

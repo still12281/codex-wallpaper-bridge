@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2759,
-      "sha256": "9fa1e77540e8467455d00207984ac80170790931e638f5c45419623a1aa920da"
+      "utf8Bytes": 2897,
+      "sha256": "1b1dba9703f1040d03f9a13ebb6c1afba9849118e842c4f17c1482c33a37fa91"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 21260,
-      "sha256": "a9e89c9352301331fabf2798af5a098fbadf9bae62ba1c0e69435a86a1e39580"
+      "utf8Bytes": 21489,
+      "sha256": "07e753bc475303797fc996600c845c7f62c8ae84bb406ed421a89882dfbe7899"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -510,8 +510,8 @@
     },
     {
       "path": "src/startup-appearance.mjs",
-      "utf8Bytes": 2964,
-      "sha256": "b8ab2e9e34e544c2418dc6ef6d93fded294ece413daa4d0a0a962dc811d26d24"
+      "utf8Bytes": 3675,
+      "sha256": "b4626b1aa5085aa9f95d92ea08de04de9f161cb43fb08e5e424935cdd11d3c2d"
     },
     {
       "path": "src/system-media.mjs",
@@ -555,8 +555,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 11714,
-      "sha256": "42abd69fda76784d43d578aa63e94ecaea5242c96ec6505dec3c910a046b80a3"
+      "utf8Bytes": 12693,
+      "sha256": "2c8573aec614d9d20ab4aaf386f8199a67eee16b2861edc94185290561d3ef13"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -857,6 +857,11 @@
       "path": "test/tcp-listeners.ps1",
       "utf8Bytes": 1172,
       "sha256": "4c8f6b7e88055c836b5aa90cffd7107a793123e5dc27a46aeef0e071ed97e2bb"
+    },
+    {
+      "path": "test/theme-contrast-integration.mjs",
+      "utf8Bytes": 9061,
+      "sha256": "9c806c5487df223ce523199f5eddbaaaba7e14f4452209194097a6576940aaa6"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",
