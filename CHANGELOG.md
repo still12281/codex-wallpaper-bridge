@@ -3,7 +3,8 @@
 ## Unreleased
 
 - Apply saved glass colours, opacity and blur consistently to the composer, user-message bubbles, file-change cards and annotation editor. Avoid stacking inherited backgrounds inside the annotation editor.
-- Preserve native transcript sizing and footer occlusion backgrounds instead of reserving a custom composer gap.
+- Preserve native transcript sizing and scrolling without a custom composer gap or opaque footer strip.
+- Give “页面适配与原生底色” the same bordered group styling as the other wallpaper controls.
 - Reuse the saved palette when reopening the same wallpaper, and share each selected wallpaper's palette across windows.
 - Keep solid-button labels, neutral text and icons paired with the wallpaper theme when native theme settings load after startup. Preserve composer placeholder visibility through the startup-to-wallpaper handoff.
 

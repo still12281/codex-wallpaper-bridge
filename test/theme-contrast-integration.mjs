@@ -112,7 +112,7 @@ try{
   for(const height of [120,180]){
    await c.evaluate('document.querySelector("[data-thread-scroll-footer]").style.height='+JSON.stringify(height+'px')+';true');
    const sample=await c.call('Runtime.evaluate',{expression:'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const s=document.querySelector("[data-app-action-timeline-scroll]"),f=document.querySelector("[data-thread-scroll-footer]");resolve({gap:f.getBoundingClientRect().top-s.getBoundingClientRect().bottom,height:s.clientHeight,adapted:s.hasAttribute("data-cwb-thread-space")})})))',awaitPromise:true,returnByValue:true});
-   const value=sample.result.value;assert(!value.adapted&&value.height===500,JSON.stringify({structure,height,...value}));assert.equal(await c.evaluate('!!window.__cwbLayout'),false);assert.equal(await c.evaluate('getComputedStyle(document.querySelector("[data-thread-scroll-footer] > [aria-hidden=true]")).backgroundColor'),'rgb(20, 22, 28)');layoutResults.push({structure,footerHeight:height,nativeGeometryPreserved:true});
+   const value=sample.result.value;assert(!value.adapted&&value.height===500,JSON.stringify({structure,height,...value}));assert.equal(await c.evaluate('!!window.__cwbLayout'),false);assert.equal(await c.evaluate('getComputedStyle(document.querySelector("[data-thread-scroll-footer] > [aria-hidden=true]")).backgroundColor'),'rgba(0, 0, 0, 0)');layoutResults.push({structure,footerHeight:height,nativeGeometryPreserved:true});
   }
  }
  console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results,materialResults,layoutResults},null,2));

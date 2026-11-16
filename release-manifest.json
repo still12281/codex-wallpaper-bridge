@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 21929,
-      "sha256": "a64f80fce8ef8296ea5561bfc135a67e6a639e2f60b159989d04c51af4c4f30d"
+      "utf8Bytes": 22026,
+      "sha256": "2e2203546dd7c92e121642f8104cbf96a001175d5dd7d6a9a7406561aa8f6d46"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -540,8 +540,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 38654,
-      "sha256": "93bf05e5d609ab9baa7ab690b04364decafc8f78f1a4c0dacef00aa02a20dcfb"
+      "utf8Bytes": 38687,
+      "sha256": "8d61a34d42404e9dde3ac9f592220137d7870b8f2b97b472bdfc3f79953f1ee6"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -555,8 +555,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 13256,
-      "sha256": "e396e9f535cf8c8578dcc7c5170683373d7fcb0c38c6e21944a60821079e6984"
+      "utf8Bytes": 13068,
+      "sha256": "64b234b4e2d8e00ec9c53b417c82b8d8cd36a9effde6b84046e96fa783711a64"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -760,8 +760,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 33198,
-      "sha256": "c129873e318edf68cc9089fd0e4c115c7c57502194440decae4318c9cbdfa546"
+      "utf8Bytes": 33389,
+      "sha256": "3039b5bcc3d76f6fa196b56409b2de650140af44a31adabc244c4ba27dfb9d42"
     },
     {
       "path": "test/panel-entry-integration.mjs",
@@ -860,8 +860,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 15964,
-      "sha256": "94ad7f8332daaace37720c1080bd72c1f1041c38de3a43a37ab04a34368e6ce4"
+      "utf8Bytes": 15965,
+      "sha256": "2e7279b94f37e419f2bbc89bdb81cdf30bebf464c10cbd35a69fad9931a4b0a7"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",
