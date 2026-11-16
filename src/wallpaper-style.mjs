@@ -19,10 +19,9 @@ export function paintShell(config){
  // changing only foreground also changes the native solid-button background.
  const themeTokens=`color-scheme:${dark?'dark':'light'}!important;--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--app-color-text-foreground-tertiary:${secondary}!important;--app-color-icon-primary:${ink}!important;--app-color-icon-secondary:${secondary}!important;--app-color-icon-tertiary:${secondary}!important;--app-color-text-button-primary:${inverse}!important;--app-color-text-button-secondary:${ink}!important;--app-color-text-button-tertiary:${secondary}!important;--app-color-background-button-primary:${ink}!important;--app-color-text-primary-solid:${inverse}!important;--color-text-primary-solid:${inverse}!important;--color-text-primary:${ink}!important;--color-text-secondary:${secondary}!important;--color-text-tertiary:${secondary}!important`;
  const overlay=dark?config.darkOverlay:config.lightOverlay;
- // Editing/review surfaces stay opaque. Only the selected light/dark palette
- // changes their neutral colour; wallpaper tint and glass effects cannot.
- const controlShade=dark?'20,22,28':'240,242,246';
- const controlBackground=`rgb(${controlShade})`,controlFilter='none';
+ // Keep editing surfaces opaque while matching the selected wallpaper's
+ // stable sampled palette. Glass effects cannot reduce their readability.
+ const controlBackground=`rgb(${shade})`,controlFilter='none';
  const sync={composer:true,context:true,menus:false,settings:true,navigation:true,panels:true,code:true,embedded:true,...config.surfaceSync};
  // Match card semantics, independent of native background utility variants.
  const controlSelectors=[sync.composer&&':root [data-composer-surface-variant][data-composer-layout]',sync.context&&'main [class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"])'].filter(Boolean).join(',');
