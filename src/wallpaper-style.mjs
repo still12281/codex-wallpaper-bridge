@@ -19,11 +19,9 @@ export function paintShell(config){
  // changing only foreground also changes the native solid-button background.
  const themeTokens=`color-scheme:${dark?'dark':'light'}!important;--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--app-color-text-foreground-tertiary:${secondary}!important;--app-color-icon-primary:${ink}!important;--app-color-icon-secondary:${secondary}!important;--app-color-icon-tertiary:${secondary}!important;--app-color-text-button-primary:${inverse}!important;--app-color-text-button-secondary:${ink}!important;--app-color-text-button-tertiary:${secondary}!important;--app-color-background-button-primary:${ink}!important;--app-color-text-primary-solid:${inverse}!important;--color-text-primary-solid:${inverse}!important;--color-text-primary:${ink}!important;--color-text-secondary:${secondary}!important;--color-text-tertiary:${secondary}!important`;
  const overlay=dark?config.darkOverlay:config.lightOverlay;
- // Use an opaque tonal gradient: soften the edge against the wallpaper without
- // exposing its moving detail beneath text. Recompute only at palette paints.
- const controlTone=[palette.r,palette.g,palette.b].map(v=>Math.round(v*.75+(dark?48:255)*.25));
- const controlColor=`rgb(${controlTone.join(',')})`,controlHighlight=`rgb(${controlTone.map(v=>Math.round(v*.94+255*.06)).join(',')})`;
- const controlBackground=`linear-gradient(135deg,${controlHighlight},${controlColor}) ${controlColor}`,controlFilter='none';
+ const controlOpacity=config.visual?.glassOpacity??.5,controlBlur=config.visual?.glassBlur??0;
+ const controlColor=`rgba(${shade},${controlOpacity})`;
+ const controlBackground=controlColor,controlFilter=controlBlur?`blur(${controlBlur}px)`:'none';
  const sync={composer:true,context:true,menus:false,settings:true,navigation:true,panels:true,code:true,embedded:true,...config.surfaceSync};
  // Match card semantics, independent of native background utility variants.
  const controlSelectors=[sync.composer&&':root [data-composer-surface-variant][data-composer-layout]',sync.context&&'main [class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"])',':root [data-user-message-bubble]'].filter(Boolean).join(',');
@@ -36,7 +34,7 @@ export function paintShell(config){
  :root{${themeTokens};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
  [data-composer-surface-variant]{--composer-editor-placeholder-opacity:1!important}
  ${controlSelectors?`${controlSelectors}{--cwb-control-background:${controlBackground};--cwb-control-filter:${controlFilter};--color-background-neutral-soft-alpha:rgba(${dark?'233,239,245':'21,33,44'},.08)!important;--color-background-secondary-ghost-hover:rgba(${dark?'233,239,245':'21,33,44'},.14)!important;--color-text:${ink};color:${ink}}`:''}
- :root [data-user-message-bubble]{--color-background-user-message:${controlColor}!important;--color-text-user-message:${ink}!important;--user-message-background-color:${controlColor}!important;--user-message-text-color:${ink}!important;background:var(--cwb-control-background)!important;color:${ink}!important}
+ :root [data-user-message-bubble]{--color-background-user-message:${controlColor}!important;--color-text-user-message:${ink}!important;--user-message-background-color:${controlColor}!important;--user-message-text-color:${ink}!important;background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important;color:${ink}!important}
  :root{--color-surface:transparent;--color-surface-canvas:transparent;--color-surface-secondary:rgba(${shade},.22);--color-surface-tertiary:rgba(${shade},.35);--color-surface-card:rgba(${shade},.55);--color-surface-elevated:rgba(${shade},.96);--color-surface-elevated-secondary:rgba(${shade},.92)}
  [role="dialog"],[role="menu"],[role="listbox"],[role="tooltip"],[data-slot="popover-content"],[data-slot="hover-card-content"],[data-radix-popper-content-wrapper]{--color-surface:var(--color-surface-elevated);--color-surface-canvas:var(--color-surface-elevated);--color-surface-secondary:var(--color-surface-elevated-secondary);--app-color-background-elevated-secondary-opaque:rgb(${shade});--app-color-background-elevated-tertiary-opaque:rgb(${shade});--app-color-text-foreground:${ink};--app-color-text-foreground-secondary:${secondary};--color-text:${ink};color:${ink}}
  [role="dialog"],[role="menu"],[role="listbox"],[data-slot="popover-content"],[data-slot="hover-card-content"]{background:var(--color-surface-elevated)!important;color:${ink}!important}
@@ -64,20 +62,24 @@ export function paintShell(config){
  [data-cwb-thread-space] [class*="_background_"][class*="_fade_"]{background:none!important}
  [data-app-shell-main-content-top-fade]:not(:has(*)),[class*="_MainContentTopFade_"]{background:transparent!important}
  #codex-wallpaper-bridge-layer{opacity:1!important;position:fixed!important;inset:0!important;z-index:-1!important;pointer-events:none!important}`;
- if(window.__cwbLayout?.version!==2){
+ if(window.__cwbLayout?.version!==3){
   window.__cwbLayout?.dispose?.();const tracked=new Map();let scheduled=false;
-  const refresh=()=>{scheduled=false;for(const [f,o]of tracked)if(!f.isConnected){o.disconnect();tracked.delete(f)}
-   for(const f of document.querySelectorAll('[data-thread-scroll-footer]')){if(tracked.has(f))continue;const s=f.parentElement,p=f.offsetParent;if(!s?.matches('[data-app-action-timeline-scroll]')||!p)continue;
-    const update=()=>{const h=f.getBoundingClientRect().height,nearBottom=s.scrollHeight-s.scrollTop-s.clientHeight<48;p.style.setProperty('--cwb-footer-height',(h+12)+'px');s.toggleAttribute('data-cwb-thread-space',h>0);if(nearBottom)requestAnimationFrame(()=>{if(s.isConnected)s.scrollTop=s.scrollHeight})};
-    const o=new ResizeObserver(update);o.observe(f);tracked.set(f,o);update();
+  // Native footers can be inside the transcript or in an absolute sibling
+  // wrapper. Match the nearest unambiguous scroll host in either structure.
+  const scrollFor=f=>{const s=f.closest('[data-app-action-timeline-scroll]');if(s)return s;for(let a=f.parentElement;a&&a!==document.body;a=a.parentElement){const candidates=a.querySelectorAll('[data-app-action-timeline-scroll]');if(candidates.length===1)return candidates[0];if(candidates.length>1)return null;}return null;};
+  const clear=record=>{record.o.disconnect();record.s.removeAttribute('data-cwb-thread-space');record.s.style.removeProperty('--cwb-footer-height');};
+  const refresh=()=>{scheduled=false;for(const [f,r]of tracked)if(!f.isConnected||!r.s.isConnected||scrollFor(f)!==r.s){clear(r);tracked.delete(f)}
+   for(const f of document.querySelectorAll('[data-thread-scroll-footer]')){if(tracked.has(f))continue;const s=scrollFor(f);if(!s)continue;
+    const update=()=>{const h=f.getBoundingClientRect().height,nearBottom=s.scrollHeight-s.scrollTop-s.clientHeight<48,expanded=!!(f.closest('[data-expanded-composer]')||f.querySelector('[data-expanded-composer]'));s.style.setProperty('--cwb-footer-height',(h+12)+'px');s.toggleAttribute('data-cwb-thread-space',h>0&&!expanded);if(nearBottom)requestAnimationFrame(()=>{if(s.isConnected)s.scrollTop=s.scrollHeight})};
+    const o=new ResizeObserver(update);o.observe(f);tracked.set(f,{o,s});update();
    }
   };
   const schedule=()=>{if(!scheduled){scheduled=true;requestAnimationFrame(refresh)}};
   const observer=new MutationObserver(changes=>{if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(n.matches?.('[data-thread-scroll-footer]')||n.querySelector?.('[data-thread-scroll-footer]')))))schedule()});observer.observe(document.body,{childList:true,subtree:true});
-  window.__cwbLayout={version:2,refresh,dispose:()=>{observer.disconnect();for(const [f,o]of tracked){o.disconnect();f.parentElement?.removeAttribute('data-cwb-thread-space');f.offsetParent?.style.removeProperty('--cwb-footer-height')}tracked.clear()}};refresh();
+  window.__cwbLayout={version:3,refresh,dispose:()=>{observer.disconnect();for(const r of tracked.values())clear(r);tracked.clear()}};refresh();
  }
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
  window.__cwbDecorate?.(config);
  window.__cwbStartupAppearance?.dispose();
- return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? 1 : null,surfaces:sync};
+ return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? controlOpacity : null,surfaces:sync};
 }

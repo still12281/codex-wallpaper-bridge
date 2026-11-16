@@ -90,21 +90,30 @@ try{
   const saved=JSON.stringify(config);
   await c.evaluate('window.__codexWallpaperBridge={ready:true};('+paintShell.toString()+')('+saved+')');
   // Insert components after painting, as when native UI renders a new turn.
-  await c.evaluate(`document.querySelector('main').innerHTML='<div class="bg-surface" data-composer-layout="multiline" data-composer-surface-variant="default"><div data-composer-body><textarea>Draft</textarea></div></div><div class="bg-surface" data-composer-layout="multiline" data-composer-surface-variant="default" data-composer-utility-bar-variant="home"><div class="bg-surface" data-composer-body>Home draft</div></div><div class="overflow-hidden bg-surface-elevated-secondary/50" id="diff-card"><div class="group/turn-diff-header"><button class="neutral" id="review">Review</button><button class="semantic" id="danger">Delete</button></div><div>Changed files</div></div><div class="overflow-hidden bg-surface-elevated-secondary/50" id="other-card">Other card</div>';true`);
+  await c.evaluate(`document.querySelector('main').innerHTML='<div class="bg-surface" data-composer-layout="multiline" data-composer-surface-variant="default"><div data-composer-body><textarea>Draft</textarea></div></div><div class="bg-surface" data-composer-layout="multiline" data-composer-surface-variant="default" data-composer-utility-bar-variant="home"><div class="bg-surface" data-composer-body>Home draft</div></div><div class="overflow-hidden bg-surface-elevated-secondary/50" id="diff-card"><div class="group/turn-diff-header"><button class="neutral" id="review">Review</button><button class="semantic" id="danger">Delete</button></div><div>Changed files</div></div><div class="overflow-hidden bg-surface-elevated-secondary/50" id="other-card">Other card</div><div data-user-message-bubble>Sent message</div>';true`);
   await c.evaluate('('+installSurfaceTheme.toString()+')('+JSON.stringify({enabled:true,shell:true,palette})+')');
   for(const phase of ['inserted','native-theme-restored']){
    if(phase==='native-theme-restored')await c.evaluate('document.documentElement.dataset.theme='+JSON.stringify(dark?'light':'dark')+';document.documentElement.style.setProperty("--color-background-neutral-soft-alpha","#fff");document.getElementById("diff-card").className="overflow-hidden bg-surface-elevated-secondary";window.__cwbAutomaticSurface.rescan();true');
-   const actual=await c.evaluate(`(()=>{const s=selector=>{const v=getComputedStyle(document.querySelector(selector));return {bg:v.backgroundColor,blur:v.backdropFilter,color:v.color}};return {composer:s('[data-composer-surface-variant]:not([data-composer-utility-bar-variant])'),home:s('[data-composer-utility-bar-variant=home]'),homeBody:s('[data-composer-utility-bar-variant=home] [data-composer-body]'),body:s('[data-composer-surface-variant]:not([data-composer-utility-bar-variant]) [data-composer-body]'),card:s('#diff-card'),review:s('#review'),danger:s('#danger'),other:s('#other-card'),draft:document.querySelector('textarea').value}})()`);
-   const opaque=`rgb(${[palette.r,palette.g,palette.b].map(v=>Math.round(v*.75+(dark?48:255)*.25)).join(', ')})`;
-   for(const key of ['composer','homeBody','card']){assert.equal(actual[key].bg,opaque,`${phase} ${key}`);assert.equal(actual[key].blur,'none');assert(ratio(rgb(actual[key].color),rgb(actual[key].bg))>=4.5,`${phase} ${key} text contrast`);}
+   const actual=await c.evaluate(`(()=>{const s=selector=>{const v=getComputedStyle(document.querySelector(selector));return {bg:v.backgroundColor,blur:v.backdropFilter,color:v.color}};return {composer:s('[data-composer-surface-variant]:not([data-composer-utility-bar-variant])'),home:s('[data-composer-utility-bar-variant=home]'),homeBody:s('[data-composer-utility-bar-variant=home] [data-composer-body]'),body:s('[data-composer-surface-variant]:not([data-composer-utility-bar-variant]) [data-composer-body]'),card:s('#diff-card'),bubble:s('[data-user-message-bubble]'),review:s('#review'),danger:s('#danger'),other:s('#other-card'),draft:document.querySelector('textarea').value}})()`);
+   const expected=`${opacity===1?'rgb':'rgba'}(${palette.r}, ${palette.g}, ${palette.b}${opacity===1?'':', '+opacity})`,under=composite([palette.r,palette.g,palette.b,.4],dark?[80,80,80]:[220,220,220]);
+   for(const key of ['composer','homeBody','card','bubble']){assert.equal(actual[key].bg,expected,`${phase} ${key}`);assert.equal(actual[key].blur,'blur(6px)');assert(ratio(rgb(actual[key].color),composite(rgb(actual[key].bg),under))>=4.5,`${phase} ${key} text contrast`);}
    assert.equal(actual.body.bg,'rgba(0, 0, 0, 0)');assert.equal(actual.home.bg,'rgba(0, 0, 0, 0)');
    assert.equal(actual.review.bg,dark?'rgba(233, 239, 245, 0.08)':'rgba(21, 33, 44, 0.08)');
    assert.equal(actual.review.color,dark?'rgb(233, 239, 245)':'rgb(21, 33, 44)');
    assert.equal(actual.danger.bg,'rgb(186, 38, 35)');assert.equal(actual.danger.color,'rgb(255, 255, 255)');
    assert.notEqual(actual.other.bg,actual.card.bg);assert.equal(actual.draft,'Draft');
-   materialResults.push({dark,glassOpacity:opacity,phase,opaqueEditingMaterial:true});
+   materialResults.push({dark,glassOpacity:opacity,phase,savedTransparentMaterial:true});
   }
   assert.equal(JSON.stringify(config),saved);
  }
- console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results,materialResults},null,2));
+ const layoutResults=[];
+ for(const structure of ['inside-transcript','sibling-wrapper']){
+  await c.evaluate(`(()=>{window.__cwbLayout?.dispose();delete window.__cwbLayout;document.body.innerHTML='<div style="position:relative;height:500px" id="viewport"><div data-app-action-timeline-scroll style="height:100%;overflow:auto"><div style="height:1800px">Transcript</div></div><div id="footer-wrapper" style="position:absolute;inset:auto 0 0"><div data-thread-scroll-footer style="height:120px">Composer</div></div></div>';if(${JSON.stringify(structure)}==='inside-transcript'){const f=document.querySelector('[data-thread-scroll-footer]');f.style.position='absolute';f.style.bottom='0';document.querySelector('[data-app-action-timeline-scroll]').append(f);document.getElementById('footer-wrapper').remove();}window.__codexWallpaperBridge={ready:true};(${paintShell.toString()})({palette:{r:20,g:22,b:28,dark:true},visual:{glassOpacity:.5},darkOverlay:.4});return true})()`);
+  for(const height of [120,180]){
+   await c.evaluate('document.querySelector("[data-thread-scroll-footer]").style.height='+JSON.stringify(height+'px')+';true');
+   const sample=await c.call('Runtime.evaluate',{expression:'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const s=document.querySelector("[data-app-action-timeline-scroll]"),f=document.querySelector("[data-thread-scroll-footer]");resolve({gap:f.getBoundingClientRect().top-s.getBoundingClientRect().bottom,height:s.clientHeight,adapted:s.hasAttribute("data-cwb-thread-space")})})))',awaitPromise:true,returnByValue:true});
+   const value=sample.result.value;assert(value.adapted&&value.height>0&&value.gap>=11,JSON.stringify({structure,height,...value}));layoutResults.push({structure,footerHeight:height,gap:value.gap});
+  }
+ }
+ console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results,materialResults,layoutResults},null,2));
 }finally{c?.close();browser?.kill()}

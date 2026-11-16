@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 21733,
-      "sha256": "75b36b7f877cc3554ce4514ab32413428fe90eae61605a93a89e09d7c4a11e5b"
+      "utf8Bytes": 21842,
+      "sha256": "5bcd9f5bf5fab23516331fb1f75113508ff6f1784068451cf80b0f67426e1b17"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -375,8 +375,8 @@
     },
     {
       "path": "src/appearance-model.mjs",
-      "utf8Bytes": 4714,
-      "sha256": "65a6682b2fd1f28d2bd1993fceb06add0b028748b9315aaa5f7c7381e96e24fa"
+      "utf8Bytes": 5246,
+      "sha256": "c0a3ca5adb9b05c92a46b4f3e85a3f2d64d05f7ec1442aaea60495bfffb604ff"
     },
     {
       "path": "src/automatic-surfaces.mjs",
@@ -425,8 +425,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 41022,
-      "sha256": "76ba329498a095c24a86db59b19a8b9afd273eb6f95fef76627238689fc41876"
+      "utf8Bytes": 41040,
+      "sha256": "d3a7ab483bfb6d75e9395b48d7f6d1929d18dcb2c124e879ef608737125f43f3"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -525,8 +525,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 44269,
-      "sha256": "24ae188dba1c118a63903cb7a6c8e7db1ecf8fc4802d2410acd31082ba315fd3"
+      "utf8Bytes": 44453,
+      "sha256": "de73a2d4eae23415aec139a0355c1d171c4c7cacfbf05c9eb3985537159c1a10"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -555,8 +555,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 14539,
-      "sha256": "ef9f9d3a9c3a9126bff9e5b1ac7181057b17d31705441ad2f279060ea7499c57"
+      "utf8Bytes": 14920,
+      "sha256": "1e51c7806fd3804410db6744e17f4e4cc8e25f83d67c0735827caac2340dc135"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -645,8 +645,8 @@
     },
     {
       "path": "test/display-regressions.test.mjs",
-      "utf8Bytes": 2497,
-      "sha256": "56dc2eb2bd914a42517037e85fa42b774a134627a29563be5303cbc79dcc1fd4"
+      "utf8Bytes": 3002,
+      "sha256": "ea820e548600be7323a46ae7f3c2e72bacf61f6d6677bcda5bf6df46f7099084"
     },
     {
       "path": "test/display-tiers.test.mjs",
@@ -860,8 +860,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 13321,
-      "sha256": "2baeb251500d059e84661cd915b4c4203216a815aeba73aab785dd702842f4ec"
+      "utf8Bytes": 15342,
+      "sha256": "d32808b8ae6c5c9beeeda490f516d9f8f0c2bb2a170758344d8a92f41da29dda"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",

@@ -21,6 +21,7 @@ import {startSystemMedia,spectrumInterval} from './system-media.mjs';
 import {createMediaPower,installMediaActivity} from './media-power.mjs';
 import {displaySettings,effectiveEntry,effectiveMediaSettings} from './display-tiers.mjs';
 import {libraryGroups} from './library-model.mjs';
+import {createPaletteTracker} from './appearance-model.mjs';
 import {playbackMetrics} from './playback-metrics.mjs';
 import {installSceneResourceCache,callSceneResourceCache} from './scene-resource-cache.mjs';
 import {bindMediaFile} from './media-file-source.mjs';
@@ -32,7 +33,7 @@ const prepared=phase=>preparation.push({phase,afterMs:performance.now()-preparat
 const root=getDataRoot();
 const settings=await loadSettings(root);
 prepared('settings-loaded');const adapters=await upstreamRuntime();prepared('adapters-loaded');
-normalizeLibrary(settings);await saveConfig(root,settings);prepared('settings-normalized');
+normalizeLibrary(settings);const retainPalette=createPaletteTracker(settings);await saveConfig(root,settings);prepared('settings-normalized');
 const arg=process.argv.indexOf('--cdp-port'),port=Number(process.argv[arg+1]);
 if(arg<0||!Number.isInteger(port)||port<1024||port>65535)throw Error('Expected --cdp-port');
 const testArg=process.argv.indexOf('--test-url');const appUrl=testArg>=0?process.argv[testArg+1]:'app://-/index.html';
@@ -180,7 +181,7 @@ async function mount(c,target){c.playbackReading=null;
  assertCurrent();await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__cwbPickerModel='+adapters.picker+';window.__cwbInstallFx='+adapters.fx+';window.__cwbFrameFreeze='+installFrameFreeze.toString()+';window.__cwbDecorate='+decorateShell.toString()+';window.__cwbInstallFeatures='+installFeaturePanel.toString()+';('+installSceneResourceCache.toString()+')();window.__cwbApplyWidgets=config=>{if(!document.querySelector("aside.app-shell-left-panel")||!document.querySelector("main[data-app-shell-main-surface],main[class*=\\"_MainContentSurface_\\"],main.main-surface"))return Promise.resolve({phase:"waiting-for-native-shell"});return ('+installNativeWidgets.toString()+')(config)};(()=>{const prefix='+JSON.stringify(selectionEpoch+':')+',stamp='+JSON.stringify(selectionStamp)+';if(!window.__cwbSelectionStamp?.startsWith(prefix)||Number(window.__cwbSelectionStamp.slice(prefix.length))<='+ticket+'){window.__cwbSelectionStamp=stamp;window.__cwbDesiredWallpaperId='+JSON.stringify(entry?.id||null)+';}return true})()');
  if(entry?.mode==='webwallgl'){
   const previous=c.webPlayer,next=await mountWebWallGL(c,entry,{dataRoot:root,config:displaySettings(settings),isCurrent,selectionStamp});c.webPlayer=next;await previous?.dispose();await stopRealtime();c.isRealtime=false;
-  settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+');('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;return;
+  settings.palette=retainPalette(entry.id,await c.evaluate('window.__codexWallpaperBridge.palette'));await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+');('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;return;
  }
  if(!entry&&c.webPlayer){await c.webPlayer.dispose();c.webPlayer=null;}
  if(!entry){await stopRealtime();await c.evaluate('window.__cwbDecorations?.dispose();window.__cwbWidgets?.dispose?.();delete window.__cwbWidgets;window.__codexWallpaperBridge?.dispose?.();window.__cwbThemeGuard?.dispose();window.__cwbLayout?.dispose?.();delete window.__cwbLayout;document.getElementById("codex-wallpaper-bridge-layer")?.remove();document.getElementById("codex-wallpaper-bridge-style")?.remove();window.__codexWallpaperBridge={disabled:true,sample:()=>({ready:false,disabled:true,paused:true})};true');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;setImmediate(()=>global.gc?.());return}
@@ -192,7 +193,7 @@ async function mount(c,target){c.playbackReading=null;
   if(source!==realtime){const previous=realtime;realtime=source;realtimeKey=source.key;source.onFrame=()=>{if(source===realtime)scheduleStream(0);};if(previous)await previous.stop();}
   if(c.webPlayer){await c.webPlayer.dispose();c.webPlayer=null;}
   if(c.captureObjectId)await c.call('Runtime.releaseObject',{objectId:c.captureObjectId}).catch(()=>{});c.captureObjectId=(await c.call('Runtime.evaluate',{expression:'window.__codexWallpaperBridge',returnByValue:false})).result.objectId;
-  settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');
+  settings.palette=retainPalette(entry.id,await c.evaluate('window.__codexWallpaperBridge.palette'));await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');
   c.captureGeneration=(c.captureGeneration||0)+1;c.drawInFlight=0;c.captureBlocked=false;delete c.captureError;c.captureSentSequence=source.sequence;c.captureSequence=source.sequence;c.isRealtime=true;c.capturePaused=false;c.nextCapturePoll=0;c.reportedCaptureError=false;c.installed=true;return;
  }
  c.isRealtime=false;
@@ -214,7 +215,7 @@ async function mount(c,target){c.playbackReading=null;
  for(let i=0;i<40;i++){
   const current=await c.evaluate('({error:window.__cwbPendingMedia?.error,...window.__cwbPendingMedia?.sample()})');
   if(current.error){await c.evaluate('window.__cwbPendingMedia?.dispose?.();document.getElementById("codex-wallpaper-bridge-pending")?.remove();delete window.__cwbPendingMedia;true');throw Error(current.error);}
-  if(current.ready){assertCurrent();const accepted=await c.evaluate('(()=>{if(window.__cwbSelectionStamp!=='+JSON.stringify(selectionStamp)+'||window.__cwbDesiredWallpaperId!=='+JSON.stringify(entry.id)+')return false;const old=window.__codexWallpaperBridge;old?.dispose?.();document.getElementById("codex-wallpaper-bridge-layer")?.remove();const pending=document.getElementById("codex-wallpaper-bridge-pending");pending.id="codex-wallpaper-bridge-layer";window.__codexWallpaperBridge=window.__cwbPendingMedia;delete window.__cwbPendingMedia;return true})()');if(!accepted)throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});if(c.webPlayer){await c.webPlayer.dispose();c.webPlayer=null;}await stopRealtime();settings.palette=await c.evaluate('window.__codexWallpaperBridge.palette');if(!acting)await saveConfig(root,settings);await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;setImmediate(()=>global.gc?.());return}
+  if(current.ready){assertCurrent();const accepted=await c.evaluate('(()=>{if(window.__cwbSelectionStamp!=='+JSON.stringify(selectionStamp)+'||window.__cwbDesiredWallpaperId!=='+JSON.stringify(entry.id)+')return false;const old=window.__codexWallpaperBridge;old?.dispose?.();document.getElementById("codex-wallpaper-bridge-layer")?.remove();const pending=document.getElementById("codex-wallpaper-bridge-pending");pending.id="codex-wallpaper-bridge-layer";window.__codexWallpaperBridge=window.__cwbPendingMedia;delete window.__cwbPendingMedia;return true})()');if(!accepted)throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});if(c.webPlayer){await c.webPlayer.dispose();c.webPlayer=null;}await stopRealtime();settings.palette=retainPalette(entry.id,await c.evaluate('window.__codexWallpaperBridge.palette'));if(!acting)await saveConfig(root,settings);await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;setImmediate(()=>global.gc?.());return}
   await sleep(100);
  }
  await c.evaluate('window.__cwbPendingMedia?.dispose?.();document.getElementById("codex-wallpaper-bridge-pending")?.remove();delete window.__cwbPendingMedia;true');throw Error('Lightweight video did not decode a first frame');

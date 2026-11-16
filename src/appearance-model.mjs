@@ -11,6 +11,13 @@ export function appearancePalette(settings){
  const palette=settings.palette||{r:20,g:22,b:28,dark:true},theme=settings.visual?.theme;
  return theme==='light'?{r:240,g:242,b:246,dark:false}:theme==='dark'?{r:20,g:22,b:28,dark:true}:palette;
 }
+// Reopening the same wallpaper reuses its saved colour rather than sampling a
+// different animation frame for each window. A newly selected wallpaper gets
+// its own sample, saved through the host's existing settings transaction.
+export function createPaletteTracker(settings){
+ const palettes=new Map();if(settings.selectedId&&settings.palette)palettes.set(settings.selectedId,{...settings.palette});
+ return (id,sampled)=>{if(!palettes.has(id))palettes.set(id,{...(sampled||settings.palette)});return {...palettes.get(id)};};
+}
 export function appearanceSnapshot(settings){return {visual:sanitizeVisual(settings.visual),darkOverlay:settings.darkOverlay??.4,lightOverlay:settings.lightOverlay??.4,pauseOnBlur:settings.pauseOnBlur!==false,surfaceSync:{code:settings.surfaceSync?.code!==false,embedded:settings.surfaceSync?.embedded!==false}};}
 export function parsePreset(input){
  if(typeof input!=='string'||input.length>65536)throw Error('预设文件过大或无效');let value;try{value=JSON.parse(input);}catch{throw Error('预设不是有效 JSON');}
