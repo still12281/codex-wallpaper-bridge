@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Apply saved glass colours, opacity and blur consistently to the composer, user-message bubbles and file-change cards. Reserve transcript space for both inline and sibling-wrapped footers so messages do not overlap the input area.
+- Apply saved glass colours, opacity and blur consistently to the composer, user-message bubbles, file-change cards and annotation editor. Avoid stacking inherited backgrounds inside the annotation editor.
+- Preserve native transcript sizing and footer occlusion backgrounds instead of reserving a custom composer gap.
 - Reuse the saved palette when reopening the same wallpaper, and share each selected wallpaper's palette across windows.
 - Keep solid-button labels, neutral text and icons paired with the wallpaper theme when native theme settings load after startup. Preserve composer placeholder visibility through the startup-to-wallpaper handoff.
 

@@ -24,7 +24,7 @@ export function paintShell(config){
  const controlBackground=controlColor,controlFilter=controlBlur?`blur(${controlBlur}px)`:'none';
  const sync={composer:true,context:true,menus:false,settings:true,navigation:true,panels:true,code:true,embedded:true,...config.surfaceSync};
  // Match card semantics, independent of native background utility variants.
- const controlSelectors=[sync.composer&&':root [data-composer-surface-variant][data-composer-layout]',sync.context&&'main [class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"])',':root [data-user-message-bubble]'].filter(Boolean).join(',');
+ const controlSelectors=[sync.composer&&':root [data-composer-surface-variant][data-composer-layout]',sync.context&&'main [class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"])',':root [data-user-message-bubble]',':root [data-browser-comment-editor-surface] > [class~="bg-surface-elevated-secondary"]'].filter(Boolean).join(',');
  const mediaRoot=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot;
  if(mediaRoot){let tint=mediaRoot.querySelector('[data-cwb-shade]');if(!tint){tint=document.createElement('div');tint.setAttribute('data-cwb-shade','');mediaRoot.appendChild(tint)}tint.style.cssText=`position:absolute;inset:0;pointer-events:none;background:rgba(${shade},${overlay})`}
  let style=document.getElementById('codex-wallpaper-bridge-style');if(!style){style=document.createElement('style');style.id='codex-wallpaper-bridge-style';document.head.appendChild(style)}
@@ -35,6 +35,10 @@ export function paintShell(config){
  [data-composer-surface-variant]{--composer-editor-placeholder-opacity:1!important}
  ${controlSelectors?`${controlSelectors}{--cwb-control-background:${controlBackground};--cwb-control-filter:${controlFilter};--color-background-neutral-soft-alpha:rgba(${dark?'233,239,245':'21,33,44'},.08)!important;--color-background-secondary-ghost-hover:rgba(${dark?'233,239,245':'21,33,44'},.14)!important;--color-text:${ink};color:${ink}}`:''}
  :root [data-user-message-bubble]{--color-background-user-message:${controlColor}!important;--color-text-user-message:${ink}!important;--user-message-background-color:${controlColor}!important;--user-message-text-color:${ink}!important;background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important;color:${ink}!important}
+ :root [data-browser-comment-editor-surface] > [class~="bg-surface-elevated-secondary"]{background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}
+ :root [data-browser-comment-editor-surface] > [class~="bg-surface-elevated-secondary"] > [class~="bg-inherit"]{background:transparent!important}
+ [data-thread-scroll-footer]{--color-surface:rgb(${shade})}
+ :root [data-thread-scroll-footer] > [aria-hidden="true"][class~="bg-surface"]{background-color:var(--color-surface)!important}
  :root{--color-surface:transparent;--color-surface-canvas:transparent;--color-surface-secondary:rgba(${shade},.22);--color-surface-tertiary:rgba(${shade},.35);--color-surface-card:rgba(${shade},.55);--color-surface-elevated:rgba(${shade},.96);--color-surface-elevated-secondary:rgba(${shade},.92)}
  [role="dialog"],[role="menu"],[role="listbox"],[role="tooltip"],[data-slot="popover-content"],[data-slot="hover-card-content"],[data-radix-popper-content-wrapper]{--color-surface:var(--color-surface-elevated);--color-surface-canvas:var(--color-surface-elevated);--color-surface-secondary:var(--color-surface-elevated-secondary);--app-color-background-elevated-secondary-opaque:rgb(${shade});--app-color-background-elevated-tertiary-opaque:rgb(${shade});--app-color-text-foreground:${ink};--app-color-text-foreground-secondary:${secondary};--color-text:${ink};color:${ink}}
  [role="dialog"],[role="menu"],[role="listbox"],[data-slot="popover-content"],[data-slot="hover-card-content"]{background:var(--color-surface-elevated)!important;color:${ink}!important}
@@ -52,32 +56,18 @@ export function paintShell(config){
  ${sync.embedded?`webview[class~="bg-surface"]{background:transparent!important}`:`webview[class~="bg-surface"]{background:var(--color-surface-elevated-secondary)!important}`}
  ${sync.composer?`:root [data-composer-surface-variant][data-composer-layout]{background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}[data-composer-surface-variant] [data-composer-body]{background:transparent!important;backdrop-filter:none!important}`:''}
  ${sync.composer?`:root [data-composer-surface-variant][data-composer-utility-bar-variant="home"]{background:transparent!important;backdrop-filter:none!important}:root [data-composer-utility-bar-variant="home"] [data-composer-body]{background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
- [data-thread-scroll-footer] [class*="_background_"],[data-thread-scroll-footer] [class*="_background_"]::before,[data-thread-scroll-footer] [class*="_background_"]::after{background:transparent!important;backdrop-filter:none!important}
+
  ${sync.settings?`main[data-app-shell-main-surface] [class~="electron:bg-surface"]:has([class~="group/settings"]){background:transparent!important}[class~="group/settings"] [class~="rounded-2xl"][class~="border"]{background:rgba(${shade},.48)!important;border-color:rgba(128,150,170,.24)!important;backdrop-filter:none!important}`:''}
  ${sync.context?`[data-composer-rail]{background:transparent!important;backdrop-filter:none!important}[data-composer-utility-rail]{background:rgba(${shade},.48)!important;backdrop-filter:none!important}`:''}
  ${sync.context?`[data-composer-rail-item][class~="bg-surface-elevated-secondary"],main [class~="relative"][class~="w-fit"][class~="overflow-hidden"][class~="rounded-3xl"]>[class~="bg-surface-elevated-secondary"]{background:rgba(${shade},.48)!important;color:${ink}!important;backdrop-filter:none!important}`:''}
  ${sync.context?`main [class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"]){background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
  ${sync.menus?`[role="menu"],[data-radix-menu-content],[role="listbox"][data-state="open"],[data-radix-popper-content-wrapper] > [role="dialog"],[data-slot="popover-content"]{background:rgba(${shade},.58)!important;color:${ink}!important;border-color:rgba(128,150,170,.24)!important;backdrop-filter:none!important}`:''}
- [data-cwb-thread-space]:not(:has([data-expanded-composer])){height:calc(100% - var(--cwb-footer-height,160px))!important;flex:0 0 auto!important;box-sizing:border-box!important;--thread-scroll-padding-bottom:16px!important}
- [data-cwb-thread-space] [class*="_background_"][class*="_fade_"]{background:none!important}
+
+
  [data-app-shell-main-content-top-fade]:not(:has(*)),[class*="_MainContentTopFade_"]{background:transparent!important}
  #codex-wallpaper-bridge-layer{opacity:1!important;position:fixed!important;inset:0!important;z-index:-1!important;pointer-events:none!important}`;
- if(window.__cwbLayout?.version!==3){
-  window.__cwbLayout?.dispose?.();const tracked=new Map();let scheduled=false;
-  // Native footers can be inside the transcript or in an absolute sibling
-  // wrapper. Match the nearest unambiguous scroll host in either structure.
-  const scrollFor=f=>{const s=f.closest('[data-app-action-timeline-scroll]');if(s)return s;for(let a=f.parentElement;a&&a!==document.body;a=a.parentElement){const candidates=a.querySelectorAll('[data-app-action-timeline-scroll]');if(candidates.length===1)return candidates[0];if(candidates.length>1)return null;}return null;};
-  const clear=record=>{record.o.disconnect();record.s.removeAttribute('data-cwb-thread-space');record.s.style.removeProperty('--cwb-footer-height');};
-  const refresh=()=>{scheduled=false;for(const [f,r]of tracked)if(!f.isConnected||!r.s.isConnected||scrollFor(f)!==r.s){clear(r);tracked.delete(f)}
-   for(const f of document.querySelectorAll('[data-thread-scroll-footer]')){if(tracked.has(f))continue;const s=scrollFor(f);if(!s)continue;
-    const update=()=>{const h=f.getBoundingClientRect().height,nearBottom=s.scrollHeight-s.scrollTop-s.clientHeight<48,expanded=!!(f.closest('[data-expanded-composer]')||f.querySelector('[data-expanded-composer]'));s.style.setProperty('--cwb-footer-height',(h+12)+'px');s.toggleAttribute('data-cwb-thread-space',h>0&&!expanded);if(nearBottom)requestAnimationFrame(()=>{if(s.isConnected)s.scrollTop=s.scrollHeight})};
-    const o=new ResizeObserver(update);o.observe(f);tracked.set(f,{o,s});update();
-   }
-  };
-  const schedule=()=>{if(!scheduled){scheduled=true;requestAnimationFrame(refresh)}};
-  const observer=new MutationObserver(changes=>{if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(n.matches?.('[data-thread-scroll-footer]')||n.querySelector?.('[data-thread-scroll-footer]')))))schedule()});observer.observe(document.body,{childList:true,subtree:true});
-  window.__cwbLayout={version:3,refresh,dispose:()=>{observer.disconnect();for(const r of tracked.values())clear(r);tracked.clear()}};refresh();
- }
+ // Remove legacy bridge geometry once; native layout owns transcript spacing.
+ if(window.__cwbLayout){window.__cwbLayout.dispose?.();delete window.__cwbLayout;for(const e of document.querySelectorAll('[data-cwb-thread-space],[style*="--cwb-footer-height"]')){e.removeAttribute('data-cwb-thread-space');e.style.removeProperty('--cwb-footer-height');}}
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
  window.__cwbDecorate?.(config);
  window.__cwbStartupAppearance?.dispose();
