@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep composer and file-change cards opaque with neutral light/dark backgrounds. Preserve their text and action contrast when native themes load, glass settings change or surfaces are rescanned.
 - Keep solid-button labels, neutral text and icons paired with the wallpaper theme when native theme settings load after startup. Preserve composer placeholder visibility through the startup-to-wallpaper handoff.
 
 ## 0.2.1 — 2026-11-10

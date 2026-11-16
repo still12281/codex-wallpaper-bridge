@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 21489,
-      "sha256": "07e753bc475303797fc996600c845c7f62c8ae84bb406ed421a89882dfbe7899"
+      "utf8Bytes": 21685,
+      "sha256": "626e2cdc6c479170e245352112b4a152091247fcdec70f950a732c9e45a830b8"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -425,8 +425,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 40902,
-      "sha256": "0e11423885a1c038670156767c2729eb8dfadbc0e98ad883662c087c23032b9c"
+      "utf8Bytes": 41022,
+      "sha256": "1cecd0575976eba586bf077cac10e5e4f01aa0809290cc3971b148bc74e07de1"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -555,8 +555,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 12693,
-      "sha256": "2c8573aec614d9d20ab4aaf386f8199a67eee16b2861edc94185290561d3ef13"
+      "utf8Bytes": 13951,
+      "sha256": "78c2ada706f1c126449e266b43703f91df017b69f7b47d693c136bb8af344d16"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -860,8 +860,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 9061,
-      "sha256": "9c806c5487df223ce523199f5eddbaaaba7e14f4452209194097a6576940aaa6"
+      "utf8Bytes": 13268,
+      "sha256": "0774bdab50e3839bd9ba8bf4092db0ffeb1d92cb2bc6bd1da01c9ae4fb8e04d8"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",

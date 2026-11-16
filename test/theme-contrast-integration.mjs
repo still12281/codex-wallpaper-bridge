@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import {connectCdp} from '../src/cdp-client.mjs';
 import {paintShell} from '../src/wallpaper-style.mjs';
 import {installStartupAppearance} from '../src/startup-appearance.mjs';
+import {decorateShell} from '../src/upstream-adapters.mjs';
+import {installSurfaceTheme} from '../src/automatic-surfaces.mjs';
 
 let chrome=process.env.CODEX_WALLPAPER_TEST_CHROME;
 for(const base of [process.env.ProgramFiles,process.env['ProgramFiles(x86)'],process.env.LOCALAPPDATA].filter(Boolean)){
@@ -78,5 +80,31 @@ try{
   }
   await c.evaluate('window.__cwbThemeGuard?.dispose();document.getElementById("codex-wallpaper-bridge-style")?.remove();window.__cwbLayout?.dispose();true');
  }
- console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results},null,2));
+ const materialResults=[];
+ // Reproduce real composer + change-card structure, including the native /50
+ // modifier and the precomputed light neutral-button token seen after restart.
+ await c.evaluate(`(()=>{const style=document.createElement('style');style.textContent=':root{--color-background-neutral-soft-alpha:#fff} [class~="bg-surface-elevated-secondary/50"]{background:color-mix(in oklab,var(--color-surface-elevated-secondary) 50%,transparent)} .neutral{background:var(--color-background-neutral-soft-alpha);color:var(--color-text)} .semantic{background:#ba2623;color:#fff}';document.head.append(style);window.__cwbDecorate=${decorateShell.toString()};return true})()`);
+ for(const dark of [true,false])for(const opacity of [.2,.5,1]){
+  const palette=dark?{r:7,g:15,b:30,dark}:{r:220,g:235,b:250,dark};
+  const config={palette,visual:{glassOpacity:opacity,glassBlur:6,fontFamily:'inherit',codeFontFamily:'inherit'},darkOverlay:.4,lightOverlay:.4};
+  const saved=JSON.stringify(config);
+  await c.evaluate('window.__codexWallpaperBridge={ready:true};('+paintShell.toString()+')('+saved+')');
+  // Insert components after painting, as when native UI renders a new turn.
+  await c.evaluate(`document.querySelector('main').innerHTML='<div class="bg-surface" data-composer-layout="multiline" data-composer-surface-variant="default"><div data-composer-body><textarea>Draft</textarea></div></div><div class="bg-surface" data-composer-layout="multiline" data-composer-surface-variant="default" data-composer-utility-bar-variant="home"><div class="bg-surface" data-composer-body>Home draft</div></div><div class="overflow-hidden bg-surface-elevated-secondary/50" id="diff-card"><div class="group/turn-diff-header"><button class="neutral" id="review">Review</button><button class="semantic" id="danger">Delete</button></div><div>Changed files</div></div><div class="overflow-hidden bg-surface-elevated-secondary/50" id="other-card">Other card</div>';true`);
+  await c.evaluate('('+installSurfaceTheme.toString()+')('+JSON.stringify({enabled:true,shell:true,palette})+')');
+  for(const phase of ['inserted','native-theme-restored']){
+   if(phase==='native-theme-restored')await c.evaluate('document.documentElement.dataset.theme='+JSON.stringify(dark?'light':'dark')+';document.documentElement.style.setProperty("--color-background-neutral-soft-alpha","#fff");document.getElementById("diff-card").className="overflow-hidden bg-surface-elevated-secondary";window.__cwbAutomaticSurface.rescan();true');
+   const actual=await c.evaluate(`(()=>{const s=selector=>{const v=getComputedStyle(document.querySelector(selector));return {bg:v.backgroundColor,blur:v.backdropFilter,color:v.color}};return {composer:s('[data-composer-surface-variant]:not([data-composer-utility-bar-variant])'),home:s('[data-composer-utility-bar-variant=home]'),homeBody:s('[data-composer-utility-bar-variant=home] [data-composer-body]'),body:s('[data-composer-surface-variant]:not([data-composer-utility-bar-variant]) [data-composer-body]'),card:s('#diff-card'),review:s('#review'),danger:s('#danger'),other:s('#other-card'),draft:document.querySelector('textarea').value}})()`);
+   const opaque=dark?'rgb(20, 22, 28)':'rgb(240, 242, 246)';
+   for(const key of ['composer','homeBody','card']){assert.equal(actual[key].bg,opaque,`${phase} ${key}`);assert.equal(actual[key].blur,'none');assert(ratio(rgb(actual[key].color),rgb(actual[key].bg))>=4.5,`${phase} ${key} text contrast`);}
+   assert.equal(actual.body.bg,'rgba(0, 0, 0, 0)');assert.equal(actual.home.bg,'rgba(0, 0, 0, 0)');
+   assert.equal(actual.review.bg,dark?'rgba(233, 239, 245, 0.08)':'rgba(21, 33, 44, 0.08)');
+   assert.equal(actual.review.color,dark?'rgb(233, 239, 245)':'rgb(21, 33, 44)');
+   assert.equal(actual.danger.bg,'rgb(186, 38, 35)');assert.equal(actual.danger.color,'rgb(255, 255, 255)');
+   assert.notEqual(actual.other.bg,actual.card.bg);assert.equal(actual.draft,'Draft');
+   materialResults.push({dark,glassOpacity:opacity,phase,opaqueEditingMaterial:true});
+  }
+  assert.equal(JSON.stringify(config),saved);
+ }
+ console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results,materialResults},null,2));
 }finally{c?.close();browser?.kill()}

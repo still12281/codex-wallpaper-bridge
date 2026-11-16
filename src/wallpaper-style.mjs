@@ -19,7 +19,13 @@ export function paintShell(config){
  // changing only foreground also changes the native solid-button background.
  const themeTokens=`color-scheme:${dark?'dark':'light'}!important;--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--app-color-text-foreground-tertiary:${secondary}!important;--app-color-icon-primary:${ink}!important;--app-color-icon-secondary:${secondary}!important;--app-color-icon-tertiary:${secondary}!important;--app-color-text-button-primary:${inverse}!important;--app-color-text-button-secondary:${ink}!important;--app-color-text-button-tertiary:${secondary}!important;--app-color-background-button-primary:${ink}!important;--app-color-text-primary-solid:${inverse}!important;--color-text-primary-solid:${inverse}!important;--color-text-primary:${ink}!important;--color-text-secondary:${secondary}!important;--color-text-tertiary:${secondary}!important`;
  const overlay=dark?config.darkOverlay:config.lightOverlay;
+ // Editing/review surfaces stay opaque. Only the selected light/dark palette
+ // changes their neutral colour; wallpaper tint and glass effects cannot.
+ const controlShade=dark?'20,22,28':'240,242,246';
+ const controlBackground=`rgb(${controlShade})`,controlFilter='none';
  const sync={composer:true,context:true,menus:false,settings:true,navigation:true,panels:true,code:true,embedded:true,...config.surfaceSync};
+ // Match card semantics, independent of native background utility variants.
+ const controlSelectors=[sync.composer&&':root [data-composer-surface-variant][data-composer-layout]',sync.context&&'main [class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"])'].filter(Boolean).join(',');
  const mediaRoot=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot;
  if(mediaRoot){let tint=mediaRoot.querySelector('[data-cwb-shade]');if(!tint){tint=document.createElement('div');tint.setAttribute('data-cwb-shade','');mediaRoot.appendChild(tint)}tint.style.cssText=`position:absolute;inset:0;pointer-events:none;background:rgba(${shade},${overlay})`}
  let style=document.getElementById('codex-wallpaper-bridge-style');if(!style){style=document.createElement('style');style.id='codex-wallpaper-bridge-style';document.head.appendChild(style)}
@@ -28,6 +34,7 @@ export function paintShell(config){
  style.textContent=`html,body{background:transparent!important}body{isolation:isolate}#root,#app{position:relative;background:transparent!important}
  :root{${themeTokens};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
  [data-composer-surface-variant]{--composer-editor-placeholder-opacity:1!important}
+ ${controlSelectors?`${controlSelectors}{--cwb-control-background:${controlBackground};--cwb-control-filter:${controlFilter};--color-background-neutral-soft-alpha:rgba(${dark?'233,239,245':'21,33,44'},.08)!important;--color-background-secondary-ghost-hover:rgba(${dark?'233,239,245':'21,33,44'},.14)!important;--color-text:${ink};color:${ink}}`:''}
  :root{--color-surface:transparent;--color-surface-canvas:transparent;--color-surface-secondary:rgba(${shade},.22);--color-surface-tertiary:rgba(${shade},.35);--color-surface-card:rgba(${shade},.55);--color-surface-elevated:rgba(${shade},.96);--color-surface-elevated-secondary:rgba(${shade},.92)}
  [role="dialog"],[role="menu"],[role="listbox"],[role="tooltip"],[data-slot="popover-content"],[data-slot="hover-card-content"],[data-radix-popper-content-wrapper]{--color-surface:var(--color-surface-elevated);--color-surface-canvas:var(--color-surface-elevated);--color-surface-secondary:var(--color-surface-elevated-secondary);--app-color-background-elevated-secondary-opaque:rgb(${shade});--app-color-background-elevated-tertiary-opaque:rgb(${shade});--app-color-text-foreground:${ink};--app-color-text-foreground-secondary:${secondary};--color-text:${ink};color:${ink}}
  [role="dialog"],[role="menu"],[role="listbox"],[data-slot="popover-content"],[data-slot="hover-card-content"]{background:var(--color-surface-elevated)!important;color:${ink}!important}
@@ -43,12 +50,13 @@ export function paintShell(config){
  main:is(.main-surface,[data-app-shell-main-surface],[class*="_MainContentSurface_"]),header:is(.app-header-tint,[data-app-shell-header-edge-scroll],[class*="_Header_"]){background:transparent!important}
  [data-app-shell-page-surface] aside.app-shell-left-panel,[data-app-shell-page-surface] header[data-app-shell-header-edge-scroll]{background:transparent!important}
  ${sync.embedded?`webview[class~="bg-surface"]{background:transparent!important}`:`webview[class~="bg-surface"]{background:var(--color-surface-elevated-secondary)!important}`}
- ${sync.composer?`[data-composer-surface-variant][data-composer-layout]{background:rgba(${shade},.48)!important;backdrop-filter:none!important}[data-composer-surface-variant] [data-composer-body]{background:transparent!important;backdrop-filter:none!important}`:''}
- ${sync.composer?`[data-composer-surface-variant][data-composer-utility-bar-variant="home"]{background:transparent!important}[data-composer-utility-bar-variant="home"] [data-composer-body]{background:rgba(${shade},.48)!important}`:''}
+ ${sync.composer?`:root [data-composer-surface-variant][data-composer-layout]{background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}[data-composer-surface-variant] [data-composer-body]{background:transparent!important;backdrop-filter:none!important}`:''}
+ ${sync.composer?`:root [data-composer-surface-variant][data-composer-utility-bar-variant="home"]{background:transparent!important;backdrop-filter:none!important}:root [data-composer-utility-bar-variant="home"] [data-composer-body]{background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
  [data-thread-scroll-footer] [class*="_background_"],[data-thread-scroll-footer] [class*="_background_"]::before,[data-thread-scroll-footer] [class*="_background_"]::after{background:transparent!important;backdrop-filter:none!important}
  ${sync.settings?`main[data-app-shell-main-surface] [class~="electron:bg-surface"]:has([class~="group/settings"]){background:transparent!important}[class~="group/settings"] [class~="rounded-2xl"][class~="border"]{background:rgba(${shade},.48)!important;border-color:rgba(128,150,170,.24)!important;backdrop-filter:none!important}`:''}
  ${sync.context?`[data-composer-rail]{background:transparent!important;backdrop-filter:none!important}[data-composer-utility-rail]{background:rgba(${shade},.48)!important;backdrop-filter:none!important}`:''}
  ${sync.context?`[data-composer-rail-item][class~="bg-surface-elevated-secondary"],main [class~="relative"][class~="w-fit"][class~="overflow-hidden"][class~="rounded-3xl"]>[class~="bg-surface-elevated-secondary"]{background:rgba(${shade},.48)!important;color:${ink}!important;backdrop-filter:none!important}`:''}
+ ${sync.context?`main [class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"]){background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
  ${sync.menus?`[role="menu"],[data-radix-menu-content],[role="listbox"][data-state="open"],[data-radix-popper-content-wrapper] > [role="dialog"],[data-slot="popover-content"]{background:rgba(${shade},.58)!important;color:${ink}!important;border-color:rgba(128,150,170,.24)!important;backdrop-filter:none!important}`:''}
  [data-cwb-thread-space]:not(:has([data-expanded-composer])){height:calc(100% - var(--cwb-footer-height,160px))!important;flex:0 0 auto!important;box-sizing:border-box!important;--thread-scroll-padding-bottom:16px!important}
  [data-cwb-thread-space] [class*="_background_"][class*="_fade_"]{background:none!important}
@@ -69,5 +77,5 @@ export function paintShell(config){
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
  window.__cwbDecorate?.(config);
  window.__cwbStartupAppearance?.dispose();
- return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? .48 : null,surfaces:sync};
+ return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? 1 : null,surfaces:sync};
 }
