@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 21686,
-      "sha256": "20ad6a95ad1e12630b580942d3a8a3cd7cc96b1fe35d673f73c4af3b268a9ae0"
+      "utf8Bytes": 21733,
+      "sha256": "75b36b7f877cc3554ce4514ab32413428fe90eae61605a93a89e09d7c4a11e5b"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -555,8 +555,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 13888,
-      "sha256": "5be5befd36baf659281bef562dc03a77657245e402a5057b491097d8c9430718"
+      "utf8Bytes": 14539,
+      "sha256": "ef9f9d3a9c3a9126bff9e5b1ac7181057b17d31705441ad2f279060ea7499c57"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -860,8 +860,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 13272,
-      "sha256": "bac58fa0a5e524100484f048a42e4e647aaebe758cc919659b2752913196522d"
+      "utf8Bytes": 13321,
+      "sha256": "2baeb251500d059e84661cd915b4c4203216a815aeba73aab785dd702842f4ec"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",

@@ -95,7 +95,7 @@ try{
   for(const phase of ['inserted','native-theme-restored']){
    if(phase==='native-theme-restored')await c.evaluate('document.documentElement.dataset.theme='+JSON.stringify(dark?'light':'dark')+';document.documentElement.style.setProperty("--color-background-neutral-soft-alpha","#fff");document.getElementById("diff-card").className="overflow-hidden bg-surface-elevated-secondary";window.__cwbAutomaticSurface.rescan();true');
    const actual=await c.evaluate(`(()=>{const s=selector=>{const v=getComputedStyle(document.querySelector(selector));return {bg:v.backgroundColor,blur:v.backdropFilter,color:v.color}};return {composer:s('[data-composer-surface-variant]:not([data-composer-utility-bar-variant])'),home:s('[data-composer-utility-bar-variant=home]'),homeBody:s('[data-composer-utility-bar-variant=home] [data-composer-body]'),body:s('[data-composer-surface-variant]:not([data-composer-utility-bar-variant]) [data-composer-body]'),card:s('#diff-card'),review:s('#review'),danger:s('#danger'),other:s('#other-card'),draft:document.querySelector('textarea').value}})()`);
-   const opaque=`rgb(${palette.r}, ${palette.g}, ${palette.b})`;
+   const opaque=`rgb(${[palette.r,palette.g,palette.b].map(v=>Math.round(v*.75+(dark?48:255)*.25)).join(', ')})`;
    for(const key of ['composer','homeBody','card']){assert.equal(actual[key].bg,opaque,`${phase} ${key}`);assert.equal(actual[key].blur,'none');assert(ratio(rgb(actual[key].color),rgb(actual[key].bg))>=4.5,`${phase} ${key} text contrast`);}
    assert.equal(actual.body.bg,'rgba(0, 0, 0, 0)');assert.equal(actual.home.bg,'rgba(0, 0, 0, 0)');
    assert.equal(actual.review.bg,dark?'rgba(233, 239, 245, 0.08)':'rgba(21, 33, 44, 0.08)');
