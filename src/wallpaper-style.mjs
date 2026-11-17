@@ -38,6 +38,9 @@ export function paintShell(config){
  // Clipping belongs to the marked element, not every text/code descendant.
  style.textContent=`@property --cwb-transcript-clip{syntax:"<length>";inherits:false;initial-value:0px}
  @property --cwb-code-clip-top{syntax:"<length>";inherits:false;initial-value:0px}
+ @property --cwb-transcript-start{syntax:"<length>";inherits:false;initial-value:0px}
+ @property --cwb-transcript-end{syntax:"<length>";inherits:false;initial-value:0px}
+ @keyframes cwb-transcript-scroll{from{clip-path:inset(0 0 var(--cwb-transcript-start) 0)}to{clip-path:inset(0 0 var(--cwb-transcript-end) 0)}}
  html,body{background:transparent!important}body{isolation:isolate}#root,#app{position:relative;background:transparent!important}
  :root{${themeTokens};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
  [data-composer-surface-variant]{--composer-editor-placeholder-opacity:1!important}
@@ -78,6 +81,7 @@ export function paintShell(config){
  ${sync.context?`main .overflow-hidden:has(>.group\\/turn-diff-header){background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
  [data-thread-scroll-footer] > [aria-hidden="true"]{background:transparent!important}
  [data-cwb-transcript-content]{clip-path:inset(0 0 var(--cwb-transcript-clip,0px) 0)}
+ [data-cwb-transcript-content="scroll"]{animation:cwb-transcript-scroll 1s linear both;animation-timeline:scroll(nearest y)}
  [data-cwb-code-source]{clip-path:inset(var(--cwb-code-clip-top,0px) 0 0 0)}
  [data-app-shell-main-content-top-fade]:not(:has(*)),[class*="_MainContentTopFade_"]{background:transparent!important}
  #codex-wallpaper-bridge-layer{opacity:1!important;position:fixed!important;inset:0!important;z-index:-1!important;pointer-events:none!important}`;
@@ -86,10 +90,11 @@ export function paintShell(config){
  // A transparent composer reveals wallpaper, never earlier turns. Clip only
  // transcript painting using native footer bounds; leave scrollport dimensions,
  // padding, scroll positions and the composer itself entirely native.
- if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==4)window.__cwbTranscriptPaint.dispose();
+ if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==5)window.__cwbTranscriptPaint.dispose();
  if(!window.__cwbTranscriptPaint){
   const marked=new Set(),codeMarked=new Set(),observed=new Set();let frame=0,disposed=false;
-  const clean=e=>{e.removeAttribute('data-cwb-transcript-content');e.style.removeProperty('--cwb-transcript-clip');marked.delete(e);};
+  const timelines=CSS.supports('animation-timeline','scroll(nearest y)');
+  const clean=e=>{e.removeAttribute('data-cwb-transcript-content');for(const p of ['--cwb-transcript-clip','--cwb-transcript-start','--cwb-transcript-end'])e.style.removeProperty(p);marked.delete(e);};
   const cleanCode=e=>{e.removeAttribute('data-cwb-code-source');e.style.removeProperty('--cwb-code-clip-top');codeMarked.delete(e);};
   const update=()=>{
    if(disposed)return;const active=new Set(),activeCode=new Set(),watch=new Set();
@@ -102,7 +107,11 @@ export function paintShell(config){
     for(let i=0;i<contents.length;i++){const e=contents[i];
      if(e.matches('[data-thread-scroll-footer]'))continue;
      if(e.querySelector('[data-thread-scroll-footer]')){contents.push(...e.children);continue;}
-     const r=e.getBoundingClientRect();e.setAttribute('data-cwb-transcript-content','');e.style.setProperty('--cwb-transcript-clip',Math.max(0,r.bottom-edge)+'px');marked.add(e);active.add(e);watch.add(e);
+     const r=e.getBoundingClientRect(),range=scroll.scrollHeight-scroll.clientHeight,start=r.bottom-edge+scroll.scrollTop;
+     // A scroll timeline advances with native scrolling, without waiting for a
+     // JS scroll handler. Only layout/streaming changes need new endpoints.
+     e.setAttribute('data-cwb-transcript-content',timelines&&range>0?'scroll':'');e.style.setProperty('--cwb-transcript-clip',Math.max(0,r.bottom-edge)+'px');
+     e.style.setProperty('--cwb-transcript-start',start+'px');e.style.setProperty('--cwb-transcript-end',(start-range)+'px');marked.add(e);active.add(e);watch.add(e);
     }
    }
    if(window.__cwbTranscriptPaint?.codeEnabled!==false)for(const root of document.querySelectorAll('[data-code-block][data-markdown-copy="code-block"]')){
@@ -119,7 +128,7 @@ export function paintShell(config){
   const queue=()=>{if(!frame&&!disposed)frame=requestAnimationFrame(()=>{frame=0;update();});};
   const resize=new ResizeObserver(update),mutation=new MutationObserver(changes=>{if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&!n.closest?.('#codex-wallpaper-bridge-layer,#codex-wallpaper-controls'))))queue();});
   mutation.observe(document.body,{childList:true,subtree:true});document.addEventListener('scroll',update,{capture:true,passive:true});document.addEventListener('input',queue,true);document.addEventListener('focusin',queue,true);document.addEventListener('click',queue,true);window.addEventListener('resize',queue);
-  window.__cwbTranscriptPaint={version:4,codeEnabled:sync.code,refresh:update,dispose(){disposed=true;cancelAnimationFrame(frame);resize.disconnect();mutation.disconnect();document.removeEventListener('scroll',update,true);document.removeEventListener('input',queue,true);document.removeEventListener('focusin',queue,true);document.removeEventListener('click',queue,true);window.removeEventListener('resize',queue);for(const e of [...marked])clean(e);for(const e of [...codeMarked])cleanCode(e);delete window.__cwbTranscriptPaint;}};update();
+  window.__cwbTranscriptPaint={version:5,codeEnabled:sync.code,refresh:update,dispose(){disposed=true;cancelAnimationFrame(frame);resize.disconnect();mutation.disconnect();document.removeEventListener('scroll',update,true);document.removeEventListener('input',queue,true);document.removeEventListener('focusin',queue,true);document.removeEventListener('click',queue,true);window.removeEventListener('resize',queue);for(const e of [...marked])clean(e);for(const e of [...codeMarked])cleanCode(e);delete window.__cwbTranscriptPaint;}};update();
  }else{window.__cwbTranscriptPaint.codeEnabled=sync.code;window.__cwbTranscriptPaint.refresh();}
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
  window.__cwbDecorate?.(config);

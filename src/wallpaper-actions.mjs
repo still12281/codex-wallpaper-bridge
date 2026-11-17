@@ -277,6 +277,11 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   try{await commitConverted(root,settings,entry,converted,{...entry},applyNow?apply:async()=>{},saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}uploads.delete(u.id);return {config:settings};
  };
  const action=async(c,req)=>{
+ if(['update-status','update-check','update-install'].includes(req.action)){
+  if(!services.updater)throw Error('版本更新服务尚未就绪。');
+  if(req.action==='update-check'){void services.updater.check(req.force===true);return {update:await services.updater.status()};}
+  return {update:await services.updater[req.action==='update-install'?'start':'status']()};
+ }
   req={...req};const u=uploads.get(req.uploadId);if(!req.operationId&&u?.owner===c)req.operationId=u.operationId;
   if(req.action==='import-cancel'){
    const active=jobs.get(c,req.operationId),result=jobs.cancel(c,req.operationId);

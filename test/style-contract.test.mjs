@@ -14,7 +14,7 @@ function generatedSheet(config){
 }
 function localStyleContract(css){
  assert(!/\[class\s*~=/.test(css),'Exact class tokens must use class selectors');
- for(const name of ['--cwb-transcript-clip','--cwb-code-clip-top']){
+ for(const name of ['--cwb-transcript-clip','--cwb-code-clip-top','--cwb-transcript-start','--cwb-transcript-end']){
   const rule=css.match(new RegExp('@property\\s+'+name+'\\s*\\{([^}]*)\\}'))?.[1];
   assert(rule&&/inherits\s*:\s*false\s*(?:;|$)/.test(rule),name+' must stay local to its element');
  }

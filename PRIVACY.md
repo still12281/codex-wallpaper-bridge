@@ -24,6 +24,8 @@ This data can contain:
 
 No telemetry or upload service is implemented by this project's host. Its CDP connection is restricted to `127.0.0.1`; folder discovery and media processing run locally. The official Codex client has its own network/account behavior, outside this project's control. Wallpaper links and upstream URLs in documentation are not fetched by the wallpaper runtime.
 
+The wallpaper panel checks the public GitHub Releases API for stable bridge updates, with a one-hour in-memory cache and a manual check button. GitHub receives the network request and its normal connection metadata. Update checks send no chats, settings or wallpaper files. Installer downloads start when the user selects the update button; verified packages, task state and installer logs are retained locally under `updates` in the data folder.
+
 ## Sharing reports
 
 Do not attach an entire data directory, browser profile, real settings file, or raw debugging dump to an issue. Redact personal names, paths, titles, media and any conversation/account information from screenshots and logs. Prefer a newly generated sample video and a minimal description of client/OS/dependency versions.

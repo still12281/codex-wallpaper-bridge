@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===28){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===29){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=28;let features=null,scanShortcut=null,scanToastTimer=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=29;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
@@ -14,7 +14,7 @@ export function installPanel(config,token){
  const queuePlace=()=>{if(placementQueued||disposed)return;placementQueued=true;requestAnimationFrame(()=>{placementQueued=false;place();});};
  const relevant='[class*="ApplicationMenuTopBar"],[role="menubar"],#application-menu-trigger-file-menu';
  const observer=new MutationObserver(changes=>{if(!host.isConnected||(menuAnchor&&!menuAnchor.isConnected)||changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(n.matches?.(relevant)||n.querySelector?.(relevant)))))queuePlace();});
- observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('resize',queuePlace);host.__cwbPlace=place;host.__cwbDispose=()=>{disposed=true;observer.disconnect();window.removeEventListener('resize',queuePlace);if(scanShortcut)window.removeEventListener('keydown',scanShortcut,true);clearTimeout(scanToastTimer);};
+ observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('resize',queuePlace);host.__cwbPlace=place;host.__cwbDispose=()=>{disposed=true;observer.disconnect();window.removeEventListener('resize',queuePlace);if(scanShortcut)window.removeEventListener('keydown',scanShortcut,true);clearTimeout(scanToastTimer);clearTimeout(updateTimer);};
  host.__cwbEntryState=()=>{const button=s.getElementById('toggle'),r=button?.getBoundingClientRect(),style=getComputedStyle(host);return {visible:!!(host.isConnected&&r?.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight&&style.display!=='none'&&style.visibility!=='hidden'),placement:host.dataset.cwbPlacement};};place();
  s.innerHTML=`<style>:host{font:13px system-ui;color:#e6edf5}button,select,input{font:inherit}button,select{color:inherit;background:#18283de8;border:1px solid #5c849b70;border-radius:8px;padding:8px 12px;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #6cd9e8;outline-offset:2px}button:disabled{opacity:.5;cursor:wait}dialog{color:inherit;background:#0d1927f5;border:1px solid #5886a480;border-radius:16px;width:min(390px,80vw);padding:24px;box-shadow:0 18px 70px #0008}dialog::backdrop{background:#0005}h2{font-size:19px;margin:0 0 6px}p{color:#9fb3c8;line-height:1.6}label{display:block;margin-top:20px}select,input[type=range]{width:100%;box-sizing:border-box;margin-top:8px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:24px}#status{min-height:38px;font-size:12px}#close{float:right;background:none;border:0;padding:4px}output{float:right;color:#87d7e5}</style>
  <button id="toggle" aria-label="打开壁纸设置" style="height:28px;padding:0 10px">壁纸</button><dialog aria-labelledby="title"><button id="close" aria-label="关闭">✕</button><h2 id="title">壁纸与外观</h2><label>我的壁纸<select id="library"></select></label><label>遮罩浓度 <output id="opacity"></output><input id="shade" type="range" min="25" max="85" step="5"></label><label><input id="pause" type="checkbox"> 仅聚焦 Codex 时播放动态壁纸</label><p id="status" role="status" aria-live="polite">就绪</p><footer><button id="import">导入图片 / 视频</button><button id="done">完成</button></footer><input id="file" type="file" hidden accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"></dialog>`;
@@ -126,6 +126,27 @@ export function installPanel(config,token){
   finally{button.textContent='扫描并适配';surfaceRepair.setAttribute('aria-busy','false');}
  };
  $('cwb-surface-scan').onclick=host.__cwbScanSurfaces;
+ const updates=document.createElement('details');updates.open=true;updates.className='cwb-feature';updates.setAttribute('aria-labelledby','cwb-update-title');updates.innerHTML='<summary id="cwb-update-title">版本与更新</summary><p id="cwb-update-status" role="status" aria-live="polite" aria-atomic="true">正在读取版本…</p><div class="cwb-row"><button id="cwb-update-check">检查更新</button><button id="cwb-update-install" hidden>一键更新</button></div><p>检查 GitHub 正式版本。更新保留壁纸库与设置，安装完成后重新打开 Codex 生效。</p>';
+ $('status').before(updates);extraStyle.textContent+=' #cwb-update-status{overflow-wrap:anywhere}#cwb-update-install[hidden]{display:none}';
+ let updateBusy=false;
+ const showUpdate=u=>{
+  if(!u){$('cwb-update-status').textContent='版本服务没有返回状态，请重新检查。';$('cwb-update-check').disabled=false;return;}const working=['checking','downloading','installing'].includes(u.phase),installed=u.phase==='installed';
+  $('cwb-update-status').textContent='当前版本 v'+u.currentVersion+' · '+(u.message||(u.available?'发现新版本 v'+u.latestVersion:'已是最新正式版本。'));
+  $('cwb-update-install').hidden=!u.available||installed;$('cwb-update-install').disabled=working;$('cwb-update-check').disabled=working||installed;
+  $('cwb-update-install').textContent=u.phase==='downloading'?'正在下载…':u.phase==='installing'?'正在安装…':'一键更新至 v'+u.latestVersion;
+  $('toggle').textContent=u.available&&!installed?'壁纸 · 有更新':'壁纸';$('toggle').setAttribute('aria-label',u.available&&!installed?'打开壁纸设置，有新版本可更新':'打开壁纸设置');
+  clearTimeout(updateTimer);if(working&&!disposed)updateTimer=setTimeout(()=>refreshUpdate('update-status'),u.phase==='checking'?700:2000);
+ };
+ const refreshUpdate=async(action='update-check',force=false)=>{
+  if(disposed||updateBusy)return;updateBusy=true;$('cwb-update-check').disabled=true;
+  try{const r=await send({action,force});if(!disposed)showUpdate(r.update);}
+  catch(error){if(!disposed){$('cwb-update-status').textContent='更新检查失败：'+error.message;$('cwb-update-check').disabled=false;$('cwb-update-install').disabled=false;}}
+  finally{updateBusy=false;}
+ };
+ $('cwb-update-check').onclick=()=>refreshUpdate('update-check',true);
+ $('cwb-update-install').onclick=()=>{if(processing||livePending)return;void refreshUpdate('update-install');};
+ const openPanel=$('toggle').onclick;$('toggle').onclick=()=>{openPanel();void refreshUpdate();};
+ void refreshUpdate();
  scanShortcut=event=>{if(event.code==='KeyW'&&event.ctrlKey&&event.altKey&&event.shiftKey&&!event.metaKey&&!event.repeat&&!event.isComposing){event.preventDefault();event.stopImmediatePropagation();void host.__cwbScanSurfaces();}};
  window.addEventListener('keydown',scanShortcut,true);
  if(!config.library.length)for(const id of ['delete','apply','library'])$(id).disabled=true;

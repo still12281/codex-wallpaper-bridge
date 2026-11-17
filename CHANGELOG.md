@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep transcript clipping synchronized with native scroll progress, preventing earlier turns from briefly showing through the transparent composer during scrolling.
+- Add stable GitHub release notifications, manual checks and verified one-click installer updates to the wallpaper panel. Preserve the library and integration settings; activate the installed version after exiting Codex normally and reopening the wallpaper entry.
+
 ## 0.2.2 — 2026-11-17
 
 - Budget code-reader and terminal tint together with the wallpaper overlay, reducing compounded whitening or darkening while keeping text contrast and existing font settings.

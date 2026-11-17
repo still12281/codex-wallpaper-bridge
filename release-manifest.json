@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 23738,
-      "sha256": "e24a4b352b25d49b336cf624a4ca6cb5714310088d43f398161102315f9cc073"
+      "utf8Bytes": 24169,
+      "sha256": "f9c5b5314cca2da1172fc9127f7ebd8a6e3de2a5c1b3bc0aae1cc9c0ce145d7b"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -44,18 +44,18 @@
     },
     {
       "path": "PRIVACY.md",
-      "utf8Bytes": 4789,
-      "sha256": "9f73b2a5cef9d66a4e3425f8457c444ecf89a171988030d9977f88edc77141ae"
+      "utf8Bytes": 5237,
+      "sha256": "e71548f639c9ed38d5eea0f52f6f34a8941ed8149c79dda7eaa7efcd58b465ce"
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 13991,
-      "sha256": "4b68a618bc2e83c4ec779ccfd392221e913a85dc24617e484aa092b5f4a88605"
+      "utf8Bytes": 14485,
+      "sha256": "26e106e912b45692b94b42e9d2aa37b1067e823a2c7a62acb7a73c751792cf21"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 16307,
-      "sha256": "e9417811acd57be2b7898f7e5f94d46bafb05f71c45fef0d55894901d6acdd0b"
+      "utf8Bytes": 16764,
+      "sha256": "2584074422b90069ae91a958bd4442d3f05e8ecbaef54959d04e7730bb41ca43"
     },
     {
       "path": "README.zh-CN.md",
@@ -389,6 +389,11 @@
       "sha256": "f85d8c8eab6afff165eb981ab699e941ac99923834044914d6806a20763aafbc"
     },
     {
+      "path": "src/bridge-update.mjs",
+      "utf8Bytes": 10501,
+      "sha256": "00995e2200894dbcbe8e54e6bcf817ffbf5c2e760376f55d77e69c9a0f568f98"
+    },
+    {
       "path": "src/browser-web-source.mjs",
       "utf8Bytes": 13899,
       "sha256": "60f4c490afbf6bc86e08d81099dd7b0094fde9b23cc47c07ccace0aac0167513"
@@ -530,13 +535,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 46224,
-      "sha256": "eecd65749dc77bff647f9cd97eaf0fd081fde8503a557a53f7309cf62e2db6ba"
+      "utf8Bytes": 46470,
+      "sha256": "89da9d43917fb39fee1cbd1b655b2ea43135362ba3a73239c36f438b7dce9b76"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 41921,
-      "sha256": "f67d9a03b059b72a02d53a20da31e279ee26864286d41875db3fa879e481d01e"
+      "utf8Bytes": 42296,
+      "sha256": "5730d79719ad0654eef46bbe4046fa3452ac465060b5c9ae0cf253480f9b9be0"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -545,8 +550,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 39883,
-      "sha256": "bd4c82a2a47ca9e5d806547db83fdd6d011240830edd9f1c96549ff9fb4e2db5"
+      "utf8Bytes": 42530,
+      "sha256": "b090fa78dc05d7fbaaa9fdf1ac54ecee63672baa58e63dd3437ef9abb3869bc9"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -560,8 +565,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 22421,
-      "sha256": "b210877e7698499f510027672e448364ae4c71e13261682d7d0abccaa3de1d3d"
+      "utf8Bytes": 23401,
+      "sha256": "561f648b5b0067be311fee3608ea8057b6465363e67442f8ae7e0c0cf6af299c"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -607,6 +612,16 @@
       "path": "test/automatic-surfaces.test.mjs",
       "utf8Bytes": 1447,
       "sha256": "c15b2428a2c7bce8f3682bfcb09f29f876d35bbb70de612960b8cb21ea2a6cf8"
+    },
+    {
+      "path": "test/bridge-update-runner.ps1",
+      "utf8Bytes": 3359,
+      "sha256": "e6d4f9b9bc205f3c45fb2691ae71d26c88aca55a68289ab922b4ef8c9bec8e80"
+    },
+    {
+      "path": "test/bridge-update.test.mjs",
+      "utf8Bytes": 6856,
+      "sha256": "264771e0e3763f5a4c7735f261e8a4ae1cd29e9d65f77a7746e9ec60327151c3"
     },
     {
       "path": "test/browser-web-integration.mjs",
@@ -720,8 +735,8 @@
     },
     {
       "path": "test/integration.mjs",
-      "utf8Bytes": 22701,
-      "sha256": "e6750efb22473d2cacfb055f2d17f89f50cc5ac7f2cd7637cdb639d3e70f1c3a"
+      "utf8Bytes": 22726,
+      "sha256": "db9bd8cd0180eb78a93affc8c51a586de1cb629f410a9b44dbfbb7a0c90620e8"
     },
     {
       "path": "test/launch-policy.ps1",
@@ -770,8 +785,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 34884,
-      "sha256": "42289e8a91804b959a860ecc437f5f12b3d13c3457b29690dfd7cecc977e8386"
+      "utf8Bytes": 36588,
+      "sha256": "fac4f07cfa513f5ab90152188e92dbd655423d9ff9d4285d23c3773040644f37"
     },
     {
       "path": "test/panel-entry-integration.mjs",
@@ -855,8 +870,8 @@
     },
     {
       "path": "test/style-contract.test.mjs",
-      "utf8Bytes": 1702,
-      "sha256": "c344b884f9340c19df42e878f8303f47ef3493a431930e85c33134f5985d1189"
+      "utf8Bytes": 1750,
+      "sha256": "1da1160db17f38a580a2e9a8bf540cc02eeb8201ed3102ecd45d0b6310084dec"
     },
     {
       "path": "test/style-invalidation-integration.mjs",
@@ -880,8 +895,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 27575,
-      "sha256": "e1c899bb77cd0dc0a1d4d8e3fd3ff541f09d6919c0fe1b42bcc0d36d88256fea"
+      "utf8Bytes": 28942,
+      "sha256": "72ba408f6de8f6ccefc67f54ac0cc39af084bb90e02847a184b777cf15030073"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",
@@ -1107,6 +1122,11 @@
       "path": "windows/FastTcp.ps1",
       "utf8Bytes": 181,
       "sha256": "ad965d325c1d63f585a5eaa52dc7fd17b83bd11f116c2fb58fcb790b79ed0e11"
+    },
+    {
+      "path": "windows/Install-BridgeUpdate.ps1",
+      "utf8Bytes": 1730,
+      "sha256": "9766541d590052780d15415e4d359b2d3a71f705b5bae90d3a0da8f392ff9c39"
     },
     {
       "path": "windows/Install-UpdateReconnect.ps1",

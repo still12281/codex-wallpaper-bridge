@@ -162,6 +162,16 @@ try{
  await c.evaluate('document.getElementById("stream").firstChild.data+="More\\n".repeat(10);true');
  await c.call('Runtime.evaluate',{expression:'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))',awaitPromise:true});
  const grown=await c.evaluate('({clip:parseFloat(document.getElementById("stream").style.getPropertyValue("--cwb-transcript-clip")),top:document.querySelector("[data-app-action-timeline-scroll]").scrollTop})');assert(grown.clip>=clipBefore+199);assert.equal(grown.top,0);
+ // Disable the JS scroll callback: native wheel scrolling must still move the
+ // clip boundary with the transcript, including when scrolling back upward.
+ await c.evaluate('document.removeEventListener("scroll",window.__cwbTranscriptPaint.refresh,true);true');
+ const stableFallback=await c.evaluate('document.getElementById("stream").style.getPropertyValue("--cwb-transcript-clip")');
+ for(const deltaY of [240,180,-160,-120]){
+  await c.call('Input.dispatchMouseEvent',{type:'mouseWheel',x:200,y:200,deltaX:0,deltaY});
+  await c.call('Runtime.evaluate',{expression:'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))',awaitPromise:true});
+  const sample=await c.evaluate('(()=>{const e=document.getElementById("stream"),f=document.querySelector("[data-thread-scroll-footer]"),s=document.querySelector("[data-app-action-timeline-scroll]"),clip=parseFloat(getComputedStyle(e).clipPath.split(" ")[2]);return {boundary:e.getBoundingClientRect().bottom-clip,edge:f.getBoundingClientRect().top,top:s.scrollTop,fallback:e.style.getPropertyValue("--cwb-transcript-clip"),mode:e.getAttribute("data-cwb-transcript-content")}})()');
+  assert.equal(sample.mode,'scroll');assert(sample.top>0);assert(Math.abs(sample.boundary-sample.edge)<1,JSON.stringify(sample));assert.equal(sample.fallback,stableFallback,'JS scroll handler changed the fallback clip');
+ }
  await c.evaluate('('+clearShell.toString()+')();true');assert.equal(await c.evaluate('!!window.__cwbTranscriptPaint||!!document.querySelector("[data-cwb-transcript-content]")||!!document.getElementById("codex-wallpaper-bridge-style")'),false);
  console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results,materialResults,portalResults,layoutResults,streamingPaintAndCleanup:true},null,2));
 }finally{c?.close();browser?.kill()}

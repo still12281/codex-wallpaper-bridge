@@ -84,6 +84,8 @@ The unified entry selects and records a local debugging port, preferring 9335 an
 
 ## Manual recovery after a client update
 
+The wallpaper panel's **Version and updates** section checks stable GitHub releases and marks the top entry when an update is available. **One-click update** downloads and verifies the installer, then preserves the existing data folder, shortcuts and startup choices. Save work, exit Codex normally and reopen the wallpaper entry to activate the installed version. Checks are cached for one hour; **Check for updates** forces a new check. Download and installation errors appear in the panel.
+
 When enabled, the [automatic update recovery task](docs/AFTER-UPDATE-RECONNECT.zh-CN.md) handles each new package version once. It reuses a healthy connection, reconnects a missing host, or requests normal exit of the verified update-created client before reopening through the unified entry. A refused close, timeout or new client stops that run and preserves the client. Startup colors apply after the CDP connection is established; Codex draws the earlier native window.
 
 Click the wallpaper entry once to check/reconnect the host. If the wallpaper is still missing, save work and exit Codex normally, including background instances. Run `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd` from Win+R, or use `Repair.cmd` inside your custom data directory. Confirm you have exited the client, then the tool opens the stable `CodexEntry.exe` entry using the current registered package. It does not close processes or reset settings. The executable and `Codex.lnk` in the same directory are also available if desktop shortcuts are missing.
