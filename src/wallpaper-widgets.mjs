@@ -1,16 +1,18 @@
 // Runs in the native page. Only public xterm options are changed; PTY/buffer data is never read.
 export async function installNativeWidgets(config,loadModule=url=>import(url)){
  const prior=window.__cwbWidgets;
- if(prior?.version===11&&!prior.disposed){prior.config=config;await prior.refresh();prior.update();return prior.status}
+ if(prior?.version===12&&!prior.disposed){prior.config=config;await prior.refresh();prior.update();return prior.status}
  prior?.dispose?.();
- const state=window.__cwbWidgets={version:11,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
+ const state=window.__cwbWidgets={version:12,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
  const copy=theme=>theme?{...theme}:theme;
  const contrast=value=>state.config.surfaceSync?.code===false?value:Math.max(4.5,Number.isFinite(value)?value:1);
  const effective=native=>{
   if(state.config.surfaceSync?.code===false)return native;
   const p=state.config.palette||{},dark=p.dark!==false,ink=dark?'#e9eff5':'#15212c',fallback=dark?[20,22,28]:[240,242,246];
   const rgb=['r','g','b'].map((key,i)=>Number.isFinite(p[key])?Math.round(Math.max(0,Math.min(255,p[key]))):fallback[i]);
-  const overlay=dark?(state.config.darkOverlay??.4):(state.config.lightOverlay??.4),glass=Math.max(.72,state.config.visual?.glassOpacity??.5),coverage=overlay+(1-overlay)*glass;
+  // Match paintShell's final tint budget instead of counting both layers twice.
+  const overlay=Math.max(0,Math.min(1,(dark?state.config.darkOverlay:state.config.lightOverlay)??.4));
+  const readingFloor=dark?(255-80)/(255-Math.max(...rgb)):172/Math.min(...rgb),coverage=Math.min(1,Math.max(.72,readingFloor,state.config.visual?.glassOpacity??.5,overlay));
   // A transparent cell can show any wallpaper pixel. Use the lightest possible
   // dark-theme glass (or darkest light-theme glass) as the contrast reference.
   const reference=rgb.map(n=>Math.round(n*coverage+(dark?255:0)*(1-coverage)));

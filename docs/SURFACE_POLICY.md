@@ -9,7 +9,7 @@ Native application theme attributes remain owned by the application.
 | Shell canvas, sidebar and transcript | Transparent canvas over the wallpaper overlay. |
 | Composer, sent messages, file cards and utility rails | Saved glass opacity and blur, applied once. |
 | Menus, dialogs, comments and preview cards | Raised glass: at least 0.72 opacity and 12px blur, with matching text. |
-| Code blocks, editors and terminal containers | Reading glass with at least 0.72 opacity, and saved blur. Fenced code uses local syntax-colour tokens; ordinary unowned `pre` elements retain their styling. |
+| Code blocks, editors and terminal containers | Reading glass budgets the combined wallpaper overlay and local tint to at least 0.72 coverage, retaining stronger saved tint and saved blur. Fenced code uses local syntax-colour tokens; ordinary unowned `pre` elements retain their styling. |
 | Positioning wrappers | Transparent. In particular, the fixed-height `group/diff-preview` tooltip is a positioning box; only the card containing `diff-preview-scroll` receives material. |
 | Native code and embedded-page opt-outs | Preserve their background when the corresponding saved option is disabled. Diff backgrounds cross their open shadow boundary through `--codex-diffs-surface`. |
 
@@ -18,6 +18,26 @@ application surfaces. `installSurfaceTheme` provides a low-priority shell
 bootstrap and independently styles owned guest documents. Its manual scan marks
 large neutral canvases, protecting semantic UI and explicitly managed surfaces.
 It does not repaint shell menus or override the native-background options.
+
+Composer suggestions have roleless native cards. The floating positioning shell
+stays transparent; its ordinary/floating suggestion card or expanded top-tray
+panel owns the raised material. Global search similarly paints its actual cmdk
+card, not the unstyled dialog wrapper. Internal cmdk roots and lists share that
+card's material instead of receiving another layer merely for `role="listbox"`.
+Selection and hover colours remain native. These component roots and alert
+dialogs are protected from neutral-canvas rescans.
+
+For reading surfaces, let `O` be the saved wallpaper overlay and `F` the reading
+floor: at least 0.72, increased for palettes that need stronger text contrast.
+The palette-dependent floor bounds the worst-case composited channels to at most
+80 in dark themes or at least 172 in light themes, including alpha-rounding
+headroom for the syntax palette. Let `T = max(F, saved glass opacity, O)`.
+The local tint is `(T - O) / (1 - O)`;
+when `O` is 1 it is zero. Thus `O + (1 - O) * local tint = T`, avoiding repeated
+whitening/darkening. The terminal's transparent RGB contrast reference uses the
+same final coverage. Saved wallpaper palettes drive both layers; playback does
+not resample colours each frame. Font size and line height retain their existing
+owners and values.
 
 ## Transparent input and native scrolling
 

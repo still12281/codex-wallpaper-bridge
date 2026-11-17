@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 23257,
-      "sha256": "baa1e5d0d3df744053956590518d5c4718c164096941561cdcb8a68d394116de"
+      "utf8Bytes": 23713,
+      "sha256": "a1e6403bb2e3f94a241aff4dd2b6f74581226877e4ec0bd5d3d347855e3335ca"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -234,8 +234,8 @@
     },
     {
       "path": "docs/SURFACE_POLICY.md",
-      "utf8Bytes": 6271,
-      "sha256": "13ec0690bd8d8fc5c9b3de5b61acb3384a70c4e360ab71c284f74aeff7e6b549"
+      "utf8Bytes": 7650,
+      "sha256": "83712ca56b09151d1756f4df0fc24da3826139d0c94760904a8157c7d54d3911"
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
@@ -385,8 +385,8 @@
     },
     {
       "path": "src/automatic-surfaces.mjs",
-      "utf8Bytes": 15033,
-      "sha256": "32d52defb96e16f92822e062da0d35962e47c3e5d339f4664023a3bc05e84cb4"
+      "utf8Bytes": 15202,
+      "sha256": "f85d8c8eab6afff165eb981ab699e941ac99923834044914d6806a20763aafbc"
     },
     {
       "path": "src/browser-web-source.mjs",
@@ -560,13 +560,13 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 20828,
-      "sha256": "bf7e0aef2c9526b26c0e2419e8d0e35a86d0199dd1b17f8b798505cb15569322"
+      "utf8Bytes": 22421,
+      "sha256": "b210877e7698499f510027672e448364ae4c71e13261682d7d0abccaa3de1d3d"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
-      "utf8Bytes": 10821,
-      "sha256": "51beef7f79adf19af480e76e4cbba790976d0bcdf1fa59fc11f2dccac7cc4740"
+      "utf8Bytes": 11001,
+      "sha256": "9ec001df8f961640871721fef6a958c9e0c8e8c5a597ef033a9cf019417792d0"
     },
     {
       "path": "src/webwallgl-player.mjs",
@@ -645,8 +645,8 @@
     },
     {
       "path": "test/code-reading-integration.mjs",
-      "utf8Bytes": 7168,
-      "sha256": "98738329d9a12a524432ad3bfa1e433a7d8be6d624b4a1654b5e6410911e8b66"
+      "utf8Bytes": 8570,
+      "sha256": "e8b7e0cdf53afa59571d942edcdcdd3a80a679f8f1f10ceb134720f7d49f9cc6"
     },
     {
       "path": "test/core.test.mjs",
@@ -880,8 +880,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 24958,
-      "sha256": "f59a54ccde24679884a3a4ffc86d32609284aa59ec778165f0fefc704187898b"
+      "utf8Bytes": 27575,
+      "sha256": "e1c899bb77cd0dc0a1d4d8e3fd3ff541f09d6919c0fe1b42bcc0d36d88256fea"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",
@@ -915,8 +915,8 @@
     },
     {
       "path": "test/widgets.test.mjs",
-      "utf8Bytes": 10493,
-      "sha256": "90b1c8168580c6050d21695661524d298802d9b97897c622d8f2f7e869a8ea6d"
+      "utf8Bytes": 11095,
+      "sha256": "a85674a91448c6881fdf211c4086127cec68f5dbfd3d43d5ca35ea1230c6ab9c"
     },
     {
       "path": "tools/build-installer.ps1",
