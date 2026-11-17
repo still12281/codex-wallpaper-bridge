@@ -46,6 +46,11 @@ jobs:
       - name: Code reader contrast regression
         if: matrix.node == 24
         run: node test/code-reading-integration.mjs
+      - name: Local style invalidation regression
+        if: matrix.node == 24
+        env:
+          CODEX_WALLPAPER_TEST_WORK: ${{ runner.temp }}/cwb-style
+        run: node test/style-invalidation-integration.mjs
       - name: Wallpaper controls and modal scan regression
         if: matrix.node == 24
         run: node test/panel-controls-integration.mjs

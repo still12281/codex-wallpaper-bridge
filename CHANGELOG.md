@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep thinking-indicator and scroll updates local: use exact class selectors and non-inheriting transcript/code clipping offsets to avoid restyling the application and text descendants.
 - Preserve a glass-aware RGB reference in transparent terminal themes for reverse video, restore the standard opaque ANSI palette, and enforce minimum text contrast while restoring native settings on opt-out.
 - Match Markdown code-block materials and syntax colours to the wallpaper. Keep sticky code controls transparent while occluding source text behind them; preserve native code-background preferences.
 - Use one shell material policy for saved composer/card glass and raised translucent menus, comments and previews. Preserve semantic action colours and native-background options.

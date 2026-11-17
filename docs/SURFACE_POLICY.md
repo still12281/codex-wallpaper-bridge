@@ -33,6 +33,24 @@ control bar. The header inherits the block's single material layer, and source
 text cannot show through it. Native code-background opt-out removes this code
 clip along with the wallpaper code styles.
 
+## Local style updates
+
+The shell uses escaped class selectors for exact native class tokens. This keeps
+unrelated class changes, including the native thinking shimmer, out of broad
+class-attribute invalidation chains involving relational selectors. Substring
+selectors remain limited to native generated class names that lack stable tokens.
+
+Transcript and code clipping lengths are registered with `inherits: false`.
+They affect their marked element rather than propagating on every scroll through
+the text beneath it. Shared palette tokens still inherit and change with saved
+appearance settings. The registrations disappear with the owned stylesheet.
+
+The style invalidation integration check executes the production painter against
+more than 3,000 elements. It rejects exact-class attribute selectors, checks that
+both clipping lengths stay out of descendants, and reads Chromium's affected-node
+counts to catch local updates that restyle a substantial part of the document.
+The check uses structural limits rather than machine-dependent time thresholds.
+
 ## Stable state and runtime compatibility
 
 Each logical wallpaper stores its palette on its library entries. Renderer
@@ -59,6 +77,8 @@ running host has loaded that file.
 
 ## Regression coverage
 
+- `test/style-invalidation-integration.mjs`: local class/clip updates, bounded
+  restyling, escaped class matching and preserved surface/semantic colours.
 - `test/theme-contrast-integration.mjs`: light/dark hydration, material order,
   positioning wrappers, native background options, content/composer pixel
   separation, streaming growth and cleanup.

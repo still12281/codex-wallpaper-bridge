@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 3168,
-      "sha256": "f8823a3974391b0f46f0b4c4650e51a206ba6092fe0980b6a7c35a433082d74c"
+      "utf8Bytes": 3385,
+      "sha256": "5b76541fbaa091df9a875fdaef0e17206e9b4e90d1324d44edff24b4ed322b0a"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 23070,
-      "sha256": "a7ad024cba2e009dc5923ea91df6e1df0e795d70b3192301ef50b694d98f59d2"
+      "utf8Bytes": 23257,
+      "sha256": "baa1e5d0d3df744053956590518d5c4718c164096941561cdcb8a68d394116de"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -234,8 +234,8 @@
     },
     {
       "path": "docs/SURFACE_POLICY.md",
-      "utf8Bytes": 4867,
-      "sha256": "bec521d99e64dfb8cbb23651ac05fbfd455ef7613cb31cbc75d35936076de61b"
+      "utf8Bytes": 6083,
+      "sha256": "2ea7573a17a1aae47f3bbb1717cf7751993c308637a2ba5a52e0572b00b45818"
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
@@ -560,8 +560,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 20708,
-      "sha256": "6e14fa1ea7d54a8f0954828ccddb7a4fb9189e04aa454b10dce9a2723f680381"
+      "utf8Bytes": 20828,
+      "sha256": "bf7e0aef2c9526b26c0e2419e8d0e35a86d0199dd1b17f8b798505cb15569322"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -852,6 +852,11 @@
       "path": "test/startup-transition-integration.mjs",
       "utf8Bytes": 7713,
       "sha256": "1a69dcb4513bda6c083909a5a699f1100b912d974ea6127daf6cfc0b4cf9c1cc"
+    },
+    {
+      "path": "test/style-invalidation-integration.mjs",
+      "utf8Bytes": 6637,
+      "sha256": "8a173f145a611f9b03eedef8a400896429a0775969e65ebfdd72a0b810f28264"
     },
     {
       "path": "test/surfaces.test.mjs",
