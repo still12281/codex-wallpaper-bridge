@@ -234,8 +234,8 @@
     },
     {
       "path": "docs/SURFACE_POLICY.md",
-      "utf8Bytes": 6083,
-      "sha256": "2ea7573a17a1aae47f3bbb1717cf7751993c308637a2ba5a52e0572b00b45818"
+      "utf8Bytes": 6271,
+      "sha256": "13ec0690bd8d8fc5c9b3de5b61acb3384a70c4e360ab71c284f74aeff7e6b549"
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
@@ -852,6 +852,11 @@
       "path": "test/startup-transition-integration.mjs",
       "utf8Bytes": 7713,
       "sha256": "1a69dcb4513bda6c083909a5a699f1100b912d974ea6127daf6cfc0b4cf9c1cc"
+    },
+    {
+      "path": "test/style-contract.test.mjs",
+      "utf8Bytes": 1702,
+      "sha256": "c344b884f9340c19df42e878f8303f47ef3493a431930e85c33134f5985d1189"
     },
     {
       "path": "test/style-invalidation-integration.mjs",

@@ -45,7 +45,10 @@ They affect their marked element rather than propagating on every scroll through
 the text beneath it. Shared palette tokens still inherit and change with saved
 appearance settings. The registrations disappear with the owned stylesheet.
 
-The style invalidation integration check executes the production painter against
+`npm test` checks the generated production stylesheet's dependency contract in
+both themes and code-background modes, so local edits can detect these patterns
+without launching a browser. The style invalidation integration check executes
+the production painter against
 more than 3,000 elements. It rejects exact-class attribute selectors, checks that
 both clipping lengths stay out of descendants, and reads Chromium's affected-node
 counts to catch local updates that restyle a substantial part of the document.
