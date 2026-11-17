@@ -1,5 +1,28 @@
 # Validation record
 
+## 0.2.2 interface and style dependency checks — 2026-11-17
+
+Installed-client environment: Windows, Codex **26.1106.6628.0**. The checks below
+cover this patch's interface changes; historical renderer/installer measurements
+remain attached to their original versions further down this document.
+
+| Area | Evidence |
+| --- | --- |
+| Style dependency scope | Installed-client controlled mutations isolated broad class-attribute matching and inherited clipping lengths. Exact class selectors and non-inheriting local lengths remove those two propagation paths. The user reported improved interaction responsiveness. |
+| Bounded updates | `node test/style-invalidation-integration.mjs` checks more than 3,000 generated elements, valid Chromium affected-node counts, local clipping and preserved menu/preview/semantic colours. The repaired fixture restyled at most two elements per local update. |
+| Local development guard | `npm test` includes `test/style-contract.test.mjs`, checking generated shell styles in both themes and native code-background modes. Deliberately reintroduced token-attribute and inherited-clip defects are rejected. |
+| Materials and reading | Theme/material and code-reading integration checks cover saved opacity, light/dark contrast, sticky controls, composer occlusion, streamed content and native-background opt-outs. Installed-client checks covered command suggestions, global search and terminal reverse video. |
+| Existing session | The wallpaper host adopted the repaired source while preserving the current client process and saved wallpaper configuration. |
+
+These measurements do not bound every native click/selection operation or scene's
+rendering cost. Cold-start colour transitions and a fresh-machine installation
+were not measured in this interface-repair session. Startup uses native client
+window colours before the wallpaper connection is ready.
+
+The Windows Node 22/24 workflow runs source checks. Its Node 24 job also runs the
+theme, code-reading, local invalidation, control and owned-document regressions.
+Current results are available in [GitHub Actions](https://github.com/still12281/codex-wallpaper-bridge/actions).
+
 ## 0.2.0 compatibility and regression checks — 2026-11-09
 
 Test environment: Windows, installed Codex **26.1103.4239.0**. Release source: [`12a0206`](https://github.com/still12281/codex-wallpaper-bridge/commit/12a020694d4ebd147b5cc8d51c09d468dc4c6469). The table distinguishes installed-client observations from generated-environment regressions. Timing samples come from one installation and are not general performance bounds.

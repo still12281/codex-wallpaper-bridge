@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.2 — 2026-11-17
+
 - Budget code-reader and terminal tint together with the wallpaper overlay, reducing compounded whitening or darkening while keeping text contrast and existing font settings.
 - Apply raised glass to native roleless composer suggestions, expanded command trays and actual global-search cards. Keep positioning wrappers and internal cmdk lists transparent, preserve selection colours, and protect owned cards and alert dialogs from neutral-background scans.
 - Keep thinking-indicator and scroll updates local: use exact class selectors and non-inheriting transcript/code clipping offsets to avoid restyling the application and text descendants.

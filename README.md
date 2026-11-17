@@ -4,6 +4,8 @@
 
 为 Windows Codex 桌面客户端添加静态与动态壁纸，在客户端内切换素材、搜索 Wallpaper Engine 库、调整播放规格。
 
+**v0.2.2** 改善思考动画、输入与滚动时的样式更新开销，修复终端反色、代码阅读底色以及命令菜单、搜索和弹窗的显示问题；保留原有壁纸、透明度和字体设置。详见 [更新记录](CHANGELOG.md)。
+
 **本地壁纸 · 一体入口 · 内嵌控制面板 · 可选 GPU 场景**
 
 [为什么选择它](#为什么选择它) · [效果展示](#效果展示) · [安装](#安装) · [首次使用](#首次使用) · [配置](#怎么配置) · [文档](#相关文档)
@@ -18,7 +20,7 @@
 - **直接在 Codex 里管理**：搜索、缩略预览、导入、批量保存和切换都在内嵌面板完成；图片、视频、GPU 场景和原版兼容项目统一管理。
 - **场景可以直接走 GPU**：WebGL 模式在沙箱中渲染，避免每帧经过采集传输；需要原引擎效果时可切换原版兼容。
 - **减少重复加载**：缓存未变化的素材、指纹和缩略图；同规格视频不重复转换，大视频按文件读取，场景就绪后再替换当前背景。
-- **壁纸与阅读效果一起调整**：自动取色，分别调整聊天与输入区域遮罩，提供玻璃、字体、视差、点击拖尾、预设和轮播。
+- **壁纸与阅读效果一起调整**：自动取色，调整壁纸遮罩、界面玻璃不透明度与模糊，配置字体、字号、视差、点击拖尾、预设和轮播。
 - **新页面自动接入**：主界面使用统一样式；所属插件及嵌套页面按文档创建/刷新事件接入，加载后最多做一次有界背景识别，无适配轮询或持续 DOM 扫描。共用主题的新组件自动生效；晚加载的独立硬编码背景、封闭组件或画布仍可能需要例外适配。
 - **一键补充适配**：展开壁纸面板的“页面适配与原生底色”，点击“扫描并适配”重新检查所有已打开的所属页面；菜单或弹窗打开时，也可按 **Ctrl+Alt+Shift+W** 直接扫描。完成后显示结果，保留原生底色的设置仍然有效。
 - **保留自己的素材**：删除库项只清理本项目管理的副本，保留工坊与外部原文件；支持完整库备份恢复。
@@ -104,7 +106,7 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 
 ### 推荐：双击安装程序
 
-1. 下载 [CodexWallpaperBridge-0.2.1-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.1/CodexWallpaperBridge-0.2.1-Setup.exe)，双击打开安装向导。
+1. 下载 [CodexWallpaperBridge-0.2.2-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.2/CodexWallpaperBridge-0.2.2-Setup.exe)，双击打开安装向导。
 2. 选择程序目录和壁纸数据目录。从旧 ZIP 安装升级时，确认数据目录指向原壁纸库。
 3. 选择快捷方式、更新恢复和登录启动选项，等待依赖准备与安装完成。
 4. 保存工作、正常退出 Codex，再从壁纸入口打开。以后可以在 Windows“已安装的应用”中卸载；卸载保留壁纸库和设置。
@@ -116,10 +118,10 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 打开 **PowerShell**，复制执行：
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.1/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.2/install.ps1' | iex
 ```
 
-自动下载 **v0.2.1** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
+自动下载 **v0.2.2** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
 
 安装成功后，保存工作并正常退出原 Codex，再打开所选壁纸入口。安装器不会自动关闭当前客户端。无法连接 GitHub 时使用下方手动下载方式。
 
@@ -143,7 +145,7 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2
 | 网页浏览器（试验） | 本机 Chrome 或 Edge |
 | 系统音乐联动 | 按[安装指南](docs/INSTALL.zh-CN.md#可选系统音乐和音频响应)准备可选音乐组件 |
 
-安装默认位于 `%LOCALAPPDATA%\CodexWallpaperBridge`。安装成功后，下载的 ZIP 和解压目录可以移走；远程安装下载缓存的位置会在终端输出。升级时运行新版本对应的一键命令或安装包，壁纸库与设置会保留。找不到 WinGet 时，先在 Microsoft Store 安装/更新 **App Installer（应用安装程序）**。
+ZIP 部署默认将数据与独立版本副本放在 `%LOCALAPPDATA%\CodexWallpaperBridge`；EXE 向导分别选择程序与数据目录。安装成功后，下载的 ZIP 和解压目录可以移走；远程安装下载缓存的位置会在终端输出。升级时运行新版本对应的一键命令或安装包，壁纸库与设置会保留。找不到 WinGet 时，先在 Microsoft Store 安装/更新 **App Installer（应用安装程序）**。
 
 **[完整安装指南：自定义安装盘、手动安装、依赖路径、故障处理、升级和卸载](docs/INSTALL.zh-CN.md)** · [隐私](PRIVACY.md) · [安全](SECURITY.md)
 
@@ -163,7 +165,7 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2
 | --- | --- |
 | 清晰度和流畅度 | 展开“播放与画质”调整显示档位；“自定义播放规格”可分别调整分辨率和 FPS，默认 1280 宽、24 FPS |
 | GPU 或原引擎 | 渲染方式：GPU 场景适合直接渲染；原版兼容使用 Wallpaper Engine |
-| 透明度与可读性 | 遮罩、玻璃与字体：分别调整聊天区、输入区、背景亮度、字体和字号 |
+| 透明度与可读性 | 调整壁纸遮罩、玻璃不透明度与模糊、背景亮度、字体和字号；输入区和卡片跟随保存的玻璃设置，代码与终端保留阅读对比度 |
 | 壁纸自带的选项 | 当前壁纸的作者属性 |
 | 点击、拖尾和视差 | 玻璃、字体与特效 |
 | 定时切换 | 壁纸轮播：间隔、顺序和素材 |
@@ -182,6 +184,8 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2
 - [第三方来源与许可](THIRD_PARTY_NOTICES.md)
 
 ## 开发
+
+界面材质所有权、局部样式更新与对应回归检查见 [界面适配策略](docs/SURFACE_POLICY.md)。
 
 直接从源码运行时，先准备依赖和渲染组件，再执行 `windows/Build-Launcher.ps1` 与 `windows/Prepare-TaskbarEntry.ps1`；一键安装器已包含这些步骤。源码路径变动后需重建直接构建的入口。实际端口读取数据目录的 `cdp-endpoint.json`；`npm start` 是默认 loopback 9335 的手动开发命令，使用后备端口时需向宿主显式传入实际端口。
 
