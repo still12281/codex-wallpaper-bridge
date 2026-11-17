@@ -43,6 +43,9 @@ jobs:
       - name: Theme hydration and contrast regression
         if: matrix.node == 24
         run: node test/theme-contrast-integration.mjs
+      - name: Wallpaper controls and modal scan regression
+        if: matrix.node == 24
+        run: node test/panel-controls-integration.mjs
       - name: Owned document and manual surface scan regression
         if: matrix.node == 24
         env:

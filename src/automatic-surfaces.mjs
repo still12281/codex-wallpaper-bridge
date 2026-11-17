@@ -18,15 +18,17 @@ export function installSurfaceTheme(config){
  const marker='data-cwb-auto-surface',marked=[];
  // Shared design tokens and generic surface utilities, including future routes.
  // Background images, semantic colours, canvas and editor content stay intact.
- const base=`:root{--cwb-auto-ink:${ink};--cwb-auto-secondary:rgba(${shade},.42);--cwb-auto-elevated:rgba(${shade},.96)}
+ // Shell materials belong exclusively to paintShell. This bootstrap sheet may
+ // run first or last; it must never compete with composer/menu/native options.
+ const base=shell?`:where(:root){--color-surface:transparent}html,body{background-color:transparent!important}:where(#root,#app,main,[role="main"],[data-app-shell-page-surface]){background-color:transparent!important}`:`:root{--cwb-auto-ink:${ink};--cwb-auto-secondary:rgba(${shade},.42);--cwb-auto-elevated:rgba(${shade},${Math.max(.72,config.visual?.glassOpacity??.5)})}
  html,body{background-color:transparent!important}
- :root :is(#root,#app,#__next,main,[role="main"],[data-app-shell-page-surface],[data-app-shell-main-surface],[data-app-shell-right-panel],[data-embedded-frame-host-root],webview,iframe){background-color:transparent!important}
- :root :is(.bg-surface,.bg-token-main-surface-primary,.bg-token-sidebar-surface-primary,[class~="electron:bg-surface"]){background-color:transparent!important}
- :root :is(div,section,article):has(>webview){background-color:transparent!important}
+ :where(#root,#app,#__next,main,[role="main"],[data-app-shell-page-surface],[data-app-shell-main-surface],[data-app-shell-right-panel],[data-embedded-frame-host-root],webview,iframe){background-color:transparent!important}
+ :where(.bg-surface,.bg-token-main-surface-primary,.bg-token-sidebar-surface-primary,[class~="electron:bg-surface"]){background-color:transparent!important}
+ :where(div,section,article):has(>webview){background-color:transparent!important}
  :root :is([role="dialog"],[role="menu"],[role="listbox"],[role="tooltip"],[data-slot="popover-content"]){background-color:var(--cwb-auto-elevated)!important}
  [${marker}]{background-color:transparent!important}`;
  const tokens=shell?'':`:root{color-scheme:${p.dark===false?'light':'dark'};--color-background:transparent!important;--background:transparent!important;--color-bg-primary:transparent!important;--color-surface:transparent!important;--color-surface-canvas:transparent!important;--main-surface-primary:transparent!important;--sidebar-surface-primary:transparent!important;--main-surface-secondary:var(--cwb-auto-secondary)!important;--sidebar-surface-secondary:var(--cwb-auto-secondary)!important;--text-primary:${ink}!important;--text-secondary:${ink}!important;--color-text-primary:${ink}!important;--color-text-secondary:${ink}!important}`;
- css=base+tokens;sheet.replaceSync(css);
+ css=base+tokens+`[${marker}]{background-color:transparent!important}`;sheet.replaceSync(css);
  let disposed=false,analyzed=false,analysisMs=0,examined=0,limited=false,scans=0;
  const place=()=>{if(!disposed&&!document.adoptedStyleSheets.includes(sheet))document.adoptedStyleSheets=[...document.adoptedStyleSheets,sheet];};
  const neutral=value=>{const m=value.match(/^rgba?\(\s*([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)(?:\s*[,/]\s*([\d.]+))?\s*\)$/);return m&&Number(m[4]??1)>.85&&Math.max(+m[1],+m[2],+m[3])-Math.min(+m[1],+m[2],+m[3])<28;};
@@ -40,9 +42,10 @@ export function installSurfaceTheme(config){
   for(let i=0;i<queue.length&&i<1200;i++){
    if(performance.now()-started>12){limited=true;break;}
    const e=queue[i];examined++;
-   if(e.matches('script,style,svg,canvas,img,video,pre,code,button,input,textarea,select,.cm-editor,.monaco-editor,.xterm,[data-cwb-terminal-surface],[role="textbox"],[role="alert"],[role="status"],[role="progressbar"],[role="dialog"],[role="menu"],[role="listbox"],[role="tooltip"],[contenteditable="true"],[data-cwb-renderer-id],#codex-wallpaper-controls,#codex-wallpaper-bridge-layer,#codex-wallpaper-bridge-pending'))continue;
+   if(e.matches('script,style,svg,canvas,img,video,pre,code,button,input,textarea,select,.cm-editor,.monaco-editor,.xterm,[data-cwb-terminal-surface],[role="textbox"],[role="alert"],[role="status"],[role="progressbar"],[role="dialog"],[role="menu"],[role="listbox"],[role="tooltip"],[data-slot="popover-content"],[data-slot="hover-card-content"],[data-radix-popper-content-wrapper],[data-browser-comment-editor-surface],[data-composer-surface-variant],[data-user-message-bubble],[contenteditable="true"],[data-cwb-renderer-id],#codex-wallpaper-controls,#codex-wallpaper-bridge-layer,#codex-wallpaper-bridge-pending'))continue;
+   if(shell&&(e.matches('webview,iframe')||e.matches('[class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"])')))continue;
    for(const child of e.children)if(queue.length<1400)queue.push(child);
-   const computed=getComputedStyle(e);if(computed.backgroundImage!=='none'||!neutral(computed.backgroundColor))continue;
+   const computed=getComputedStyle(e);if((shell&&e.querySelector('webview,iframe'))||computed.backgroundImage!=='none'||!neutral(computed.backgroundColor))continue;
    const rect=e.getBoundingClientRect();if(rect.width*rect.height<area*(manual ? .15 : .4)||rect.width<innerWidth*(manual ? .2 : .5)||rect.height<innerHeight*(manual ? .3 : .45))continue;
    if(!e.hasAttribute(marker))marked.push(e);
   }
@@ -72,7 +75,7 @@ export function createAutomaticSurfaces(browser,{appUrl,getConfig,onStatus=()=>{
  const inventory=new Map(),records=new Map(),pending=new Map();let closed=false,scheduled=false,scanPending=null;
  const metrics={documents:0,updates:0,errors:0};
  const report=()=>onStatus({...metrics,targets:records.size,mode:'document-events',polling:false});
- const payload=shell=>{const c=getConfig();return {enabled:c.enabled!==false&&(shell||c.surfaceSync?.embedded!==false),embedded:c.surfaceSync?.embedded!==false,palette:c.palette,shell};};
+ const payload=shell=>{const c=getConfig();return {enabled:c.enabled!==false&&(shell||c.surfaceSync?.embedded!==false),embedded:c.surfaceSync?.embedded!==false,palette:c.palette,visual:c.visual,shell};};
  const source=shell=>'('+installSurfaceTheme.toString()+')('+JSON.stringify(payload(shell))+')';
  const call=(r,method,params={})=>browser.call(method,params,r.sessionId,3000);
  const evaluate=(r,expression,contextId)=>call(r,'Runtime.evaluate',{expression,returnByValue:true,...(contextId?{contextId}:{})});

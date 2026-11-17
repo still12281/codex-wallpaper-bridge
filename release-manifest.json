@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 2897,
-      "sha256": "1b1dba9703f1040d03f9a13ebb6c1afba9849118e842c4f17c1482c33a37fa91"
+      "utf8Bytes": 3040,
+      "sha256": "cfccce7d36f91059469ffbc9380ae505e0aa5157f2f86ba3175e71e3c2886ede"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 22026,
-      "sha256": "2e2203546dd7c92e121642f8104cbf96a001175d5dd7d6a9a7406561aa8f6d46"
+      "utf8Bytes": 22662,
+      "sha256": "54243261382029e1f583bb40d870897dc6aa519f270949393a73f5bcfe989e7c"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 13470,
-      "sha256": "18fc2f145caeb4de31518e0c87d7f995c04a11e53e0d4414db0227f3e50dbe70"
+      "utf8Bytes": 13501,
+      "sha256": "212790e865e51bf0af5190c824b837b2409a1dcf1b3a6bcc9f57f16a8343b65f"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 15771,
-      "sha256": "cdd571808b981d2adfa78d146d8519f20a99026766ee020126f657b4b4194eaa"
+      "utf8Bytes": 15766,
+      "sha256": "c7a3acdcae81ea912dff7667a491be5978f7fe7530a700c4e20887047f8d524c"
     },
     {
       "path": "README.zh-CN.md",
@@ -233,6 +233,11 @@
       "sha256": "a55078fc39b868f57314c5f5fc4f053121b291454265f597dbfea8c8b8c542ce"
     },
     {
+      "path": "docs/SURFACE_POLICY.md",
+      "utf8Bytes": 3610,
+      "sha256": "d499e68a115d52b606926206274ee08bedc12b9a583d7419d64b60b5f74ae06e"
+    },
+    {
       "path": "docs/SYSTEM-MEDIA.md",
       "utf8Bytes": 9837,
       "sha256": "dc40cba68c0eb352014d22a13df19893392ac0a33e75b6bbe5401c5f2e0f6051"
@@ -375,13 +380,13 @@
     },
     {
       "path": "src/appearance-model.mjs",
-      "utf8Bytes": 5246,
-      "sha256": "c0a3ca5adb9b05c92a46b4f3e85a3f2d64d05f7ec1442aaea60495bfffb604ff"
+      "utf8Bytes": 5808,
+      "sha256": "31b581fe3129dcdf4a28c15960f8d2f238262e99516f73b754227975a122933b"
     },
     {
       "path": "src/automatic-surfaces.mjs",
-      "utf8Bytes": 14187,
-      "sha256": "4c3b4a7328387f0e7cba1335efc2c6fd3aea03f9fdee4f46888aa7a9d3c8eee0"
+      "utf8Bytes": 15033,
+      "sha256": "32d52defb96e16f92822e062da0d35962e47c3e5d339f4664023a3bc05e84cb4"
     },
     {
       "path": "src/browser-web-source.mjs",
@@ -520,13 +525,13 @@
     },
     {
       "path": "src/upstream-adapters.mjs",
-      "utf8Bytes": 5684,
-      "sha256": "5e20f5185ff7ebc336506f50928a948936c68f7b06c92551d9774d23c15bcd89"
+      "utf8Bytes": 4917,
+      "sha256": "1f4b8d6b7eb9e97292fd3ed71d30ead6fcb23898044fb018a3e42731ee74c7af"
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 44453,
-      "sha256": "de73a2d4eae23415aec139a0355c1d171c4c7cacfbf05c9eb3985537159c1a10"
+      "utf8Bytes": 46224,
+      "sha256": "eecd65749dc77bff647f9cd97eaf0fd081fde8503a557a53f7309cf62e2db6ba"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -540,8 +545,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 38687,
-      "sha256": "8d61a34d42404e9dde3ac9f592220137d7870b8f2b97b472bdfc3f79953f1ee6"
+      "utf8Bytes": 39883,
+      "sha256": "bd4c82a2a47ca9e5d806547db83fdd6d011240830edd9f1c96549ff9fb4e2db5"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -555,13 +560,13 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 13068,
-      "sha256": "64b234b4e2d8e00ec9c53b417c82b8d8cd36a9effde6b84046e96fa783711a64"
+      "utf8Bytes": 18197,
+      "sha256": "89482f3b3c2d801001984ca912bfebab2bb12f499d48b43112330f9c8e7ebcf3"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
-      "utf8Bytes": 7522,
-      "sha256": "1eb47c25d6c9507b6122c41d9d8b372d3690a0a2d56c0bcf71f12e66d96b4a59"
+      "utf8Bytes": 9455,
+      "sha256": "f58391bf33a79173e4b0262d78f38e7e88e953676112efbb6dfff62eb62b4c6a"
     },
     {
       "path": "src/webwallgl-player.mjs",
@@ -595,8 +600,8 @@
     },
     {
       "path": "test/automatic-surfaces-integration.mjs",
-      "utf8Bytes": 9625,
-      "sha256": "9e4199fbc3194a2f544730c0bd82a0cddcfae0b4deab0071f3395bdc87d13ecc"
+      "utf8Bytes": 9646,
+      "sha256": "48b2c104b43dc186f08128376d70adbf042c79a7bf525655e3e6e16461065bc0"
     },
     {
       "path": "test/automatic-surfaces.test.mjs",
@@ -645,8 +650,8 @@
     },
     {
       "path": "test/display-regressions.test.mjs",
-      "utf8Bytes": 3002,
-      "sha256": "ea820e548600be7323a46ae7f3c2e72bacf61f6d6677bcda5bf6df46f7099084"
+      "utf8Bytes": 3862,
+      "sha256": "929999ab6dfc2c869420f4478189e17245a7278173e917314b651f5398433cc3"
     },
     {
       "path": "test/display-tiers.test.mjs",
@@ -760,8 +765,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 33389,
-      "sha256": "3039b5bcc3d76f6fa196b56409b2de650140af44a31adabc244c4ba27dfb9d42"
+      "utf8Bytes": 34884,
+      "sha256": "42289e8a91804b959a860ecc437f5f12b3d13c3457b29690dfd7cecc977e8386"
     },
     {
       "path": "test/panel-entry-integration.mjs",
@@ -825,8 +830,8 @@
     },
     {
       "path": "test/startup-priority-integration.mjs",
-      "utf8Bytes": 13083,
-      "sha256": "0bc2e2501fd48c2c3a1622ee6ed0f9dae71358c8f2ba9d14ee9b771c73464498"
+      "utf8Bytes": 13826,
+      "sha256": "13ebeb1908bdeb12aedec68f6681ced8bdb263fe1e0a2c466da11e8dfccf898a"
     },
     {
       "path": "test/startup-shutdown.ps1",
@@ -860,8 +865,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 15965,
-      "sha256": "2e7279b94f37e419f2bbc89bdb81cdf30bebf464c10cbd35a69fad9931a4b0a7"
+      "utf8Bytes": 24958,
+      "sha256": "f59a54ccde24679884a3a4ffc86d32609284aa59ec778165f0fefc704187898b"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",
@@ -895,8 +900,8 @@
     },
     {
       "path": "test/widgets.test.mjs",
-      "utf8Bytes": 6554,
-      "sha256": "20efa6603c97dfcb36bbb6cbf54b6bbfc3f0c2d96e6ddca5ba086febf8f374bf"
+      "utf8Bytes": 8157,
+      "sha256": "e8d970128f8bc1407bd74625f3bd830ae9d4fbc6a46642672f4b399af47b1151"
     },
     {
       "path": "tools/build-installer.ps1",

@@ -7,7 +7,7 @@ import path from 'node:path';
 import os from 'node:os';
 import assert from 'node:assert/strict';
 import {connectCdp} from '../src/cdp-client.mjs';
-import {paintShell} from '../src/wallpaper-style.mjs';
+import {paintShell,clearShell} from '../src/wallpaper-style.mjs';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,timeout=15000){const end=Date.now()+timeout;while(Date.now()<end){try{const value=await fn();if(value)return value}catch{}await sleep(25)}throw Error('Startup fixture timed out')}
 let chrome=process.env.CODEX_WALLPAPER_TEST_CHROME;
@@ -27,7 +27,7 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
  await writeFile(path.join(data,'settings.json'),JSON.stringify({library:early?[{id:'generated-image',name:'Generated image',file:'media/fixture.svg',mime:'image/svg+xml'}]:webgl?[{id:'generated-webgl',name:'Generated WebGL',mode:'webwallgl',projectRoot:project,limits:{maxWidth:640,fps:24}}]:[],selectedId:early?'generated-image':webgl?'generated-webgl':null,systemMedia:{enabled:false,audio:false}}));
  const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));
  const url=pathToFileURL(html).href,auxUrl=pathToFileURL(blockerHtml).href;
- let browser,host,browserCdp,main,aux,resumeTimer,errors='';
+ let browser,host,browserCdp,main,aux,resumeTimer,resumeResult,errors='';const auxiliaryEvents=[];
  try{
   browser=spawn(chrome,['--headless=new','--no-first-run','--disable-extensions','--disable-background-networking',...(webgl?['--enable-unsafe-swiftshader']:[]),'--remote-debugging-address=127.0.0.1','--remote-debugging-port='+port,'--user-data-dir='+path.join(root,'profile'),url],{windowsHide:true,stdio:'ignore'});
   const version=await until(async()=>{const r=await fetch('http://127.0.0.1:'+port+'/json/version');return r.json()});browserCdp=await connectCdp(version.webSocketDebuggerUrl);
@@ -38,7 +38,12 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
   if(scenario==='auxiliary'){
    const created=await browserCdp.call('Target.createTarget',{url:auxUrl,background:true});auxId=created.targetId;
    const auxTarget=await until(async()=>(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.id===auxId));aux=await connectCdp(auxTarget.webSocketDebuggerUrl);
+   aux.ws.addEventListener('message',event=>{const e=JSON.parse(event.data);if(e.method==='Debugger.paused'||e.method==='Debugger.resumed')auxiliaryEvents.push(e.method);});
    await aux.call('Debugger.enable');await aux.call('Debugger.pause');
+   // Idle pages may defer the pause until their next script. Enter it before
+   // the host clock, so the resume cannot precede the requested pause.
+   void aux.evaluate('true').catch(()=>{});
+   await until(async()=>auxiliaryEvents.includes('Debugger.paused'));
    // Only this fixture host sees the paused local page classified as a webview.
    // No request is made to the classification URL.
    await writeFile(preloader,`const fetchOriginal=globalThis.fetch;globalThis.fetch=async(...args)=>{const response=await fetchOriginal(...args);if(String(args[0])!=='http://127.0.0.1:${port}/json/list')return response;const list=await response.json();for(const t of list)if(t.id===${JSON.stringify(auxId)}){t.type='webview';t.url='https://chatgpt.com/fixture';}return new Response(JSON.stringify(list));};`);
@@ -51,7 +56,7 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
   }
   const started=performance.now();
   host=spawn(process.execPath,['--import',pathToFileURL(preloader).href,path.resolve('src/video-cdp-host.mjs'),'--cdp-port',String(port),'--test-url',url],{env:{...process.env,CODEX_WALLPAPER_DATA_DIR:data},windowsHide:true,stdio:['ignore','ignore','pipe']});host.stderr.on('data',b=>errors+=b.toString());
-  if(aux)resumeTimer=setTimeout(()=>void aux.call('Debugger.resume').catch(()=>{}),4000);
+  if(aux)resumeTimer=setTimeout(()=>void aux.call('Debugger.resume').then(()=>{resumeResult='resumed'},e=>{resumeResult=e.message}),4000);
   const state=await until(async()=>{const s=JSON.parse(await readFile(path.join(data,'runtime-status.json'),'utf8'));return s.targets.some(t=>t.targetId===mainTarget.id&&t.installed)&&s});
   const readyAfterMs=performance.now()-started;
   if(!baseline)assert(readyAfterMs<(webgl?15000:2500),scenario+' delayed the primary page: '+readyAfterMs+' ms');
@@ -66,15 +71,16 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
    // Reproduce native hydration changing the theme AFTER an early first frame.
    await main.evaluate('window.__earlyGuard=window.__cwbThemeGuard;window.__themeMutations=0;window.__themeCounter=new MutationObserver(m=>__themeMutations+=m.length);__themeCounter.observe(document.documentElement,{attributes:true});document.documentElement.setAttribute("data-theme","light");document.documentElement.classList.remove("dark");document.documentElement.style.colorScheme="light";document.documentElement.style.setProperty("--native-fixture-value","preserved");true');
    assert(await main.evaluate('document.documentElement.getAttribute("data-theme")==="light"&&!document.documentElement.classList.contains("dark")&&getComputedStyle(document.body).color==="rgb(233, 239, 245)"'),'Persistent CSS did not preserve text colour without observing native theme attributes');
+   const nativeThemeExpression='({theme:document.documentElement.getAttribute("data-theme"),classes:document.documentElement.className,scheme:document.documentElement.style.colorScheme,priority:document.documentElement.style.getPropertyPriority("color-scheme"),custom:document.documentElement.style.getPropertyValue("--native-fixture-value")})',nativeThemeSnapshot=await main.evaluate(nativeThemeExpression);
    const mutations=await main.evaluate('__themeMutations');await sleep(100);assert.equal(await main.evaluate('__themeMutations'),mutations,'Theme repair did not settle');
    for(const dark of [false,true]){
     await main.evaluate('('+paintShell.toString()+')('+JSON.stringify({palette:{r:20,g:22,b:28,dark},darkOverlay:.4,lightOverlay:.4})+')');
-    assert(await main.evaluate('window.__earlyGuard===window.__cwbThemeGuard&&document.documentElement.getAttribute("data-theme")==='+JSON.stringify(dark?'dark':'light')),'Repeated paint replaced the guard or lost the selected theme');
+    assert(await main.evaluate('window.__earlyGuard===window.__cwbThemeGuard&&document.documentElement.getAttribute("data-theme")==="light"'),'Repeated wallpaper paint changed the native theme attribute');
    }
-   await main.evaluate('__themeCounter.disconnect();__cwbThemeGuard.dispose();true');
-   assert(await main.evaluate('!document.documentElement.hasAttribute("data-theme")&&!document.documentElement.classList.contains("dark")&&document.documentElement.classList.contains("native-fixture")&&document.documentElement.style.colorScheme==="light"&&document.documentElement.style.getPropertyPriority("color-scheme")==="important"&&document.documentElement.style.getPropertyValue("--native-fixture-value")==="preserved"'),'Theme disposal lost original theme/priority or unrelated native state');
+   await main.evaluate('__themeCounter.disconnect();('+clearShell.toString()+')();true');
+   assert.deepEqual(await main.evaluate(nativeThemeExpression),nativeThemeSnapshot,'Wallpaper cleanup changed the current native theme/priority or unrelated native state');
    await main.evaluate('document.documentElement.setAttribute("data-theme","light");true');await sleep(50);assert.equal(await main.evaluate('document.documentElement.getAttribute("data-theme")'),'light');
-   observation.lateNativeThemeCoveredByCss=true;observation.nativeTextColourVerified=true;observation.noThemeRepairObserver=true;observation.themeSnapshotRestored=true;
+   observation.lateNativeThemeCoveredByCss=true;observation.nativeTextColourVerified=true;observation.noThemeRepairObserver=true;observation.nativeThemeStatePreserved=true;
   }
   if(aux&&!baseline){
    await main.evaluate('window.__fixtureReply=null;const reply=window.__cwbReply;window.__cwbReply=(id,result)=>{if(id===999999)window.__fixtureReply=result;reply(id,result)};window.__codexWallpaperSend(JSON.stringify({token:document.getElementById("codex-wallpaper-controls").__cwbToken,id:999999,action:"surface-sync",region:"embedded",enabled:false}));true');
@@ -86,7 +92,7 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
    assert(performance.now()-started<4000,'Settings waited for the auxiliary page to resume');
    observation.auxiliaryDoesNotBlockSettings=true;
    await sleep(Math.max(0,4150-(performance.now()-started)));
-   await until(()=>aux.evaluate('!document.getElementById("codex-wallpaper-embedded-style")'),1000);
+   try{await until(()=>aux.evaluate('!document.getElementById("codex-wallpaper-embedded-style")'),1000);}catch(error){throw Error(error.message+'; auxiliary resume='+resumeResult+'; events='+JSON.stringify(auxiliaryEvents)+'; host stderr='+errors);}
    observation.latestEmbeddedConfigAfterResume=true;
   }
   if(aux)await aux.call('Debugger.resume').catch(()=>{});

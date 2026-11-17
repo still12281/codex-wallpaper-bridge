@@ -15,7 +15,7 @@ let chrome,cdp,browser,manager;
 const result={kind:'isolated-chromium-surface-lifecycle'};
 const server=createServer((req,res)=>{
  res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'unsafe-inline'; style-src 'self'; frame-src http: blob:");
- if(req.url==='/style.css'){res.setHeader('Content-Type','text/css');res.end('html,body{margin:0;background:rgb(25,25,25)}.new-page-container{width:100vw;height:100vh;background:rgb(25,25,25)}.bg-surface{background:rgb(25,25,25)}.semantic{background:rgb(200,30,20)}.image{background-image:linear-gradient(red,blue)}button{background:rgb(25,25,25)}');return;}
+ if(req.url==='/style.css'){res.setHeader('Content-Type','text/css');res.end('html,body{margin:0;background:rgb(25,25,25)}.new-page-container{width:100vw;height:100vh;background:rgb(25,25,25)}.bg-surface{background:var(--color-surface,rgb(25,25,25))}.semantic{background:rgb(200,30,20)}.image{background-image:linear-gradient(red,blue)}button{background:rgb(25,25,25)}');return;}
  res.setHeader('Content-Type','text/html');
  res.end('<!doctype html><link rel="stylesheet" href="/style.css"><main class="new-page-container"><button id="button" onclick="this.dataset.clicked=1">Click</button><div role="alert" class="semantic new-page-container">Warning</div><div class="image">Image</div><input id="input"><pre>Code</pre><div role="menu">Menu</div></main>');
 });

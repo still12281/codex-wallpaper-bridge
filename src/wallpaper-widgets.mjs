@@ -1,9 +1,9 @@
 // Runs in the native page. Only public xterm options are changed; PTY/buffer data is never read.
 export async function installNativeWidgets(config,loadModule=url=>import(url)){
  const prior=window.__cwbWidgets;
- if(prior?.version===6&&!prior.disposed){prior.config=config;await prior.refresh();prior.update();return prior.status}
+ if(prior?.version===8&&!prior.disposed){prior.config=config;await prior.refresh();prior.update();return prior.status}
  prior?.dispose?.();
- const state=window.__cwbWidgets={version:6,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
+ const state=window.__cwbWidgets={version:8,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
  const copy=theme=>theme?{...theme}:theme;
  const effective=native=>{
   if(state.config.surfaceSync?.code===false)return native;
@@ -42,29 +42,50 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
  state.dispose=()=>{if(state.disposed)return;state.disposed=true;observer.disconnect();if(frame!==null){cancelAnimationFrame(frame);frame=null}restore();state.status={phase:'disposed'}};
  const fail=error=>{restore();state.status={phase:'unsupported',reason:error.message,terminals:0,module:state.moduleUrl}};
  const dataMethod=(object,key)=>{for(let p=object;p;p=Object.getPrototypeOf(p)){const d=Object.getOwnPropertyDescriptor(p,key);if(d)return typeof d.value==='function'?d.value:null}return null};
- const modules=()=>[...new Set([...document.querySelectorAll('link[rel="modulepreload"],script[src]')].map(e=>e.href||e.src).filter(u=>/^app:\/\/-\/assets\/app-initial-[a-f0-9]{8,64}\.js$/.test(u)))].sort();
+ const modules=()=>[...new Set([...document.querySelectorAll('link[rel="modulepreload"],script[src]')].filter(e=>/^app:\/\/-\/assets\/app-initial-[a-f0-9]{8,64}\.js$/.test(e.href||e.src)||(e.tagName==='SCRIPT'&&e.type==='module'&&/^app:\/\/-\/assets\/\d+\.[a-f0-9]{8,64}\.js$/.test(e.src))).map(e=>e.href||e.src))].sort();
+ const managerContract=value=>value&&typeof value==='object'&&Object.getOwnPropertyDescriptor(value,'renderers')?.value instanceof Map&&dataMethod(value,'getOrCreateRenderer')&&dataMethod(value,'releaseRenderer');
+ const cachedManagers=module=>{
+  const loader=Object.getOwnPropertyDescriptor(module,'__webpack_require__')?.value;
+  const factories=loader&&Object.getOwnPropertyDescriptor(loader,'m')?.value,cache=loader&&Object.getOwnPropertyDescriptor(loader,'c')?.value;
+  if(!factories||!cache)return [];
+  // Locate the contract by factory source, then read its existing cache entry.
+  // Never call the loader, execute a factory, or initialize an uncached module.
+  const ids=Object.entries(Object.getOwnPropertyDescriptors(factories)).filter(([,d])=>typeof d.value==='function'&&/renderers\s*=\s*new Map/.test(Function.prototype.toString.call(d.value))&&/getOrCreateRenderer/.test(Function.prototype.toString.call(d.value))&&/releaseRenderer/.test(Function.prototype.toString.call(d.value))).map(([id])=>id);
+  if(ids.length>1)throw Error('Ambiguous cached terminal manager contract');
+  if(!ids.length)return [];
+  const record=Object.getOwnPropertyDescriptor(cache,ids[0])?.value,exports=record&&Object.getOwnPropertyDescriptor(record,'exports')?.value;
+  if(!exports)return [];
+  return Object.values(Object.getOwnPropertyDescriptors(exports)).map(d=>{
+   if('value'in d)return d.value;
+   // Rspack exports simple reference getters. Reject arbitrary accessors.
+   if(d.get&&/^\s*\(\s*\)\s*=>\s*[A-Za-z_$][\w$]*\s*$/.test(Function.prototype.toString.call(d.get)))return d.get.call(exports);
+   return null;
+  }).filter(managerContract);
+ };
  state.refresh=()=>{
   if(state.disposed)return Promise.resolve();
   const urls=modules(),key=urls.join('|');
-  if(state.moduleKey===key){if(state.manager){try{for(const renderer of state.manager.renderers.values())register(renderer);state.update()}catch(error){fail(error)}}return state.initialized||Promise.resolve()}
+  if(state.moduleKey===key&&state.manager){try{for(const renderer of state.manager.renderers.values())register(renderer);state.update()}catch(error){fail(error)}return state.initialized||Promise.resolve()}
+  if(state.initializing)return state.initialized;
   restore();state.moduleKey=key;state.moduleUrl=urls[0];
-  state.initialized=(async()=>{
+  state.initializing=true;state.initialized=(async()=>{
   try{
    // Inspect only the page's already loaded native module. Never invoke an export
    // to find the manager, inspect React internals, or touch session/PTY buffers.
-   if(urls.length!==1)throw Error(urls.length?'Ambiguous native terminal modules':'No loaded native terminal module');
-   const module=await loadModule(urls[0]);
+   if(!urls.length)throw Error('No loaded native terminal module');
+   const modules=await Promise.all(urls.map(url=>loadModule(url)));
    if(state.disposed||window.__cwbWidgets!==state||state.moduleKey!==key)return;
-   const candidates=[...new Set(Object.values(module).filter(value=>value&&typeof value==='object'&&Object.getOwnPropertyDescriptor(value,'renderers')?.value instanceof Map&&dataMethod(value,'getOrCreateRenderer')&&dataMethod(value,'releaseRenderer')))];
+   const found=modules.flatMap((module,index)=>[...Object.values(Object.getOwnPropertyDescriptors(module)).map(d=>d.value).filter(managerContract),...cachedManagers(module)].map(manager=>({manager,url:urls[index]})));
+   const candidates=[...new Set(found.map(item=>item.manager))];
    if(candidates.length!==1)throw Error(candidates.length?'Ambiguous terminal manager contract':'Unsupported terminal manager contract');
    const manager=candidates[0];
-   state.manager=manager;state.originalCreate=manager.getOrCreateRenderer;
+   state.moduleUrl=found.find(item=>item.manager===manager).url;state.manager=manager;state.originalCreate=manager.getOrCreateRenderer;
    const originalCreate=state.originalCreate;
    state.wrappedCreate=function(...args){const renderer=originalCreate.apply(this,args);if(state.disposed||state.manager!==manager)return renderer;try{register(renderer);state.update()}catch(error){fail(error)}return renderer};
    manager.getOrCreateRenderer=state.wrappedCreate;
    for(const renderer of manager.renderers.values())register(renderer);
    state.status={phase:'ready'};state.update();
-  }catch(error){if(!state.disposed&&state.moduleKey===key)fail(error)}
+  }catch(error){if(!state.disposed&&state.moduleKey===key)fail(error)}finally{state.initializing=false;}
   })();return state.initialized;
  };
  await state.refresh();return state.status;

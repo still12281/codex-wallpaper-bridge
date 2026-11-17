@@ -15,8 +15,16 @@ export function appearancePalette(settings){
 // different animation frame for each window. A newly selected wallpaper gets
 // its own sample, saved through the host's existing settings transaction.
 export function createPaletteTracker(settings){
- const palettes=new Map();if(settings.selectedId&&settings.palette)palettes.set(settings.selectedId,{...settings.palette});
- return (id,sampled)=>{if(!palettes.has(id))palettes.set(id,{...(sampled||settings.palette)});return {...palettes.get(id)};};
+ const valid=p=>p&&['r','g','b'].every(k=>Number.isFinite(p[k])&&p[k]>=0&&p[k]<=255)&&typeof p.dark==='boolean';
+ const palettes=new Map();for(const e of settings.library||[])if(valid(e.palette))palettes.set(e.id,{...e.palette});
+ if(settings.selectedId&&!palettes.has(settings.selectedId)&&valid(settings.palette))palettes.set(settings.selectedId,{...settings.palette});
+ return (id,sampled)=>{
+  const group=libraryGroups(settings.library||[],id).find(g=>g.entries.some(e=>e.id===id));
+  const previous=palettes.get(id)||group?.entries.map(e=>palettes.get(e.id)).find(Boolean);
+  const palette={...(previous||(valid(sampled)?sampled:{r:20,g:22,b:28,dark:true}))};
+  for(const e of group?.entries||[]){e.palette={...palette};palettes.set(e.id,{...palette});}
+  palettes.set(id,{...palette});return palette;
+ };
 }
 export function appearanceSnapshot(settings){return {visual:sanitizeVisual(settings.visual),darkOverlay:settings.darkOverlay??.4,lightOverlay:settings.lightOverlay??.4,pauseOnBlur:settings.pauseOnBlur!==false,surfaceSync:{code:settings.surfaceSync?.code!==false,embedded:settings.surfaceSync?.embedded!==false}};}
 export function parsePreset(input){

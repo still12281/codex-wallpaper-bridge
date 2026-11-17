@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===27){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===28){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=27;let features=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=28;let features=null,scanShortcut=null,scanToastTimer=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
@@ -14,12 +14,14 @@ export function installPanel(config,token){
  const queuePlace=()=>{if(placementQueued||disposed)return;placementQueued=true;requestAnimationFrame(()=>{placementQueued=false;place();});};
  const relevant='[class*="ApplicationMenuTopBar"],[role="menubar"],#application-menu-trigger-file-menu';
  const observer=new MutationObserver(changes=>{if(!host.isConnected||(menuAnchor&&!menuAnchor.isConnected)||changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(n.matches?.(relevant)||n.querySelector?.(relevant)))))queuePlace();});
- observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('resize',queuePlace);host.__cwbPlace=place;host.__cwbDispose=()=>{disposed=true;observer.disconnect();window.removeEventListener('resize',queuePlace);};
+ observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('resize',queuePlace);host.__cwbPlace=place;host.__cwbDispose=()=>{disposed=true;observer.disconnect();window.removeEventListener('resize',queuePlace);if(scanShortcut)window.removeEventListener('keydown',scanShortcut,true);clearTimeout(scanToastTimer);};
  host.__cwbEntryState=()=>{const button=s.getElementById('toggle'),r=button?.getBoundingClientRect(),style=getComputedStyle(host);return {visible:!!(host.isConnected&&r?.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight&&style.display!=='none'&&style.visibility!=='hidden'),placement:host.dataset.cwbPlacement};};place();
  s.innerHTML=`<style>:host{font:13px system-ui;color:#e6edf5}button,select,input{font:inherit}button,select{color:inherit;background:#18283de8;border:1px solid #5c849b70;border-radius:8px;padding:8px 12px;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #6cd9e8;outline-offset:2px}button:disabled{opacity:.5;cursor:wait}dialog{color:inherit;background:#0d1927f5;border:1px solid #5886a480;border-radius:16px;width:min(390px,80vw);padding:24px;box-shadow:0 18px 70px #0008}dialog::backdrop{background:#0005}h2{font-size:19px;margin:0 0 6px}p{color:#9fb3c8;line-height:1.6}label{display:block;margin-top:20px}select,input[type=range]{width:100%;box-sizing:border-box;margin-top:8px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:24px}#status{min-height:38px;font-size:12px}#close{float:right;background:none;border:0;padding:4px}output{float:right;color:#87d7e5}</style>
  <button id="toggle" aria-label="打开壁纸设置" style="height:28px;padding:0 10px">壁纸</button><dialog aria-labelledby="title"><button id="close" aria-label="关闭">✕</button><h2 id="title">壁纸与外观</h2><label>我的壁纸<select id="library"></select></label><label>遮罩浓度 <output id="opacity"></output><input id="shade" type="range" min="25" max="85" step="5"></label><label><input id="pause" type="checkbox"> 仅聚焦 Codex 时播放动态壁纸</label><p id="status" role="status" aria-live="polite">就绪</p><footer><button id="import">导入图片 / 视频</button><button id="done">完成</button></footer><input id="file" type="file" hidden accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"></dialog>`;
  const surfaceRepair=document.createElement('div');surfaceRepair.id='cwb-surface-repair';surfaceRepair.style.cssText='margin:12px 0;padding:12px 0;border-top:1px solid var(--cwb-divider,#8195a440)';
- surfaceRepair.innerHTML='<button id="cwb-surface-scan" type="button" data-cwb-control aria-describedby="cwb-surface-scan-note" style="width:100%;min-height:36px">扫描并适配</button><p id="cwb-surface-scan-note" style="margin:8px 0 0">有底色遮住壁纸时，点击检查所有已打开的页面；完成后停止，不会持续扫描。</p><p id="cwb-surface-scan-result" role="status" aria-live="polite" aria-atomic="true" style="margin:6px 0 0"></p>';
+ surfaceRepair.innerHTML='<button id="cwb-surface-scan" type="button" data-cwb-control aria-describedby="cwb-surface-scan-note" style="width:100%;min-height:36px">扫描并适配</button><p id="cwb-surface-scan-note" style="margin:8px 0 0">检查所有已打开的页面。菜单或弹窗打开时，也可按 Ctrl+Alt+Shift+W 直接扫描；完成后停止。</p><p id="cwb-surface-scan-result" role="status" aria-live="polite" aria-atomic="true" style="margin:6px 0 0"></p>';
+ const scanToast=document.createElement('output');scanToast.id='cwb-scan-toast';scanToast.setAttribute('popover','manual');scanToast.setAttribute('role','status');scanToast.style.cssText='position:fixed;inset:auto 16px 20px auto;max-width:min(420px,80vw);margin:0;padding:12px 16px;border:1px solid var(--cwb-border);border-radius:12px;background:var(--cwb-canvas);color:var(--cwb-ink);font:13px system-ui;box-shadow:0 4px 20px #0003';s.append(scanToast);
+ const notifyScan=text=>{scanToast.textContent=text;scanToast.showPopover?.();clearTimeout(scanToastTimer);scanToastTimer=setTimeout(()=>scanToast.hidePopover?.(),6000);};
  const playback=document.createElement('section');
  playback.innerHTML=`<label>最大宽度<select id="resolution"><option value="960">960 · 省电</option><option value="1280">1280 · 均衡</option><option value="1920">1920 · 清晰</option><option value="2560">2560 · 高画质</option><option value="3840">3840 · 原画优先</option></select></label><label>帧率上限<select id="fps"><option value="12">12 FPS</option><option value="24">24 FPS · 推荐</option><option value="30">30 FPS</option><option value="60">60 FPS</option><option value="120">120 FPS · 仅GPU</option><option value="144">144 FPS · 仅GPU</option></select></label><p id="cwb-import-profile-note"></p><p>120/144仅用于GPU场景。高规格会增加占用。不会放大原素材或补高帧率；静态图片只调整尺寸。</p><button id="apply">应用播放规格</button>`;
  const quality=document.createElement('details');quality.id='cwb-playback-options';quality.className='cwb-feature';quality.innerHTML='<summary>播放与画质</summary>';const customPlayback=document.createElement('details');customPlayback.className='cwb-feature';customPlayback.innerHTML='<summary>自定义播放规格</summary>';customPlayback.append(playback);quality.append(customPlayback);s.getElementById('status').before(quality);
@@ -117,12 +119,15 @@ export function installPanel(config,token){
  const displayOptions=$('cwb-display-options');if(displayOptions)quality.querySelector('summary').after(displayOptions);
  $('pause').parentElement.after(quality);$('status').before(management);
  host.__cwbRenderConfig=render;windowChrome=window.__cwbInstallPanelWindow?.(host,s,dialog);render(config);
- $('cwb-surface-scan').onclick=async()=>{
+ host.__cwbScanSurfaces=async()=>{
   if(processing||livePending)return;
   const button=$('cwb-surface-scan'),output=$('cwb-surface-scan-result');button.textContent='正在扫描…';surfaceRepair.setAttribute('aria-busy','true');output.textContent='正在检查已打开的页面…';
-  try{const result=await busy(()=>send({action:'surface-rescan'}),'扫描适配失败');output.textContent=result?.message||'扫描未完成，请查看下方提示。';}
+  try{notifyScan('正在检查已打开的页面…');const result=await busy(()=>send({action:'surface-rescan'}),'扫描适配失败');output.textContent=result?.message||'扫描未完成，请查看下方提示。';notifyScan(output.textContent);}
   finally{button.textContent='扫描并适配';surfaceRepair.setAttribute('aria-busy','false');}
  };
+ $('cwb-surface-scan').onclick=host.__cwbScanSurfaces;
+ scanShortcut=event=>{if(event.code==='KeyW'&&event.ctrlKey&&event.altKey&&event.shiftKey&&!event.metaKey&&!event.repeat&&!event.isComposing){event.preventDefault();event.stopImmediatePropagation();void host.__cwbScanSurfaces();}};
+ window.addEventListener('keydown',scanShortcut,true);
  if(!config.library.length)for(const id of ['delete','apply','library'])$(id).disabled=true;
 }
 

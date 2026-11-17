@@ -2,10 +2,14 @@
 
 ## Unreleased
 
-- Apply saved glass colours, opacity and blur consistently to the composer, user-message bubbles, file-change cards and annotation editor. Avoid stacking inherited backgrounds inside the annotation editor.
-- Preserve native transcript sizing and scrolling without a custom composer gap or opaque footer strip.
+- Use one shell material policy for saved composer/card glass and raised translucent menus, comments and previews. Preserve semantic action colours and native-background options.
+- Keep diff-tooltip positioning space transparent; paint only the actual preview card instead of its fixed-height outer box.
+- Clip transcript painting at the native composer boundary, including streamed content and resized composers, while preserving native scroll dimensions and positions.
+- Support terminal managers exposed directly by native modules or already present in an executed Rspack runtime cache, without invoking module factories or reading PTY data.
+- Scan owned pages with Ctrl+Alt+Shift+W while a native menu or modal is open, with a result notification that retains the current dialog and focus.
 - Give “页面适配与原生底色” the same bordered group styling as the other wallpaper controls.
-- Reuse the saved palette when reopening the same wallpaper, and share each selected wallpaper's palette across windows.
+- Persist palettes with each logical wallpaper so reopening, switching renderer variants and restarting the host reuse the same colours.
+- Write runtime status atomically and identify loaded source builds. Release document paint listeners when stopping the wallpaper host.
 - Keep solid-button labels, neutral text and icons paired with the wallpaper theme when native theme settings load after startup. Preserve composer placeholder visibility through the startup-to-wallpaper handoff.
 
 ## 0.2.1 — 2026-11-10

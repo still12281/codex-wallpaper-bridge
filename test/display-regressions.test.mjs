@@ -9,6 +9,16 @@ test('reopened wallpapers and extra windows reuse saved colours instead of resam
  const dark={r:8,g:8,b:8,dark:true},light={r:230,g:240,b:250,dark:false},settings={selectedId:'a',palette:dark},track=createPaletteTracker(settings);
  assert.deepEqual(track('a',light),dark);assert.deepEqual(track('b',light),light);assert.deepEqual(track('b',dark),light);assert.deepEqual(track('a',light),dark);assert.deepEqual(settings,{selectedId:'a',palette:dark});
 });
+test('per-wallpaper palettes survive host restarts and renderer variants share one saved sample',()=>{
+ const dark={r:8,g:12,b:20,dark:true},light={r:230,g:240,b:250,dark:false};
+ const settings={selectedId:'a',palette:dark,library:[{id:'a',sourceKey:'A'},{id:'a-video',sourceKey:'A'},{id:'b',sourceKey:'B'}]};
+ let track=createPaletteTracker(settings);assert.deepEqual(track('a-video',light),dark);assert.deepEqual(track('b',light),light);
+ settings.selectedId='b';settings.palette=light;
+ const reopened=JSON.parse(JSON.stringify(settings));track=createPaletteTracker(reopened);
+ assert.deepEqual(track('a',light),dark);assert.deepEqual(track('a-video',light),dark);assert.deepEqual(track('b',dark),light);
+ assert.deepEqual(reopened.library[0].palette,dark);assert.deepEqual(reopened.library[1].palette,dark);
+ assert.deepEqual(reopened.palette,light);
+});
 test('manual transparent-interface theme overrides sampling without overwriting its palette',()=>{
  const s=defaultSettings();s.palette={r:245,g:245,b:245,dark:false};const saved={...s.palette};s.visual=sanitizeVisual({...s.visual,theme:'dark',glassBlur:0,glassOpacity:.8});assert.equal(appearancePalette(s).dark,true);assert.deepEqual(s.palette,saved);
  s.visual.theme='auto';assert.deepEqual(appearancePalette(s),saved);s.visual.theme='light';assert.equal(appearancePalette(s).dark,false);assert.throws(()=>sanitizeVisual({theme:'invalid'}));

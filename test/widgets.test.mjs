@@ -39,3 +39,17 @@ test('renderer failure removes hooks and cannot silently reapply after fallback'
 test('theme restoration uses latest native colors and preserves other terminal options',async()=>{
  const e=environment();try{await installNativeWidgets(config,async()=>e.module);const held=e.terminal.options;held.fontSize=17;held.theme={background:'#eee',foreground:'#222'};assert.equal(e.terminal.options.theme.background,'#00000000');await installNativeWidgets({...config,surfaceSync:{code:false}},async()=>e.module);assert.equal(e.terminal.options.theme.background,'#eee');assert.equal(e.terminal.options.fontSize,17);window.__cwbWidgets.dispose();held.theme={background:'#ddd'};assert.equal(e.terminal.options.theme.background,'#ddd');assert.equal(Object.hasOwn(e.terminal,'options'),false)}finally{e.restore()}
 });
+test('Rspack reads only the uniquely identified cached manager; neither loader nor factory is executed',async()=>{
+ const e=environment();try{
+  document.querySelectorAll=()=>[{tagName:'SCRIPT',type:'module',src:'app://-/assets/348410.1a97dde15f.js'}];
+  let calls=0;const loader=()=>{calls++;throw Error('Loader must never run')};
+  // The real factory defines a manager with public class fields.
+  loader.m={manager:function(){throw Error('Factory must never run');class Manager{renderers=new Map;getOrCreateRenderer(){}releaseRenderer(){}}return Manager;}};
+  loader.c={};const module={__webpack_require__:loader};
+  let result=await installNativeWidgets(config,async()=>module);assert.equal(result.phase,'unsupported');assert.equal(calls,0);assert.equal(Object.hasOwn(e.terminal,'options'),false);
+  const manager=e.manager,exports={};Object.defineProperty(exports,'A',{enumerable:true,get:()=>manager});Object.defineProperty(exports,'danger',{enumerable:true,get(){throw Error('Arbitrary getter must never run')}});loader.c.manager={exports};
+  result=await installNativeWidgets(config,async()=>module);assert.equal(result.phase,'adapted');assert.equal(result.terminals,1);assert.equal(calls,0);assert.equal(e.terminal.options.theme.background,'#00000000');
+  window.__cwbWidgets.dispose();delete window.__cwbWidgets;loader.m.second=loader.m.manager;
+  result=await installNativeWidgets(config,async()=>module);assert.equal(result.phase,'unsupported');assert.match(result.reason,/Ambiguous/);assert.equal(calls,0);assert.equal(Object.hasOwn(e.terminal,'options'),false);
+ }finally{e.restore()}
+});
