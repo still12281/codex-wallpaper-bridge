@@ -15,6 +15,8 @@ export function paintShell(config){
  const controlOpacity=config.visual?.glassOpacity??.5,controlBlur=config.visual?.glassBlur??0;
  const controlColor=`rgba(${shade},${controlOpacity})`;
  const controlBackground=controlColor,controlFilter=controlBlur?`blur(${controlBlur}px)`:'none';
+ const codeColor=`rgba(${shade},${Math.max(.72,controlOpacity)})`;
+ const syntax=dark?{comment:'#d0d8e0',keyword:'#dfc6ff',literal:'#ffdaaa',string:'#a3edbf',variable:'#b2d5ff',attribute:'#ffe0a3',name:'#b2d5ff',error:'#ffb6bf'}:{comment:'#263746',keyword:'#482063',literal:'#65270d',string:'#15432a',variable:'#133d5f',attribute:'#573509',name:'#133d5f',error:'#7a1929'};
  const raisedColor=`rgba(${shade},${Math.max(.72,controlOpacity)})`,raisedFilter=`blur(${Math.max(12,controlBlur)}px)`;
  const sync={composer:true,context:true,menus:true,settings:true,navigation:true,panels:true,code:true,embedded:true,...config.surfaceSync};
  // Match card semantics, independent of native background utility variants.
@@ -37,7 +39,8 @@ export function paintShell(config){
  :root :is(${raisedSelectors}) > [class~="bg-inherit"]{background:transparent!important}
  :root [class~="group/diff-preview"]{background:transparent!important;backdrop-filter:none!important}
  :root{--color-background-control-opaque:${controlColor}!important;--color-background-callout-surface:${raisedColor}!important;--color-background-activity-current:${controlColor}!important;--color-background-activity-input:${controlColor}!important;--color-background-activity-soft:${controlColor}!important;--color-background-message-reaction:${controlColor}!important;--color-background-user-message-compact:${controlColor}!important;--app-color-background-application-menu:transparent!important}
- ${sync.code?`.cm-editor,.monaco-editor{background:${controlColor}!important;color:${ink}!important}.cm-content{color:${ink}!important}.cm-gutters{background:transparent!important;color:${secondary}!important}[data-cwb-terminal-surface]{--color-codex-terminal-background:${controlColor}!important;--color-codex-terminal-foreground:${ink}!important;background:${controlColor}!important;color:${ink}!important}[data-cwb-terminal-surface] .xterm{background:transparent!important}`:''}
+ ${sync.code?`.cm-editor,.monaco-editor{background:${codeColor}!important;color:${ink}!important}.cm-content{color:${ink}!important}.cm-gutters{background:transparent!important;color:${secondary}!important}[data-cwb-terminal-surface]{--color-codex-terminal-background:${codeColor}!important;--color-codex-terminal-foreground:${ink}!important;background:${codeColor}!important;color:${ink}!important}[data-cwb-terminal-surface] .xterm{background:transparent!important}`:''}
+ ${sync.code?`:root [data-code-block][data-markdown-copy="code-block"]{background:${codeColor}!important;background-image:none!important;backdrop-filter:var(--cwb-control-filter)!important;color:${ink}!important;--color-text:${ink}!important;--color-text-primary:${ink}!important;--color-text-secondary:${syntax.comment}!important;--color-text-tertiary:${syntax.comment}!important;--color-surface:transparent!important;${Object.entries(syntax).map(([key,value])=>'--color-codex-syntax-'+key+':'+value+'!important').join(';')}}:root [data-code-block][data-markdown-copy="code-block"] > [data-markdown-copy="exclude"]:has([data-code-block-controls]){background:transparent!important;background-image:none!important}:root [data-code-block][data-markdown-copy="code-block"] [data-code-block-source]{background:transparent!important;background-image:none!important;color:${ink}!important}`:''}
  diffs-container{--color-surface:${sync.code?'transparent':'var(--app-color-background-editor-opaque,Canvas)'}!important;--codex-diffs-surface:${sync.code?'transparent':'var(--app-color-background-editor-opaque,Canvas)'}!important}
  ${!sync.code?`:root[data-theme="light"] :is(.cm-editor,.monaco-editor,diffs-container){color-scheme:light}:root[data-theme="dark"] :is(.cm-editor,.monaco-editor,diffs-container){color-scheme:dark}:is(.cm-editor,.monaco-editor,diffs-container){--color-text:CanvasText;--color-text-primary:CanvasText;color:CanvasText}`:''}
  ${sync.code?`[data-cwb-terminal-surface]{--color-text:${ink}!important;--color-text-primary:${ink}!important;--color-text-secondary:${secondary}!important;--color-text-tertiary:${secondary}!important;--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--app-color-icon-primary:${ink}!important;--app-color-icon-secondary:${secondary}!important}`:''}
@@ -59,6 +62,7 @@ export function paintShell(config){
  ${sync.context?`main [class~="overflow-hidden"]:has(>[class~="group/turn-diff-header"]){background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
  [data-thread-scroll-footer] > [aria-hidden="true"]{background:transparent!important}
  [data-cwb-transcript-content]{clip-path:inset(0 0 var(--cwb-transcript-clip,0px) 0)}
+ [data-cwb-code-source]{clip-path:inset(var(--cwb-code-clip-top,0px) 0 0 0)}
  [data-app-shell-main-content-top-fade]:not(:has(*)),[class*="_MainContentTopFade_"]{background:transparent!important}
  #codex-wallpaper-bridge-layer{opacity:1!important;position:fixed!important;inset:0!important;z-index:-1!important;pointer-events:none!important}`;
  // Remove legacy bridge geometry once; native layout owns transcript spacing.
@@ -66,12 +70,13 @@ export function paintShell(config){
  // A transparent composer reveals wallpaper, never earlier turns. Clip only
  // transcript painting using native footer bounds; leave scrollport dimensions,
  // padding, scroll positions and the composer itself entirely native.
- if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==3)window.__cwbTranscriptPaint.dispose();
+ if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==4)window.__cwbTranscriptPaint.dispose();
  if(!window.__cwbTranscriptPaint){
-  const marked=new Set(),observed=new Set();let frame=0,disposed=false;
+  const marked=new Set(),codeMarked=new Set(),observed=new Set();let frame=0,disposed=false;
   const clean=e=>{e.removeAttribute('data-cwb-transcript-content');e.style.removeProperty('--cwb-transcript-clip');marked.delete(e);};
+  const cleanCode=e=>{e.removeAttribute('data-cwb-code-source');e.style.removeProperty('--cwb-code-clip-top');codeMarked.delete(e);};
   const update=()=>{
-   if(disposed)return;const active=new Set(),watch=new Set();
+   if(disposed)return;const active=new Set(),activeCode=new Set(),watch=new Set();
    for(const scroll of document.querySelectorAll('[data-app-action-timeline-scroll]')){
     const sr=scroll.getBoundingClientRect();if(!sr.width||!sr.height)continue;
     const layout=scroll.closest('[data-request-input-activity-root]')||scroll.parentElement;
@@ -84,15 +89,22 @@ export function paintShell(config){
      const r=e.getBoundingClientRect();e.setAttribute('data-cwb-transcript-content','');e.style.setProperty('--cwb-transcript-clip',Math.max(0,r.bottom-edge)+'px');marked.add(e);active.add(e);watch.add(e);
     }
    }
+   if(window.__cwbTranscriptPaint?.codeEnabled!==false)for(const root of document.querySelectorAll('[data-code-block][data-markdown-copy="code-block"]')){
+    const r=root.getBoundingClientRect();if(!r.width||!r.height||r.bottom<=0||r.top>=innerHeight)continue;
+    const header=root.querySelector(':scope > [data-markdown-copy="exclude"]:has([data-code-block-controls])'),source=root.querySelector('[data-code-block-source]');if(!header||!source)continue;
+    const h=header.getBoundingClientRect(),s=source.getBoundingClientRect();if(!h.height||!s.height)continue;
+    source.setAttribute('data-cwb-code-source','');source.style.setProperty('--cwb-code-clip-top',Math.max(0,Math.min(s.height,h.bottom-s.top))+'px');codeMarked.add(source);activeCode.add(source);for(const e of [root,header,source])watch.add(e);
+   }
    for(const e of [...marked])if(!active.has(e))clean(e);
+   for(const e of [...codeMarked])if(!activeCode.has(e))cleanCode(e);
    for(const e of watch)if(!observed.has(e)){observed.add(e);resize.observe(e);}
    for(const e of [...observed])if(!watch.has(e)){resize.unobserve(e);observed.delete(e);}
   };
   const queue=()=>{if(!frame&&!disposed)frame=requestAnimationFrame(()=>{frame=0;update();});};
   const resize=new ResizeObserver(update),mutation=new MutationObserver(changes=>{if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&!n.closest?.('#codex-wallpaper-bridge-layer,#codex-wallpaper-controls'))))queue();});
   mutation.observe(document.body,{childList:true,subtree:true});document.addEventListener('scroll',update,{capture:true,passive:true});document.addEventListener('input',queue,true);document.addEventListener('focusin',queue,true);document.addEventListener('click',queue,true);window.addEventListener('resize',queue);
-  window.__cwbTranscriptPaint={version:3,refresh:update,dispose(){disposed=true;cancelAnimationFrame(frame);resize.disconnect();mutation.disconnect();document.removeEventListener('scroll',update,true);document.removeEventListener('input',queue,true);document.removeEventListener('focusin',queue,true);document.removeEventListener('click',queue,true);window.removeEventListener('resize',queue);for(const e of [...marked])clean(e);delete window.__cwbTranscriptPaint;}};update();
- }else window.__cwbTranscriptPaint.refresh();
+  window.__cwbTranscriptPaint={version:4,codeEnabled:sync.code,refresh:update,dispose(){disposed=true;cancelAnimationFrame(frame);resize.disconnect();mutation.disconnect();document.removeEventListener('scroll',update,true);document.removeEventListener('input',queue,true);document.removeEventListener('focusin',queue,true);document.removeEventListener('click',queue,true);window.removeEventListener('resize',queue);for(const e of [...marked])clean(e);for(const e of [...codeMarked])cleanCode(e);delete window.__cwbTranscriptPaint;}};update();
+ }else{window.__cwbTranscriptPaint.codeEnabled=sync.code;window.__cwbTranscriptPaint.refresh();}
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
  window.__cwbDecorate?.(config);
  window.__cwbStartupAppearance?.dispose();

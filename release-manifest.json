@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 3040,
-      "sha256": "cfccce7d36f91059469ffbc9380ae505e0aa5157f2f86ba3175e71e3c2886ede"
+      "utf8Bytes": 3168,
+      "sha256": "f8823a3974391b0f46f0b4c4650e51a206ba6092fe0980b6a7c35a433082d74c"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 22662,
-      "sha256": "54243261382029e1f583bb40d870897dc6aa519f270949393a73f5bcfe989e7c"
+      "utf8Bytes": 23070,
+      "sha256": "a7ad024cba2e009dc5923ea91df6e1df0e795d70b3192301ef50b694d98f59d2"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -234,8 +234,8 @@
     },
     {
       "path": "docs/SURFACE_POLICY.md",
-      "utf8Bytes": 3610,
-      "sha256": "d499e68a115d52b606926206274ee08bedc12b9a583d7419d64b60b5f74ae06e"
+      "utf8Bytes": 4867,
+      "sha256": "bec521d99e64dfb8cbb23651ac05fbfd455ef7613cb31cbc75d35936076de61b"
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
@@ -560,13 +560,13 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 18197,
-      "sha256": "89482f3b3c2d801001984ca912bfebab2bb12f499d48b43112330f9c8e7ebcf3"
+      "utf8Bytes": 20708,
+      "sha256": "6e14fa1ea7d54a8f0954828ccddb7a4fb9189e04aa454b10dce9a2723f680381"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
-      "utf8Bytes": 9455,
-      "sha256": "f58391bf33a79173e4b0262d78f38e7e88e953676112efbb6dfff62eb62b4c6a"
+      "utf8Bytes": 10821,
+      "sha256": "51beef7f79adf19af480e76e4cbba790976d0bcdf1fa59fc11f2dccac7cc4740"
     },
     {
       "path": "src/webwallgl-player.mjs",
@@ -642,6 +642,11 @@
       "path": "test/client-window.ps1",
       "utf8Bytes": 1093,
       "sha256": "31fae8e8f07de38ecf6734ad3872e05289b23539e526d78ecde53c5ac8ce5c04"
+    },
+    {
+      "path": "test/code-reading-integration.mjs",
+      "utf8Bytes": 7168,
+      "sha256": "98738329d9a12a524432ad3bfa1e433a7d8be6d624b4a1654b5e6410911e8b66"
     },
     {
       "path": "test/core.test.mjs",
@@ -900,8 +905,8 @@
     },
     {
       "path": "test/widgets.test.mjs",
-      "utf8Bytes": 8157,
-      "sha256": "e8d970128f8bc1407bd74625f3bd830ae9d4fbc6a46642672f4b399af47b1151"
+      "utf8Bytes": 10493,
+      "sha256": "90b1c8168580c6050d21695661524d298802d9b97897c622d8f2f7e869a8ea6d"
     },
     {
       "path": "tools/build-installer.ps1",

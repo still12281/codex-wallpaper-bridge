@@ -9,6 +9,7 @@ Native application theme attributes remain owned by the application.
 | Shell canvas, sidebar and transcript | Transparent canvas over the wallpaper overlay. |
 | Composer, sent messages, file cards and utility rails | Saved glass opacity and blur, applied once. |
 | Menus, dialogs, comments and preview cards | Raised glass: at least 0.72 opacity and 12px blur, with matching text. |
+| Code blocks, editors and terminal containers | Reading glass with at least 0.72 opacity, and saved blur. Fenced code uses local syntax-colour tokens; ordinary unowned `pre` elements retain their styling. |
 | Positioning wrappers | Transparent. In particular, the fixed-height `group/diff-preview` tooltip is a positioning box; only the card containing `diff-preview-scroll` receives material. |
 | Native code and embedded-page opt-outs | Preserve their background when the corresponding saved option is disabled. Diff backgrounds cross their open shadow boundary through `--codex-diffs-surface`. |
 
@@ -27,6 +28,10 @@ top edge. It never changes scrollport height, padding, scroll positions or the
 composer's dimensions. Scroll, content/footer resize and document events update
 the clip; streaming text growth is included. `clearShell` releases these document
 listeners and removes paint markers when wallpaper is disabled or its host stops.
+The same document events clip a code block's source below its native sticky
+control bar. The header inherits the block's single material layer, and source
+text cannot show through it. Native code-background opt-out removes this code
+clip along with the wallpaper code styles.
 
 ## Stable state and runtime compatibility
 
@@ -40,6 +45,13 @@ contract identifies the cached module. The adapter never calls the loader or
 executes factories to discover a manager. Missing or ambiguous contracts retain
 native terminal behavior and report `unsupported`. Only terminal appearance
 options are adapted; session buffers and PTY data are not inspected.
+Transparent terminal backgrounds retain zero alpha and a conservative RGB
+reference for the saved palette, overlay and reading glass. Contrast uses the
+lightest possible dark-theme background or darkest light-theme background;
+reverse-video text and the terminal's contrast algorithm still use this RGB.
+The base ANSI table uses xterm's opaque defaults rather than native UI tokens
+that may alias both black and white to foreground ink. The bridge enforces a minimum contrast option of 4.5 while active;
+the latest native contrast option and colours return on opt-out or disposal.
 
 Runtime status is written through an atomic rename and records hashes of source
 modules loaded at host startup. Updating a source file alone does not prove the
@@ -56,3 +68,6 @@ running host has loaded that file.
   explicit rescans, semantic preservation and embedded opt-out.
 - `test/widgets.test.mjs` and `test/display-regressions.test.mjs`: terminal cache
   discovery without factory execution, restoration, and persistent palettes.
+- `test/code-reading-integration.mjs`: plain/syntax code contrast on both
+  wallpaper themes, single-layer materials, sticky control occlusion, native
+  scrolling and code-background opt-out.

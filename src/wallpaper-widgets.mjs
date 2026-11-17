@@ -1,14 +1,27 @@
 // Runs in the native page. Only public xterm options are changed; PTY/buffer data is never read.
 export async function installNativeWidgets(config,loadModule=url=>import(url)){
  const prior=window.__cwbWidgets;
- if(prior?.version===8&&!prior.disposed){prior.config=config;await prior.refresh();prior.update();return prior.status}
+ if(prior?.version===11&&!prior.disposed){prior.config=config;await prior.refresh();prior.update();return prior.status}
  prior?.dispose?.();
- const state=window.__cwbWidgets={version:8,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
+ const state=window.__cwbWidgets={version:11,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
  const copy=theme=>theme?{...theme}:theme;
+ const contrast=value=>state.config.surfaceSync?.code===false?value:Math.max(4.5,Number.isFinite(value)?value:1);
  const effective=native=>{
   if(state.config.surfaceSync?.code===false)return native;
-  const dark=state.config.palette?.dark!==false,ink=dark?'#e9eff5':'#15212c';
-  return {...native,background:'#00000000',foreground:ink,cursor:ink,cursorAccent:dark?'#15212c':'#e9eff5',selectionBackground:dark?'#6998cc66':'#386b9c44',selectionInactiveBackground:dark?'#6998cc44':'#386b9c33',black:dark?'#aab7c4':'#263445',brightBlack:dark?'#aab7c4':'#455568',white:ink,brightWhite:ink,red:dark?'#ff8585':'#a31621',brightRed:dark?'#ff9e9e':'#a31621',green:dark?'#7ae0a4':'#076337',brightGreen:dark?'#a3edbf':'#076337',yellow:dark?'#f7d779':'#755000',brightYellow:dark?'#ffe6a3':'#755000',blue:dark?'#91c3ff':'#134c9a',brightBlue:dark?'#b2d5ff':'#134c9a',magenta:dark?'#d1a8ff':'#7030a0',brightMagenta:dark?'#e1c4ff':'#7030a0',cyan:dark?'#86dfe8':'#00616c',brightCyan:dark?'#b1eef4':'#00616c'};
+  const p=state.config.palette||{},dark=p.dark!==false,ink=dark?'#e9eff5':'#15212c',fallback=dark?[20,22,28]:[240,242,246];
+  const rgb=['r','g','b'].map((key,i)=>Number.isFinite(p[key])?Math.round(Math.max(0,Math.min(255,p[key]))):fallback[i]);
+  const overlay=dark?(state.config.darkOverlay??.4):(state.config.lightOverlay??.4),glass=Math.max(.72,state.config.visual?.glassOpacity??.5),coverage=overlay+(1-overlay)*glass;
+  // A transparent cell can show any wallpaper pixel. Use the lightest possible
+  // dark-theme glass (or darkest light-theme glass) as the contrast reference.
+  const reference=rgb.map(n=>Math.round(n*coverage+(dark?255:0)*(1-coverage)));
+  // Alpha alone makes the canvas transparent. RGB is still used for reverse
+  // video and xterm's contrast calculation; transparent black loses that data.
+  const theme={...native,background:'#'+reference.map(n=>n.toString(16).padStart(2,'0')).join('')+'00',foreground:ink,cursor:ink,cursorAccent:dark?'#15212c':'#e9eff5',selectionBackground:dark?'#6998cc66':'#386b9c44',selectionInactiveBackground:dark?'#6998cc44':'#386b9c33'};
+  // Native UI tokens can turn both "black" and "white" into foreground ink,
+  // or give them alpha. Missing keys reset to xterm's standard opaque ANSI
+  // table on every theme update. Keep the original table only for restoration.
+  for(const key of ['black','red','green','yellow','blue','magenta','cyan','white','brightBlack','brightRed','brightGreen','brightYellow','brightBlue','brightMagenta','brightCyan','brightWhite'])delete theme[key];
+  return theme;
  };
  const apply=record=>{
   const native=state.config.surfaceSync?.code===false;
@@ -16,6 +29,7 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
   if(record.surface&&record.surface!==surface)record.surface.removeAttribute('data-cwb-terminal-surface');
   record.surface=surface;surface?.toggleAttribute('data-cwb-terminal-surface',!native);
   record.options.theme=effective(record.nativeTheme);
+  record.options.minimumContrastRatio=contrast(record.nativeContrast);
   if(record.terminal.element&&record.terminal.rows>0)record.terminal.refresh(0,record.terminal.rows-1);
  };
  const register=renderer=>{
@@ -25,10 +39,10 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
   let proto=Object.getPrototypeOf(terminal),descriptor;
   while(proto&&!descriptor){descriptor=Object.getOwnPropertyDescriptor(proto,'options');proto=Object.getPrototypeOf(proto)}
   if(!descriptor?.get||!descriptor?.set||Object.hasOwn(terminal,'options')||typeof terminal.refresh!=='function'||typeof terminal.dispose!=='function')throw Error('Unsupported terminal options shape');
-  const options=descriptor.get.call(terminal),record={terminal,options,nativeTheme:copy(options.theme),open:terminal.open,dispose:terminal.dispose,surface:null};
-  const proxy=new Proxy(options,{set(target,key,value){if(!state.disposed&&key==='theme'){record.nativeTheme=copy(value);target.theme=effective(value)}else Reflect.set(target,key,value);return true}});
-  Object.defineProperty(terminal,'options',{configurable:true,get:()=>proxy,set(value){if(!state.disposed&&value&&Object.hasOwn(value,'theme')){record.nativeTheme=copy(value.theme);descriptor.set.call(terminal,{...value,theme:effective(value.theme)})}else descriptor.set.call(terminal,value)}});
-  record.restore=()=>{record.surface?.removeAttribute('data-cwb-terminal-surface');try{options.theme=record.nativeTheme}catch{}delete terminal.options;if(terminal.open===record.wrappedOpen)terminal.open=record.open;if(terminal.dispose===record.wrappedDispose)terminal.dispose=record.dispose;state.terminals.delete(record)};
+  const options=descriptor.get.call(terminal),record={terminal,options,nativeTheme:copy(options.theme),nativeContrast:options.minimumContrastRatio,open:terminal.open,dispose:terminal.dispose,surface:null};
+  const proxy=new Proxy(options,{set(target,key,value){if(!state.disposed&&key==='theme'){record.nativeTheme=copy(value);target.theme=effective(value)}else if(!state.disposed&&key==='minimumContrastRatio'){record.nativeContrast=value;target.minimumContrastRatio=contrast(value)}else Reflect.set(target,key,value);return true}});
+  Object.defineProperty(terminal,'options',{configurable:true,get:()=>proxy,set(value){if(!state.disposed&&value){const patch={...value};if(Object.hasOwn(value,'theme')){record.nativeTheme=copy(value.theme);patch.theme=effective(value.theme);}if(Object.hasOwn(value,'minimumContrastRatio')){record.nativeContrast=value.minimumContrastRatio;patch.minimumContrastRatio=contrast(value.minimumContrastRatio);}descriptor.set.call(terminal,patch);}else descriptor.set.call(terminal,value)}});
+  record.restore=()=>{record.surface?.removeAttribute('data-cwb-terminal-surface');try{options.theme=record.nativeTheme;options.minimumContrastRatio=record.nativeContrast}catch{}delete terminal.options;if(terminal.open===record.wrappedOpen)terminal.open=record.open;if(terminal.dispose===record.wrappedDispose)terminal.dispose=record.dispose;state.terminals.delete(record)};
   record.wrappedOpen=function(...args){const result=record.open.apply(this,args);if(!state.disposed)apply(record);return result};terminal.open=record.wrappedOpen;
   record.wrappedDispose=function(...args){record.restore();try{return record.dispose.apply(this,args)}finally{state.update()}};terminal.dispose=record.wrappedDispose;
   state.terminals.add(record);apply(record);

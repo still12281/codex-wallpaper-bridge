@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve a glass-aware RGB reference in transparent terminal themes for reverse video, restore the standard opaque ANSI palette, and enforce minimum text contrast while restoring native settings on opt-out.
+- Match Markdown code-block materials and syntax colours to the wallpaper. Keep sticky code controls transparent while occluding source text behind them; preserve native code-background preferences.
 - Use one shell material policy for saved composer/card glass and raised translucent menus, comments and previews. Preserve semantic action colours and native-background options.
 - Keep diff-tooltip positioning space transparent; paint only the actual preview card instead of its fixed-height outer box.
 - Clip transcript painting at the native composer boundary, including streamed content and resized composers, while preserving native scroll dimensions and positions.
