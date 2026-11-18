@@ -39,24 +39,33 @@ async function download(url,limit,{request=fetch,signal,onChunk}={}){
 }
 export function createBridgeUpdater({root,currentVersion,request=fetch,launch,now=Date.now}){
  let release=null,checking=null,operation=null,lastCheck=0;
+ let statusIO=Promise.resolve();
  let state={currentVersion,phase:'idle',available:false};
  const activeFile=path.join(root,'updates','active.json');
  const snapshot=()=>({...state});
  const alive=pid=>{if(!Number.isSafeInteger(pid)||pid<1)return true;try{process.kill(pid,0);return true;}catch(error){return error.code!=='ESRCH';}};
  const readRelease=async()=>releaseUpdate(JSON.parse(await download(latest,1024*1024,{request,signal:AbortSignal.timeout(15000)})),currentVersion);
  const forget=async id=>{try{if(JSON.parse(await readFile(activeFile,'utf8')).id===id)await rm(activeFile);}catch(error){if(error.code!=='ENOENT')throw error;}};
- const saveResult=async(op,phase,message)=>{
+ // Keep this process's status polls from holding the file open during replace.
+ const accessStatus=task=>{
+  const result=statusIO.then(task);
+  statusIO=result.catch(()=>{});
+  return result;
+ };
+ const readStatusFile=file=>accessStatus(async()=>JSON.parse(await readFile(file,'utf8')));
+ const saveResult=(op,phase,message)=>accessStatus(async()=>{
   const temp=op.statusFile+'.next-'+randomUUID();
   await writeFile(temp,JSON.stringify({id:op.id,phase,message}));
   try{
-   // Windows can briefly hold the destination open while the panel polls it.
-   for(const wait of [0,25,75]){
+   // The separate installer process or a scanner can still hold the file.
+   const waits=[0,25,75,150,250];
+   for(const wait of waits){
     if(wait)await delay(wait);
     try{await rename(temp,op.statusFile);return;}
-    catch(error){if(process.platform!=='win32'||!['EPERM','EACCES','EBUSY'].includes(error.code)||wait===75)throw error;}
+    catch(error){if(process.platform!=='win32'||!['EPERM','EACCES','EBUSY'].includes(error.code)||wait===waits.at(-1))throw error;}
    }
   }catch(error){await rm(temp,{force:true}).catch(()=>{});throw error;}
- };
+ });
  const check=async(force=false)=>{
   if(checking)return checking;
   if(!operation&&state.phase!=='installed'&&(force||!lastCheck||now()-lastCheck>=60*60*1000))state={...state,phase:'checking',message:'正在检查 GitHub 正式版本…'};
@@ -80,7 +89,7 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
   }catch(error){if(error.code!=='ENOENT'&&!(error instanceof SyntaxError))state={...state,phase:'error',message:error.message};}
   const reading=operation;
   if(reading?.statusFile)try{
-   const result=JSON.parse(await readFile(reading.statusFile,'utf8'));
+   const result=await readStatusFile(reading.statusFile);
    if(operation===reading&&result.id===reading.id&&['downloading','installing','installed','error'].includes(result.phase)){
     state={...state,phase:result.phase,message:result.message};
     if(result.phase==='error'){await forget(operation.id);operation=null;}
@@ -124,7 +133,7 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
      const script=fileURLToPath(new URL('../windows/Install-BridgeUpdate.ps1',import.meta.url));
      const child=spawn(getPowerShell(),['-NoProfile','-ExecutionPolicy','Bypass','-File',script,'-RequestFile',requestFile],{windowsHide:true,detached:true,stdio:'ignore'});
      await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});
-     child.once('exit',code=>{void (async()=>{let result;try{result=JSON.parse(await readFile(statusFile,'utf8'));}catch{}if(!['installed','error'].includes(result?.phase))await saveResult(op,'error','更新执行器提前退出（'+code+'），请检查 PowerShell 和安装日志。');})().catch(()=>{});});child.unref();
+     child.once('exit',code=>{void (async()=>{let result;try{result=await readStatusFile(statusFile);}catch{}if(!['installed','error'].includes(result?.phase))await saveResult(op,'error','更新执行器提前退出（'+code+'），请检查 PowerShell 和安装日志。');})().catch(()=>{});});child.unref();
     }
    }catch(error){if(temp)await rm(temp,{force:true}).catch(()=>{});await forget(id).catch(()=>{});operation=null;state={...state,phase:'error',message:error.message};}
   })();

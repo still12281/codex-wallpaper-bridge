@@ -390,8 +390,8 @@
     },
     {
       "path": "src/bridge-update.mjs",
-      "utf8Bytes": 10933,
-      "sha256": "554104deac90eb4c44797f090d0d0d0aded4b14129e7613a35eae2bc2922eb85"
+      "utf8Bytes": 11285,
+      "sha256": "d04a588276949853fa66fedb589673b6d0247669d7840a973582b75cd5f05de2"
     },
     {
       "path": "src/browser-web-source.mjs",
@@ -815,8 +815,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 40857,
-      "sha256": "c799b85039fab11702873a702ffa9828202437ce048395114720d5b8e695aaf8"
+      "utf8Bytes": 41210,
+      "sha256": "0ce3c57552052b9d0d368c9cf2286caa1fd62b29b5ba41d5380b3f6ad0ad9d50"
     },
     {
       "path": "test/panel-entry-integration.mjs",

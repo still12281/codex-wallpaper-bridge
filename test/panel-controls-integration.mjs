@@ -97,10 +97,12 @@ try{
  await ui('const e=s.getElementById("cwb-author-choice");e.value="1";e.dispatchEvent(new Event("change"));return true');await waitFor(()=>ui('return !s.getElementById("import").disabled'));assert.equal(await c.evaluate('window.__requests.findLast(q=>q.action==="wallpaper-properties-save").values.choice'),'2');result.authorConditionalControlsAndTypedCombo=true;
  await ui('window.__staleAuthorInput=s.getElementById("cwb-author-enabled");window.__holdAuthor=true;window.__testConfig.selectedId="author-b";document.getElementById("codex-wallpaper-controls").__cwbRenderConfig(window.__testConfig);return true');assert.equal(await ui('return s.getElementById("cwb-author-fields").children.length'),0);const priorWrites=await c.evaluate('window.__requests.filter(q=>q.action==="wallpaper-properties-save").length');await c.evaluate('window.__staleAuthorInput.onchange();true');assert.equal(await c.evaluate('window.__requests.filter(q=>q.action==="wallpaper-properties-save").length'),priorWrites);await c.evaluate('window.__holdAuthor=false;window.__cwbReply(window.__heldAuthor.id,{ok:true,properties:window.__authorModel("author-b")});true');await waitFor(()=>ui('return !!s.getElementById("cwb-author-enabled")'));result.authorStaleSelectionCannotWrite=true;
  assert(await ui('return ["fxEnabled","fxClick","fxTrail","volume"].every(key=>{const input=s.getElementById("visual-"+key);return s.getElementById(input.getAttribute("aria-describedby"))?.textContent.length>0})'));
+ await c.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
  const paintFx=config=>c.evaluate('window.__cwbInstallFx='+adapters.fx+';('+decorateShell.toString()+')('+JSON.stringify(config)+');true');
  const fxBase={pauseOnBlur:false,visual:{fxEnabled:true,fxClick:true,fxTrail:true,fxBlend:'auto'}};
  const paintLight={...fxBase,selectedId:'fixture',library:[{id:'fixture',palette:{r:223,g:235,b:245,dark:false}}],palette:{r:20,g:22,b:28,dark:true}};
  await paintFx(paintLight);
+ assert(await c.evaluate('!!document.getElementById("we-fx-layer")'), 'The fixture did not activate pointer effects');
  const effects=await c.call('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`(async()=>{
   const move=(type,x,y)=>document.body.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'mouse',clientX:x,clientY:y}));
   const painted=async()=>{
@@ -115,6 +117,7 @@ try{
   move('pointermove',60,70);move('pointermove',140,70);move('pointermove',225,100);
   return {click,trail:await painted(),blend:document.getElementById('we-fx-layer').style.mixBlendMode};
  })()`});
+ if(effects.exceptionDetails)throw Error(effects.exceptionDetails.exception?.description||effects.exceptionDetails.text);
  assert.deepEqual(effects.result?.value,{click:true,trail:true,blend:'normal'});result.clickAndTrailPainted=true;
  assert.equal(await c.evaluate('document.body.style.getPropertyValue("--we-accent")'),'rgb(76,80,83)');
  await paintFx({...fxBase,palette:{r:18,g:42,b:89,dark:true}});
