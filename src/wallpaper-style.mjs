@@ -90,45 +90,68 @@ export function paintShell(config){
  // A transparent composer reveals wallpaper, never earlier turns. Clip only
  // transcript painting using native footer bounds; leave scrollport dimensions,
  // padding, scroll positions and the composer itself entirely native.
- if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==5)window.__cwbTranscriptPaint.dispose();
+ if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==6)window.__cwbTranscriptPaint.dispose();
  if(!window.__cwbTranscriptPaint){
   const marked=new Set(),codeMarked=new Set(),observed=new Set();let frame=0,disposed=false;
   const timelines=CSS.supports('animation-timeline','scroll(nearest y)');
   const clean=e=>{e.removeAttribute('data-cwb-transcript-content');for(const p of ['--cwb-transcript-clip','--cwb-transcript-start','--cwb-transcript-end'])e.style.removeProperty(p);marked.delete(e);};
   const cleanCode=e=>{e.removeAttribute('data-cwb-code-source');e.style.removeProperty('--cwb-code-clip-top');codeMarked.delete(e);};
-  const update=()=>{
-   if(disposed)return;const active=new Set(),activeCode=new Set(),watch=new Set();
+  const writePx=(element,property,pixels)=>{
+   const value=pixels+'px';
+   if(element.style.getPropertyValue(property)!==value)element.style.setProperty(property,value);
+  };
+  const update=event=>{
+   if(disposed)return;
+   const scrolling=event?.type==='scroll',transcripts=new Map(),codes=new Map(),watch=new Set();
    for(const scroll of document.querySelectorAll('[data-app-action-timeline-scroll]')){
     const sr=scroll.getBoundingClientRect();if(!sr.width||!sr.height)continue;
     const layout=scroll.closest('[data-request-input-activity-root]')||scroll.parentElement;
-    const footer=[...layout.querySelectorAll('[data-thread-scroll-footer]')].find(f=>{const r=f.getBoundingClientRect();return r.width&&r.height&&r.bottom>sr.top&&r.top<sr.bottom;});if(!footer)continue;
-    const edge=Math.max(sr.top,Math.min(sr.bottom,footer.getBoundingClientRect().top));watch.add(scroll);watch.add(footer);
+    let footerRect;
+    const footer=[...layout.querySelectorAll('[data-thread-scroll-footer]')].find(f=>{
+     footerRect=f.getBoundingClientRect();
+     return footerRect.width&&footerRect.height&&footerRect.bottom>sr.top&&footerRect.top<sr.bottom;
+    });
+    if(!footer)continue;
+    const edge=Math.max(sr.top,Math.min(sr.bottom,footerRect.top)),range=scroll.scrollHeight-scroll.clientHeight,top=scroll.scrollTop;
+    const mode=timelines&&range>0?'scroll':'';
+    watch.add(scroll);watch.add(footer);
     const contents=[...scroll.children];
     for(let i=0;i<contents.length;i++){const e=contents[i];
      if(e.matches('[data-thread-scroll-footer]'))continue;
      if(e.querySelector('[data-thread-scroll-footer]')){contents.push(...e.children);continue;}
-     const r=e.getBoundingClientRect(),range=scroll.scrollHeight-scroll.clientHeight,start=r.bottom-edge+scroll.scrollTop;
-     // A scroll timeline advances with native scrolling, without waiting for a
-     // JS scroll handler. Only layout/streaming changes need new endpoints.
-     e.setAttribute('data-cwb-transcript-content',timelines&&range>0?'scroll':'');e.style.setProperty('--cwb-transcript-clip',Math.max(0,r.bottom-edge)+'px');
-     e.style.setProperty('--cwb-transcript-start',start+'px');e.style.setProperty('--cwb-transcript-end',(start-range)+'px');marked.add(e);active.add(e);watch.add(e);
+     const bottom=e.getBoundingClientRect().bottom-edge,start=bottom+top;
+     transcripts.set(e,{mode,bottom,start,end:start-range});watch.add(e);
     }
    }
    if(window.__cwbTranscriptPaint?.codeEnabled!==false)for(const root of document.querySelectorAll('[data-code-block][data-markdown-copy="code-block"]')){
     const r=root.getBoundingClientRect();if(!r.width||!r.height||r.bottom<=0||r.top>=innerHeight)continue;
     const header=root.querySelector(':scope > [data-markdown-copy="exclude"]:has([data-code-block-controls])'),source=root.querySelector('[data-code-block-source]');if(!header||!source)continue;
     const h=header.getBoundingClientRect(),s=source.getBoundingClientRect();if(!h.height||!s.height)continue;
-    source.setAttribute('data-cwb-code-source','');source.style.setProperty('--cwb-code-clip-top',Math.max(0,Math.min(s.height,h.bottom-s.top))+'px');codeMarked.add(source);activeCode.add(source);for(const e of [root,header,source])watch.add(e);
+    codes.set(source,Math.max(0,Math.min(s.height,h.bottom-s.top)));for(const e of [root,header,source])watch.add(e);
    }
-   for(const e of [...marked])if(!active.has(e))clean(e);
-   for(const e of [...codeMarked])if(!activeCode.has(e))cleanCode(e);
+   // Finish geometry reads before changing clip styles. The scroll timeline
+   // already advances with scrolling; leave its fallback clip alone.
+   for(const [e,{mode,bottom,start,end}]of transcripts){
+    const previous=e.getAttribute('data-cwb-transcript-content');
+    if(previous!==mode)e.setAttribute('data-cwb-transcript-content',mode);
+    if(!mode||!scrolling||previous!==mode)writePx(e,'--cwb-transcript-clip',Math.max(0,bottom));
+    if(mode){writePx(e,'--cwb-transcript-start',start);writePx(e,'--cwb-transcript-end',end);}
+    marked.add(e);
+   }
+   for(const [e,clip]of codes){
+    if(!e.hasAttribute('data-cwb-code-source'))e.setAttribute('data-cwb-code-source','');
+    writePx(e,'--cwb-code-clip-top',clip);
+    codeMarked.add(e);
+   }
+   for(const e of marked)if(!transcripts.has(e))clean(e);
+   for(const e of codeMarked)if(!codes.has(e))cleanCode(e);
    for(const e of watch)if(!observed.has(e)){observed.add(e);resize.observe(e);}
    for(const e of [...observed])if(!watch.has(e)){resize.unobserve(e);observed.delete(e);}
   };
   const queue=()=>{if(!frame&&!disposed)frame=requestAnimationFrame(()=>{frame=0;update();});};
   const resize=new ResizeObserver(update),mutation=new MutationObserver(changes=>{if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&!n.closest?.('#codex-wallpaper-bridge-layer,#codex-wallpaper-controls'))))queue();});
   mutation.observe(document.body,{childList:true,subtree:true});document.addEventListener('scroll',update,{capture:true,passive:true});document.addEventListener('input',queue,true);document.addEventListener('focusin',queue,true);document.addEventListener('click',queue,true);window.addEventListener('resize',queue);
-  window.__cwbTranscriptPaint={version:5,codeEnabled:sync.code,refresh:update,dispose(){disposed=true;cancelAnimationFrame(frame);resize.disconnect();mutation.disconnect();document.removeEventListener('scroll',update,true);document.removeEventListener('input',queue,true);document.removeEventListener('focusin',queue,true);document.removeEventListener('click',queue,true);window.removeEventListener('resize',queue);for(const e of [...marked])clean(e);for(const e of [...codeMarked])cleanCode(e);delete window.__cwbTranscriptPaint;}};update();
+  window.__cwbTranscriptPaint={version:6,codeEnabled:sync.code,refresh:update,dispose(){disposed=true;cancelAnimationFrame(frame);resize.disconnect();mutation.disconnect();document.removeEventListener('scroll',update,true);document.removeEventListener('input',queue,true);document.removeEventListener('focusin',queue,true);document.removeEventListener('click',queue,true);window.removeEventListener('resize',queue);for(const e of marked)clean(e);for(const e of codeMarked)cleanCode(e);delete window.__cwbTranscriptPaint;}};update();
  }else{window.__cwbTranscriptPaint.codeEnabled=sync.code;window.__cwbTranscriptPaint.refresh();}
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
  window.__cwbDecorate?.(config);

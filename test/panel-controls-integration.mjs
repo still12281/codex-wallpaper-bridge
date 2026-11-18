@@ -86,7 +86,26 @@ try{
  await ui('const e=s.getElementById("cwb-author-enabled");e.checked=true;e.dispatchEvent(new Event("change"));return true');await waitFor(()=>ui('return !!s.getElementById("cwb-author-gain")&&!s.getElementById("cwb-author-gain").disabled'));
  await ui('const e=s.getElementById("cwb-author-choice");e.value="1";e.dispatchEvent(new Event("change"));return true');await waitFor(()=>ui('return !s.getElementById("import").disabled'));assert.equal(await c.evaluate('window.__requests.findLast(q=>q.action==="wallpaper-properties-save").values.choice'),'2');result.authorConditionalControlsAndTypedCombo=true;
  await ui('window.__staleAuthorInput=s.getElementById("cwb-author-enabled");window.__holdAuthor=true;window.__testConfig.selectedId="author-b";document.getElementById("codex-wallpaper-controls").__cwbRenderConfig(window.__testConfig);return true');assert.equal(await ui('return s.getElementById("cwb-author-fields").children.length'),0);const priorWrites=await c.evaluate('window.__requests.filter(q=>q.action==="wallpaper-properties-save").length');await c.evaluate('window.__staleAuthorInput.onchange();true');assert.equal(await c.evaluate('window.__requests.filter(q=>q.action==="wallpaper-properties-save").length'),priorWrites);await c.evaluate('window.__holdAuthor=false;window.__cwbReply(window.__heldAuthor.id,{ok:true,properties:window.__authorModel("author-b")});true');await waitFor(()=>ui('return !!s.getElementById("cwb-author-enabled")'));result.authorStaleSelectionCannotWrite=true;
- await c.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});assert.equal(await ui('return getComputedStyle(s.getElementById("engine-import")).transitionDuration'),'0s');result.reducedMotion=true;result.passed=true;
+ assert(await ui('return ["fxEnabled","fxClick","fxTrail","volume"].every(key=>{const input=s.getElementById("visual-"+key);return s.getElementById(input.getAttribute("aria-describedby"))?.textContent.length>0})'));
+ await c.evaluate('window.__cwbInstallFx='+adapters.fx+';('+decorateShell.toString()+')({pauseOnBlur:false,visual:{fxEnabled:true,fxClick:true,fxTrail:true}});true');
+ const effects=await c.call('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`(async()=>{
+  const move=(type,x,y)=>document.body.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'mouse',clientX:x,clientY:y}));
+  const painted=async()=>{
+   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+   const canvas=document.querySelector('#we-fx-layer canvas');
+   const rgba=canvas.getContext('2d').getImageData(0,0,Math.min(300,canvas.width),Math.min(240,canvas.height)).data;
+   for(let i=3;i<rgba.length;i+=4)if(rgba[i])return true;
+   return false;
+  };
+  move('pointerdown',120,100);const click=await painted();
+  await new Promise(resolve=>setTimeout(resolve,650));
+  move('pointermove',60,70);move('pointermove',140,70);move('pointermove',225,100);
+  return {click,trail:await painted()};
+ })()`});
+ assert.deepEqual(effects.result?.value,{click:true,trail:true});result.clickAndTrailPainted=true;
+ await c.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});assert.equal(await ui('return getComputedStyle(s.getElementById("engine-import")).transitionDuration'),'0s');
+ await c.call('Runtime.evaluate',{awaitPromise:true,expression:'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))'});
+ assert.equal(await c.evaluate('!!document.getElementById("we-fx-layer")'),false);result.reducedMotion=true;result.passed=true;
  result.passed=false;
  await c.evaluate('window.__fixtureItems[2].location="E:/Projects/Example/";window.__testConfig.library.push({id:"imported-0-video",workshopId:"0",name:"Saved video"},{id:"imported-0-gpu",workshopId:"0",mode:"webwallgl",name:"Saved GPU"},{id:"imported-1",sourceKey:"1",name:"Saved source"},{id:"imported-2",projectRoot:"e:\\\\projects\\\\example",name:"Saved project"});document.getElementById("codex-wallpaper-controls").__cwbRenderConfig(window.__testConfig);true');
  await ui('s.getElementById("cwb-type").value="all";s.getElementById("cwb-rating").value="all";s.getElementById("cwb-hidden").value="visible";s.getElementById("engine-search").value="";s.getElementById("cwb-imported").value="imported";s.getElementById("cwb-imported").dispatchEvent(new Event("change"));return true');

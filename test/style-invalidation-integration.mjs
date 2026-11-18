@@ -25,7 +25,12 @@ const chrome=spawn(process.env.CODEX_WALLPAPER_TEST_CHROME||'C:/Program Files/Go
 const pause=ms=>new Promise(r=>setTimeout(r,ms));let page,browser,started=false;
 try{
  for(let n=0;n<100&&!page;n++){try{const ts=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();const t=ts.find(t=>t.url===url);if(t)page=await connectCdp(t.webSocketDebuggerUrl)}catch{}if(!page)await pause(30)}assert(page,'Chromium did not start');
- for(let n=0;n<100;n++){if(await page.evaluate('document.readyState==="complete"'))break;await pause(30)}
+ let ready=false;
+ for(let n=0;n<100&&!ready;n++){
+  ready=await page.evaluate('document.readyState==="complete"&&!!document.getElementById("menu-inner")');
+  if(!ready)await pause(30);
+ }
+ assert(ready,'Fixture document did not finish loading');
  await page.evaluate('window.__codexWallpaperBridge={ready:true};('+paintShell.toString()+')('+JSON.stringify({palette:{r:239,g:240,b:245,dark:false},visual:{glassOpacity:.5,glassBlur:0},darkOverlay:.4,lightOverlay:.4})+');true');
  // Token attribute selectors observe every class-attribute mutation in :has()
  // dependency chains. Keep that proven hazard out of generated shell rules.

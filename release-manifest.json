@@ -435,8 +435,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 41893,
-      "sha256": "66b3c41e99284fb5f63eaebf7d2f047310ab8c46317cf3680fa2f2ddb3af7524"
+      "utf8Bytes": 42330,
+      "sha256": "f896e76096c89f5b73b3efa6354bf13730c3c0e43ab7fa178a3624912fd7003b"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -570,8 +570,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 23401,
-      "sha256": "561f648b5b0067be311fee3608ea8057b6465363e67442f8ae7e0c0cf6af299c"
+      "utf8Bytes": 23945,
+      "sha256": "0e1a858c3778ce2a24daa65ed49847af923037366bed9f161380f80ca1da7309"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -800,8 +800,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 36734,
-      "sha256": "97a6fd6d884fd87a64029f161347c3da3c9e72eea6fac9252608ab82826a6f48"
+      "utf8Bytes": 38314,
+      "sha256": "83355b6ce8026fa7c5f519f48b7a44820f824460d48b65e417db8d1ab7fd9946"
     },
     {
       "path": "test/panel-entry-integration.mjs",
@@ -895,8 +895,8 @@
     },
     {
       "path": "test/style-invalidation-integration.mjs",
-      "utf8Bytes": 6637,
-      "sha256": "8a173f145a611f9b03eedef8a400896429a0775969e65ebfdd72a0b810f28264"
+      "utf8Bytes": 6778,
+      "sha256": "40058e75eff35d2a8a49a68eb79136c9bed41a74f0cf97044867ec3a7c79f2e8"
     },
     {
       "path": "test/surfaces.test.mjs",
@@ -915,8 +915,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 28942,
-      "sha256": "72ba408f6de8f6ccefc67f54ac0cc39af084bb90e02847a184b777cf15030073"
+      "utf8Bytes": 29877,
+      "sha256": "803a8813c8e4a5802ee110ef6ddc7a28c2c6f9a03f25e35a9ef724c32d83b2d5"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",

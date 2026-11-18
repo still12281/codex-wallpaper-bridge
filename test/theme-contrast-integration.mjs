@@ -162,6 +162,21 @@ try{
  await c.evaluate('document.getElementById("stream").firstChild.data+="More\\n".repeat(10);true');
  await c.call('Runtime.evaluate',{expression:'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))',awaitPromise:true});
  const grown=await c.evaluate('({clip:parseFloat(document.getElementById("stream").style.getPropertyValue("--cwb-transcript-clip")),top:document.querySelector("[data-app-action-timeline-scroll]").scrollTop})');assert(grown.clip>=clipBefore+199);assert.equal(grown.top,0);
+ // A scroll should advance the native timeline without rewriting fixed clip
+ // endpoints or the fallback value. Streaming still requires a geometry pass.
+ const scrollStyleWrites=await c.evaluate(`(()=>{
+  const scroll=document.querySelector('[data-app-action-timeline-scroll]'),stream=document.getElementById('stream');
+  const style=stream.style,original=style.setProperty;
+  const fallback=style.getPropertyValue('--cwb-transcript-clip');
+  const writes=[];
+  style.setProperty=function(property,...args){if(property.startsWith('--cwb-transcript-'))writes.push(property);return original.call(this,property,...args);};
+  try{
+   scroll.scrollTop=80;
+   scroll.dispatchEvent(new Event('scroll'));
+   return {writes,fallbackUnchanged:fallback===style.getPropertyValue('--cwb-transcript-clip')};
+  }finally{delete style.setProperty;scroll.scrollTop=0}
+ })()`);
+ assert.deepEqual(scrollStyleWrites,{writes:[],fallbackUnchanged:true});
  // Disable the JS scroll callback: native wheel scrolling must still move the
  // clip boundary with the transcript, including when scrolling back upward.
  await c.evaluate('document.removeEventListener("scroll",window.__cwbTranscriptPaint.refresh,true);true');
