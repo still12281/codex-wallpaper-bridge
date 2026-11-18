@@ -300,11 +300,15 @@ async function tick(){
    await syncStartup(c);
    // Background/layout/panel adapters all observe later shell additions. Mount
    // as soon as the app document exists instead of waiting for React's sidebar.
-   const page=await c.evaluate('({body:!!document.body&&!!document.head,shell:!!document.querySelector("aside.app-shell-left-panel")&&!!document.querySelector("main[data-app-shell-main-surface],main[class*=\\"_MainContentSurface_\\"],main.main-surface")})');
+   const page=await c.evaluate('(()=>{const shell=!!document.querySelector("aside.app-shell-left-panel")&&!!document.querySelector("main[data-app-shell-main-surface],main[class*=\\"_MainContentSurface_\\"],main.main-surface");return {body:!!document.body&&!!document.head,shell,visibleGeometry:shell&&!document.hidden?{x:screenX,y:screenY,width:outerWidth,height:outerHeight,dpr:devicePixelRatio}:null};})()');
    if(!page.body)continue;
    const tree=await c.call('Page.getFrameTree');
    if(tree.frameTree.frame.url!==target.url)continue;
    if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.captureBlocked=false;c.failed=false;c.retryAt=0;c.failures=0;c.mediaActivity=null;c.needsTaskbar=true;c.mainBindingPending=true;c.shellObserved=false;c.readyObserved=false;startupEvent('page-ready',target.id);await c.call('Runtime.addBinding',{name:'__cwbMediaActivitySend'});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});}
+   if(c.mainBindingPending&&c.needsTaskbar&&target.url===appUrl&&page.visibleGeometry){
+    c.needsTaskbar=false;
+    scheduleTaskbar({targetId:target.id,loaderId:c.loaderId,geometry:page.visibleGeometry});
+   }
    if(page.shell&&!c.shellObserved){c.shellObserved=true;startupEvent('shell-ready',target.id);if(c.installed)await c.evaluate('window.__cwbApplyWidgets?.('+JSON.stringify(displaySettings(settings))+');window.__cwbPanelHost?.__cwbPlace?.();true');}
    if(c.retryAt&&Date.now()<c.retryAt){Object.assign(targetState,{phase:'background-retrying',error:c.lastError,retryAt:new Date(c.retryAt).toISOString()});continue;}
    try{
@@ -322,7 +326,7 @@ async function tick(){
     if(targetReady(targetState)&&target.url===appUrl&&status.startup.mainReadyMs===null){status.startup.mainReadyMs=performance.now()-startupClock;startupEvent('main-wallpaper-ready',target.id);}
     // Publish the primary first frame before optional windows or integrations.
     await publishTargets(observations);
-    if(targetReady(targetState)&&c.mainBindingPending&&page.shell&&target.url===appUrl&&observed.hidden===false){c.needsTaskbar=false;scheduleTaskbar({targetId:target.id,loaderId:c.loaderId,geometry:observed.windowGeometry});}
+    if(targetReady(targetState)&&c.mainBindingPending&&!taskbarRunning&&page.shell&&target.url===appUrl&&observed.hidden===false){c.needsTaskbar=false;scheduleTaskbar({targetId:target.id,loaderId:c.loaderId,geometry:observed.windowGeometry});}
     else if(targetReady(targetState)&&c.needsTaskbar){c.needsTaskbar=false;scheduleTaskbar();}
     await reportMedia(c);
     if(observed.width&&observed.height){

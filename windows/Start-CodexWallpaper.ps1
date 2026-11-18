@@ -309,15 +309,21 @@ try {
         $taskReadyChoice=Select-WallpaperReadyTargets -Targets @($taskRuntimeState.targets) -MainTarget $taskStatus.mainTargetId
         $taskReadyTargets=@($taskReadyChoice.targets)
         $taskStatus.mainTargetDeferred=$taskReadyChoice.mainDeferred
-        if($taskGoodPhase -and $taskReadyTargets.Count -gt 0 -and $taskRuntimeState.pid -eq $taskStatus.hostPid -and $taskRuntimeState.browserId -eq $taskIdentity.BrowserId -and $taskFresh){$taskRendered=$true;$taskStatus.readyTargetId=$taskReadyTargets[0].targetId;$taskStatus.readyTargetUrl=$taskReadyTargets[0].url;break}
+        if($taskGoodPhase -and $taskReadyTargets.Count -gt 0 -and $taskRuntimeState.pid -eq $taskStatus.hostPid -and $taskRuntimeState.browserId -eq $taskIdentity.BrowserId -and $taskFresh){
+          $taskRendered=$true
+          $taskStatus.readyTargetId=$taskReadyTargets[0].targetId
+          $taskStatus.readyTargetUrl=$taskReadyTargets[0].url
+          $taskStatus.firstFrameObservedMs=[math]::Round($taskPhaseClock.Elapsed.TotalMilliseconds,1)
+          break
+        }
       }catch{}
     }
     Start-Sleep -Milliseconds 500
   }while([DateTimeOffset]::UtcNow -lt $taskDeadline)
   if($taskRendered -and -not $taskReuseExisting){
     try{
-      $taskHintResult=& $taskNode (Join-Path $taskCodeRoot 'src/activate-client.mjs') --cdp-port $taskPort --browser-id $taskIdentity.BrowserId --no-wait
-      if($LASTEXITCODE -eq 0){$taskHint=$taskHintResult|ConvertFrom-Json;$taskStatus.mainWindowHint=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -BrowserId $taskIdentity.BrowserId -MainTarget $taskHint.mainTarget -GeometryJson ($taskHint.geometry|ConvertTo-Json -Compress) -RememberOnly}
+      $taskHint=@($taskReadyTargets | Where-Object {$_.url -ceq 'app://-/index.html' -and $_.hidden -eq $false -and $_.windowGeometry})
+      if($taskHint.Count -eq 1){$taskStatus.mainWindowHint=& (Join-Path $PSScriptRoot 'Activate-ClientWindow.ps1') -Root $taskRoot -ClientId $taskStatus.debugRootPid -StartedAt $taskStatus.rootStartedAtUtc -Executable $taskStatus.rootExecutable -BrowserId $taskIdentity.BrowserId -MainTarget $taskHint[0].targetId -GeometryJson ($taskHint[0].windowGeometry|ConvertTo-Json -Compress) -RememberOnly}
     }catch{$taskStatus.mainWindowHintError=$_.Exception.Message}
   }
   Save-TaskPhase $(if($taskRendered){'background-rendered'}else{'cdp-ready-background-not-yet-rendered'})

@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 24686,
-      "sha256": "5d0581be36b0788be7e05da5dff48e12aa9df58ba9ff12b197b0ae8fe6596622"
+      "utf8Bytes": 24935,
+      "sha256": "a0a406e9fcd961527222ffc67e909147c4022a570f16dc473f6260c1162b809a"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -204,8 +204,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 7774,
-      "sha256": "0165ab74cb876d6ad8beaa12f833676057ddfeb3fb963082d8793f96c2063128"
+      "utf8Bytes": 7571,
+      "sha256": "df92060c451949475c61b9c35ee8ceed5d6e84b6c08e1d2e07b8740c120da02d"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -375,8 +375,8 @@
     },
     {
       "path": "src/activate-client.mjs",
-      "utf8Bytes": 2719,
-      "sha256": "ea3ac0335a30e5dfa1f05f0b47adee5004a5842574f493c5f43e77fa5ed3397c"
+      "utf8Bytes": 3435,
+      "sha256": "97745d2928aba0a4790fa1c6512a99d35dc2f90ed15b07408dcb95e0f0932191"
     },
     {
       "path": "src/appearance-model.mjs",
@@ -535,8 +535,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 48423,
-      "sha256": "8cbc7c52396d60749d7aa8349af25e8c98ce9065e0ea7c1d63de034f91eddcaf"
+      "utf8Bytes": 48804,
+      "sha256": "7619b83614248e5028ea5a0565122ac88587c1c007d50c91bbdb2dadc86ad2c2"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -595,8 +595,8 @@
     },
     {
       "path": "test/activate-client.test.mjs",
-      "utf8Bytes": 3736,
-      "sha256": "7e099f1778db9230efa53b7f2a7cd1b0328fecf89758fa26c8c98fb480f455db"
+      "utf8Bytes": 4491,
+      "sha256": "346d9fa2cf7c7af71ee11a1b413d011ce145576cfed3e14cbf4473656d9fbc65"
     },
     {
       "path": "test/appearance.test.mjs",
@@ -682,6 +682,11 @@
       "path": "test/entry-queue.ps1",
       "utf8Bytes": 3576,
       "sha256": "c6c5599de64a27dd9731c2ba0e9958b5d5266c570836f2ad81bb1cd1480a1c14"
+    },
+    {
+      "path": "test/entry-window-dispatch.ps1",
+      "utf8Bytes": 6182,
+      "sha256": "a3ee50811f238ba23da3f31c853a05c8ba6802fefa53298d06913d5af50cf30a"
     },
     {
       "path": "test/fixtures/socket-inheritance.cs",
@@ -1120,8 +1125,8 @@
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 16719,
-      "sha256": "2e8cd35d70b19332c64a45114a396eb7b4b187d93fe29a888b3013030b4ffcb0"
+      "utf8Bytes": 17960,
+      "sha256": "020df40dfce2b98a64088e264de1fa4be9e96b454a32871000f7bf5ad0994669"
     },
     {
       "path": "windows/FastTcp.ps1",
@@ -1215,8 +1220,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 25739,
-      "sha256": "a687dbf78ad9300052d8d6ecb23a44b46e9162d4bec1caafb017aafe6cee6c71"
+      "utf8Bytes": 25842,
+      "sha256": "b1da39fe2fe4394975845830c62bda9595a56e377f575a1b885d8e3409ef826e"
     },
     {
       "path": "windows/Start-ExternalApp.ps1",
