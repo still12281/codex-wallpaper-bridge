@@ -10,7 +10,16 @@ const temp=await mkdtemp(path.join(os.tmpdir(),'cwb-panel-controls-')),html=path
 const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));const url=pathToFileURL(html).href;
 const browser=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--disable-background-networking','--remote-debugging-port='+port,'--user-data-dir='+path.join(temp,'profile'),url],{windowsHide:true,stdio:'ignore'}),sleep=ms=>new Promise(r=>setTimeout(r,ms));let c;const result={kind:'isolated-panel-control-wiring-not-native-rendering'};
 try{
- for(let i=0;i<80;i++){try{const t=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url);if(t){c=await connectCdp(t.webSocketDebuggerUrl);break;}}catch{}await sleep(100);}assert(c);const config=defaultSettings();config.library=[{id:'fixture',name:'Fixture',mode:'webwallgl',limits:{maxWidth:1280,fps:30}}];config.selectedId='fixture';config.systemMedia={enabled:false,audio:true,audioFps:30};config.palette={r:240,g:241,b:243,dark:false};
+ for(let i=0;i<80;i++){try{const t=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url);if(t){c=await connectCdp(t.webSocketDebuggerUrl);break;}}catch{}await sleep(100);}
+ assert(c,'Chromium did not open the panel fixture');
+ // The debugging target can advertise the file URL before the page commits.
+ let ready=false;
+ for(let i=0;i<80&&!ready;i++){
+  ready=await c.evaluate('location.href==='+JSON.stringify(url)+'&&document.readyState==="complete"&&!!document.querySelector("header [role=menubar]")');
+  if(!ready)await sleep(50);
+ }
+ assert(ready,'Panel fixture document did not finish loading');
+ const config=defaultSettings();config.library=[{id:'fixture',name:'Fixture',mode:'webwallgl',limits:{maxWidth:1280,fps:30}}];config.selectedId='fixture';config.systemMedia={enabled:false,audio:true,audioFps:30};config.palette={r:240,g:241,b:243,dark:false};
  await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__cwbInstallFeatures='+installFeaturePanel.toString()+';window.__testConfig='+JSON.stringify(config)+';window.__requests=[];window.__codexWallpaperSend=raw=>{const q=JSON.parse(raw);window.__requests.push(q);if(q.action==="system-media-config")window.__testConfig.systemMedia={enabled:q.enabled,audio:q.audio,audioFps:q.audioFps};if(q.action==="display-tier")window.__testConfig.library[0].displayTier=q.tier;queueMicrotask(()=>window.__cwbReply(q.id,{ok:true,config:window.__testConfig,preview:null}));};('+installPanel.toString()+')(window.__testConfig,"test-token");true');
  const ui=s=>c.evaluate('(()=>{const s=document.getElementById("codex-wallpaper-controls").shadowRoot;'+s+'})()');
  assert.equal(await ui('return s.getElementById("visual-fxEnabled").checked'),false);

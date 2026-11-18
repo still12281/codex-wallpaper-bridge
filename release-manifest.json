@@ -815,8 +815,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 40434,
-      "sha256": "cad7d5c4fb22dc8f155e4bb2db072bb657fa2f3fdee7205dd229d801193f244b"
+      "utf8Bytes": 40857,
+      "sha256": "c799b85039fab11702873a702ffa9828202437ce048395114720d5b8e695aaf8"
     },
     {
       "path": "test/panel-entry-integration.mjs",
