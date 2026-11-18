@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 25372,
-      "sha256": "eceece484cabfd4624f5d268f3ffafbf0131f135463b141bb81d1f4b683a0c75"
+      "utf8Bytes": 25487,
+      "sha256": "7d3b2c48201e8a3d012bf1b3c56c01a33ae685d665b43c7f1be34f8f8c0c91b1"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 14873,
-      "sha256": "a4583021a0ecf70a7355698a9ad2e639b90e03608ec8274b1fd5e09b4106b55d"
+      "utf8Bytes": 14845,
+      "sha256": "42fce3d42c5d1c5b2a2d6dabed192aa81f1dc5698c18a0a33254e8eb159e8574"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 17051,
-      "sha256": "2d0361d006142998b0928faaddc0f2b86fe7025eab66f67dc3742a2f04ae9717"
+      "utf8Bytes": 16959,
+      "sha256": "f26ff0b35b46435e253e9bb3e505374e358d36533a81554c10e8e57eb78b7a57"
     },
     {
       "path": "README.zh-CN.md",
@@ -74,8 +74,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "utf8Bytes": 5544,
-      "sha256": "429bbe4dec080bce154ca5c34826abd46b7d2eb3fcac9a0e895776aa555c8d51"
+      "utf8Bytes": 5366,
+      "sha256": "cfb689eb92b474e0c1c537ce2e6b47a43812d1a39c61d2b59a474b08d01ec64c"
     },
     {
       "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 17929,
-      "sha256": "fb8f682510f67beede705ec09896b179c8e0b7b62fa49d04b981a745f5aa7bf4"
+      "utf8Bytes": 17572,
+      "sha256": "3819b4ace8438c6d4d8a46da4eb4306e9b9d85eb8637e6154c1dbce599acb7ef"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -194,8 +194,8 @@
     },
     {
       "path": "docs/RELEASING.zh-CN.md",
-      "utf8Bytes": 2751,
-      "sha256": "75d12b3e0ca361150c87d41f27ea30dfef09f269b2287c225840d4ec7bf85ed5"
+      "utf8Bytes": 3491,
+      "sha256": "02f3ef9e00d6c32193e4d0f1d177d6a1249e9b0d824f3943d5b789fc780d9fec"
     },
     {
       "path": "docs/SCREENSHOTS.zh-CN.md",
@@ -239,8 +239,8 @@
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
-      "utf8Bytes": 10373,
-      "sha256": "19afad51df93eaa3102e9dcee2d92ca569a150b29c4de8bf556057e2d7275716"
+      "utf8Bytes": 2289,
+      "sha256": "0679b8aa298be3f06b2f3d16c1e98330e710347bdf3285c8c34b9a539a944bc0"
     },
     {
       "path": "docs/TASKBAR-REOPEN-20261028.zh-CN.md",
@@ -361,7 +361,7 @@
     {
       "path": "package.json",
       "utf8Bytes": 1006,
-      "sha256": "0c5a4e47a2118f6d0f5eed616c59007f4174ebcbf75d669eca7b12007e03ee0e"
+      "sha256": "0caa7d98ae554932c3aba0eb14d12c7e028f5548da61086ba8795c72fb751266"
     },
     {
       "path": "progress.md",
@@ -435,8 +435,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 42330,
-      "sha256": "f896e76096c89f5b73b3efa6354bf13730c3c0e43ab7fa178a3624912fd7003b"
+      "utf8Bytes": 41957,
+      "sha256": "690c5bf04b3457eb9028f827ec568460101ce869409ea360a3c607343a4d9694"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -470,8 +470,8 @@
     },
     {
       "path": "src/media-power.mjs",
-      "utf8Bytes": 6067,
-      "sha256": "827d6526c6e3104358f2ba3553a99ed034dee35c81204cfb68371b58068e1216"
+      "utf8Bytes": 6250,
+      "sha256": "20cb5b83e65501036baa7dd035d02c2d77da031691449f5e769c9cc615a90f93"
     },
     {
       "path": "src/media-preflight.mjs",
@@ -530,8 +530,8 @@
     },
     {
       "path": "src/system-media.mjs",
-      "utf8Bytes": 8031,
-      "sha256": "40f6180968e3ec933117954a29ad777510ca14e7eec098ca28a86ea4dc04a8cf"
+      "utf8Bytes": 8594,
+      "sha256": "3e51d0d82971f5b50adbb6de4b10183a968a4af2bddcefe98f6a9d8760489ad8"
     },
     {
       "path": "src/upstream-adapters.mjs",
@@ -540,8 +540,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 53203,
-      "sha256": "7e6b3272e26029bd13466bb91cc2a2a4ad5d45abb788c4e46134dec95cb9ad0d"
+      "utf8Bytes": 53360,
+      "sha256": "ce46b124ba776e60ff2c2ce19bd01e35180acf87837ed86ca718bc334b3f6130"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -580,13 +580,13 @@
     },
     {
       "path": "src/webwallgl-player.mjs",
-      "utf8Bytes": 22219,
-      "sha256": "75c4c40960a26f1d522379af500de197ef6cfd1bcda05d2fd91aa7790aec559f"
+      "utf8Bytes": 25041,
+      "sha256": "b2a5c76d66f9f40a5cf2a06eeaa36b98ef02d7c658f35740b8f4b0bcaa1ee44b"
     },
     {
       "path": "src/webwallgl-runtime.mjs",
-      "utf8Bytes": 625,
-      "sha256": "e0323977ee100a95b16014b7664502bf8469624097e772f60370b90e806a329b"
+      "utf8Bytes": 1830,
+      "sha256": "68790bfb7f875f17cc6f272c4f11b5289caeebad45c2c64a9d21687912ac8e71"
     },
     {
       "path": "src/webwallgl-source.mjs",
@@ -790,8 +790,8 @@
     },
     {
       "path": "test/media-power.test.mjs",
-      "utf8Bytes": 9446,
-      "sha256": "f1544c1f27b11720ded64a7b14a2e1a7ae063a4ba64c8fa9691ae098996ca850"
+      "utf8Bytes": 9755,
+      "sha256": "239eb6a90b4106932f8095dedfae35d8553e1d885e8d0a161ecd230be8a6c0b5"
     },
     {
       "path": "test/media-preparation.test.mjs",
@@ -990,13 +990,18 @@
     },
     {
       "path": "tools/media-bridge-sample-clock.patch",
-      "utf8Bytes": 9509,
-      "sha256": "635cf03e363e4ef7abb38f2c447930ac084babd0ef572b62f661a0f6b7ff2d5d"
+      "utf8Bytes": 16041,
+      "sha256": "6c62c4bf3e5e47db1edb77ce985a07b84a6f04fbd056c775d27ba9838afca5f5"
+    },
+    {
+      "path": "tools/media-bridge.LICENSE",
+      "utf8Bytes": 1066,
+      "sha256": "7bf651e014f0bae51a3380f218f7633c34fe4cad2b84cee0fddd1d3f551c2ab8"
     },
     {
       "path": "tools/prepare-media-bridge.mjs",
-      "utf8Bytes": 4321,
-      "sha256": "964b99cf2e2125635b24fc6968ef14540453c6a7eac3eeeff99da0364d5fadf2"
+      "utf8Bytes": 1844,
+      "sha256": "e81f5ee4abef505760dbd553e897dd6acf5366728494b07d081a9768d100514d"
     },
     {
       "path": "tools/prepare-webwallgl.mjs",
@@ -1160,8 +1165,8 @@
     },
     {
       "path": "windows/Install-Wallpaper.ps1",
-      "utf8Bytes": 9678,
-      "sha256": "5fa58ee20739fb8b9463278ef9e08ac6f88576fd45705f6a274c39f512c17242"
+      "utf8Bytes": 9978,
+      "sha256": "3175e76ea7c61cc5498f02183e07fb244e4c23b043f0797ba4f984a6f91578f4"
     },
     {
       "path": "windows/InstallSupport.ps1",

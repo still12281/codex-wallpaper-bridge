@@ -4,8 +4,7 @@ import {access} from 'node:fs/promises';
 export const AUDIO_FPS_OPTIONS=[10,20,30,60,90,120];
 export const normalizeAudioFps=value=>AUDIO_FPS_OPTIONS.includes(Number(value))?Number(value):30;
 export const spectrumInterval=value=>Math.round(1000/normalizeAudioFps(value));
-export const standardMediaDirectory='media-bridge-0.1.5';
-export const highRateMediaDirectory='media-bridge-0.1.5-sample-clock';
+export const stereoMediaDirectory='media-bridge-0.1.5-stereo';
 export function wallpaperMedia(snapshot){
  const now=snapshot.error?{}:snapshot.now||{},playback=now.playback||{},track=now.track||{},source=!snapshot.error&&snapshot.status?.sources?.find(s=>s.name==='audio'),audio=source?.state==='running'&&Number.isFinite(snapshot.spectrumReceivedAt)&&Date.now()-snapshot.spectrumReceivedAt<1000;
  return {sourceId:String(track.source?.appId||'').slice(0,200),sourceName:String(track.source?.appName||track.source?.appId||'').slice(0,200),hasMedia:now.hasMedia===true,title:String(track.title||'').slice(0,200),artist:String(track.artist||'').slice(0,200),album:String(track.album||'').slice(0,200),state:playback.state==='playing'?1:playback.state==='paused'?2:0,position:(playback.positionMs||0)/1000,duration:(playback.durationMs||track.durationMs||0)/1000,audioAvailable:audio,audioReason:source?.state==='running'&&!audio?'频谱未到达或已停止更新':null,bands:audio&&Array.isArray(snapshot.bands)?snapshot.bands.slice(0,64).map(n=>Math.max(0,Math.min(255,Number(n)||0))):Array(64).fill(0),capabilities:now.capabilities||{},sources:snapshot.status?.sources||[],error:snapshot.error||null};
@@ -24,28 +23,36 @@ export async function controlSystemMedia(state,request,poll,action,{sourceId=sta
 export async function startSystemMedia(root,{audio=false,audioFps=30,onSpectrum}={}){
  if(process.platform!=='win32')throw Error('系统媒体适配目前只验收 Windows');
  const requested=normalizeAudioFps(audioFps),override=process.env.CODEX_WALLPAPER_MEDIA_BRIDGE;
- let highRateFile=null;
- if(audio&&requested>60&&!override){
-  for(const directory of [highRateMediaDirectory,'media-bridge-0.1.5-high-rate']){
-   const candidate=path.join(root,'engines',directory,'media-bridge.exe');
-   if(await access(candidate).then(()=>true,()=>false)){highRateFile=candidate;break;}
-  }
- }
- const file=override||highRateFile||path.join(root,'engines',standardMediaDirectory,'media-bridge.exe');
+ const file=override||path.join(root,'engines',stereoMediaDirectory,'media-bridge.exe');
  try{await access(file);}catch{throw Error('系统媒体组件未准备，请先运行 npm run prepare:media');}
- const configured=override||highRateFile?requested:Math.min(60,requested);
+ const configured=requested;
  const child=spawn(file,['serve','--no-online','--cache-dir',path.join(root,'system-media-cache'),...(audio?['--fps',String(configured)]:['--no-audio'])],{windowsHide:true,stdio:['pipe','pipe','pipe']});
  child.stdout.setEncoding('utf8');child.stderr.setEncoding('utf8');
- const pending=new Map(),state={pid:child.pid,audioEnabled:audio,audioFps:audio?configured:0,status:null,now:null,bands:null,error:null,spectrumFrames:0,spectrumDetails:null};let sequence=0,buffer='',closed=false,polling=false,stderr='';
+ const pending=new Map(),state={pid:child.pid,audioEnabled:audio,audioFps:audio?configured:0,status:null,now:null,bands:null,error:null,spectrumFrames:0,spectrumDetails:null,sampleGaps:0,queueDrops:0,maxQueued:0};let sequence=0,buffer='',closed=false,polling=false,stderr='';
  const spectrumQueue=[];
  const request=(method,params={})=>new Promise((resolve,reject)=>{if(closed)return reject(Error('系统媒体组件已关闭'));const id=++sequence,timer=setTimeout(()=>{pending.delete(id);reject(Error('系统媒体请求超时：'+method));},8000);pending.set(id,{resolve,reject,timer});child.stdin.write(JSON.stringify({id,method,params})+'\n',error=>{if(error){clearTimeout(timer);pending.delete(id);reject(error);}});});
  child.stdout.on('data',chunk=>{
   buffer+=chunk;if(buffer.length>1024*1024){state.error='系统媒体返回超限';child.kill();return;}
-  let index,hasNewHighRateFrame=false;
+  let index,hasNewFrames=false;
   while((index=buffer.indexOf('\n'))>=0){
    const line=buffer.slice(0,index);buffer=buffer.slice(index+1);let message;
    try{message=JSON.parse(line);}catch{continue;}
-   if(message.event==='spectrum'){
+   if(message.event==='stereoSpectrum'){
+    const {left,right,sampleEnd,sampleRate}=message,previous=state.spectrumDetails;
+    if(!audio||!Number.isSafeInteger(sampleEnd)||sampleEnd<=(previous?.sampleEnd||0)
+      ||!Number.isInteger(sampleRate)||sampleRate<8000||sampleRate>384000
+      ||![left,right].every(bands=>Array.isArray(bands)&&bands.length===64&&bands.every(n=>Number.isFinite(n)&&n>=0)))continue;
+    if(previous?.sampleRate===sampleRate)state.sampleGaps+=Math.max(0,Math.round((sampleEnd-previous.sampleEnd)*configured/sampleRate)-1);
+    state.spectrumDetails={sampleEnd,sampleRate};
+    state.spectrumReceivedAt=Date.now();
+    state.spectrumFrames++;
+    spectrumQueue.push({audioAvailable:true,left,right,sampleEnd,sampleRate,targetRate:configured,generation:child.pid});
+    if(spectrumQueue.length>16){spectrumQueue.shift();state.queueDrops++;}
+    state.maxQueued=Math.max(state.maxQueued,spectrumQueue.length);
+    hasNewFrames=true;
+    continue;
+   }
+   if(override&&message.event==='spectrum'){
     const {bands,sampleRate,tsMs,peak,rms}=message.frame||{};
     const sampleEnd=message.sampleEnd;
     if(state.audioFps>60){
@@ -57,13 +64,13 @@ export async function startSystemMedia(root,{audio=false,audioFps=30,onSpectrum}
     }
     state.bands=bands;state.spectrumReceivedAt=Date.now();state.spectrumFrames++;
     state.spectrumDetails={sampleRate,tsMs,peak,rms,sampleEnd};
-    hasNewHighRateFrame=state.audioFps>60;
+    hasNewFrames=state.audioFps>60;
     continue;
    }
    const call=pending.get(message.id);
    if(call){pending.delete(message.id);clearTimeout(call.timer);message.ok?call.resolve(message.result):call.reject(Error(message.error?.message||'系统媒体请求失败'));}
   }
-  if(hasNewHighRateFrame&&!closed)onSpectrum?.();
+  if(hasNewFrames&&!closed)onSpectrum?.();
  });
  child.stderr.on('data',chunk=>{stderr=(stderr+chunk).slice(-1000);});child.stdin.on('error',()=>{});child.on('error',error=>{state.error=error.message;});child.on('exit',code=>{clearInterval(timer);if(!closed)state.error='系统媒体退出：'+code+' '+stderr;state.status=null;state.now=null;state.bands=null;for(const call of pending.values()){clearTimeout(call.timer);call.reject(Error(state.error||'系统媒体关闭'));}pending.clear();});
  let timer;const stop=async()=>{if(closed)return;closed=true;clearInterval(timer);child.stdin.end();if(child.exitCode===null)await Promise.race([new Promise(resolve=>child.once('exit',resolve)),new Promise(resolve=>setTimeout(resolve,2000))]);if(child.exitCode===null)child.kill();};

@@ -62,6 +62,11 @@ try{
   Write-Host 'Checking release files ...'
   & $installResolved.node (Join-Path $installSourceRoot 'tools/check-release.mjs')
   if($LASTEXITCODE -ne 0){throw 'Release file verification failed. Extract a clean copy and retry.'}
+  if(-not $SkipPreparation){
+    Write-Host 'Preparing the stereo spectrum component ...'
+    & $installResolved.node (Join-Path $installSourceRoot 'tools/prepare-media-bridge.mjs')
+    if($LASTEXITCODE -ne 0){throw 'Stereo media preparation failed; check the connection and rerun Install.cmd.'}
+  }
   $installCopy=& $installResolved.node (Join-Path $installSourceRoot 'tools/install-source.mjs') --data-dir $installDataRoot
   if($LASTEXITCODE -ne 0){throw 'Source installation failed; existing settings and versions were preserved.'}
   $installDirectory=($installCopy|ConvertFrom-Json).directory

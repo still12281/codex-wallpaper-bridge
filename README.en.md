@@ -4,7 +4,7 @@
 
 A local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
 
-**v0.2.2** reduces style-update overhead during thinking animations, typing and scrolling, and fixes terminal reverse video, code-reading materials, command menus, search and dialogs. Existing wallpapers, opacity and font settings are preserved. See the [changelog](CHANGELOG.md).
+**v0.3.0** adds six stereo spectrum rates for WebGL wallpapers, improves startup handoff and chat scrolling, and adds release checks and one-click updates to the wallpaper panel. See the [changelog](CHANGELOG.md).
 
 This is an independent community project, not an official OpenAI plugin. It connects through the local Chromium debugging interface. No accounts, wallpaper source files, or user configuration are included.
 
@@ -49,7 +49,7 @@ On Windows 10/11 x64, install and sign in to the official Microsoft Store Codex 
 
 ### Recommended: EXE installer
 
-Download [CodexWallpaperBridge-0.2.2-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.2/CodexWallpaperBridge-0.2.2-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
+Download [CodexWallpaperBridge-0.3.0-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.0/CodexWallpaperBridge-0.3.0-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
 
 The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal data defaults to `%LOCALAPPDATA%\CodexWallpaperBridge`. Uninstall through Windows **Installed apps** to remove the installer-managed program and owned Windows integrations while keeping the data folder. The `.exe.sha256` asset verifies the download.
 
@@ -58,10 +58,10 @@ The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal
 Run this in PowerShell:
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.2/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.0/install.ps1' | iex
 ```
 
-This downloads the fixed **v0.2.2** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
+This downloads the fixed **v0.3.0** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
 
 ### Optional ZIP deployment
 
@@ -72,11 +72,11 @@ To deploy the source package manually:
 3. Double-click **[Install.cmd](Install.cmd)**. Choose a separate Codex Wallpaper entry or replacement of identified original shortcuts with backups, then choose whether to enable one graceful reconnect after future updates. Stay online and allow dependency installation if Windows asks.
 4. Wait for **Installed**, save work and exit ordinary Codex normally. Open the selected wallpaper entry. Taskbar pins must be replaced manually.
 
-The installer detects or installs PowerShell 7, Node.js 22+, FFmpeg and uv through WinGet; prepares the pinned WebWallGL runtime and Python 3.12 capture dependencies; and copies reviewed source into a versioned installation. Git, npm install and manual JSON configuration are not required. It does not close or launch Codex. A future-update event task is registered only when explicitly enabled; there is no custom resident watcher. Separate-entry mode also prevents later startup from rewriting official shortcuts.
+The installer detects or installs PowerShell 7, Node.js 22+, FFmpeg and uv through WinGet; prepares the pinned WebWallGL runtime, stereo spectrum component and Python 3.12 capture dependencies; and copies reviewed source into a versioned installation. Git, npm install and manual JSON configuration are not required. It does not close or launch Codex. A future-update event task is registered only when explicitly enabled; there is no custom resident watcher. Separate-entry mode also prevents later startup from rewriting official shortcuts.
 
 Replacement affects verified current-user desktop/Start-menu `.lnk` files. It preserves Store registration, taskbar pins, unrelated shortcuts and custom arguments. See [shortcut restoration and installation options](docs/INSTALL.zh-CN.md).
 
-ZIP deployment keeps data and versioned program copies under `%LOCALAPPDATA%\CodexWallpaperBridge` by default; the EXE wizard selects separate program and data folders. You may move the downloaded ZIP/extracted folder after installation. Run the new version's installer to upgrade while preserving your library and settings. If WinGet is missing, install/update **App Installer** in Microsoft Store. Optional [system media](docs/SYSTEM-MEDIA.md) requires separate media-bridge preparation and GitHub CLI authentication. Chromium Web mode needs Chrome/Edge; native capture needs Wallpaper Engine.
+ZIP deployment keeps data and versioned program copies under `%LOCALAPPDATA%\CodexWallpaperBridge` by default; the EXE wizard selects separate program and data folders. You may move the downloaded ZIP/extracted folder after installation. Run the new version's installer to upgrade while preserving your library and settings. If WinGet is missing, install/update **App Installer** in Microsoft Store. Enable optional [system media](docs/SYSTEM-MEDIA.md) in the wallpaper panel. The stereo spectrum defaults to 30 updates per second. Chromium Web mode needs Chrome/Edge; native capture needs Wallpaper Engine.
 
 See the [complete installation guide](docs/INSTALL.zh-CN.md) for custom directories, manual commands, executable overrides, first-use configuration, troubleshooting, updates and removal. Read [security](SECURITY.md) and [privacy](PRIVACY.md) before installing.
 

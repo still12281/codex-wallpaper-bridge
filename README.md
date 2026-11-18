@@ -4,7 +4,7 @@
 
 为 Windows Codex 桌面客户端添加静态与动态壁纸，在客户端内切换素材、搜索 Wallpaper Engine 库、调整播放规格。
 
-**v0.2.2** 改善思考动画、输入与滚动时的样式更新开销，修复终端反色、代码阅读底色以及命令菜单、搜索和弹窗的显示问题；保留原有壁纸、透明度和字体设置。详见 [更新记录](CHANGELOG.md)。
+**v0.3.0** 为 WebGL 壁纸提供六档双声道频谱，改善启动衔接与聊天滚动，并在壁纸面板加入版本检查和一键更新。详见 [更新记录](CHANGELOG.md)。
 
 **本地壁纸 · 一体入口 · 内嵌控制面板 · 可选 GPU 场景**
 
@@ -110,7 +110,7 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 
 ### 推荐：双击安装程序
 
-1. 下载 [CodexWallpaperBridge-0.2.2-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.2/CodexWallpaperBridge-0.2.2-Setup.exe)，双击打开安装向导。
+1. 下载 [CodexWallpaperBridge-0.3.0-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.0/CodexWallpaperBridge-0.3.0-Setup.exe)，双击打开安装向导。
 2. 选择程序目录和壁纸数据目录。从旧 ZIP 安装升级时，确认数据目录指向原壁纸库。
 3. 选择快捷方式、更新恢复和登录启动选项，等待依赖准备与安装完成。
 4. 保存工作、正常退出 Codex，再从壁纸入口打开。以后可以在 Windows“已安装的应用”中卸载；卸载保留壁纸库和设置。
@@ -122,10 +122,10 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 打开 **PowerShell**，复制执行：
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2.2/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.0/install.ps1' | iex
 ```
 
-自动下载 **v0.2.2** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
+自动下载 **v0.3.0** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
 
 安装成功后，保存工作并正常退出原 Codex，再打开所选壁纸入口。安装器不会自动关闭当前客户端。无法连接 GitHub 时使用下方手动下载方式。
 
@@ -147,7 +147,7 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.2
 | 普通图片 / 视频 | 无，安装器已准备基础依赖 |
 | Wallpaper Engine 壁纸库 / 原版兼容 | Steam 中的 Wallpaper Engine，并至少运行一次 |
 | 网页浏览器（试验） | 本机 Chrome 或 Edge |
-| 系统音乐联动 | 按[安装指南](docs/INSTALL.zh-CN.md#可选系统音乐和音频响应)准备可选音乐组件 |
+| 系统音乐联动 | 安装器准备双声道组件，在「系统音乐联动」启用 |
 
 ZIP 部署默认将数据与独立版本副本放在 `%LOCALAPPDATA%\CodexWallpaperBridge`；EXE 向导分别选择程序与数据目录。安装成功后，下载的 ZIP 和解压目录可以移走；远程安装下载缓存的位置会在终端输出。升级时运行新版本对应的一键命令或安装包，壁纸库与设置会保留。找不到 WinGet 时，先在 Microsoft Store 安装/更新 **App Installer（应用安装程序）**。
 
@@ -174,7 +174,7 @@ ZIP 部署默认将数据与独立版本副本放在 `%LOCALAPPDATA%\CodexWallpa
 | 点击、拖尾和视差 | 玻璃、字体与特效 |
 | 定时切换 | 壁纸轮播：间隔、顺序和素材 |
 | 保存一套外观 | 外观预设：保存、应用、导入/导出 JSON |
-| 歌曲显示和音频响应 | 准备音乐组件后，在系统音乐联动中启用并保存 |
+| 歌曲显示和音频响应 | 在「系统音乐联动」启用并保存，默认频谱为 30 次/秒 |
 
 4K 档输出为 3840×2160。更高分辨率和帧率会增加 CPU/GPU 占用；视频不会凭空增加原素材的清晰度或帧率。完整库备份、恢复和卸载见[本地维护](docs/MAINTENANCE.zh-CN.md)。
 

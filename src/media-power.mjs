@@ -49,7 +49,7 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
   const frames=backend?.drainSpectrum?.()||[];
   const sampleClock=Number.isSafeInteger(backend?.state.spectrumDetails?.sampleEnd);
   const targetRate=backend?.state.audioFps||0;
-  if(targetRate>60){
+  if(sampleClock||targetRate>60){
    const at=now();
    if(!rateSample)rateSample={at,frame,hz:null};
    else if(at-rateSample.at>=1000)rateSample={at,frame,hz:Math.round((frame-rateSample.frame)*1000/(at-rateSample.at))};
@@ -74,7 +74,13 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
   configure(next){options={...next};return serial(()=>reconcile(true));},
   tick(){return serial(pump);},
   get backend(){return backend;},
-  snapshot(){return {...stats,audioRequested:!!options.audio,audioFpsRequested:normalizeAudioFps(options.audioFps),audioRunning:!!backend&&JSON.parse(key||'[false,false]')[1],audioFps:backend?(backend.state.audioFps??JSON.parse(key)[2])||0:0,receivedHz:rateSample?.hz??null,pid:backend?.state.pid||null,spectrumFrames:backend?.state.spectrumFrames||0,error};},
+  snapshot(){
+   const state=backend?.state;
+   return {...stats,audioRequested:!!options.audio,audioFpsRequested:normalizeAudioFps(options.audioFps),audioRunning:!!backend&&JSON.parse(key||'[false,false]')[1],
+    audioFps:backend?(state.audioFps??JSON.parse(key)[2])||0:0,receivedHz:rateSample?.hz??null,pid:state?.pid||null,
+    spectrumFrames:state?.spectrumFrames||0,sampleGaps:state?.sampleGaps||0,sampleEnd:state?.spectrumDetails?.sampleEnd||0,
+    queueDrops:state?.queueDrops||0,maxQueued:state?.maxQueued||0,error};
+  },
   stop(){closed=true;return serial(async()=>{const old=backend;backend=null;await old?.stop();});}
  };
 }

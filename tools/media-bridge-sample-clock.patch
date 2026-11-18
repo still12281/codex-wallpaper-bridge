@@ -1,235 +1,349 @@
+diff --git a/crates/media-bridge/Cargo.toml b/crates/media-bridge/Cargo.toml
+index 8a4daf377e74b380f9bf1cdc81f63ff1d735c637..3eed5e1c9c1f065962b171c8ca6545ae37691221 100644
+--- a/crates/media-bridge/Cargo.toml
++++ b/crates/media-bridge/Cargo.toml
+@@ -82,0 +83,2 @@ windows = { version = "0.62", features = [
++  "Win32_System_Threading",
++  "Win32_Security",
 diff --git a/crates/media-bridge/src/audio/mod.rs b/crates/media-bridge/src/audio/mod.rs
-index 571768f..a90196c 100644
+index 571768f60d4aa174dfcc86ac9dfd360c234ddf10..093860b7dec6f09664f5b8761e4e7fe6c60d5f02 100644
 --- a/crates/media-bridge/src/audio/mod.rs
 +++ b/crates/media-bridge/src/audio/mod.rs
-@@ -371,0 +372 @@ pub struct AudioCapture {
-+    sample_spectrum_tx: Option<tokio::sync::broadcast::Sender<(u64, SpectrumFrame)>>,
-@@ -381,0 +383,2 @@ impl AudioCapture {
-+        let sample_spectrum_tx = (cfg!(windows) && config.fps > 60 && !config.pcm)
-+            .then(|| tokio::sync::broadcast::channel(16).0);
-@@ -385,0 +389 @@ impl AudioCapture {
-+            sample_spectrum_tx,
-@@ -413,0 +418,6 @@ impl AudioCapture {
-+    pub(crate) fn subscribe_sample_spectrum(
-+        &self,
-+    ) -> Option<tokio::sync::broadcast::Receiver<(u64, SpectrumFrame)>> {
-+        self.sample_spectrum_tx.as_ref().map(|tx| tx.subscribe())
+@@ -257,0 +258,3 @@ pub(crate) struct LayoutInfo {
++#[cfg(target_os = "windows")]
++pub(crate) mod stereo;
++
+@@ -258,0 +262,4 @@ pub(crate) struct CaptureShared {
++    #[cfg(target_os = "windows")]
++    stereo: Option<tokio::sync::broadcast::Sender<stereo::StereoFrame>>,
++    #[cfg(target_os = "windows")]
++    stereo_position: std::sync::atomic::AtomicU64,
+@@ -282,0 +290,4 @@ impl CaptureShared {
++            #[cfg(target_os = "windows")]
++            stereo: (config.enabled && !config.pcm).then(|| tokio::sync::broadcast::channel(32).0),
++            #[cfg(target_os = "windows")]
++            stereo_position: std::sync::atomic::AtomicU64::new(0),
+@@ -413,0 +425,5 @@ impl AudioCapture {
++    #[cfg(target_os = "windows")]
++    pub(crate) fn subscribe_stereo(&self) -> Option<tokio::sync::broadcast::Receiver<stereo::StereoFrame>> {
++        self.shared.stereo.as_ref().map(|sender| sender.subscribe())
 +    }
 +
-@@ -464,0 +475,4 @@ impl AudioCapture {
-+                if me.sample_spectrum_tx.is_some() {
-+                    sample_clock::run(&me, fps);
-+                    return;
-+                }
-@@ -582,0 +597,2 @@ impl AudioCapture {
-+mod sample_clock;
-+
-diff --git a/crates/media-bridge/src/audio/sample_clock.rs b/crates/media-bridge/src/audio/sample_clock.rs
+@@ -427 +443,7 @@ impl AudioCapture {
+-        self.spawn_pump();
++        #[cfg(target_os = "windows")]
++        let use_stereo = self.shared.stereo.is_some();
++        #[cfg(not(target_os = "windows"))]
++        let use_stereo = false;
++        if !use_stereo {
++            self.spawn_pump();
++        }
+diff --git a/crates/media-bridge/src/audio/stereo.rs b/crates/media-bridge/src/audio/stereo.rs
 new file mode 100644
-index 0000000..1cd1268
+index 0000000000000000000000000000000000000000..033c9d4e03cce4961c38fee40852f88da17b66e3
 --- /dev/null
-+++ b/crates/media-bridge/src/audio/sample_clock.rs
-@@ -0,0 +1,140 @@
-+use super::{now_ms, AudioCapture, Downsampler, SpectrumAnalyzer, SpectrumFrame,
-+    ANALYSIS_WINDOW, OUTPUT_RATE, SPECTRUM_BANDS};
-+use std::time::Duration;
++++ b/crates/media-bridge/src/audio/stereo.rs
+@@ -0,0 +1,117 @@
++use rustfft::{num_complex::Complex32, Fft, FftPlanner};
++use std::sync::Arc;
 +
-+// Advancing by a rational number of samples avoids a drift at 90 and 120 Hz.
-+struct HopClock {
++pub(crate) const BANDS: usize = 64;
++
++#[derive(Clone)]
++pub(crate) struct StereoFrame {
++    pub(crate) sample_end: u64,
++    pub(crate) sample_rate: u32,
++    pub(crate) bands: [f32; BANDS * 2],
++}
++
++pub(crate) struct Analyzer {
++    sample_rate: u32,
 +    rate: u32,
-+    fps: u32,
 +    phase: u32,
-+}
-+impl HopClock {
-+    fn new(rate: u32, fps: u32) -> Self {
-+        Self { rate, fps, phase: 0 }
-+    }
-+    fn take(&mut self, available: usize) -> (usize, bool) {
-+        let count = ((self.rate - self.phase).div_ceil(self.fps) as usize).min(available);
-+        self.phase += count as u32 * self.fps;
-+        let due = self.phase >= self.rate;
-+        if due {
-+            self.phase -= self.rate;
-+        }
-+        (count, due)
-+    }
++    ring: Vec<[f32; 2]>,
++    cursor: usize,
++    filled: usize,
++    fft: Arc<dyn Fft<f32>>,
++    scratch: Vec<Complex32>,
++    bins: Vec<Complex32>,
++    map: Vec<(usize, f32)>,
 +}
 +
-+pub(super) fn run(capture: &AudioCapture, fps: u32) {
-+    let shared = &capture.shared;
-+    let mut analyzer = SpectrumAnalyzer::new();
-+    let mut window = Vec::with_capacity(ANALYSIS_WINDOW * 2);
-+    let mut input = Vec::new();
-+    let mut samples = Vec::new();
-+    let mut downsampler = None;
-+    let mut input_rate = 0;
-+    let mut output_rate = OUTPUT_RATE;
-+    let mut clock = HopClock::new(output_rate, fps);
-+    let mut read_at = 0;
-+    let mut sample_end = 0;
-+    let mut last_audio = now_ms();
-+    let mut silent = true;
-+    let interval = Duration::from_millis(2);
-+    while !shared.is_stopping() {
-+        let rate = shared.input_rate();
-+        let end = shared.ring.total_written();
-+        if rate == 0 || end == read_at {
-+            if !silent && now_ms().saturating_sub(last_audio) >= 1000 {
-+                window.clear();
-+                downsampler = None;
-+                silent = true;
-+                if let Ok(mut stored) = capture.frame.write() {
-+                    *stored = SpectrumFrame::silent(now_ms(), output_rate);
-+                }
-+            }
-+            std::thread::sleep(interval);
-+            continue;
++impl Analyzer {
++    pub(crate) fn new(sample_rate: u32, rate: u32) -> Self {
++        let length = (1920 * u64::from(sample_rate.max(44100)) / 44100) as usize;
++        let fft = FftPlanner::new().plan_fft_forward(length);
++        let scratch = vec![Complex32::default(); fft.get_inplace_scratch_len()];
++        let mut previous = 0;
++        let map = (0..639.min(length / 2 - 1))
++            .map(|index| {
++                let fraction = index as f32 / 639.;
++                let nominal = (fraction.sqrt().sqrt() * BANDS as f32) as usize;
++                previous = nominal.min(previous + 1).min(BANDS - 1);
++                let weight = (0.501 - 0.499 * (std::f32::consts::PI * fraction).cos()).sqrt();
++                (previous, weight)
++            })
++            .collect();
++        Self {
++            sample_rate,
++            rate,
++            phase: 0,
++            ring: vec![[0.; 2]; length],
++            cursor: 0,
++            filled: 0,
++            fft,
++            scratch,
++            bins: vec![Complex32::default(); length],
++            map,
 +        }
++    }
 +
-+        // Slow consumers resume near live time without analyzing an old backlog.
-+        let max_backlog = (rate as usize / 10).min(shared.ring.slots.len() / 2);
-+        let start = read_at.max(end.saturating_sub(max_backlog));
-+        if downsampler.is_none() || rate != input_rate || start != read_at {
-+            input_rate = rate;
-+            output_rate = rate.min(OUTPUT_RATE);
-+            downsampler = Some(Downsampler::new(rate, output_rate));
-+            clock = HopClock::new(output_rate, fps);
-+            window.clear();
-+        }
-+        input.clear();
-+        let mask = shared.ring.mask();
-+        for index in start..end {
-+            let bits = shared.ring.slots[index & mask].load(std::sync::atomic::Ordering::Relaxed);
-+            input.push(f32::from_bits(bits));
-+        }
-+        read_at = end;
-+        if shared.ring.total_written().saturating_sub(start) >= shared.ring.slots.len() {
-+            downsampler = None;
-+            continue;
-+        }
++    pub(crate) fn reset(&mut self) {
++        self.phase = 0;
++        self.cursor = 0;
++        self.filled = 0;
++    }
 +
-+        samples.clear();
-+        downsampler.as_mut().unwrap().push(&input, &mut samples);
-+        last_audio = now_ms();
-+        silent = false;
-+        let mut remaining = samples.as_slice();
-+        while !remaining.is_empty() {
-+            let (take, due) = clock.take(remaining.len());
-+            window.extend_from_slice(&remaining[..take]);
-+            remaining = &remaining[take..];
-+            sample_end += take as u64;
-+            if window.len() > ANALYSIS_WINDOW * 2 {
-+                window.drain(..window.len() - ANALYSIS_WINDOW);
++    pub(crate) fn push(&mut self, sample: [f32; 2], sample_end: u64) -> Option<StereoFrame> {
++        let length = self.ring.len();
++        self.ring[self.cursor] = sample;
++        self.cursor = (self.cursor + 1) % length;
++        self.filled = (self.filled + 1).min(length);
++        self.phase += self.rate;
++        if self.phase < self.sample_rate {
++            return None;
++        }
++        self.phase -= self.sample_rate;
++        if self.filled < length {
++            return None;
++        }
++        let mut bands = [0.; BANDS * 2];
++        for channel in 0..2 {
++            for (bin, pair) in self.bins.iter_mut().zip(self.ring[self.cursor..].iter().chain(&self.ring[..self.cursor])) {
++                *bin = Complex32::new(pair[channel], 0.);
 +            }
-+            if due {
-+                let mut bands = [0; SPECTRUM_BANDS];
-+                let stats = analyzer.analyze(&window, &mut bands);
-+                let frame = SpectrumFrame {
-+                    bands: bands.to_vec(), peak: stats.peak, rms: stats.rms,
-+                    sample_rate: output_rate, ts_ms: now_ms(),
-+                };
-+                if let Ok(mut stored) = capture.frame.write() {
-+                    *stored = frame.clone();
-+                }
-+                if let Some(sender) = &capture.sample_spectrum_tx {
-+                    let _ = sender.send((sample_end, frame));
-+                }
++            self.fft.process_with_scratch(&mut self.bins, &mut self.scratch);
++            let scale = 162.56 / length as f32;
++            for ((band, weight), bin) in self.map.iter().copied().zip(&self.bins[1..]) {
++                let position = channel * BANDS + band;
++                bands[position] = f32::max(bands[position], bin.norm() * weight * scale);
 +            }
 +        }
++        Some(StereoFrame { sample_end, sample_rate: self.sample_rate, bands })
 +    }
 +}
 +
 +#[cfg(test)]
 +mod tests {
-+    use super::HopClock;
++    use super::*;
 +
 +    #[test]
-+    fn advances_once_per_fractional_hop_across_packet_boundaries() {
-+        for fps in [90, 120] {
-+            let mut clock = HopClock::new(16000, fps);
-+            let mut remaining = 48000usize;
++    fn stereo_and_all_rates_follow_samples() {
++        for rate in [10, 20, 30, 60, 90, 120] {
++            let mut analyzer = Analyzer::new(44100, rate);
++            let mut previous = None;
 +            let mut frames = 0;
-+            let mut edge = 0;
-+            let mut consumed = 0;
-+            while remaining > 0 {
-+                let mut packet = remaining.min(437);
-+                remaining -= packet;
-+                while packet > 0 {
-+                    let (take, due) = clock.take(packet);
-+                    packet -= take;
-+                    consumed += take;
-+                    if due {
-+                        frames += 1;
-+                        assert!((133..=178).contains(&(consumed - edge)));
-+                        edge = consumed;
++            for sample in 1..=88200 {
++                let amplitude = (sample as f32 * std::f32::consts::TAU * 440. / 44100.).sin() * 0.1;
++                if let Some(frame) = analyzer.push([amplitude, 0.], sample) {
++                    assert!(frame.bands[..BANDS].iter().any(|x| *x > 0.01));
++                    assert!(frame.bands[BANDS..].iter().all(|x| *x == 0.));
++                    if let Some(last) = previous {
++                        let hop = frame.sample_end - last;
++                        assert!((44100 / rate..=44100u32.div_ceil(rate)).contains(&(hop as u32)));
 +                    }
++                    previous = Some(frame.sample_end);
++                    frames += u32::from(sample > 44100);
 +                }
 +            }
-+            assert_eq!(frames, fps * 3);
-+            assert_eq!(edge, 48000);
++            assert_eq!(frames, rate);
 +        }
 +    }
 +}
++
 diff --git a/crates/media-bridge/src/audio/windows.rs b/crates/media-bridge/src/audio/windows.rs
-index c8d4130..4fb19cc 100644
+index c8d41304a97f494746b0d432253da4e0acfca78d..9ec169186951f01f6444090efa20f54496a72bbd 100644
 --- a/crates/media-bridge/src/audio/windows.rs
 +++ b/crates/media-bridge/src/audio/windows.rs
-@@ -170 +170,5 @@ fn capture_loop(
+@@ -21 +21,5 @@ use std::sync::Arc;
+-use std::time::Duration;
++use std::time::{Duration, Instant};
++use std::sync::atomic::Ordering;
++use windows::Win32::Foundation::{CloseHandle, HANDLE, WAIT_FAILED};
++use windows::Win32::System::Threading::{CreateEventW, WaitForSingleObject};
++use super::stereo::Analyzer;
+@@ -24 +28 @@ use windows::Win32::Media::Audio::{
+-    AUDCLNT_BUFFERFLAGS_SILENT, AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, IAudioCaptureClient,
++    AUDCLNT_BUFFERFLAGS_SILENT, AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY, AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient,
+@@ -41 +45 @@ const POLL_INTERVAL: Duration = Duration::from_millis(10);
+-const DEVICE_CHECK_POLLS: u32 = 50;
++const DEVICE_CHECK_INTERVAL: Duration = Duration::from_millis(500);
+@@ -111,2 +115,2 @@ fn run(shared: Arc<CaptureShared>, init_tx: &std::sync::mpsc::Sender<Result<()>>
+-        let opened = unsafe { open_loopback(&enumerator) };
+-        let (client, capture, format, device_id) = match opened {
++        let opened = unsafe { open_loopback(&enumerator, shared.stereo.is_some()) };
++        let (client, capture, format, device_id, event) = match opened {
+@@ -143 +147 @@ fn run(shared: Arc<CaptureShared>, init_tx: &std::sync::mpsc::Sender<Result<()>>
+-        let outcome = capture_loop(&shared, &capture, &format, &enumerator, &device_id);
++        let outcome = capture_loop(&shared, &capture, &format, &enumerator, &device_id, event.as_ref());
+@@ -156,0 +161,8 @@ fn run(shared: Arc<CaptureShared>, init_tx: &std::sync::mpsc::Sender<Result<()>>
++struct CaptureEvent(HANDLE);
++
++impl Drop for CaptureEvent {
++    fn drop(&mut self) {
++        unsafe { let _ = CloseHandle(self.0); }
++    }
++}
++
+@@ -162,0 +175 @@ fn capture_loop(
++    event: Option<&CaptureEvent>,
+@@ -165 +178,4 @@ fn capture_loop(
+-    let mut polls: u32 = 0;
++    let mut device_checked = Instant::now();
++    let mut stereo_samples = Vec::<[f32; 2]>::with_capacity(1024);
++    let mut stereo = shared.stereo.as_ref().map(|sender| (Analyzer::new(format.sample_rate, shared.config.fps.clamp(1, 120)), sender));
++    let mut last_packet = Instant::now();
+@@ -170,4 +186,9 @@ fn capture_loop(
 -        std::thread::sleep(POLL_INTERVAL);
-+        std::thread::sleep(if shared.config.fps > 60 {
-+            Duration::from_millis(4)
+-        polls += 1;
+-        if polls >= DEVICE_CHECK_POLLS {
+-            polls = 0;
++        if let Some(event) = event {
++            if unsafe { WaitForSingleObject(event.0, 100) } == WAIT_FAILED {
++                return StreamOutcome::Reopen;
++            }
 +        } else {
-+            POLL_INTERVAL
-+        });
++            std::thread::sleep(POLL_INTERVAL);
++        }
++        if device_checked.elapsed() >= DEVICE_CHECK_INTERVAL {
++            device_checked = Instant::now();
+@@ -206,0 +228,26 @@ fn capture_loop(
++            if let Some((analyzer, sender)) = stereo.as_mut() {
++                let frames = num_frames as usize;
++                let silent = flags & (AUDCLNT_BUFFERFLAGS_SILENT.0 as u32) != 0 || data.is_null();
++                stereo_samples.clear();
++                if silent {
++                    stereo_samples.resize(frames, [0.; 2]);
++                } else {
++                    let bytes = unsafe { std::slice::from_raw_parts(data, frames * format.block_align as usize) };
++                    format.decode_stereo(bytes, &mut stereo_samples);
++                }
++                unsafe { let _ = capture.ReleaseBuffer(num_frames); }
++                if frames == 0 {
++                    break;
++                }
++                if flags & (AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY.0 as u32) != 0 || last_packet.elapsed() >= Duration::from_millis(250) {
++                    analyzer.reset();
++                }
++                last_packet = Instant::now();
++                let first = shared.stereo_position.fetch_add(frames as u64, Ordering::Relaxed) + 1;
++                for (index, sample) in stereo_samples.iter().copied().enumerate() {
++                    if let Some(frame) = analyzer.push(sample, first + index as u64) {
++                        let _ = sender.send(frame);
++                    }
++                }
++                continue;
++            }
+@@ -291,0 +339,18 @@ impl MixFormat {
++    fn decode_stereo(&self, bytes: &[u8], out: &mut Vec<[f32; 2]>) {
++        for frame in bytes.chunks_exact(usize::from(self.block_align)) {
++            let pair = match self.kind {
++                SampleKind::Float32 => {
++                    let left = f32::from_le_bytes(frame[..4].try_into().unwrap());
++                    let right = if self.channels == 1 { left } else { f32::from_le_bytes(frame[4..8].try_into().unwrap()) };
++                    [left, right]
++                }
++                SampleKind::Pcm16 => {
++                    let left = i16::from_le_bytes(frame[..2].try_into().unwrap()) as f32 / 32768.;
++                    let right = if self.channels == 1 { left } else { i16::from_le_bytes(frame[2..4].try_into().unwrap()) as f32 / 32768. };
++                    [left, right]
++                }
++            };
++            out.push(pair.map(|sample| if sample.is_finite() { sample.clamp(-1., 1.) } else { 0. }));
++        }
++    }
++
+@@ -332 +397,2 @@ unsafe fn open_loopback(
+-) -> Result<(IAudioClient, IAudioCaptureClient, MixFormat, String)> {
++    stereo: bool,
++) -> Result<(IAudioClient, IAudioCaptureClient, MixFormat, String, Option<CaptureEvent>)> {
+@@ -352 +418,11 @@ unsafe fn open_loopback(
+-        let format = parse_format(mix_ptr)?;
++        let format = match parse_format(mix_ptr) {
++            Ok(format) => format,
++            Err(error) => { CoTaskMemFree(Some(mix_ptr as *const _)); return Err(error); }
++        };
++        let event = if stereo {
++            match CreateEventW(None, false, false, None) {
++                Ok(event) => Some(CaptureEvent(event)),
++                Err(error) => { CoTaskMemFree(Some(mix_ptr as *const _)); return Err(BridgeError::other(format!("WASAPI audio event: {error}"))); }
++            }
++        } else { None };
++        let stream_flags = AUDCLNT_STREAMFLAGS_LOOPBACK | if event.is_some() { AUDCLNT_STREAMFLAGS_EVENTCALLBACK } else { 0 };
+@@ -357 +433 @@ unsafe fn open_loopback(
+-                AUDCLNT_STREAMFLAGS_LOOPBACK,
++                stream_flags,
+@@ -368,0 +445,3 @@ unsafe fn open_loopback(
++        if let Some(event) = event.as_ref() {
++            client.SetEventHandle(event.0).map_err(|error| BridgeError::other(format!("SetEventHandle: {error}")))?;
++        }
+@@ -375 +454 @@ unsafe fn open_loopback(
+-        Ok((client, capture, format, device_id))
++        Ok((client, capture, format, device_id, event))
 diff --git a/crates/media-bridge/src/ipc/mod.rs b/crates/media-bridge/src/ipc/mod.rs
-index 6ac61cb..9e6a4e3 100644
+index 6ac61cbc27735b0762b28071d553175486cf5b39..9e6a4e3ddd6b725445e54918be2636361c4e19ac 100644
 --- a/crates/media-bridge/src/ipc/mod.rs
 +++ b/crates/media-bridge/src/ipc/mod.rs
 @@ -179 +179 @@ impl Subscriptions {
 -            Some(spectrum_interval_ms.unwrap_or(100).clamp(16, 5000))
 +            Some(spectrum_interval_ms.unwrap_or(100).clamp(8, 5000))
 diff --git a/crates/media-bridge/src/ipc/stdio.rs b/crates/media-bridge/src/ipc/stdio.rs
-index 9ee854a..af44698 100644
+index 9ee854a511ab823540f19604cf260ca36ccc93cd..a7b2b13ad5d1c2d1e5077bd0f9090d73a878a9a6 100644
 --- a/crates/media-bridge/src/ipc/stdio.rs
 +++ b/crates/media-bridge/src/ipc/stdio.rs
 @@ -29 +29 @@ pub async fn serve(bridge: Arc<MediaBridge>, verbose: bool) -> Result<()> {
 -    let (tx, mut rx) = mpsc::channel::<Value>(4096);
 +    let (tx, mut rx) = mpsc::channel::<Value>(128);
-@@ -71,2 +71,24 @@ pub async fn serve(bridge: Arc<MediaBridge>, verbose: bool) -> Result<()> {
+@@ -71,2 +71,30 @@ pub async fn serve(bridge: Arc<MediaBridge>, verbose: bool) -> Result<()> {
 -    // 频谱转发：只在被订阅时按订阅间隔推（默认不推）
 -    {
-+    if let Some(mut frames) = bridge.subscribe_sample_spectrum() {
++    #[cfg(target_os = "windows")]
++    let stereo_channel = bridge.subscribe_stereo();
++    #[cfg(target_os = "windows")]
++    let use_legacy = stereo_channel.is_none();
++    #[cfg(not(target_os = "windows"))]
++    let use_legacy = true;
++    #[cfg(target_os = "windows")]
++    if let Some(mut stereo) = stereo_channel {
 +        let tx = tx.clone();
 +        let subs = subs.clone();
 +        tokio::spawn(async move {
 +            loop {
-+                match frames.recv().await {
-+                    Ok((sample_end, frame)) => {
-+                        if subs.lock().await.wants("spectrum") {
-+                            let event = serde_json::json!({
-+                                "event": "spectrum", "frame": frame, "sampleEnd": sample_end,
-+                            });
-+                            match tx.try_send(event) {
-+                                Ok(()) | Err(mpsc::error::TrySendError::Full(_)) => {}
-+                                Err(mpsc::error::TrySendError::Closed(_)) => break,
-+                            }
-+                        }
-+                    }
++                let frame = match stereo.recv().await {
++                    Ok(frame) => frame,
 +                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
 +                    Err(_) => break,
++                };
++                if subs.lock().await.wants("spectrum") {
++                    let event = serde_json::json!({
++                        "event": "stereoSpectrum", "sampleEnd": frame.sample_end, "sampleRate": frame.sample_rate,
++                        "left": &frame.bands[..64], "right": &frame.bands[64..],
++                    });
++                    if matches!(tx.try_send(event), Err(mpsc::error::TrySendError::Closed(_))) {
++                        break;
++                    }
 +                }
 +            }
 +        });
-+    } else {
-+        // Standard rates continue to use the legacy interval-based subscription.
++    }
++    if use_legacy {
 diff --git a/crates/media-bridge/src/service.rs b/crates/media-bridge/src/service.rs
-index 4c216bf..855a641 100644
+index 4c216bf16b3c7cdbc074bfebfe5cd3adaac0f1dd..407c212bf5e50b7d7a176a3920e36999ece821d6 100644
 --- a/crates/media-bridge/src/service.rs
 +++ b/crates/media-bridge/src/service.rs
-@@ -317,0 +318,6 @@ impl MediaBridge {
-+    pub(crate) fn subscribe_sample_spectrum(
-+        &self,
-+    ) -> Option<tokio::sync::broadcast::Receiver<(u64, crate::types::SpectrumFrame)>> {
-+        self.audio.subscribe_sample_spectrum()
+@@ -313,0 +314,5 @@ impl MediaBridge {
++    #[cfg(target_os = "windows")]
++    pub(crate) fn subscribe_stereo(&self) -> Option<tokio::sync::broadcast::Receiver<crate::audio::stereo::StereoFrame>> {
++        self.audio.subscribe_stereo()
 +    }
 +

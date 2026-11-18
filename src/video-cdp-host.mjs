@@ -253,7 +253,8 @@ mediaPower=createMediaPower({
  sessions:()=>sessions.values(),
  send:async(c,kind,payload)=>{
   if(kind==='spectrum'&&payload.frames){
-   await c.evaluate('(()=>{const wallpaper=window.__codexWallpaperBridge;for(const bands of '+JSON.stringify(payload.frames)+')wallpaper?.setSystemSpectrum?.({audioAvailable:true,bands});return true})()');
+   const frames=payload.frames.map(frame=>Array.isArray(frame)?{audioAvailable:true,bands:frame}:frame);
+   await c.evaluate('window.__codexWallpaperBridge?.setSystemSpectrum?.('+JSON.stringify({frames})+');true');
    return;
   }
   const data=JSON.stringify(payload);
@@ -457,7 +458,17 @@ try{
  await automaticSurfaces.start();
 }catch(error){status.automaticSurfaces={error:error.message};}
 await configureMedia(settings.systemMedia).catch(()=>{});
-async function pumpSpectrum(){if(spectrumBusy||stopped||busy||(acting&&!importPreparing)||streaming)return;spectrumBusy=true;try{await mediaPower.tick();}catch(error){status.mediaDeliveryError=error.message;}finally{spectrumBusy=false;}}
+let spectrumPending=false;
+async function pumpSpectrum(){
+ if(stopped||busy||(acting&&!importPreparing)||streaming)return;
+ if(spectrumBusy){spectrumPending=true;return;}
+ spectrumBusy=true;
+ try{await mediaPower.tick();}catch(error){status.mediaDeliveryError=error.message;}
+ finally{
+  spectrumBusy=false;
+  if(spectrumPending){spectrumPending=false;setImmediate(pumpSpectrum);}
+ }
+}
 spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(Math.min(60,effectiveMediaSettings(settings).audioFps)));spectrumTimer.unref();
 const primaryPending=()=>{const main=status.targets.filter(t=>t.url===appUrl);return main.length?main.some(t=>!targetReady(t)):!status.targets.some(targetReady);};
 async function poll(){if(stopped)return;if(busy||acting||streaming){schedulePoll(targetWakePending?250:5000);return;}targetWakePending=false;await tick();if(!stopped)schedulePoll(targetWakePending?0:primaryPending()?250:5000);}

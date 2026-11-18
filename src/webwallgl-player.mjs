@@ -26,16 +26,86 @@ function initializeRenderer(project,options,binding,dshSource){
  const getFreeze=()=>freeze||(freeze=globalThis.__cwbFrameFreeze(host.querySelector('canvas'),host));
  const source={key:options.key,project:async()=>project,sceneDir:async()=>{if(!/\.json$/i.test(project.file||''))return null;return await read(project.file)?{entry:project.file,read}:null;},scenePkg:async()=>{for(const name of [...(/\.pkg$/i.test(project.file||'')?[project.file]:[]),'scene.pkg','scenes/scene.pkg','gifscene.pkg']){const bytes=await read(name);if(bytes)return bytes;}throw Error('项目没有可读取的场景包');}};
  host.addEventListener('webglcontextlost',()=>{state.error='壁纸图形上下文丢失，已停止采用此场景';},true);
- state.sample=()=>{const canvas=host.querySelector('canvas');return {ready:state.ready,error:state.error,paused:state.paused,width:canvas?.width||0,height:canvas?.height||0,backend:'dsh-v1.4.0',configuredFps:state.configuredFps||options.fps,fontBufferAdapter:options.fontBuffers===true,fontAdapterExpected:options.fontAdapterExpected,fontsLoaded:[...document.fonts].filter(f=>f.family.startsWith('wefont_')&&f.status==='loaded').length,videoTexScale:instance.getVideoTexScale?.(),qualityEffective:instance.getQuality?.(),audioResponseEnabled:state.audioResponseEnabled,systemAudioActive:!!state.externalAudio,spectrumUpdates:state.spectrumUpdates||0,lastSpectrumAt:state.lastSpectrumAt||0,stats:{...instance.stats},diagnostics:state.diagnostics};};
+ state.sample=()=>{const canvas=host.querySelector('canvas');return {ready:state.ready,error:state.error,paused:state.paused,width:canvas?.width||0,height:canvas?.height||0,backend:'dsh-v1.4.0',configuredFps:state.configuredFps||options.fps,fontBufferAdapter:options.fontBuffers===true,fontAdapterExpected:options.fontAdapterExpected,fontsLoaded:[...document.fonts].filter(f=>f.family.startsWith('wefont_')&&f.status==='loaded').length,videoTexScale:instance.getVideoTexScale?.(),qualityEffective:instance.getQuality?.(),audioResponseEnabled:state.audioResponseEnabled,systemAudioActive:!!state.externalAudio,spectrumUpdates:state.spectrumUpdates||0,lastSpectrumAt:state.lastSpectrumAt||0,spectrumAudit:state.spectrumAudit,stats:{...instance.stats},diagnostics:state.diagnostics};};
  state.pause=value=>{state.paused=!!value;if(value){getFreeze().hold();instance.pause();}else{instance.resume();freeze?.release();}};
  // DSH's renderer control plane uses the already configured scene and our
  // project capability instead of a network httpSource. Its source is vendored
  // unchanged; import.meta is only used for its fallback URL, rejected here.
  const engine=globalThis.WebWallGL;
  try{globalThis.WebWallGL={...engine,createScene:()=>instance,httpSource:()=>source};Function('URLSearchParams',dshSource.replaceAll('import.meta.url',JSON.stringify('about:blank')))(class extends URLSearchParams{constructor(){super('type=scene&src=project&mediaBase=cwb');}});}finally{globalThis.WebWallGL=engine;}
- const bands=new Float32Array(64),spectrumFrame={left:bands,right:bands};
- if(state.audioResponseEnabled)window.__wp.setAudioBridge(()=>spectrumFrame);
- const syncSpectrum=payload=>{if(!state.audioResponseEnabled)return;state.externalAudio=payload.audioAvailable===true;bands.fill(0);if(state.externalAudio){for(let i=0;i<64;i++)bands[i]=(payload.bands[i]||0)/255;state.spectrumUpdates=(state.spectrumUpdates||0)+1;state.lastSpectrumAt=Date.now();}};
+ const left=new Float32Array(64),right=new Float32Array(64),spectrumFrame={left,right,normalized:false};
+ const raw=new Float32Array(128),response=new Float32Array(128),gain=new Float32Array(16),groups=new Float32Array(16);
+ let lastDraw=0, lastArrival=0;
+ const audit=()=>state.spectrumAudit??={frames:0,generation:0,sampleEnd:0,gaps:0,duplicates:0};
+ const resetSpectrum=()=>{
+  raw.fill(0);response.fill(0);gain.fill(0);left.fill(0);right.fill(0);
+  lastDraw=0;lastArrival=0;
+ };
+ const snapshotSpectrum=()=>{
+  if(!spectrumFrame.normalized)return spectrumFrame;
+  const now=performance.now(),dt=lastDraw?Math.min(.25,Math.max(.0001,(now-lastDraw)/1000)):1/options.fps;
+  lastDraw=now;
+  let overall=0;
+  for(let group=0;group<16;group++){
+   let peak=0;
+   for(let index=group*8;index<group*8+8;index++)peak=Math.max(peak,raw[index]);
+   groups[group]=peak;overall=Math.max(overall,peak);
+  }
+  if(overall<.0001||now-lastArrival>400){
+   left.fill(0);right.fill(0);
+   return spectrumFrame;
+  }
+  if(gain[0]<.0001)gain.fill(1);
+  const alpha=Math.min(20*dt,1),slew=Math.min(40*dt,1);
+  for(let group=0;group<16;group++){
+   const peak=Math.max(groups[group],overall/3),difference=peak-gain[group];
+   gain[group]+=Math.max(-dt/2,Math.min(dt,difference));
+   const divisor=Math.max(gain[group],.001);
+   for(let index=group*8;index<group*8+8;index++){
+    response[index]+=(raw[index]/divisor-response[index])*alpha;
+    const output=index<64?left:right,position=index%64;
+    output[position]+=Math.max(-slew,Math.min(slew,response[index]-output[position]));
+   }
+  }
+  return spectrumFrame;
+ };
+ if(state.audioResponseEnabled)window.__wp.setAudioBridge(snapshotSpectrum);
+ const syncOne=payload=>{
+  if(payload.audioAvailable!==true){
+   state.externalAudio=false;
+   resetSpectrum();
+   return;
+  }
+  if(Array.isArray(payload.left)&&Array.isArray(payload.right)){
+   const stats=audit();
+   if(stats.generation!==payload.generation){
+    resetSpectrum();
+    Object.assign(stats,{generation:payload.generation,frames:0,sampleEnd:0,gaps:0,duplicates:0,gapMaxMs:0,
+      firstAt:performance.now(),lastAt:0,sampleRate:payload.sampleRate,targetRate:payload.targetRate});
+   }
+   if(payload.sampleEnd<=stats.sampleEnd){stats.duplicates++;return;}
+   if(stats.sampleEnd){
+    stats.gaps+=Math.max(0,Math.round((payload.sampleEnd-stats.sampleEnd)*payload.targetRate/payload.sampleRate)-1);
+    stats.gapMaxMs=Math.max(stats.gapMaxMs,performance.now()-stats.lastAt);
+   }
+   stats.frames++;stats.sampleEnd=payload.sampleEnd;stats.lastAt=performance.now();
+   raw.set(payload.left,0);raw.set(payload.right,64);
+   lastArrival=stats.lastAt;
+   spectrumFrame.normalized=options.nativeAudio===true;
+   if(!spectrumFrame.normalized){left.set(payload.left);right.set(payload.right);}
+  }else{
+   spectrumFrame.normalized=false;
+   for(let i=0;i<64;i++)left[i]=right[i]=(payload.bands[i]||0)/255;
+  }
+  state.externalAudio=true;
+  state.spectrumUpdates=(state.spectrumUpdates||0)+1;
+  state.lastSpectrumAt=Date.now();
+ };
+ const syncSpectrum=payload=>{
+  if(!state.audioResponseEnabled)return;
+  if(Array.isArray(payload.frames)){for(const frame of payload.frames)syncOne(frame);}
+  else syncOne(payload);
+ };
  const control=event=>{const message=event.data;if(event.source!==parent||message?.token!==options.controlToken)return;if(message.resource){state.complete(message.resource.id,null,message.resource.bytes);return;}if(typeof message.paused==='boolean')state.pause(message.paused);if(message.pointer)instance.pushPointer(...message.pointer);if(message.pointerLeave)instance.pointerLeave();if(message.wheel)instance.pushWheel(...message.wheel);if(Number.isFinite(message.volume))instance.setVolume(message.volume);if(message.properties)instance.setProperties(message.properties);if(message.systemMedia){state.mediaPayload=message.systemMedia;if(!state.mediaSource){state.mediaSource=WebWallGL.createMediaSource(message.systemMedia);instance.setMedia(state.mediaSource);}else state.mediaSource.set(message.systemMedia);}if(message.systemPosition)state.mediaSource?.set(message.systemPosition);if(message.systemSpectrum)syncSpectrum(message.systemSpectrum);};
  addEventListener('message',control);const report=setInterval(()=>parent.postMessage({token:options.controlToken,sample:state.sample()},'*'),1000);
  state.dispose=()=>{freeze?.dispose();clearInterval(report);removeEventListener('message',control);instance.destroy({releasePkgCache:true});for(const request of state.requests.values()){clearTimeout(request.timer);request.reject(Error('Renderer disposed'));}state.requests.clear();};
@@ -88,7 +158,7 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurr
     if(!closed)await cacheCall('complete',[handle,info]);
    }catch(error){await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(handle)+');true').catch(()=>{});if(!closed)await evaluate('__cwbWebGL.complete('+request.id+','+JSON.stringify(error.message)+');true').catch(()=>{});}finally{pending.delete(request.id);if(!pending.size)setImmediate(()=>global.gc?.());}}).catch(()=>{});
   };c.ws.addEventListener('message',listener);
-  const runtimeSource=codexRuntimeSource(engine);await evaluate(runtimeSource.source+'\n;globalThis.__cwbFrameFreeze='+installFrameFreeze.toString()+';('+initializeRenderer.toString()+')('+JSON.stringify(reader.project)+','+JSON.stringify({fps:entry.limits?.fps||24,maxWidth:entry.limits?.maxWidth||1280,renderDpr:entry.limits?.exactResolution?2:undefined,fontBuffers:runtimeSource.fontBuffers,fontAdapterExpected:engine.includes('new FontFace('),scripts:entry.scripts===true,quality:entry.quality,properties,videoTexScale:entry.videoTexScale,audioResponse:config.systemMedia?.audio===true,key:entry.workshopId||entry.id,controlToken})+','+JSON.stringify(binding)+','+JSON.stringify(dshSource)+')');mark('engineInitialized');
+  const runtimeSource=codexRuntimeSource(engine);await evaluate(runtimeSource.source+'\n;globalThis.__cwbFrameFreeze='+installFrameFreeze.toString()+';('+initializeRenderer.toString()+')('+JSON.stringify(reader.project)+','+JSON.stringify({fps:entry.limits?.fps||24,maxWidth:entry.limits?.maxWidth||1280,renderDpr:entry.limits?.exactResolution?2:undefined,fontBuffers:runtimeSource.fontBuffers,nativeAudio:runtimeSource.nativeAudio,fontAdapterExpected:engine.includes('new FontFace('),scripts:entry.scripts===true,quality:entry.quality,properties,videoTexScale:entry.videoTexScale,audioResponse:config.systemMedia?.audio===true,key:entry.workshopId||entry.id,controlToken})+','+JSON.stringify(binding)+','+JSON.stringify(dshSource)+')');mark('engineInitialized');
   const end=Date.now()+90000;let sample;
   while(Date.now()<end){assertCurrent();sample=await evaluate('__cwbWebGL.sample()');if(sample.error)throw Error(sample.error);if(sample.ready&&sample.width>0)break;await waitForReady();}
   if(!sample?.ready||!sample.width)throw Error('WebWallGL 等待首帧超时');

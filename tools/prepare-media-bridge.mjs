@@ -1,55 +1,35 @@
-import {execFile} from 'node:child_process';
-import {promisify} from 'node:util';
-import {mkdir,mkdtemp,readFile,writeFile,rename,realpath,rm} from 'node:fs/promises';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
+import {mkdir,readFile,rename,writeFile} from 'node:fs/promises';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
 import {getDataRoot} from '../src/runtime-paths.mjs';
-import {standardMediaDirectory,highRateMediaDirectory} from '../src/system-media.mjs';
-const hashes={x64:'61a7f6dd5d9b012aceebc4180d9b429b17cd519764c92ea217acf3e63407ee0c',arm64:'3cd69363ea3dd7d12a7036d36f7be048c55496b96fa1f14382fef6ef0a318cd4'};
-if(process.platform!=='win32'||!hashes[process.arch])throw Error('This preparation target supports Windows x64/ARM64');
-const args=process.argv.slice(2),run=promisify(execFile),engines=path.join(getDataRoot(),'engines');
-if(!args.length)await downloadStandard();
-else if(args[0]==='--high-rate'&&(args.length===1||(args.length===3&&args[1]==='--source')))await buildHighRate(args[2]);
-else throw Error('Usage: npm run prepare:media -- [--high-rate [--source <upstream Git checkout>]]');
+import {stereoMediaDirectory} from '../src/system-media.mjs';
 
-async function downloadStandard(){
- const directory=path.join(engines,standardMediaDirectory);await mkdir(directory,{recursive:true});const file=path.join(directory,'media-bridge.exe');
- await run('gh',['release','download','v0.1.5','--repo','oneincase/media-bridge','--pattern','media-bridge-win32-'+process.arch+'.exe','--output',file+'.next','--clobber'],{windowsHide:true,timeout:90000,maxBuffer:65536});
- if(createHash('sha256').update(await readFile(file+'.next')).digest('hex')!==hashes[process.arch])throw Error('Media bridge SHA-256 mismatch; existing runtime was not replaced');
- const license=JSON.parse((await run('gh',['api','repos/oneincase/media-bridge/git/blobs/d60d301a36267c42675e4def7272e411cfd06986'],{windowsHide:true,timeout:15000,maxBuffer:65536})).stdout);
- await writeFile(path.join(directory,'LICENSE'),Buffer.from(license.content.replace(/\s/g,''),'base64'));
- await rename(file+'.next',file);
- console.log(JSON.stringify({prepared:true,version:'0.1.5',directory,sha256:hashes[process.arch]}));
-}
-
-async function buildHighRate(localSource){
- const commit='a508378f4e5e654c8de60e1076d559dca258e825';
- await mkdir(engines,{recursive:true});
- const staging=await mkdtemp(path.join(engines,'.media-high-rate-'));
- const options={cwd:staging,windowsHide:true,timeout:120000,maxBuffer:1024*1024};
- try{
-  const source=localSource?path.resolve(localSource):staging;
-  if(!localSource){
-   await run('git',['init','--quiet'],options);
-   await run('git',['fetch','--quiet','--depth=1','https://github.com/oneincase/media-bridge.git',commit],options);
-  }
-  const archive=path.join(staging,'source.tar'),workspace=path.join(staging,'source');
-  await run('git',['-C',source,'archive','--output='+archive,commit],options);
-  await mkdir(workspace);await run('tar',['-xf',archive,'-C',workspace],options);
-  const patch=fileURLToPath(new URL('./media-bridge-sample-clock.patch',import.meta.url));
-  await run('git',['apply','--unidiff-zero',patch],{...options,cwd:workspace});
-  const target=process.arch==='arm64'?'aarch64-pc-windows-msvc':'x86_64-pc-windows-msvc';
-  await run('cargo',['build','--release','--locked','--target',target,'-p','media-bridge','--no-default-features','--features','audio'],{...options,cwd:workspace,timeout:600000});
-  const binary=path.join(workspace,'target',target,'release','media-bridge.exe');
-  const directory=path.join(engines,highRateMediaDirectory);await mkdir(directory,{recursive:true});
-  const sha256=createHash('sha256').update(await readFile(binary)).digest('hex');
-  await writeFile(path.join(directory,'LICENSE'),await readFile(path.join(workspace,'LICENSE')));
-  await rename(binary,path.join(directory,'media-bridge.exe'));
-  console.log(JSON.stringify({prepared:true,version:'0.1.5-sample-clock',commit,directory,sha256}));
- }catch(error){throw Error('High-rate media component preparation failed. Install Rust and the C++ Build Tools for the Windows MSVC target. '+(error.stderr||error.message));}
- finally{
-  const [actualStaging,actualEngines]=await Promise.all([realpath(staging),realpath(engines)]);
-  if(path.dirname(actualStaging)===actualEngines&&path.basename(actualStaging).startsWith('.media-high-rate-'))await rm(actualStaging,{recursive:true,force:true,maxRetries:2});
+const version='0.3.0';
+const asset='media-bridge-stereo-win32-x64.exe';
+const bytesExpected=2991104;
+const sha256='8ca658fc1b9381716b61ea5f51835ba0ddb54d358604c746231e22313cf7a46e';
+const valid=bytes=>bytes.length===bytesExpected&&createHash('sha256').update(bytes).digest('hex')===sha256;
+if(process.platform!=='win32'||process.arch!=='x64')throw Error('Stereo media preparation requires Windows x64.');
+const directory=path.join(getDataRoot(),'engines',stereoMediaDirectory);
+const binary=path.join(directory,'media-bridge.exe');
+const license=await readFile(new URL('./media-bridge.LICENSE',import.meta.url));
+const installed=await readFile(binary).catch(error=>{if(error.code==='ENOENT')return null;throw error;});
+const reused=!!installed&&valid(installed);
+if(!reused){
+ const local=process.env.CODEX_WALLPAPER_MEDIA_ASSET;
+ let bytes;
+ if(local)bytes=await readFile(local);
+ else{
+  const url='https://github.com/still12281/codex-wallpaper-bridge/releases/download/v'+version+'/'+asset;
+  const response=await fetch(url,{signal:AbortSignal.timeout(90000)});
+  if(!response.ok)throw Error('Stereo media download failed: '+response.status);
+  bytes=Buffer.from(await response.arrayBuffer());
  }
+ if(!valid(bytes))throw Error('Stereo media SHA-256 mismatch.');
+ await mkdir(directory,{recursive:true});
+ const staged=binary+'.'+randomUUID()+'.next';
+ await writeFile(staged,bytes,{flag:'wx'});
+ await rename(staged,binary);
 }
+await writeFile(path.join(directory,'LICENSE'),license);
+console.log(JSON.stringify({prepared:true,version:'0.1.5-stereo',directory,sha256,reused}));

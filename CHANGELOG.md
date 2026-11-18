@@ -1,15 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - Add an optional AMD hardware capture and H.264 transport for saved Wallpaper Engine scenes. Mute the scene's own soundtrack in the capture window while retaining system audio response. Fall back to JPEG capture of the same scene if the hardware path is unavailable.
 
 - Preserve a taskbar launch request made while a previous request finishes. Retry temporarily unavailable Codex endpoint checks, reject a changed browser, and report a wallpaper host that exits before its first frame.
 - Start the next Codex instance when the previous main process has exited, even if old renderer helpers are still finishing. Verify the local listener in the launcher and the browser identity in the wallpaper host. Present the first wallpaper frame without the fade used when switching wallpapers.
 - Bring an already visible Codex window forward through Windows, including while the wallpaper is preparing. Restore a hidden window through its bound Codex page, and record an activation probe failure without showing raw diagnostics in the dialog.
-- Add optional 90 and 120 updates-per-second targets for WebGL audio response, with a separate Windows component and measured fresh-frame reporting in the media panel.
+- Use sample-clock stereo spectrum at 10, 20, 30, 60, 90 and 120 updates per second for WebGL scenes. The Windows installer prepares the verified component, and the media panel shows the measured incoming rate. The default target is 30.
 
-- Keep transcript clipping synchronized with native scroll progress, preventing earlier turns from briefly showing through the transparent composer during scrolling.
+- Keep transcript clipping synchronized with native scroll progress, preventing earlier turns from briefly showing through the transparent composer. Batch layout reads and skip unchanged clip values during scrolling.
 - Add stable GitHub release notifications, manual checks and verified one-click installer updates to the wallpaper panel. Preserve the library and integration settings; activate the installed version after exiting Codex normally and reopening the wallpaper entry.
 
 ## 0.2.2 — 2026-11-17
