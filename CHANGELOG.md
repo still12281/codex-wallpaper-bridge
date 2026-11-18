@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Preserve a taskbar launch request made while a previous request finishes. Retry temporarily unavailable Codex endpoint checks, reject a changed browser, and report a wallpaper host that exits before its first frame.
+- Start the next Codex instance when the previous main process has exited, even if old renderer helpers are still finishing. Verify the local listener in the launcher and the browser identity in the wallpaper host. Present the first wallpaper frame without the fade used when switching wallpapers.
 
 - Keep transcript clipping synchronized with native scroll progress, preventing earlier turns from briefly showing through the transparent composer during scrolling.
 - Add stable GitHub release notifications, manual checks and verified one-click installer updates to the wallpaper panel. Preserve the library and integration settings; activate the installed version after exiting Codex normally and reopening the wallpaper entry.

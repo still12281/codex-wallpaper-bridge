@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises';
 // Keep upstream files intact for license/hash verification; adapt their shared scope here.
 export async function upstreamRuntime(){
  const read=async name=>(await readFile(new URL('../vendor/dsh-wallpaper/'+name,import.meta.url),'utf8')).replace(/export\s*\{[^}]*\};?\s*$/,'');
- const picker=await read('picker-model.js'),fx=await read('fx-layer.js');
+ const [picker,fx]=await Promise.all([read('picker-model.js'),read('fx-layer.js')]);
  return {picker:'(()=>{'+picker+'\nreturn pickerModel;})()',fx:'function(config){if(window.__cwbFx){window.__cwbFx.update(config);return;}let selection=config;const weNow=()=>performance.now(),weClampTo=(value,min,max,fallback)=>Number.isFinite(Number(value))?Math.max(min,Math.min(max,Number(value))):fallback;'+fx+'\nwindow.__cwbFx={update(next){selection=next;syncFxLayer();},dispose(){disposeFxLayer();delete window.__cwbFx;}};syncFxLayer();}'};
 }
 
@@ -17,7 +17,7 @@ export function decorateShell(config){
   document.addEventListener('pointermove',move,{passive:true});document.addEventListener('visibilitychange',pause);addEventListener('focus',pause);addEventListener('blur',pause);reduced.addEventListener('change',pause);
   window.__cwbDecorations={version:2,update(next){current=next;const v=current.visual||{},layer=document.getElementById('codex-wallpaper-bridge-layer'),media=layer?.shadowRoot?.firstElementChild;
    if(media){media.style.filter='blur('+(v.wallpaperBlur||0)+'px) brightness('+(v.brightness??1)+')';media.style.scale=v.flip?'-1 1':'';const frozen=layer.shadowRoot.querySelector('[data-cwb-frozen]');if(frozen){frozen.style.filter=media.style.filter;frozen.style.scale=media.style.scale;}if(media.tagName==='VIDEO'){media.playbackRate=v.speed||1;media.volume=v.volume||0;media.muted=!v.volume;}}
-   window.__codexWallpaperBridge?.setVolume?.(v.volume||0);if(layer&&!animated.has(layer)){animated.add(layer);if(!reduced.matches&&v.transitionMs)layer.animate([{opacity:0},{opacity:1}],{duration:v.transitionMs,easing:'ease-out'});}
+   window.__codexWallpaperBridge?.setVolume?.(v.volume||0);if(layer&&!animated.has(layer)){animated.add(layer);if(!window.__cwbStartupAppearance&&!reduced.matches&&v.transitionMs)layer.animate([{opacity:0},{opacity:1}],{duration:v.transitionMs,easing:'ease-out'});}
    const native=getComputedStyle(document.documentElement),accent=native.getPropertyValue('--color-text-accent').trim()||native.getPropertyValue('--color-accent').trim()||native.getPropertyValue('--color-text-primary').trim()||'#6cd9e8';document.body.style.setProperty('--we-accent',accent);
    const font=v.fontFamily==='inherit'?'':v.fontFamily,code=v.codeFontFamily==='inherit'?'':v.codeFontFamily;
    style.textContent='#we-fx-layer{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}#we-fx-layer canvas{display:block;width:100%;height:100%}'+

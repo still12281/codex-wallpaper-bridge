@@ -15,7 +15,9 @@ for(const base of [process.env.ProgramFiles,process.env['ProgramFiles(x86)'],pro
 if(!chrome)throw Error('Isolated Chrome fixture unavailable');
 const root=await mkdtemp(path.join(os.tmpdir(),'cwb-transition-')),data=path.join(root,'data');await mkdir(path.join(data,'media'),{recursive:true});
 await writeFile(path.join(data,'media/fixture.svg'),'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#123456"/></svg>');
-await writeFile(path.join(data,'settings.json'),JSON.stringify({library:[{id:'generated-image',name:'Generated image',file:'media/fixture.svg',mime:'image/svg+xml'}],selectedId:'generated-image',visual:{theme:'dark'},systemMedia:{enabled:false,audio:false}}));
+await writeFile(path.join(data,'media/replacement.svg'),'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#563412"/></svg>');
+const library=[{id:'generated-image',name:'Generated image',file:'media/fixture.svg',mime:'image/svg+xml'},{id:'replacement-image',name:'Replacement image',file:'media/replacement.svg',mime:'image/svg+xml'}];
+await writeFile(path.join(data,'settings.json'),JSON.stringify({library,selectedId:'generated-image',visual:{theme:'dark'},systemMedia:{enabled:false,audio:false}}));
 let holdNext=false,releaseBody;
 const head='<!doctype html><html><head><style>html,body{background:rgb(250,250,250);color:#111}@keyframes nativePulse{50%{opacity:.5}}[data-startup-logo]{animation:nativePulse 1s infinite}</style><script>window.__parserBackground=getComputedStyle(document.documentElement).backgroundColor</script>';
 const body='</head><body><svg data-startup-logo width="40" height="40"><circle cx="20" cy="20" r="12" fill="currentColor"/></svg><aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Generated transition fixture</main></body></html>';
@@ -45,9 +47,11 @@ try{
  const paletteAfterMs=performance.now()-started;
  assert.equal(await next.evaluate('getComputedStyle(document.documentElement).backgroundColor'),'rgb(20, 22, 28)');
  assert.equal(await next.evaluate('!!window.__codexWallpaperBridge?.ready'),false);
+ await next.evaluate('window.__wallpaperAnimations=0;const nativeAnimate=Element.prototype.animate;Element.prototype.animate=function(...args){if(this.id==="codex-wallpaper-bridge-layer")window.__wallpaperAnimations++;return nativeAnimate.apply(this,args);};true');
  assert(releaseBody,'New document body was not held');releaseBody();
  await until(async()=>{const s=await status();return s.targets.some(t=>t.targetId===created.targetId&&t.ready);},2500);
  assert(await next.evaluate('!window.__cwbStartupAppearance&&!!document.getElementById("codex-wallpaper-bridge-style")&&window.__codexWallpaperBridge.ready'),'Palette did not hand off to real wallpaper');
+ assert.equal(await next.evaluate('window.__wallpaperAnimations'),0,'First wallpaper frame started a second animation');
  assert.equal(await next.evaluate('getComputedStyle(document.querySelector("[data-startup-logo]")).animationName'),'nativePulse');
  // A subsequent main-document load must receive its palette before parser JS.
  holdNext=true;await next.call('Page.reload',{ignoreCache:true});
@@ -55,6 +59,10 @@ try{
  assert.equal(await next.evaluate('window.__parserBackground'),'rgb(20, 22, 28)');
  assert(releaseBody);releaseBody();
  await until(()=>next.evaluate('!!window.__codexWallpaperBridge?.ready&&!window.__cwbStartupAppearance'));
+ // A normal switch still animates after the initial document has settled.
+ await next.evaluate('window.__wallpaperAnimations=0;const nativeAnimate=Element.prototype.animate;Element.prototype.animate=function(...args){if(this.id==="codex-wallpaper-bridge-layer")window.__wallpaperAnimations++;return nativeAnimate.apply(this,args);};window.__codexWallpaperSend(JSON.stringify({action:"select",selectedId:"replacement-image",token:document.getElementById("codex-wallpaper-controls").__cwbToken,id:8080}));true');
+ await until(async()=>JSON.parse(await readFile(path.join(data,'settings.json'),'utf8')).selectedId==='replacement-image');
+ assert.equal(await next.evaluate('window.__wallpaperAnimations'),1,'Selecting another wallpaper lost its fade');
  const unrelated=await browserCdp.call('Target.createTarget',{url:url.replace('/app','/foreign'),background:true});
  const unrelatedTarget=await until(async()=>(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.id===unrelated.targetId));foreign=await connectCdp(unrelatedTarget.webSocketDebuggerUrl);clients.push(foreign);
  await until(()=>foreign.evaluate('!!document.body&&location.pathname==="/foreign"'));
@@ -63,7 +71,7 @@ try{
  const final=await status();assert.deepEqual(final.targetErrors,[]);
  const exited=new Promise(r=>host.once('exit',r)),stopAt=performance.now();await browserCdp.call('Browser.close').catch(()=>{});await Promise.race([exited,sleep(3000)]);
  assert.equal(host.exitCode,0,'Host leaked after browser exit');assert.equal(errors,'');
- const report={kind:'isolated-generated-transition-not-real-client-cold-start',passed:true,paletteAfterMs,newTargetWokeIdleHost:true,paletteBeforeBody:true,newDocumentPaletteBeforeParser:true,nativeAnimationPreserved:true,realWallpaperHandoff:true,unrelatedPageUnchanged:true,hostExitMs:performance.now()-stopAt};
+ const report={kind:'isolated-generated-transition-not-real-client-cold-start',passed:true,paletteAfterMs,newTargetWokeIdleHost:true,paletteBeforeBody:true,newDocumentPaletteBeforeParser:true,nativeAnimationPreserved:true,wallpaperHandoffWithoutFade:true,manualSwitchFadePreserved:true,unrelatedPageUnchanged:true,hostExitMs:performance.now()-stopAt};
  const output=process.argv.indexOf('--output');if(output>=0)await writeFile(process.argv[output+1],JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 }finally{
  releaseBody?.();for(const client of clients)client.close();browserCdp?.close();if(host?.exitCode===null)host.kill();if(browser?.exitCode===null)browser.kill();await new Promise(r=>server.close(r));server.closeAllConnections();

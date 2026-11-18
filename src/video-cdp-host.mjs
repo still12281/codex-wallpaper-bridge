@@ -42,27 +42,66 @@ const expectedBrowser=browserArg<0?null:process.argv[browserArg+1];
 if(browserArg>=0&&!/^[A-Za-z0-9-]+$/.test(expectedBrowser||''))throw Error('Expected --browser-id');
 const testArg=process.argv.indexOf('--test-url');const appUrl=testArg>=0?process.argv[testArg+1]:'app://-/index.html';
 const sourceFiles=['video-cdp-host.mjs','wallpaper-style.mjs','automatic-surfaces.mjs','upstream-adapters.mjs','wallpaper-panel.mjs','wallpaper-widgets.mjs','appearance-model.mjs'];
-const build=Object.fromEntries(await Promise.all(sourceFiles.map(async file=>[file,createHash('sha256').update(await readFile(path.join(codeRoot,file))).digest('hex')])));
+const readBuild=async()=>Object.fromEntries(await Promise.all(sourceFiles.map(async file=>[file,createHash('sha256').update(await readFile(path.join(codeRoot,file))).digest('hex')])));
+let build=null;
 // Observe fatal Node errors without catching them or changing exit behavior.
 // The bounded local record survives a failure during an asynchronous status save.
 process.on('uncaughtExceptionMonitor',(error,origin)=>{try{writeFileSync(path.join(root,'host-failure.json'),JSON.stringify({pid:process.pid,at:new Date().toISOString(),origin,message:String(error?.message||error).slice(0,2000),build},null,2));}catch{}});
-const response=await fetch('http://127.0.0.1:'+port+'/json/version',{signal:AbortSignal.timeout(5000),redirect:'error'});
-if(!response.ok)throw Error('Codex debugging endpoint returned HTTP '+response.status);
-const version=await response.json();
+const versionUrl='http://127.0.0.1:'+port+'/json/version';
+let version,browserProbeAttempts=0;
+while(!version){
+ browserProbeAttempts++;
+ let response;
+ try{
+  response=await fetch(versionUrl,{signal:AbortSignal.timeout(expectedBrowser?2000:5000),redirect:'error'});
+  if(!response.ok)throw Error('Codex debugging endpoint returned HTTP '+response.status);
+  version=await response.json();
+  if(!version)throw new SyntaxError('Codex debugging endpoint returned an empty browser record');
+ }catch(error){
+  if(!expectedBrowser||browserProbeAttempts===3||(response&&!response.ok)||error instanceof SyntaxError)throw error;
+  await new Promise(resolve=>setTimeout(resolve,150));
+ }
+}
 const browserMatch=new RegExp('^ws://127\\.0\\.0\\.1:'+port+'/devtools/browser/([A-Za-z0-9-]+)$').exec(version.webSocketDebuggerUrl);
 if(!browserMatch||(expectedBrowser&&browserMatch[1]!==expectedBrowser))throw Error('Codex debugging endpoint does not match the verified browser');
-const settings=await loadSettings(root);
-prepared('settings-loaded');const adapters=await upstreamRuntime();prepared('adapters-loaded');
-normalizeLibrary(settings);const retainPalette=createPaletteTracker(settings);await saveConfig(root,settings);prepared('settings-normalized');
+prepared('browser-verified');
 // The browser connection is a lifetime signal, not a process-scanning timer.
-const browserLifetime=await connectCdp(version.webSocketDebuggerUrl);
+const [settings,adapters,{client:browserLifetime,processAgeAtConnectMs},sourceBuild]=await Promise.all([
+ loadSettings(root).then(value=>{prepared('settings-loaded');return value;}),
+ upstreamRuntime().then(value=>{prepared('adapters-loaded');return value;}),
+ connectCdp(version.webSocketDebuggerUrl).then(client=>({client,processAgeAtConnectMs:performance.now()})),
+ readBuild()
+]);
+build=sourceBuild;
+const savedSettings=JSON.stringify(settings);
+normalizeLibrary(settings);const retainPalette=createPaletteTracker(settings);
+if(JSON.stringify(settings)!==savedSettings)await saveConfig(root,settings);
+prepared('settings-normalized');
 const startupClock=performance.now();
-const status={pid:process.pid,build,browserId:browserMatch[1],source:'native-video-blob',phase:'connecting',cdpPort:port,wallpaperId:settings.wallpaperId,targets:[],startup:{startedAt:new Date().toISOString(),preparation,preparedMs:performance.now()-preparationClock,processAgeAtConnectMs:performance.now(),firstReadyMs:null,mainReadyMs:null,events:[]}};
+const status={pid:process.pid,build,browserId:browserMatch[1],source:'native-video-blob',phase:'connecting',cdpPort:port,wallpaperId:settings.wallpaperId,targets:[],startup:{startedAt:new Date().toISOString(),browserProbeAttempts,preparation,preparedMs:performance.now()-preparationClock,processAgeAtConnectMs,firstReadyMs:null,mainReadyMs:null,events:[]}};
 const startupEvent=(phase,targetId)=>{if(status.startup.events.length<24)status.startup.events.push({phase,targetId,afterMs:performance.now()-startupClock});};
 const targetReady=t=>t.installed&&(t.ready||t.disabled)&&(t.mode!=='realtime'||t.frames>0);
-let statusWrite=Promise.resolve();
-const save=()=>{status.mediaPower=mediaPower?.snapshot()??null;status.memory=process.memoryUsage();status.updatedAt=new Date().toISOString();const value=JSON.stringify(status,null,2);statusWrite=statusWrite.catch(()=>{}).then(async()=>{const temp=path.join(root,'runtime-status.next.json');await writeFile(temp,value);await rename(temp,path.join(root,'runtime-status.json'));});return statusWrite;};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let statusWrite=Promise.resolve(),statusWriteRetries=0;
+const save=()=>{
+ status.mediaPower=mediaPower?.snapshot()??null;status.memory=process.memoryUsage();status.updatedAt=new Date().toISOString();
+ if(statusWriteRetries)status.statusWriteRetries=statusWriteRetries;
+ const value=JSON.stringify(status,null,2);
+ statusWrite=statusWrite.catch(()=>{}).then(async()=>{
+  const temp=path.join(root,'runtime-status.next.json'),destination=path.join(root,'runtime-status.json');
+  await writeFile(temp,value);
+  // A Windows reader can briefly hold the status file across atomic replacement.
+  for(const delay of [0,25,75]){
+   if(delay)await sleep(delay);
+   try{await rename(temp,destination);return;}
+   catch(error){
+    if(process.platform!=='win32'||!['EPERM','EACCES','EBUSY'].includes(error.code)||delay===75)throw error;
+    statusWriteRetries++;
+   }
+  }
+ });
+ return statusWrite;
+};
 const sessions=new Map();let automaticSurfaces=null,busy=false,stopped=false,acting=false,importPreparing=false,actionQueue=Promise.resolve(),selectionRevision=0,activeSelection=null;
 let realtime=null,realtimeKey=null,streamTimer=null,streaming=false,timer=null,rotationTimer=null,spectrumTimer=null,mediaPower=null;
 const selectionEpoch=randomUUID();
@@ -82,6 +121,7 @@ async function stop(reason='requested'){
  try{await Promise.allSettled([...cleanups,stopRealtime(),mediaPower?.stop()]);status.phase='stopped';status.targets=[];await save();}finally{process.exit(0)}
 }
 browserLifetime.ws.addEventListener('close',()=>void stop('browser-disconnected'),{once:true});
+if(browserLifetime.ws.readyState!==1)await stop('browser-disconnected');
 process.on('SIGINT',()=>void stop('SIGINT'));process.on('SIGTERM',()=>void stop('SIGTERM'));
 const evaluateAsync=async(c,expression)=>{const result=await c.call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(result.exceptionDetails)throw Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text);return result.result?.value};
 async function stopRealtime(){const previous=realtime;realtime=null;realtimeKey=null;if(previous)await previous.stop()}

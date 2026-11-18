@@ -50,8 +50,11 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
   }else if(early){
    await writeFile(preloader,'// Early body fixture has no native shell until after the first frame.');
    await main.evaluate('document.querySelector("aside").remove();document.querySelector("main").remove();document.documentElement.style.setProperty("color-scheme","light","important");document.documentElement.classList.add("native-fixture");document.head.insertAdjacentHTML("beforeend",\'<style>:root{--app-color-text-foreground:#1a1c1f}:root[data-theme="dark"]{--app-color-text-foreground:#dfdfdf}body{color:var(--app-color-text-foreground)}</style>\');true');
+  }else if(webgl){
+   await writeFile(preloader,`import fs from 'node:fs/promises';import {syncBuiltinESMExports} from 'node:module';const rename=fs.rename;let blocked=false;fs.rename=async(from,to)=>{if(!blocked&&String(to).endsWith('runtime-status.json')&&JSON.parse(await fs.readFile(from,'utf8')).phase==='background-rendered'){blocked=true;throw Object.assign(Error('Fixture status sharing violation'),{code:'EPERM'});}return rename(from,to);};syncBuiltinESMExports();`);
+   await main.evaluate('window.__wallpaperAnimations=0;const nativeAnimate=Element.prototype.animate;Element.prototype.animate=function(...args){if(this.id==="codex-wallpaper-bridge-layer")window.__wallpaperAnimations++;return nativeAnimate.apply(this,args);};true');
   }else{
-   await writeFile(preloader,'// No target substitution in the delayed-shell scenario.');
+   await writeFile(preloader,scenario==='shell'?`const originalFetch=globalThis.fetch;let firstVersion=true;globalThis.fetch=async(...args)=>{if(firstVersion&&String(args[0])==='http://127.0.0.1:${port}/json/version'){firstVersion=false;return {ok:true,json:async()=>{throw new DOMException('Delayed browser response body','TimeoutError');}};}return originalFetch(...args);};`:'// No target substitution in the delayed-shell scenario.');
    await main.evaluate('document.querySelector("aside").remove();document.querySelector("main").remove();setTimeout(()=>{document.body.innerHTML=\'<aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Delayed fixture</main>\'},1000);true');
   }
   const browserId=version.webSocketDebuggerUrl.split('/').pop();
@@ -72,7 +75,13 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
   const readyAfterMs=performance.now()-started;
   if(!baseline)assert(readyAfterMs<(webgl?15000:2500),scenario+' delayed the primary page: '+readyAfterMs+' ms');
   const observation={scenario,readyAfterMs,auxiliaryResumeAfterMs:scenario==='auxiliary'?4000:null,startup:state.startup};results.push(observation);
-  if(webgl){assert(state.targets.some(t=>t.mode==='webwallgl'&&t.ready));observation.realWebglCleanup=true;}
+  if(!baseline&&scenario==='shell')assert.equal(state.startup.browserProbeAttempts,2,'Known browser startup did not recover from a transient response error');
+  if(webgl){
+   assert(state.targets.some(t=>t.mode==='webwallgl'&&t.ready));
+   assert.equal(await main.evaluate('window.__wallpaperAnimations'),0,'WebGL first frame started a second animation');
+   if(!baseline&&process.platform==='win32')await until(async()=>JSON.parse(await readFile(path.join(data,'runtime-status.json'),'utf8')).statusWriteRetries===1);
+   observation.realWebglCleanup=true;
+  }
   if(early){
    assert(await main.evaluate('!document.querySelector("aside")&&!!window.__codexWallpaperBridge?.ready&&!!document.getElementById("codex-wallpaper-bridge-style")&&!window.__cwbWidgets'),'Wallpaper did not paint before shell, or native widgets initialized too early');
    await main.evaluate('window.__earlyLayer=document.getElementById("codex-wallpaper-bridge-layer");document.body.insertAdjacentHTML("beforeend",\'<aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Late shell</main><div class="_ApplicationMenuTopBar_fixture"><div role="menubar"><button>Generated File</button></div></div>\');true');

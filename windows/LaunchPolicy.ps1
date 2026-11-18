@@ -61,13 +61,22 @@ function Select-WallpaperOwnedHosts([object[]]$Processes,[string]$Root,[string]$
   @($Processes | Where-Object {$_.Name -ieq 'node.exe' -and (Test-WallpaperHostScript $_.CommandLine $Root $CodeRoot)})
 }
 
+function Read-WallpaperRuntimeStatus([string]$Path) {
+  $share=[IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete
+  $stream=[IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,$share)
+  try{
+    $reader=[IO.StreamReader]::new($stream)
+    try{return $reader.ReadToEnd() | ConvertFrom-Json -ErrorAction Stop}finally{$reader.Dispose()}
+  }finally{$stream.Dispose()}
+}
+
 function Get-WallpaperHostState {
   param([object[]]$Processes,[string]$Root,[string]$CodeRoot,[string]$Node,[string]$BrowserId)
   $owned=@(Select-WallpaperOwnedHosts $Processes $Root $CodeRoot)
   if(-not $owned.Count){return [pscustomobject]@{mode='absent';pid=0}}
   if($owned.Count -eq 1){
     try{
-      $record=Get-Content -LiteralPath (Join-Path $Root 'runtime-status.json') -Raw -ErrorAction Stop|ConvertFrom-Json -ErrorAction Stop
+      $record=Read-WallpaperRuntimeStatus (Join-Path $Root 'runtime-status.json')
       if((Get-WallpaperHostDecision $owned[0] $record $Root $CodeRoot $Node $BrowserId) -eq 'reuse'){
         return [pscustomobject]@{mode='reuse';pid=[int]$owned[0].ProcessId}
       }
@@ -204,7 +213,8 @@ function Wait-WallpaperStartupDrain {
     $newMains=@($mains | Where-Object {('{0}|{1}|{2}' -f $_.Id,$_.Created,$_.Path) -notin $identities})
     if($newMains.Count){return [pscustomobject]@{reason='new-client-preserved';remaining=$current}}
     if(-not $current.Count){return [pscustomobject]@{reason='exit-completed';remaining=@()}}
-    if($index -eq $Checks -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds){return [pscustomobject]@{reason=$(if($mains.Count){'client-still-running'}else{'helpers-only'});remaining=$current}}
+    if(-not $mains.Count){return [pscustomobject]@{reason='helpers-only';remaining=$current}}
+    if($index -eq $Checks -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds){return [pscustomobject]@{reason='client-still-running';remaining=$current}}
     & $Pause
   }
 }
@@ -219,7 +229,7 @@ function Get-WallpaperCdpProbePorts([string]$Root) {
   $ports=@()
   foreach($name in @('cdp-endpoint.json','runtime-status.json')){
     try{
-      $record=Get-Content -LiteralPath (Join-Path $Root $name) -Raw -ErrorAction Stop|ConvertFrom-Json -ErrorAction Stop
+      $record=if($name -eq 'runtime-status.json'){Read-WallpaperRuntimeStatus (Join-Path $Root $name)}else{Get-Content -LiteralPath (Join-Path $Root $name) -Raw -ErrorAction Stop|ConvertFrom-Json -ErrorAction Stop}
       if($name -eq 'cdp-endpoint.json'){
         if($record.schemaVersion -ne 1 -or $record.address -cne '127.0.0.1'){continue}
         $value=$record.port
@@ -275,35 +285,33 @@ function Select-WallpaperCdpEndpoint {
 
 # Only for a root already verified by Get-WallpaperVerifiedEndpoint in this
 # bootstrap. A retained OS handle keeps identity stable even if a PID is reused.
+function Get-WallpaperKnownRootIssue {
+  param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex)
+  try{
+    [void]$Process.Handle
+    $Process.Refresh()
+    if($Process.HasExited){return 'client-exited'}
+    $matches=$Process.Id -eq $Identity.RootProcessId -and
+      $Process.SessionId -eq $Identity.SessionId -and
+      $Process.StartTime.ToUniversalTime().ToString('o') -ceq $Identity.RootCreatedAtUtc -and
+      $Process.MainModule.FileName -ieq $Identity.RootExecutable -and
+      $Identity.RootExecutable -ieq $Codex.Executable
+    if(-not $matches){return 'client-changed'}
+    if($Process.HasExited){return 'client-exited'}
+  }catch{return 'client-unverified'}
+  $rows=@(Get-DreamSkinPortListeners -Port $Port)
+  if(-not $rows.Count){return 'listener-unavailable'}
+  $owners=@($rows.OwningProcess|Select-Object -Unique)
+  if(@($rows|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count -or
+    $owners.Count -ne 1 -or $owners[0] -ne $Identity.RootProcessId){return 'listener-changed'}
+}
+
 function Get-WallpaperReverifiedEndpoint {
   param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex,[ref]$Failure)
-  $sameRoot={
-    try{
-      [void]$Process.Handle
-      $Process.Refresh()
-      if($Process.HasExited){return 'client-exited'}
-      $matches=$Process.Id -eq $Identity.RootProcessId -and
-        $Process.SessionId -eq $Identity.SessionId -and
-        $Process.StartTime.ToUniversalTime().ToString('o') -ceq $Identity.RootCreatedAtUtc -and
-        $Process.MainModule.FileName -ieq $Identity.RootExecutable -and
-        $Identity.RootExecutable -ieq $Codex.Executable
-      if(-not $matches){return 'client-changed'}
-      if($Process.HasExited){return 'client-exited'}
-    }catch{return 'client-unverified'}
-  }
-  $sameListener={
-    $rows=@(Get-DreamSkinPortListeners -Port $Port)
-    if(-not $rows.Count){return 'listener-unavailable'}
-    $owners=@($rows.OwningProcess|Select-Object -Unique)
-    if(@($rows|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count -or
-      $owners.Count -ne 1 -or $owners[0] -ne $Identity.RootProcessId){return 'listener-changed'}
-  }
-  $reason=& $sameRoot
-  if(-not $reason){$reason=& $sameListener}
+  $reason=Get-WallpaperKnownRootIssue $Process $Identity $Port $Codex
   if(-not $reason){
     $browser=Get-DreamSkinCdpBrowserIdentity -Port $Port
-    $reason=& $sameRoot
-    if(-not $reason){$reason=& $sameListener}
+    $reason=Get-WallpaperKnownRootIssue $Process $Identity $Port $Codex
     if(-not $reason){
       if(-not $browser){$reason='browser-probe-unavailable'}
       elseif($browser.BrowserId -cne $Identity.BrowserId){$reason='browser-changed'}

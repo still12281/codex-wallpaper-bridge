@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 24388,
-      "sha256": "4b7fe84f35235165ef37cd7b82bc7dd22206399b825fcc0227d3c4475e0d6e7c"
+      "utf8Bytes": 24686,
+      "sha256": "5d0581be36b0788be7e05da5dff48e12aa9df58ba9ff12b197b0ae8fe6596622"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -530,13 +530,13 @@
     },
     {
       "path": "src/upstream-adapters.mjs",
-      "utf8Bytes": 4917,
-      "sha256": "1f4b8d6b7eb9e97292fd3ed71d30ead6fcb23898044fb018a3e42731ee74c7af"
+      "utf8Bytes": 4960,
+      "sha256": "916f6de5b6144e98a72f1e59f204aa779ec37f6b8728804db1c95ff18a53ad78"
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 47110,
-      "sha256": "3aff16dafa3d99adfc864104a166bd703337348b075d06383719453549259c1b"
+      "utf8Bytes": 48423,
+      "sha256": "8cbc7c52396d60749d7aa8349af25e8c98ce9065e0ea7c1d63de034f91eddcaf"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -745,8 +745,8 @@
     },
     {
       "path": "test/launch-policy.ps1",
-      "utf8Bytes": 7468,
-      "sha256": "8a7c0ffdcdc5bf9139cea7ed4bff88cf7d6fa0558a1cf2b10ec58f019beb173f"
+      "utf8Bytes": 7784,
+      "sha256": "66cedc52d816bf8f6335a9ddd41a091e4daefad66f1d454e82d46263dba21f92"
     },
     {
       "path": "test/launcher-runtime.ps1",
@@ -855,8 +855,8 @@
     },
     {
       "path": "test/startup-priority-integration.mjs",
-      "utf8Bytes": 14714,
-      "sha256": "11908d531120eab4a2b458de373081902440d66d283c022f810345c9e847a11d"
+      "utf8Bytes": 16259,
+      "sha256": "eb38efed3cd68e51f736b9c44b4e8a88b18de644157228b215b65d04edf70f7b"
     },
     {
       "path": "test/startup-shutdown.ps1",
@@ -870,8 +870,8 @@
     },
     {
       "path": "test/startup-transition-integration.mjs",
-      "utf8Bytes": 7713,
-      "sha256": "1a69dcb4513bda6c083909a5a699f1100b912d974ea6127daf6cfc0b4cf9c1cc"
+      "utf8Bytes": 9178,
+      "sha256": "e700a55dd9f878c287e29e5daa102e3612b17626955840a6f113c919b59e064f"
     },
     {
       "path": "test/style-contract.test.mjs",
@@ -1150,8 +1150,8 @@
     },
     {
       "path": "windows/LaunchPolicy.ps1",
-      "utf8Bytes": 22120,
-      "sha256": "b27941f82cd85e39fade26a0a633f154b835bc6859206dd70c97e23cb30fc5cc"
+      "utf8Bytes": 22635,
+      "sha256": "e4a421f87b47e06abdf7630adec8c277c42307db756c59402be1168954160158"
     },
     {
       "path": "windows/LoginStartup.ps1",
@@ -1215,8 +1215,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 25410,
-      "sha256": "7053af67a5fb79f0b5876f8dcbb176b81f7e22dc60c4606440b5a5a4ee6df04a"
+      "utf8Bytes": 25739,
+      "sha256": "a687dbf78ad9300052d8d6ecb23a44b46e9162d4bec1caafb017aafe6cee6c71"
     },
     {
       "path": "windows/Start-ExternalApp.ps1",

@@ -62,7 +62,9 @@ $drained=Wait-WallpaperStartupDrain -Initial @($snapshot,$helper) -Checks 4 -Pau
   $script:drainRead++
   if($script:drainRead -eq 1){$snapshot;$helper}elseif($script:drainRead -eq 2){$helper}
 }
-Assert-Policy ($drained.reason -eq 'exit-completed' -and -not $drained.remaining.Count) 'A closing client was not allowed to finish shutdown'
+Assert-Policy ($drained.reason -eq 'helpers-only' -and $drained.remaining[0].Id -eq $helper.Id -and $script:drainRead -eq 2) 'An exited root still waited for a lingering helper'
+$drained=Wait-WallpaperStartupDrain -Initial @($snapshot) -Pause {throw 'Must not wait after all processes have exited'} -ReadSnapshot {}
+Assert-Policy ($drained.reason -eq 'exit-completed' -and -not $drained.remaining.Count) 'An empty snapshot did not finish the shutdown drain'
 $replacement=[pscustomobject]@{Id=201;Created=200;Path='verified-client';IsMain=$true}
 $drained=Wait-WallpaperStartupDrain -Initial @($snapshot) -Pause {throw 'Must not wait for another activation'} -ReadSnapshot {$replacement}
 Assert-Policy ($drained.reason -eq 'new-client-preserved') 'PID reuse hid a new main process'

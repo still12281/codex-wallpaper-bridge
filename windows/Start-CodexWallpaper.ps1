@@ -89,7 +89,7 @@ function Wait-TaskIdentity([int]$Port,$ExpectedRoot,[int]$Seconds=25) {
         $taskIdentity.RootExecutable -ine $ExpectedRoot.Path){throw '壁纸连接不是本轮启动的实例，已保留客户端并停止接入。'}
       return $taskIdentity
     }
-    Start-Sleep -Milliseconds 500
+    Start-Sleep -Milliseconds 150
   }while([DateTimeOffset]::UtcNow -lt $taskDeadline)
   return $null
 }
@@ -184,7 +184,6 @@ try {
       Close-TaskSnapshot $taskInitial
       if(@(Get-TaskSnapshot).Count -gt 0){throw '检测到新出现或仍存在的 Codex 实例，已保留，不进行再次关闭。'}
     }
-    Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses)
     # Store may have registered an update while an older client was exiting.
     if($taskStatus.shutdownDrain -or $WaitForClientExit -or $RestartCurrent){$taskCodex=Get-WallpaperRegisteredCodex;Set-WallpaperTrustedPackageRoots @($taskCodex)}
     $taskStatus.codexVersion="$($taskCodex.Version)"
@@ -236,7 +235,7 @@ try {
     }
   }
   $taskStatus.browserId="$($taskIdentity.BrowserId)"
-  $taskStatus.debugRootPid=[int](@(Get-DreamSkinPortListeners -Port $taskPort)[0].OwningProcess)
+  $taskStatus.debugRootPid=$taskIdentity.RootProcessId
   Assert-WallpaperClientAbsent @(Get-WallpaperCodexProcesses) $taskStatus.debugRootPid
   $taskVerifiedRoot=Get-Process -Id $taskStatus.debugRootPid -ErrorAction Stop
   try{[void]$taskVerifiedRoot.Handle;$taskRootHandlePinned=$true}catch{$taskStatus.rootHandleFallback=$_.Exception.Message}
@@ -282,8 +281,15 @@ try {
   if($taskHostState.mode -eq 'conflict'){throw '旧壁纸宿主尚未完成退出，已保留当前 Codex；未重复启动宿主或关闭客户端。'}
   Save-TaskPhase 'wallpaper-host-slot-ready'
   $taskHostAlreadyRunning=$taskHostState.mode -eq 'reuse'
-  Confirm-TaskKnownEndpoint 'before-host-start' -AllowPendingPage
-  Save-TaskPhase 'wallpaper-host-endpoint-reverified'
+  if(-not $taskReuseExisting -and -not $taskHostAlreadyRunning -and $taskRootHandlePinned -and
+     -not (Get-WallpaperKnownRootIssue $taskVerifiedRoot $taskIdentity $taskPort $taskCodex)){
+    # The newly started host checks this exact browser ID before connecting.
+    $taskStatus.endpointRecheck=[ordered]@{stage='before-host-start';attempts=0;failure=$null;browserVerification='wallpaper-host'}
+    Save-TaskPhase 'wallpaper-host-listener-reverified'
+  }else{
+    Confirm-TaskKnownEndpoint 'before-host-start' -AllowPendingPage
+    Save-TaskPhase 'wallpaper-host-endpoint-reverified'
+  }
   if(-not $taskHostAlreadyRunning){
     $taskHost=Start-WallpaperCleanProcess -FilePath $taskNode -ArgumentList @('--expose-gc','--max-old-space-size=64','--max-semi-space-size=4',(Join-Path $taskCodeRoot 'src/video-cdp-host.mjs'),'--cdp-port',"$taskPort",'--browser-id',"$($taskIdentity.BrowserId)") -Hidden -StandardOutput (Join-Path $taskRoot 'video-output.log') -StandardError (Join-Path $taskRoot 'video-error.log')
     $taskStatus.hostPid=$taskHost.Id
@@ -296,7 +302,7 @@ try {
     if(Test-TaskVerifiedRootExited){throw 'Codex 已退出，本次壁纸接入已结束。'}
     if($taskHost -and $taskHost.HasExited){throw "壁纸宿主在首帧就绪前退出（退出码 $($taskHost.ExitCode)）。请查看 video-error.log。"}
     if(Test-Path -LiteralPath $taskRuntime){
-      try{$taskRuntimeState=Get-Content -LiteralPath $taskRuntime -Raw -ErrorAction Stop|ConvertFrom-Json
+      try{$taskRuntimeState=Read-WallpaperRuntimeStatus $taskRuntime
         $taskAge=([DateTimeOffset]::UtcNow-([DateTimeOffset]$taskRuntimeState.updatedAt)).TotalSeconds
         $taskFresh=$taskAge -ge 0 -and $taskAge -lt 12
         $taskGoodPhase=$taskRuntimeState.phase -in @('background-rendered','background-disabled','realtime-capture-active','realtime-capture-paused')
