@@ -52,6 +52,7 @@ function Get-WallpaperHostDecision {
   param($Process,$Status,[string]$Root,[string]$CodeRoot,[string]$Node,[string]$BrowserId,[DateTimeOffset]$Now=[DateTimeOffset]::UtcNow)
   if(-not $Process -or [int]$Process.ProcessId -ne [int]$Status.pid -or -not (Test-WallpaperHostScript $Process.CommandLine $Root $CodeRoot)){return 'absent'}
   if($Process.ExecutablePath -ine $Node){return 'conflict'}
+  if($Status.phase -eq 'stopped'){return 'conflict'}
   try{$age=($Now-[DateTimeOffset]$Status.updatedAt).TotalSeconds}catch{return 'conflict'}
   if($Status.browserId -ceq $BrowserId -and $age -ge 0 -and $age -lt 12){return 'reuse'}
   return 'conflict'
@@ -275,42 +276,68 @@ function Select-WallpaperCdpEndpoint {
 # Only for a root already verified by Get-WallpaperVerifiedEndpoint in this
 # bootstrap. A retained OS handle keeps identity stable even if a PID is reused.
 function Get-WallpaperReverifiedEndpoint {
-  param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex)
+  param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex,[ref]$Failure)
   $sameRoot={
     try{
       [void]$Process.Handle
       $Process.Refresh()
-      $matches=-not $Process.HasExited -and $Process.Id -eq $Identity.RootProcessId -and
+      if($Process.HasExited){return 'client-exited'}
+      $matches=$Process.Id -eq $Identity.RootProcessId -and
         $Process.SessionId -eq $Identity.SessionId -and
         $Process.StartTime.ToUniversalTime().ToString('o') -ceq $Identity.RootCreatedAtUtc -and
         $Process.MainModule.FileName -ieq $Identity.RootExecutable -and
         $Identity.RootExecutable -ieq $Codex.Executable
-      return $matches -and -not $Process.HasExited
-    }catch{return $false}
+      if(-not $matches){return 'client-changed'}
+      if($Process.HasExited){return 'client-exited'}
+    }catch{return 'client-unverified'}
   }
   $sameListener={
     $rows=@(Get-DreamSkinPortListeners -Port $Port)
+    if(-not $rows.Count){return 'listener-unavailable'}
     $owners=@($rows.OwningProcess|Select-Object -Unique)
-    return $rows.Count -gt 0 -and -not @($rows|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count -and
-      $owners.Count -eq 1 -and $owners[0] -eq $Identity.RootProcessId
+    if(@($rows|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count -or
+      $owners.Count -ne 1 -or $owners[0] -ne $Identity.RootProcessId){return 'listener-changed'}
   }
-  if(-not (& $sameRoot) -or -not (& $sameListener)){return $null}
-  $browser=Get-DreamSkinCdpBrowserIdentity -Port $Port
-  if(-not $browser -or $browser.BrowserId -cne $Identity.BrowserId){return $null}
-  if(-not (& $sameListener) -or -not (& $sameRoot)){return $null}
+  $reason=& $sameRoot
+  if(-not $reason){$reason=& $sameListener}
+  if(-not $reason){
+    $browser=Get-DreamSkinCdpBrowserIdentity -Port $Port
+    $reason=& $sameRoot
+    if(-not $reason){$reason=& $sameListener}
+    if(-not $reason){
+      if(-not $browser){$reason='browser-probe-unavailable'}
+      elseif($browser.BrowserId -cne $Identity.BrowserId){$reason='browser-changed'}
+    }
+  }
+  if($Failure){$Failure.Value=$reason}
+  if($reason){return $null}
   return $Identity
 }
 
 function Get-WallpaperKnownRootEndpoint {
-  param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex,[switch]$HasRetainedHandle,[switch]$AllowPendingPage)
+  param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex,[switch]$HasRetainedHandle,[switch]$AllowPendingPage,[ref]$Failure)
   # A less-privileged entry may be able to inspect a process but not retain its
   # full Process.Handle. Keep the original complete verification in that case.
-  $verified=if($HasRetainedHandle){Get-WallpaperReverifiedEndpoint -Process $Process -Identity $Identity -Port $Port -Codex $Codex}
+  $reason=$null
+  $verified=if($HasRetainedHandle){Get-WallpaperReverifiedEndpoint -Process $Process -Identity $Identity -Port $Port -Codex $Codex -Failure ([ref]$reason)}
     else{Get-WallpaperVerifiedEndpoint -Port $Port -Codex $Codex -AllowPendingPage:$AllowPendingPage}
-  if(-not $verified -or $verified.RootProcessId -ne $Identity.RootProcessId -or
+  if(-not $verified){if($Failure){$Failure.Value=if($reason){$reason}else{'endpoint-unverified'}};return $null}
+  if($verified.RootProcessId -ne $Identity.RootProcessId -or
     $verified.RootCreatedAtUtc -cne $Identity.RootCreatedAtUtc -or $verified.RootExecutable -ine $Identity.RootExecutable -or
-    $verified.SessionId -ne $Identity.SessionId -or $verified.BrowserId -cne $Identity.BrowserId){return $null}
+    $verified.SessionId -ne $Identity.SessionId -or $verified.BrowserId -cne $Identity.BrowserId){if($Failure){$Failure.Value='endpoint-changed'};return $null}
+  if($Failure){$Failure.Value=$null}
   return $verified
+}
+function Wait-WallpaperKnownRootEndpoint {
+  param([Diagnostics.Process]$Process,$Identity,[int]$Port,$Codex,[switch]$HasRetainedHandle,[switch]$AllowPendingPage,[scriptblock]$Pause={Start-Sleep -Milliseconds 150})
+  for($attempt=1;$attempt -le 3;$attempt++){
+    $failure=$null
+    $verified=Get-WallpaperKnownRootEndpoint -Process $Process -Identity $Identity -Port $Port -Codex $Codex -HasRetainedHandle:$HasRetainedHandle -AllowPendingPage:$AllowPendingPage -Failure ([ref]$failure)
+    if($verified -or $failure -notin @('browser-probe-unavailable','listener-unavailable','endpoint-unverified') -or $attempt -eq 3){
+      return [pscustomobject]@{identity=$verified;failure=$failure;attempts=$attempt}
+    }
+    & $Pause
+  }
 }
 function Get-WallpaperVerifiedEndpointForAnyRegistered([string]$Root) {
   foreach($port in @(Get-WallpaperCdpProbePorts $Root)){

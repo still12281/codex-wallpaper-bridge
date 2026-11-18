@@ -4,13 +4,23 @@ function Assert-Root($Condition,[string]$Message){if(-not $Condition){throw $Mes
 $process=Get-Process -Id $PID -ErrorAction Stop;[void]$process.Handle
 $identity=[pscustomobject]@{RootProcessId=$PID;RootCreatedAtUtc=$process.StartTime.ToUniversalTime().ToString('o');RootExecutable=$process.MainModule.FileName;SessionId=$process.SessionId;BrowserId='verified-browser'}
 $codex=[pscustomobject]@{Executable=$identity.RootExecutable}
-$script:owner=$PID;$script:public=$false;$script:listenerReads=0;$script:browser='verified-browser';$script:changeOwner=$false;$script:disposeRoot=$false
+$script:owner=$PID;$script:public=$false;$script:listenerReads=0;$script:browser='verified-browser';$script:changeOwner=$false;$script:disposeRoot=$false;$script:misses=0
 function Get-DreamSkinPortListeners {param($Port) $script:listenerReads++;[pscustomobject]@{LocalAddress=$(if($script:public){'0.0.0.0'}else{'127.0.0.1'});OwningProcess=$script:owner}}
-function Get-DreamSkinCdpBrowserIdentity {param($Port) if($script:changeOwner){$script:owner++};if($script:disposeRoot){$process.Dispose()};[pscustomobject]@{BrowserId=$script:browser}}
+function Get-DreamSkinCdpBrowserIdentity {param($Port) if($script:changeOwner){$script:owner++};if($script:disposeRoot){$process.Dispose()};if($script:misses -gt 0){$script:misses--;return $null};[pscustomobject]@{BrowserId=$script:browser}}
 function Get-CimInstance {throw 'Pinned-root revalidation must not repeat CIM discovery'}
 try{
   Assert-Root ($null -ne (Get-WallpaperReverifiedEndpoint $process $identity 9335 $codex)) 'A live verified native root was rejected'
   Assert-Root ($script:listenerReads -eq 2) 'Listener was not checked before and after HTTP'
+  $script:misses=1
+  $result=Wait-WallpaperKnownRootEndpoint $process $identity 9335 $codex -HasRetainedHandle -Pause {}
+  Assert-Root ($result.identity -and $result.attempts -eq 2 -and -not $result.failure) 'A single missing browser response prevented attaching to the still-verified client'
+  $script:misses=3
+  $result=Wait-WallpaperKnownRootEndpoint $process $identity 9335 $codex -HasRetainedHandle -Pause {}
+  Assert-Root (-not $result.identity -and $result.attempts -eq 3 -and $result.failure -eq 'browser-probe-unavailable') 'Persistent unavailability was not bounded or classified'
+  $script:browser='replacement-browser'
+  $result=Wait-WallpaperKnownRootEndpoint $process $identity 9335 $codex -HasRetainedHandle -Pause {throw 'Changed browser was retried'}
+  Assert-Root (-not $result.identity -and $result.failure -eq 'browser-changed' -and $result.attempts -eq 1) 'Confirmed browser replacement was not rejected immediately'
+  $script:browser='verified-browser'
   foreach($field in @('RootProcessId','RootCreatedAtUtc','RootExecutable','SessionId')){
     $bad=$identity.PSObject.Copy()
     switch($field){'RootProcessId'{$bad.$field++};'RootCreatedAtUtc'{$bad.$field=([DateTimeOffset]::Parse($bad.$field)).AddTicks(1).ToString('o')};'RootExecutable'{$bad.$field+='-other'};'SessionId'{$bad.$field++}}

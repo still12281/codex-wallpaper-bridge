@@ -16,6 +16,9 @@ $state=Wait-WallpaperHostDrain -Pause {} -ReadState {$script:reads++;if($script:
 Assert-Handoff ($state.mode -eq 'absent' -and $script:reads -eq 2) 'Natural old-host exit did not allow handoff'
 $status.browserId='new-browser';$status|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'runtime-status.json')
 Assert-Handoff ((& $read).mode -eq 'reuse') 'Matching healthy host was not reused'
+$status.phase='stopped';$status|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'runtime-status.json')
+Assert-Handoff ((& $read).mode -eq 'conflict') 'A host already stopping was reused'
+$status.phase='background-rendered';$status|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'runtime-status.json')
 Assert-Handoff ((Get-WallpaperHostState -Processes @($hostProcess,$hostProcess) -Root $root -CodeRoot $code -Node $node -BrowserId 'new-browser').mode -eq 'conflict') 'Duplicate host was hidden by a healthy record'
 $script:reads=0
 $state=Wait-WallpaperHostDrain -Pause {} -ReadState {$script:reads++;if($script:reads -eq 1){[pscustomobject]@{mode='conflict'}}else{& $read}}

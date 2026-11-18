@@ -35,22 +35,29 @@ const prepared=phase=>preparation.push({phase,afterMs:performance.now()-preparat
 const root=getDataRoot();
 const packageVersion=JSON.parse(await readFile(new URL('../package.json',import.meta.url),'utf8')).version;
 const updater=createBridgeUpdater({root,currentVersion:packageVersion});
-const settings=await loadSettings(root);
-prepared('settings-loaded');const adapters=await upstreamRuntime();prepared('adapters-loaded');
-normalizeLibrary(settings);const retainPalette=createPaletteTracker(settings);await saveConfig(root,settings);prepared('settings-normalized');
 const arg=process.argv.indexOf('--cdp-port'),port=Number(process.argv[arg+1]);
 if(arg<0||!Number.isInteger(port)||port<1024||port>65535)throw Error('Expected --cdp-port');
+const browserArg=process.argv.indexOf('--browser-id');
+const expectedBrowser=browserArg<0?null:process.argv[browserArg+1];
+if(browserArg>=0&&!/^[A-Za-z0-9-]+$/.test(expectedBrowser||''))throw Error('Expected --browser-id');
 const testArg=process.argv.indexOf('--test-url');const appUrl=testArg>=0?process.argv[testArg+1]:'app://-/index.html';
-const version=await(await fetch('http://127.0.0.1:'+port+'/json/version')).json();
 const sourceFiles=['video-cdp-host.mjs','wallpaper-style.mjs','automatic-surfaces.mjs','upstream-adapters.mjs','wallpaper-panel.mjs','wallpaper-widgets.mjs','appearance-model.mjs'];
 const build=Object.fromEntries(await Promise.all(sourceFiles.map(async file=>[file,createHash('sha256').update(await readFile(path.join(codeRoot,file))).digest('hex')])));
 // Observe fatal Node errors without catching them or changing exit behavior.
 // The bounded local record survives a failure during an asynchronous status save.
 process.on('uncaughtExceptionMonitor',(error,origin)=>{try{writeFileSync(path.join(root,'host-failure.json'),JSON.stringify({pid:process.pid,at:new Date().toISOString(),origin,message:String(error?.message||error).slice(0,2000),build},null,2));}catch{}});
+const response=await fetch('http://127.0.0.1:'+port+'/json/version',{signal:AbortSignal.timeout(5000),redirect:'error'});
+if(!response.ok)throw Error('Codex debugging endpoint returned HTTP '+response.status);
+const version=await response.json();
+const browserMatch=new RegExp('^ws://127\\.0\\.0\\.1:'+port+'/devtools/browser/([A-Za-z0-9-]+)$').exec(version.webSocketDebuggerUrl);
+if(!browserMatch||(expectedBrowser&&browserMatch[1]!==expectedBrowser))throw Error('Codex debugging endpoint does not match the verified browser');
+const settings=await loadSettings(root);
+prepared('settings-loaded');const adapters=await upstreamRuntime();prepared('adapters-loaded');
+normalizeLibrary(settings);const retainPalette=createPaletteTracker(settings);await saveConfig(root,settings);prepared('settings-normalized');
 // The browser connection is a lifetime signal, not a process-scanning timer.
 const browserLifetime=await connectCdp(version.webSocketDebuggerUrl);
 const startupClock=performance.now();
-const status={pid:process.pid,build,browserId:version.webSocketDebuggerUrl.split('/').pop(),source:'native-video-blob',phase:'connecting',cdpPort:port,wallpaperId:settings.wallpaperId,targets:[],startup:{startedAt:new Date().toISOString(),preparation,preparedMs:performance.now()-preparationClock,processAgeAtConnectMs:performance.now(),firstReadyMs:null,mainReadyMs:null,events:[]}};
+const status={pid:process.pid,build,browserId:browserMatch[1],source:'native-video-blob',phase:'connecting',cdpPort:port,wallpaperId:settings.wallpaperId,targets:[],startup:{startedAt:new Date().toISOString(),preparation,preparedMs:performance.now()-preparationClock,processAgeAtConnectMs:performance.now(),firstReadyMs:null,mainReadyMs:null,events:[]}};
 const startupEvent=(phase,targetId)=>{if(status.startup.events.length<24)status.startup.events.push({phase,targetId,afterMs:performance.now()-startupClock});};
 const targetReady=t=>t.installed&&(t.ready||t.disabled)&&(t.mode!=='realtime'||t.frames>0);
 let statusWrite=Promise.resolve();

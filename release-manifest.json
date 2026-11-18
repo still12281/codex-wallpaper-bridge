@@ -14,8 +14,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "utf8Bytes": 3385,
-      "sha256": "5b76541fbaa091df9a875fdaef0e17206e9b4e90d1324d44edff24b4ed322b0a"
+      "utf8Bytes": 3420,
+      "sha256": "85f5f6e958992095e9efdf7cf772504e596e66b72b2a0fed26625a3bbc02c5e5"
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 24169,
-      "sha256": "f9c5b5314cca2da1172fc9127f7ebd8a6e3de2a5c1b3bc0aae1cc9c0ce145d7b"
+      "utf8Bytes": 24388,
+      "sha256": "4b7fe84f35235165ef37cd7b82bc7dd22206399b825fcc0227d3c4475e0d6e7c"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -535,8 +535,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 46470,
-      "sha256": "89da9d43917fb39fee1cbd1b655b2ea43135362ba3a73239c36f438b7dce9b76"
+      "utf8Bytes": 47110,
+      "sha256": "3aff16dafa3d99adfc864104a166bd703337348b075d06383719453549259c1b"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -679,14 +679,19 @@
       "sha256": "b0008e6a8dac394ebfb2e2587261dac553ab07ae0988f92f73b7e84ef07e647a"
     },
     {
+      "path": "test/entry-queue.ps1",
+      "utf8Bytes": 3576,
+      "sha256": "c6c5599de64a27dd9731c2ba0e9958b5d5266c570836f2ad81bb1cd1480a1c14"
+    },
+    {
       "path": "test/fixtures/socket-inheritance.cs",
       "utf8Bytes": 3520,
       "sha256": "0b6d2d506c8d4de900013d722c85b25e4c2d4cc9d1a7d0578e810b210b68403b"
     },
     {
       "path": "test/host-handoff.ps1",
-      "utf8Bytes": 5850,
-      "sha256": "063d2de00362f4c28916f180c6962b76ec254503bc71e025242014f95119ab6b"
+      "utf8Bytes": 6170,
+      "sha256": "e0d529efcf46191408f6ccef096438577047867077ce2497b3891c8978176397"
     },
     {
       "path": "test/import-cancellation.test.mjs",
@@ -835,8 +840,8 @@
     },
     {
       "path": "test/root-revalidation.ps1",
-      "utf8Bytes": 5109,
-      "sha256": "1cc2451c1965a9612009d3c63cd9f1d69f95f43bacd4ff93390f6d41bc6a928c"
+      "utf8Bytes": 6157,
+      "sha256": "8d189f73591f60314a88f8324d6b77b0521a85ffa66ad17a4066214b711f31b3"
     },
     {
       "path": "test/rotation-host-integration.mjs",
@@ -850,8 +855,8 @@
     },
     {
       "path": "test/startup-priority-integration.mjs",
-      "utf8Bytes": 13826,
-      "sha256": "13ebeb1908bdeb12aedec68f6681ced8bdb263fe1e0a2c466da11e8dfccf898a"
+      "utf8Bytes": 14714,
+      "sha256": "11908d531120eab4a2b458de373081902440d66d283c022f810345c9e847a11d"
     },
     {
       "path": "test/startup-shutdown.ps1",
@@ -1115,8 +1120,8 @@
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 15742,
-      "sha256": "0aaab53bf5c171fb12884ff0cc4e568adf90bdf2c5b7ad66eb052be271d22dbe"
+      "utf8Bytes": 16719,
+      "sha256": "2e8cd35d70b19332c64a45114a396eb7b4b187d93fe29a888b3013030b4ffcb0"
     },
     {
       "path": "windows/FastTcp.ps1",
@@ -1145,8 +1150,8 @@
     },
     {
       "path": "windows/LaunchPolicy.ps1",
-      "utf8Bytes": 20762,
-      "sha256": "5839608ef3051420cbffb0dd6a76bf3d41f00ea61ffa0f1ba55847d64d8e8267"
+      "utf8Bytes": 22120,
+      "sha256": "b27941f82cd85e39fade26a0a633f154b835bc6859206dd70c97e23cb30fc5cc"
     },
     {
       "path": "windows/LoginStartup.ps1",
@@ -1210,8 +1215,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 24736,
-      "sha256": "f6a3a210361b7345b0d8ebd6e9cd1d2423f790c99725901d4351b5695c790258"
+      "utf8Bytes": 25380,
+      "sha256": "a13f1ed18bf82632b663e15ead53f505dd9834b0d228388c859dd268552cbe37"
     },
     {
       "path": "windows/Start-ExternalApp.ps1",

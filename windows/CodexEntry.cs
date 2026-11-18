@@ -35,10 +35,14 @@ internal static class CodexEntry {
     var pinned=p.Handle;if(p.HasExited||!WallpaperIdentity.Official(p)||p.SessionId!=Process.GetCurrentProcess().SessionId||p.SessionId!=Convert.ToInt32(hint["sessionId"])||p.StartTime.ToUniversalTime().Ticks!=ticks||!String.Equals(p.MainModule.FileName,executable,StringComparison.OrdinalIgnoreCase)||!WallpaperClientWindow.Bound(handle,pid,cookie))return false;
     var listeners=CodexWallpaperBridge.TcpListeners.Read(port);if(listeners.Length==0)return false;foreach(var listener in listeners)if(listener.OwningProcess!=pid||(listener.LocalAddress!="127.0.0.1"&&listener.LocalAddress!="::1"))return false;
     verifiedPid=pid;verifiedHandle=handle;
-    if(!inspect){attempted=true;foregroundGranted=AllowSetForegroundWindow(pid);if(!foregroundGranted)foregroundGrantError=Marshal.GetLastWin32Error();ShowCurrentMain(root,port,browser);if(WallpaperClientWindow.Visible(handle)&&!WallpaperClientWindow.Minimized(handle)&&!WallpaperClientWindow.Foreground(handle))WallpaperClientWindow.Activate(handle,pid,executable,ticks,cookie);var wait=Stopwatch.StartNew();while(wait.ElapsedMilliseconds<600&&(!WallpaperClientWindow.Visible(handle)||WallpaperClientWindow.Minimized(handle)||!WallpaperClientWindow.Foreground(handle)))System.Threading.Thread.Sleep(10);
+    if(!inspect){attempted=true;foregroundGranted=AllowSetForegroundWindow(pid);if(!foregroundGranted)foregroundGrantError=Marshal.GetLastWin32Error();
+     try{ShowCurrentMain(root,port,browser);}catch{p.Refresh();if(p.HasExited)return false;throw;}
+     if(WallpaperClientWindow.Visible(handle)&&!WallpaperClientWindow.Minimized(handle)&&!WallpaperClientWindow.Foreground(handle))WallpaperClientWindow.Activate(handle,pid,executable,ticks,cookie);var wait=Stopwatch.StartNew();while(wait.ElapsedMilliseconds<600&&(!WallpaperClientWindow.Visible(handle)||WallpaperClientWindow.Minimized(handle)||!WallpaperClientWindow.Foreground(handle)))System.Threading.Thread.Sleep(10);
+     p.Refresh();if(p.HasExited)return false;
      if(!WallpaperClientWindow.Visible(handle)||WallpaperClientWindow.Minimized(handle))throw new IOException("Codex 主窗口尚未恢复显示；现有客户端已保留。");
     }
-    p.Refresh();if(p.HasExited||!WallpaperClientWindow.Bound(handle,pid,cookie))throw new IOException("唤回期间主窗口身份发生变化，现有客户端已保留。");
+    p.Refresh();if(p.HasExited)return false;
+    if(!WallpaperClientWindow.Bound(handle,pid,cookie))throw new IOException("唤回期间主窗口身份发生变化，现有客户端已保留。");
     try{var state=Read(root,"runtime-status.json");double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)state["updatedAt"])).TotalSeconds;string phase=Convert.ToString(state["phase"]);repair=age<0||age>12||Convert.ToString(state["browserId"])!=browser||Convert.ToInt32(state["cdpPort"])!=port||Array.IndexOf(new[]{"background-rendered","background-disabled","realtime-capture-active","realtime-capture-paused"},phase)<0;}catch{repair=true;}
     bool foreground=WallpaperClientWindow.Foreground(handle);
     var report=new System.Collections.Generic.Dictionary<string,object>{{"kind","native-existing-main-window"},{"activationMode",inspect?"inspection":"codex-native-show-bridge"},{"activationResult",inspect?"inspected":foreground?"foreground":"restored-without-foreground"},{"foregroundPermissionGranted",foregroundGranted},{"foregroundPermissionError",foregroundGrantError},{"sameClient",true},{"rootPid",pid},{"handle",handle},{"inspectOnly",inspect},{"visible",WallpaperClientWindow.Visible(handle)},{"minimized",WallpaperClientWindow.Minimized(handle)},{"foreground",foreground},{"repairNeeded",repair},{"elapsedMs",clock.Elapsed.TotalMilliseconds},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};
@@ -69,13 +73,30 @@ internal static class CodexEntry {
   }catch{}
  }
  [STAThread] private static void Main(string[] args) {
+  string message=null;
   using(var entryLock=new System.Threading.Mutex(false,"Local\\CodexWallpaperBridge.Entry.9335")){
    bool acquired=false;
-   try{try{acquired=entryLock.WaitOne(0);}catch(System.Threading.AbandonedMutexException){acquired=true;}if(!acquired)return;Run(args);}
-   finally{if(acquired)entryLock.ReleaseMutex();}
+   try{
+    acquired=Acquire(entryLock,0);
+    if(!acquired&&args.Length==0){
+     // One waiting taskbar click is enough. It rechecks the live client from
+     // scratch when the preceding request finishes, including after a quit.
+     using(var pending=new System.Threading.Mutex(false,"Local\\CodexWallpaperBridge.Entry.Pending.9335")){
+      if(!Acquire(pending,0))return;
+      try{acquired=Acquire(entryLock,65000);}finally{pending.ReleaseMutex();}
+     }
+     if(!acquired){Environment.ExitCode=1;message="上一次启动仍在处理，请稍后再点击 Codex。";}
+    }
+    if(acquired)Run(args,out message);
+   }finally{if(acquired)entryLock.ReleaseMutex();}
   }
+  if(message!=null)MessageBox.Show(message,"Codex 壁纸启动失败",MessageBoxButtons.OK,MessageBoxIcon.Error);
  }
- private static void Run(string[] args) {
+ private static bool Acquire(System.Threading.Mutex mutex,int milliseconds){
+  try{return mutex.WaitOne(milliseconds);}catch(System.Threading.AbandonedMutexException){return true;}
+ }
+ private static void Run(string[] args,out string message) {
+  message=null;
   string dataRoot=AppDomain.CurrentDomain.BaseDirectory;
   bool inspect=Array.IndexOf(args,"--check-runtime")>=0;
   bool inspectWarm=Array.IndexOf(args,"--inspect-warm")>=0;
@@ -93,7 +114,6 @@ internal static class CodexEntry {
    if(!inspect){
    SetCurrentProcessExplicitAppUserModelID(WallpaperIdentity.AppId);
    bool repair;if(TryWarm(dataRoot,false,out repair)){if(repair)WarmRepair(dataRoot);return;}
-   if(Starting(dataRoot))return;
    // Every entry checks the currently registered package. The bootstrap reuses
    // a healthy client/host without loading the wallpaper a second time.
    }
@@ -112,6 +132,7 @@ internal static class CodexEntry {
     if(!inspect)AllowSetForegroundWindow(process.Id);
     if(!inspect){
      if(!process.WaitForExit(180000))throw new IOException("壁纸启动尚未完成，请查看 launch-status.json；现有 Codex 已保留。");
+     if(process.ExitCode==3)throw new IOException("上一次接入仍在处理，请稍后再点击 Codex。");
      var launch=Read(dataRoot,"launch-status.json");
      if(Convert.ToInt32(launch["helperPid"])!=process.Id)throw new IOException("壁纸启动结果身份不匹配，请查看 launch-status.json。");
      string phase=Convert.ToString(launch["phase"]);
@@ -130,7 +151,7 @@ internal static class CodexEntry {
   } catch(Exception error) {
    Environment.ExitCode=1;
    File.WriteAllText(Path.Combine(dataRoot,"entry-error.log"),DateTimeOffset.Now.ToString("o")+" "+error.ToString());
-   if(!inspect&&!inspectWarm&&!afterUpdate)MessageBox.Show(error.Message,"Codex 壁纸启动失败",MessageBoxButtons.OK,MessageBoxIcon.Error);
+   if(!inspect&&!inspectWarm&&!afterUpdate)message=error.Message;
   }
  }
 }

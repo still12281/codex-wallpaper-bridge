@@ -54,8 +54,19 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
    await writeFile(preloader,'// No target substitution in the delayed-shell scenario.');
    await main.evaluate('document.querySelector("aside").remove();document.querySelector("main").remove();setTimeout(()=>{document.body.innerHTML=\'<aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Delayed fixture</main>\'},1000);true');
   }
+  const browserId=version.webSocketDebuggerUrl.split('/').pop();
+  if(!baseline&&scenario==='shell'){
+   const wrong=spawn(process.execPath,[path.resolve('src/video-cdp-host.mjs'),'--cdp-port',String(port),'--browser-id','another-browser','--test-url',url],{env:{...process.env,CODEX_WALLPAPER_DATA_DIR:data},windowsHide:true,stdio:['ignore','ignore','pipe']});
+   try{
+    let stderr='';wrong.stderr.on('data',chunk=>stderr+=chunk);
+    const exit=await new Promise((resolve,reject)=>{wrong.once('error',reject);wrong.once('close',resolve);});
+    assert.notEqual(exit,0);assert.match(stderr,/does not match the verified browser/);
+    await assert.rejects(access(path.join(data,'runtime-status.json')),error=>error.code==='ENOENT');
+    assert.equal(await main.evaluate('!!window.__cwbPanelHost'),false);
+   }finally{if(wrong.exitCode===null)wrong.kill();}
+  }
   const started=performance.now();
-  host=spawn(process.execPath,['--import',pathToFileURL(preloader).href,path.resolve('src/video-cdp-host.mjs'),'--cdp-port',String(port),'--test-url',url],{env:{...process.env,CODEX_WALLPAPER_DATA_DIR:data},windowsHide:true,stdio:['ignore','ignore','pipe']});host.stderr.on('data',b=>errors+=b.toString());
+  host=spawn(process.execPath,['--import',pathToFileURL(preloader).href,path.resolve('src/video-cdp-host.mjs'),'--cdp-port',String(port),'--browser-id',browserId,'--test-url',url],{env:{...process.env,CODEX_WALLPAPER_DATA_DIR:data},windowsHide:true,stdio:['ignore','ignore','pipe']});host.stderr.on('data',b=>errors+=b.toString());
   if(aux)resumeTimer=setTimeout(()=>void aux.call('Debugger.resume').then(()=>{resumeResult='resumed'},e=>{resumeResult=e.message}),4000);
   const state=await until(async()=>{const s=JSON.parse(await readFile(path.join(data,'runtime-status.json'),'utf8'));return s.targets.some(t=>t.targetId===mainTarget.id&&t.installed)&&s});
   const readyAfterMs=performance.now()-started;

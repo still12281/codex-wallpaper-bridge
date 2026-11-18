@@ -67,5 +67,6 @@ jobs:
           foreach ($test in @('clean-process','client-window','client-window-binding','launch-policy','process-snapshot','root-revalidation','tcp-listeners','startup-support','host-handoff','cdp-endpoint','startup-shutdown','startup-health','login-startup','install-options','install-upgrade','install-dependencies','uninstall-shortcuts','update-reconnect','update-runner','remote-bootstrap')) {
             & "./test/$test.ps1"
           }
+          & ./test/entry-queue.ps1
           & ./test/install-runtime.ps1 -ScratchDirectory (Join-Path $env:RUNNER_TEMP 'cwb-runtime-path-test')
       - run: npm run check:privacy
