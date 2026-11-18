@@ -47,7 +47,9 @@ export async function startSystemMedia(root,{audio=false,audioFps=30,onSpectrum}
     state.spectrumReceivedAt=Date.now();
     state.spectrumFrames++;
     spectrumQueue.push({audioAvailable:true,left,right,sampleEnd,sampleRate,targetRate:configured,generation:child.pid});
-    if(spectrumQueue.length>16){spectrumQueue.shift();state.queueDrops++;}
+    // Keep at most one second of sampled history so a short renderer stall
+    // can catch up without an unbounded queue or replaying older audio.
+    if(spectrumQueue.length>configured){spectrumQueue.shift();state.queueDrops++;}
     state.maxQueued=Math.max(state.maxQueued,spectrumQueue.length);
     hasNewFrames=true;
     continue;
