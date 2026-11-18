@@ -1,0 +1,235 @@
+diff --git a/crates/media-bridge/src/audio/mod.rs b/crates/media-bridge/src/audio/mod.rs
+index 571768f..a90196c 100644
+--- a/crates/media-bridge/src/audio/mod.rs
++++ b/crates/media-bridge/src/audio/mod.rs
+@@ -371,0 +372 @@ pub struct AudioCapture {
++    sample_spectrum_tx: Option<tokio::sync::broadcast::Sender<(u64, SpectrumFrame)>>,
+@@ -381,0 +383,2 @@ impl AudioCapture {
++        let sample_spectrum_tx = (cfg!(windows) && config.fps > 60 && !config.pcm)
++            .then(|| tokio::sync::broadcast::channel(16).0);
+@@ -385,0 +389 @@ impl AudioCapture {
++            sample_spectrum_tx,
+@@ -413,0 +418,6 @@ impl AudioCapture {
++    pub(crate) fn subscribe_sample_spectrum(
++        &self,
++    ) -> Option<tokio::sync::broadcast::Receiver<(u64, SpectrumFrame)>> {
++        self.sample_spectrum_tx.as_ref().map(|tx| tx.subscribe())
++    }
++
+@@ -464,0 +475,4 @@ impl AudioCapture {
++                if me.sample_spectrum_tx.is_some() {
++                    sample_clock::run(&me, fps);
++                    return;
++                }
+@@ -582,0 +597,2 @@ impl AudioCapture {
++mod sample_clock;
++
+diff --git a/crates/media-bridge/src/audio/sample_clock.rs b/crates/media-bridge/src/audio/sample_clock.rs
+new file mode 100644
+index 0000000..1cd1268
+--- /dev/null
++++ b/crates/media-bridge/src/audio/sample_clock.rs
+@@ -0,0 +1,140 @@
++use super::{now_ms, AudioCapture, Downsampler, SpectrumAnalyzer, SpectrumFrame,
++    ANALYSIS_WINDOW, OUTPUT_RATE, SPECTRUM_BANDS};
++use std::time::Duration;
++
++// Advancing by a rational number of samples avoids a drift at 90 and 120 Hz.
++struct HopClock {
++    rate: u32,
++    fps: u32,
++    phase: u32,
++}
++impl HopClock {
++    fn new(rate: u32, fps: u32) -> Self {
++        Self { rate, fps, phase: 0 }
++    }
++    fn take(&mut self, available: usize) -> (usize, bool) {
++        let count = ((self.rate - self.phase).div_ceil(self.fps) as usize).min(available);
++        self.phase += count as u32 * self.fps;
++        let due = self.phase >= self.rate;
++        if due {
++            self.phase -= self.rate;
++        }
++        (count, due)
++    }
++}
++
++pub(super) fn run(capture: &AudioCapture, fps: u32) {
++    let shared = &capture.shared;
++    let mut analyzer = SpectrumAnalyzer::new();
++    let mut window = Vec::with_capacity(ANALYSIS_WINDOW * 2);
++    let mut input = Vec::new();
++    let mut samples = Vec::new();
++    let mut downsampler = None;
++    let mut input_rate = 0;
++    let mut output_rate = OUTPUT_RATE;
++    let mut clock = HopClock::new(output_rate, fps);
++    let mut read_at = 0;
++    let mut sample_end = 0;
++    let mut last_audio = now_ms();
++    let mut silent = true;
++    let interval = Duration::from_millis(2);
++    while !shared.is_stopping() {
++        let rate = shared.input_rate();
++        let end = shared.ring.total_written();
++        if rate == 0 || end == read_at {
++            if !silent && now_ms().saturating_sub(last_audio) >= 1000 {
++                window.clear();
++                downsampler = None;
++                silent = true;
++                if let Ok(mut stored) = capture.frame.write() {
++                    *stored = SpectrumFrame::silent(now_ms(), output_rate);
++                }
++            }
++            std::thread::sleep(interval);
++            continue;
++        }
++
++        // Slow consumers resume near live time without analyzing an old backlog.
++        let max_backlog = (rate as usize / 10).min(shared.ring.slots.len() / 2);
++        let start = read_at.max(end.saturating_sub(max_backlog));
++        if downsampler.is_none() || rate != input_rate || start != read_at {
++            input_rate = rate;
++            output_rate = rate.min(OUTPUT_RATE);
++            downsampler = Some(Downsampler::new(rate, output_rate));
++            clock = HopClock::new(output_rate, fps);
++            window.clear();
++        }
++        input.clear();
++        let mask = shared.ring.mask();
++        for index in start..end {
++            let bits = shared.ring.slots[index & mask].load(std::sync::atomic::Ordering::Relaxed);
++            input.push(f32::from_bits(bits));
++        }
++        read_at = end;
++        if shared.ring.total_written().saturating_sub(start) >= shared.ring.slots.len() {
++            downsampler = None;
++            continue;
++        }
++
++        samples.clear();
++        downsampler.as_mut().unwrap().push(&input, &mut samples);
++        last_audio = now_ms();
++        silent = false;
++        let mut remaining = samples.as_slice();
++        while !remaining.is_empty() {
++            let (take, due) = clock.take(remaining.len());
++            window.extend_from_slice(&remaining[..take]);
++            remaining = &remaining[take..];
++            sample_end += take as u64;
++            if window.len() > ANALYSIS_WINDOW * 2 {
++                window.drain(..window.len() - ANALYSIS_WINDOW);
++            }
++            if due {
++                let mut bands = [0; SPECTRUM_BANDS];
++                let stats = analyzer.analyze(&window, &mut bands);
++                let frame = SpectrumFrame {
++                    bands: bands.to_vec(), peak: stats.peak, rms: stats.rms,
++                    sample_rate: output_rate, ts_ms: now_ms(),
++                };
++                if let Ok(mut stored) = capture.frame.write() {
++                    *stored = frame.clone();
++                }
++                if let Some(sender) = &capture.sample_spectrum_tx {
++                    let _ = sender.send((sample_end, frame));
++                }
++            }
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::HopClock;
++
++    #[test]
++    fn advances_once_per_fractional_hop_across_packet_boundaries() {
++        for fps in [90, 120] {
++            let mut clock = HopClock::new(16000, fps);
++            let mut remaining = 48000usize;
++            let mut frames = 0;
++            let mut edge = 0;
++            let mut consumed = 0;
++            while remaining > 0 {
++                let mut packet = remaining.min(437);
++                remaining -= packet;
++                while packet > 0 {
++                    let (take, due) = clock.take(packet);
++                    packet -= take;
++                    consumed += take;
++                    if due {
++                        frames += 1;
++                        assert!((133..=178).contains(&(consumed - edge)));
++                        edge = consumed;
++                    }
++                }
++            }
++            assert_eq!(frames, fps * 3);
++            assert_eq!(edge, 48000);
++        }
++    }
++}
+diff --git a/crates/media-bridge/src/audio/windows.rs b/crates/media-bridge/src/audio/windows.rs
+index c8d4130..4fb19cc 100644
+--- a/crates/media-bridge/src/audio/windows.rs
++++ b/crates/media-bridge/src/audio/windows.rs
+@@ -170 +170,5 @@ fn capture_loop(
+-        std::thread::sleep(POLL_INTERVAL);
++        std::thread::sleep(if shared.config.fps > 60 {
++            Duration::from_millis(4)
++        } else {
++            POLL_INTERVAL
++        });
+diff --git a/crates/media-bridge/src/ipc/mod.rs b/crates/media-bridge/src/ipc/mod.rs
+index 6ac61cb..9e6a4e3 100644
+--- a/crates/media-bridge/src/ipc/mod.rs
++++ b/crates/media-bridge/src/ipc/mod.rs
+@@ -179 +179 @@ impl Subscriptions {
+-            Some(spectrum_interval_ms.unwrap_or(100).clamp(16, 5000))
++            Some(spectrum_interval_ms.unwrap_or(100).clamp(8, 5000))
+diff --git a/crates/media-bridge/src/ipc/stdio.rs b/crates/media-bridge/src/ipc/stdio.rs
+index 9ee854a..af44698 100644
+--- a/crates/media-bridge/src/ipc/stdio.rs
++++ b/crates/media-bridge/src/ipc/stdio.rs
+@@ -29 +29 @@ pub async fn serve(bridge: Arc<MediaBridge>, verbose: bool) -> Result<()> {
+-    let (tx, mut rx) = mpsc::channel::<Value>(4096);
++    let (tx, mut rx) = mpsc::channel::<Value>(128);
+@@ -71,2 +71,24 @@ pub async fn serve(bridge: Arc<MediaBridge>, verbose: bool) -> Result<()> {
+-    // 频谱转发：只在被订阅时按订阅间隔推（默认不推）
+-    {
++    if let Some(mut frames) = bridge.subscribe_sample_spectrum() {
++        let tx = tx.clone();
++        let subs = subs.clone();
++        tokio::spawn(async move {
++            loop {
++                match frames.recv().await {
++                    Ok((sample_end, frame)) => {
++                        if subs.lock().await.wants("spectrum") {
++                            let event = serde_json::json!({
++                                "event": "spectrum", "frame": frame, "sampleEnd": sample_end,
++                            });
++                            match tx.try_send(event) {
++                                Ok(()) | Err(mpsc::error::TrySendError::Full(_)) => {}
++                                Err(mpsc::error::TrySendError::Closed(_)) => break,
++                            }
++                        }
++                    }
++                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
++                    Err(_) => break,
++                }
++            }
++        });
++    } else {
++        // Standard rates continue to use the legacy interval-based subscription.
+diff --git a/crates/media-bridge/src/service.rs b/crates/media-bridge/src/service.rs
+index 4c216bf..855a641 100644
+--- a/crates/media-bridge/src/service.rs
++++ b/crates/media-bridge/src/service.rs
+@@ -317,0 +318,6 @@ impl MediaBridge {
++    pub(crate) fn subscribe_sample_spectrum(
++        &self,
++    ) -> Option<tokio::sync::broadcast::Receiver<(u64, crate::types::SpectrumFrame)>> {
++        self.audio.subscribe_sample_spectrum()
++    }
++

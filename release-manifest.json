@@ -74,8 +74,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "utf8Bytes": 5504,
-      "sha256": "ad7fe290d4213a1b806c16f895757e6eb301807340583314a3abc99ac6ef70ab"
+      "utf8Bytes": 5544,
+      "sha256": "429bbe4dec080bce154ca5c34826abd46b7d2eb3fcac9a0e895776aa555c8d51"
     },
     {
       "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
@@ -239,8 +239,8 @@
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
-      "utf8Bytes": 10271,
-      "sha256": "b2d4590d9ba7ce386ae68849a4669407365b1870998d43875edfc4cd39294839"
+      "utf8Bytes": 10373,
+      "sha256": "19afad51df93eaa3102e9dcee2d92ca569a150b29c4de8bf556057e2d7275716"
     },
     {
       "path": "docs/TASKBAR-REOPEN-20261028.zh-CN.md",
@@ -470,8 +470,8 @@
     },
     {
       "path": "src/media-power.mjs",
-      "utf8Bytes": 5780,
-      "sha256": "b27399b0b0bed00a07c826a5fd884d98d16a5139fe64401f32ac0d9ed52a9f3a"
+      "utf8Bytes": 6067,
+      "sha256": "827d6526c6e3104358f2ba3553a99ed034dee35c81204cfb68371b58068e1216"
     },
     {
       "path": "src/media-preflight.mjs",
@@ -525,8 +525,8 @@
     },
     {
       "path": "src/system-media.mjs",
-      "utf8Bytes": 7542,
-      "sha256": "acc6b8eafdcb6e644c55713ce92242258975810c86e559f08e9898cd7af268ca"
+      "utf8Bytes": 8031,
+      "sha256": "40f6180968e3ec933117954a29ad777510ca14e7eec098ca28a86ea4dc04a8cf"
     },
     {
       "path": "src/upstream-adapters.mjs",
@@ -535,8 +535,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 48870,
-      "sha256": "f88c116dba1bcf3588214446dae7e9c579cce781dfef5a3f059a104362ddf350"
+      "utf8Bytes": 49150,
+      "sha256": "ec16813b27f5caafcb1d83a21c8dd6fe8c2cf98be4bf4e47fa18959f18b6bba3"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -785,8 +785,8 @@
     },
     {
       "path": "test/media-power.test.mjs",
-      "utf8Bytes": 8655,
-      "sha256": "e029272cd2e07ca2c7c1a88288f0c4834820dae4eda5b839e32db37d22178bfb"
+      "utf8Bytes": 9446,
+      "sha256": "f1544c1f27b11720ded64a7b14a2e1a7ae063a4ba64c8fa9691ae098996ca850"
     },
     {
       "path": "test/media-preparation.test.mjs",
@@ -979,9 +979,14 @@
       "sha256": "66aea38e54801867c9b85952b97b75921d19ae3f20c700393e3bc33cbd865474"
     },
     {
+      "path": "tools/media-bridge-sample-clock.patch",
+      "utf8Bytes": 9509,
+      "sha256": "635cf03e363e4ef7abb38f2c447930ac084babd0ef572b62f661a0f6b7ff2d5d"
+    },
+    {
       "path": "tools/prepare-media-bridge.mjs",
-      "utf8Bytes": 5293,
-      "sha256": "9f9bc14fc79c91ec6a9387f5a97f0e5157bb220e1a8ca9874fcfb4fd0f88e1d5"
+      "utf8Bytes": 4321,
+      "sha256": "964b99cf2e2125635b24fc6968ef14540453c6a7eac3eeeff99da0364d5fadf2"
     },
     {
       "path": "tools/prepare-webwallgl.mjs",

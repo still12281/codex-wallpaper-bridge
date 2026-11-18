@@ -72,3 +72,17 @@ test('high spectrum reports the component target and fresh-frame rate to an open
  assert.equal(f.calls.filter(c=>c.kind==='metadata').length,1);
  await f.power.stop();
 });
+
+test('sample-clock spectrum delivers all retained frames from one audio packet once',async()=>{
+ const f=fixture();Object.assign(f.clients[0].mediaActivity,{webgl:true,active:true});
+ await f.power.configure({enabled:false,audio:true,audioFps:120});
+ const source=f.starts.at(-1),frames=[Array(64).fill(21),Array(64).fill(45)];
+ const queue=[...frames];source.drainSpectrum=()=>queue.splice(0);
+ Object.assign(source.state,{audioFps:120,spectrumFrames:2,spectrumDetails:{sampleEnd:267}});
+ f.payload().audioAvailable=true;
+ await f.power.tick();await f.power.tick();
+ const delivered=f.calls.filter(item=>item.kind==='spectrum');
+ assert.equal(delivered.length,1);assert.deepEqual(delivered[0].payload,{frames});
+ assert.equal(f.power.snapshot().spectrumSent,2);
+ await f.power.stop();
+});

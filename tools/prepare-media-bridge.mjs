@@ -3,6 +3,7 @@ import {promisify} from 'node:util';
 import {mkdir,mkdtemp,readFile,writeFile,rename,realpath,rm} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {getDataRoot} from '../src/runtime-paths.mjs';
 import {standardMediaDirectory,highRateMediaDirectory} from '../src/system-media.mjs';
 const hashes={x64:'61a7f6dd5d9b012aceebc4180d9b429b17cd519764c92ea217acf3e63407ee0c',arm64:'3cd69363ea3dd7d12a7036d36f7be048c55496b96fa1f14382fef6ef0a318cd4'};
@@ -36,24 +37,8 @@ async function buildHighRate(localSource){
   const archive=path.join(staging,'source.tar'),workspace=path.join(staging,'source');
   await run('git',['-C',source,'archive','--output='+archive,commit],options);
   await mkdir(workspace);await run('tar',['-xf',archive,'-C',workspace],options);
-  // Keep the standard helper intact. The high-rate helper uses a shorter
-  // WASAPI polling interval and a native sleep below Tokio's standard cadence.
-  const patches=[
-   ['ipc/mod.rs','unwrap_or(100).clamp(16, 5000)','unwrap_or(100).clamp(8, 5000)'],
-   ['ipc/stdio.rs','tokio::time::sleep(std::time::Duration::from_millis(ms)).await;',`let delay = std::time::Duration::from_millis(ms);
-                        if cfg!(windows) && ms < 16 {
-                            let _ = tokio::task::spawn_blocking(move || std::thread::sleep(delay)).await;
-                        } else {
-                            tokio::time::sleep(delay).await;
-                        }`],
-   ['audio/windows.rs','std::thread::sleep(POLL_INTERVAL);',`let interval = if shared.config.fps > 60 { Duration::from_millis(4) } else { POLL_INTERVAL };
-        std::thread::sleep(interval);`]
-  ];
-  for(const [name,before,after] of patches){
-   const file=path.join(workspace,'crates/media-bridge/src',name),original=await readFile(file,'utf8');
-   if(original.split(before).length!==2)throw Error('Unexpected pinned media-bridge source: '+name);
-   await writeFile(file,original.replace(before,after));
-  }
+  const patch=fileURLToPath(new URL('./media-bridge-sample-clock.patch',import.meta.url));
+  await run('git',['apply','--unidiff-zero',patch],{...options,cwd:workspace});
   const target=process.arch==='arm64'?'aarch64-pc-windows-msvc':'x86_64-pc-windows-msvc';
   await run('cargo',['build','--release','--locked','--target',target,'-p','media-bridge','--no-default-features','--features','audio'],{...options,cwd:workspace,timeout:600000});
   const binary=path.join(workspace,'target',target,'release','media-bridge.exe');
@@ -61,7 +46,7 @@ async function buildHighRate(localSource){
   const sha256=createHash('sha256').update(await readFile(binary)).digest('hex');
   await writeFile(path.join(directory,'LICENSE'),await readFile(path.join(workspace,'LICENSE')));
   await rename(binary,path.join(directory,'media-bridge.exe'));
-  console.log(JSON.stringify({prepared:true,version:'0.1.5-high-rate',commit,directory,sha256}));
+  console.log(JSON.stringify({prepared:true,version:'0.1.5-sample-clock',commit,directory,sha256}));
  }catch(error){throw Error('High-rate media component preparation failed. Install Rust and the C++ Build Tools for the Windows MSVC target. '+(error.stderr||error.message));}
  finally{
   const [actualStaging,actualEngines]=await Promise.all([realpath(staging),realpath(engines)]);

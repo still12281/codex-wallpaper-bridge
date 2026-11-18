@@ -46,6 +46,8 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
   const {bands,position,...metadata}=payload;
   // Position is a separate correction; frequency frames never invalidate metadata.
   const signature=JSON.stringify(metadata),frame=backend?.state.spectrumFrames||0;
+  const frames=backend?.drainSpectrum?.()||[];
+  const sampleClock=Number.isSafeInteger(backend?.state.spectrumDetails?.sampleEnd);
   const targetRate=backend?.state.audioFps||0;
   if(targetRate>60){
    const at=now();
@@ -59,7 +61,10 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
    if(active(c)){
     if(d.metadata!==signature){await send(c,'metadata',metadata);d.metadata=signature;stats.metadataSent++;d.positionAt=-Infinity;}
     if(now()-(d.positionAt??-Infinity)>=5000){await send(c,'position',{position:position||0});d.positionAt=now();}
-    if(payload.audioAvailable&&activity.audio!==false){if(!d.spectrum||d.frame!==frame){await send(c,'spectrum',{audioAvailable:true,bands});stats.spectrumSent++;d.spectrum=true;d.frame=frame;}}
+    if(payload.audioAvailable&&activity.audio!==false){
+     if(frames.length){await send(c,'spectrum',{frames});stats.spectrumSent+=frames.length;d.spectrum=true;d.frame=frame;}
+     else if(!sampleClock&&(!d.spectrum||d.frame!==frame)){await send(c,'spectrum',{audioAvailable:true,bands});stats.spectrumSent++;d.spectrum=true;d.frame=frame;}
+    }
     else if(d.spectrum){await send(c,'spectrum',{audioAvailable:false,bands:[]});stats.spectrumSent++;d.spectrum=false;}
    }else {d.metadata=null;d.positionAt=null;if(d.spectrum){await send(c,'spectrum',{audioAvailable:false,bands:[]});stats.spectrumSent++;d.spectrum=false;}}
    if(activity.panel){if(!d.panelOpen||d.panel!==panelSignature){await send(c,'panel',{...metadata,targetRate,receivedHz:rateSample?.hz??null});d.panel=panelSignature;stats.panelUpdates++;}d.panelOpen=true;}else d.panelOpen=false;

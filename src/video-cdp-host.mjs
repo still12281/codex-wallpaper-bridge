@@ -185,7 +185,19 @@ async function applySelected(){
  }
  timing.completedMs=performance.now()-started;timing.measurement='candidate readiness by target; not physical screen presentation';await configureMedia(settings.systemMedia);await automaticSurfaces?.refresh();
 }
-mediaPower=createMediaPower({start:options=>startSystemMedia(root,{...options,onSpectrum:()=>void pumpSpectrum()}),sessions:()=>sessions.values(),send:async(c,kind,payload)=>{const data=JSON.stringify(payload);if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');}});
+mediaPower=createMediaPower({
+ start:options=>startSystemMedia(root,{...options,onSpectrum:()=>void pumpSpectrum()}),
+ sessions:()=>sessions.values(),
+ send:async(c,kind,payload)=>{
+  if(kind==='spectrum'&&payload.frames){
+   await c.evaluate('(()=>{const wallpaper=window.__codexWallpaperBridge;for(const bands of '+JSON.stringify(payload.frames)+')wallpaper?.setSystemSpectrum?.({audioAvailable:true,bands});return true})()');
+   return;
+  }
+  const data=JSON.stringify(payload);
+  if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');
+  else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');
+ }
+});
 const configureMedia=async options=>{const effective=effectiveMediaSettings({...settings,systemMedia:options});await mediaPower.configure(effective);if(spectrumTimer){clearInterval(spectrumTimer);spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(Math.min(60,effective.audioFps)));spectrumTimer.unref();}};
 async function reportMedia(c){
  if(await c.evaluate('(()=>{const a=window.__cwbMediaActivity;if(a?.token!=='+JSON.stringify(c.token)+')return false;a.report();return true})()'))return;
