@@ -68,12 +68,18 @@ export async function startRealtime(entry,dataRoot,{isCurrent=()=>true}={}){
  const interpreter=(await invoke(uv,['run','--offline','--frozen','--script',helper,'--runtime-path'],{windowsHide:true,timeout:20000,maxBuffer:8192,env:captureEnv}).catch(error=>{throw Error('实时采集依赖未准备好，请先运行 Prepare-Realtime.ps1：'+error.message)})).stdout.trim();
  await report('interpreter-ready',{interpreter});
  if(!path.isAbsolute(interpreter)||path.basename(interpreter).toLowerCase()!=='python.exe')throw Error('实时采集解释器路径无效');await access(interpreter);
- runtime.stop=async()=>{
-  if(runtime.closed)return;runtime.closed=true;await report('stopping');
-  const child=runtime.helper;
-  if(child&&child.exitCode===null){child.stdin.write('STOP\n',()=>{});await Promise.race([new Promise(resolve=>child.once('exit',resolve)),new Promise(resolve=>setTimeout(resolve,2000))]);if(child.exitCode===null)child.kill()}
-  await invoke(engine,['-control','closeWallpaper','-location',name],{windowsHide:true,timeout:8000}).catch(()=>{});runtime.frame=null;await report('stopped');
- };
+ let cleanup;
+ runtime.stop=()=>cleanup??=(async()=>{
+  runtime.closed=true;
+  try{
+   await report('stopping').catch(()=>{});
+   const child=runtime.helper;
+   if(child&&child.exitCode===null){child.stdin.write('STOP\n',()=>{});await Promise.race([new Promise(resolve=>child.once('exit',resolve)),new Promise(resolve=>setTimeout(resolve,2000))]);if(child.exitCode===null)child.kill()}
+  }finally{
+   await invoke(engine,['-control','closeWallpaper','-location',name],{windowsHide:true,timeout:8000}).catch(()=>{});
+   runtime.frame=null;await report('stopped').catch(()=>{});
+  }
+ })();
  runtime.setPaused=paused=>{runtime.paused=paused;if(!paused)runtime.resumedAt=Date.now();if(runtime.helper?.stdin.writable)runtime.helper.stdin.write(paused?'PAUSE\n':'RESUME\n',()=>{})};
  try{
   const child=runtime.helper=spawn(interpreter,[helper,'--window',name,'--fps',String(profile.fps),'--width',String(profile.maxWidth),'--height',String(profile.maxHeight),'--quality',String(profile.jpegQuality||78),'--telemetry','--parent',String(process.pid)],{windowsHide:true,stdio:['pipe','pipe','pipe'],env:captureEnv});
@@ -93,7 +99,9 @@ export async function startRealtime(entry,dataRoot,{isCurrent=()=>true}={}){
   assertCurrent();await report('opening-engine-window',{window:name,profile});
   await invoke(engine,['-control','openWallpaper','-file',path.join(project.root,'project.json'),'-playInWindow',name,'-width',String(profile.maxWidth),'-height',String(profile.maxHeight),'-x','-32000','-y','-32000','-borderless'],{windowsHide:true,timeout:15000});
   const desktop=await desktopSettings(engine,project.root);
-  if(Object.keys(desktop.properties).length)await invoke(engine,['-control','applyProperties','-properties','RAW~('+JSON.stringify(desktop.properties)+')~END','-location',name],{windowsHide:true,windowsVerbatimArguments:true,timeout:8000});
+  // Capturing picture-only frames does not mute the original scene's sound.
+  const properties=entry.engine==='wallpaper-engine-h264'?{...desktop.properties,volume:0}:desktop.properties;
+  if(Object.keys(properties).length)await invoke(engine,['-control','applyProperties','-properties','RAW~('+JSON.stringify(properties)+')~END','-location',name],{windowsHide:true,windowsVerbatimArguments:true,timeout:8000});
   runtime.desktop={configuredFps:desktop.fps,propertyCount:Object.keys(desktop.properties).length};
   const deadline=Date.now()+35000;
   while(Date.now()<deadline){assertCurrent();if(runtime.error)throw Error(runtime.error);if(runtime.frame){await report('first-frame',{sequence:runtime.sequence,hwnd:runtime.hwnd});return runtime}await new Promise(resolve=>setTimeout(resolve,100))}

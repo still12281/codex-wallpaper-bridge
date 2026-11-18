@@ -105,6 +105,7 @@ const save=()=>{
 };
 const sessions=new Map();let automaticSurfaces=null,busy=false,stopped=false,acting=false,importPreparing=false,actionQueue=Promise.resolve(),selectionRevision=0,activeSelection=null;
 let realtime=null,realtimeKey=null,streamTimer=null,streaming=false,timer=null,rotationTimer=null,spectrumTimer=null,mediaPower=null;
+const nativeSources=new Set();
 let spectrumBusy=false;
 const selectionEpoch=randomUUID();
 const startupPalette=()=>settings.library.some(e=>e.id===settings.selectedId)?displaySettings(settings).palette:null;
@@ -120,7 +121,7 @@ async function stop(reason='requested'){
  if(automaticSurfaces)cleanups.push(automaticSurfaces.dispose());
  for(const c of sessions.values()){try{cleanups.push((async()=>{try{await Promise.allSettled([Promise.resolve(c.webPlayer?.dispose()),actions.disposeOwner(c),clearStartupAppearance(c)]);await c.evaluate('('+clearShell.toString()+')();window.__cwbPanelHost?.__cwbDispose?.();window.__cwbPanelHost?.remove();delete window.__cwbPanelHost;window.__codexWallpaperBridge?.dispose?.();document.getElementById("codex-wallpaper-bridge-layer")?.remove();true');}finally{c.close();}})())}catch{c.close()}}
  browserLifetime.close();
- try{await Promise.allSettled([...cleanups,stopRealtime(),mediaPower?.stop()]);status.phase='stopped';status.targets=[];await save();}finally{process.exit(0)}
+ try{await Promise.allSettled([...cleanups,stopRealtime(),mediaPower?.stop(),...[...nativeSources].map(source=>source.then(runtime=>runtime.stop()))]);status.phase='stopped';status.targets=[];await save();}finally{process.exit(0)}
 }
 browserLifetime.ws.addEventListener('close',()=>void stop('browser-disconnected'),{once:true});
 if(browserLifetime.ws.readyState!==1)await stop('browser-disconnected');
@@ -130,13 +131,19 @@ async function stopRealtime(){const previous=realtime;realtime=null;realtimeKey=
 async function ensureRealtime(entry,isCurrent){
  const key=JSON.stringify([entry.id,entry.engine,entry.projectRoot,entry.limits,entry.userProperties]);if(realtimeKey===key&&realtime&&!realtime.error&&!realtime.closed)return realtime;
  if(entry.engine&&!['wallpaper-engine','wallpaper-engine-h264','chromium-web'].includes(entry.engine))throw Error('未知实时渲染器');
- const next=await (entry.engine==='chromium-web'?startBrowserWeb:startRealtime)(entry,root,{isCurrent});next.key=key;
- if(entry.engine==='wallpaper-engine-h264'){
-  next.hardwareRequested=true;
-  const stop=next.stop;
-  next.stop=async()=>{await next.hardware?.stop();await stop();};
+ if(entry.engine==='chromium-web'){
+  const next=await startBrowserWeb(entry,root,{isCurrent});next.key=key;return next;
  }
- return next;
+ const pending=startRealtime(entry,root,{isCurrent});nativeSources.add(pending);
+ try{
+  const next=await pending;next.key=key;next.hardwareRequested=entry.engine==='wallpaper-engine-h264';
+  const stop=next.stop;let cleanup;
+  next.stop=()=>cleanup??=(async()=>{
+   try{await next.hardware?.stop();}
+   finally{try{await stop();}finally{nativeSources.delete(pending);}}
+  })();
+  return next;
+ }catch(error){nativeSources.delete(pending);throw error;}
 }
 async function endHardware(source,error){
  const capture=source.hardware;source.hardware=null;
@@ -298,7 +305,7 @@ function startVideo(config){
 
 async function mount(c,target){c.playbackReading=null;
  await syncStartup(c);
- const ticket=activeSelection??selectionRevision,selectionStamp=selectionEpoch+':'+ticket,isCurrent=()=>ticket===selectionRevision;
+ const ticket=activeSelection??selectionRevision,selectionStamp=selectionEpoch+':'+ticket,isCurrent=()=>!stopped&&ticket===selectionRevision;
  const assertCurrent=()=>{if(!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
 
  const load=async file=>import('./'+file+'?v='+(await stat(path.join(codeRoot,file))).mtimeMs);

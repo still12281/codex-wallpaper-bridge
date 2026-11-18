@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 25329,
-      "sha256": "fd9bd77727530645cbf6f0f20e5ae1501f61a47538bd974e4bbbe15cbf75ca85"
+      "utf8Bytes": 25372,
+      "sha256": "eceece484cabfd4624f5d268f3ffafbf0131f135463b141bb81d1f4b683a0c75"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -184,8 +184,8 @@
     },
     {
       "path": "docs/REALTIME.md",
-      "utf8Bytes": 5638,
-      "sha256": "47e7c660acc4e6b934c1ab4a2015f823b6f5b446357daa197246247f7ef7e896"
+      "utf8Bytes": 5677,
+      "sha256": "830396a8d0c5f5f54a13ca2bf754e47df4eab9417fc1e4bd1f35e1ec6b877683"
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
@@ -505,8 +505,8 @@
     },
     {
       "path": "src/realtime-source.mjs",
-      "utf8Bytes": 11196,
-      "sha256": "30116b0a1ed188618a723f4667e1d9f5eea4152174ce49d6463e41154efc4f47"
+      "utf8Bytes": 11437,
+      "sha256": "94ea97371459e53c6f6f7d4df862b7c7dbd0dde995c89cb56940574c30615bd4"
     },
     {
       "path": "src/runtime-paths.mjs",
@@ -540,8 +540,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 52814,
-      "sha256": "7a296c1f5ea4d5faf76fa824264f91dcfb0850286b02b16149daf66c1d86c495"
+      "utf8Bytes": 53203,
+      "sha256": "7e6b3272e26029bd13466bb91cc2a2a4ad5d45abb788c4e46134dec95cb9ad0d"
     },
     {
       "path": "src/wallpaper-actions.mjs",
