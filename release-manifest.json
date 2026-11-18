@@ -380,8 +380,8 @@
     },
     {
       "path": "src/appearance-model.mjs",
-      "utf8Bytes": 5808,
-      "sha256": "31b581fe3129dcdf4a28c15960f8d2f238262e99516f73b754227975a122933b"
+      "utf8Bytes": 5813,
+      "sha256": "aa33d9d3abb0b92c4d6f6ca99d8dae465b9b82af5c0e2ca4352b277a67705fc3"
     },
     {
       "path": "src/automatic-surfaces.mjs",
@@ -435,8 +435,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 41957,
-      "sha256": "690c5bf04b3457eb9028f827ec568460101ce869409ea360a3c607343a4d9694"
+      "utf8Bytes": 41993,
+      "sha256": "5e8d024f5b6336171cce80c99de71b94c2f282f0c9e0227db7b697b07d20ced8"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -535,8 +535,8 @@
     },
     {
       "path": "src/upstream-adapters.mjs",
-      "utf8Bytes": 4960,
-      "sha256": "916f6de5b6144e98a72f1e59f204aa779ec37f6b8728804db1c95ff18a53ad78"
+      "utf8Bytes": 5496,
+      "sha256": "c194466a04528bc5d545e8c360f123ec4be19f0b4ffe2b32c585b69b8c64591f"
     },
     {
       "path": "src/video-cdp-host.mjs",
@@ -800,8 +800,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 38314,
-      "sha256": "83355b6ce8026fa7c5f519f48b7a44820f824460d48b65e417db8d1ab7fd9946"
+      "utf8Bytes": 39639,
+      "sha256": "739b0cef0fd198aaa22be3015fbb39b0311c2ddf52d822c34b9a387c09ccafbb"
     },
     {
       "path": "test/panel-entry-integration.mjs",

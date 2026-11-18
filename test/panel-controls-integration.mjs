@@ -13,6 +13,7 @@ try{
  for(let i=0;i<80;i++){try{const t=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url);if(t){c=await connectCdp(t.webSocketDebuggerUrl);break;}}catch{}await sleep(100);}assert(c);const config=defaultSettings();config.library=[{id:'fixture',name:'Fixture',mode:'webwallgl',limits:{maxWidth:1280,fps:30}}];config.selectedId='fixture';config.systemMedia={enabled:false,audio:true,audioFps:30};config.palette={r:240,g:241,b:243,dark:false};
  await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__cwbInstallFeatures='+installFeaturePanel.toString()+';window.__testConfig='+JSON.stringify(config)+';window.__requests=[];window.__codexWallpaperSend=raw=>{const q=JSON.parse(raw);window.__requests.push(q);if(q.action==="system-media-config")window.__testConfig.systemMedia={enabled:q.enabled,audio:q.audio,audioFps:q.audioFps};if(q.action==="display-tier")window.__testConfig.library[0].displayTier=q.tier;queueMicrotask(()=>window.__cwbReply(q.id,{ok:true,config:window.__testConfig,preview:null}));};('+installPanel.toString()+')(window.__testConfig,"test-token");true');
  const ui=s=>c.evaluate('(()=>{const s=document.getElementById("codex-wallpaper-controls").shadowRoot;'+s+'})()');
+ assert.equal(await ui('return s.getElementById("visual-fxEnabled").checked'),false);
  assert.equal(await ui('return s.getElementById("surface-options").classList.contains("cwb-feature")'),true,'Surface adaptation controls must use the same framed section as other settings');
  // The primary selector stays above optional settings at default and narrow sizes.
  for(const [width,height]of [[640,720],[360,500]]){
@@ -87,7 +88,10 @@ try{
  await ui('const e=s.getElementById("cwb-author-choice");e.value="1";e.dispatchEvent(new Event("change"));return true');await waitFor(()=>ui('return !s.getElementById("import").disabled'));assert.equal(await c.evaluate('window.__requests.findLast(q=>q.action==="wallpaper-properties-save").values.choice'),'2');result.authorConditionalControlsAndTypedCombo=true;
  await ui('window.__staleAuthorInput=s.getElementById("cwb-author-enabled");window.__holdAuthor=true;window.__testConfig.selectedId="author-b";document.getElementById("codex-wallpaper-controls").__cwbRenderConfig(window.__testConfig);return true');assert.equal(await ui('return s.getElementById("cwb-author-fields").children.length'),0);const priorWrites=await c.evaluate('window.__requests.filter(q=>q.action==="wallpaper-properties-save").length');await c.evaluate('window.__staleAuthorInput.onchange();true');assert.equal(await c.evaluate('window.__requests.filter(q=>q.action==="wallpaper-properties-save").length'),priorWrites);await c.evaluate('window.__holdAuthor=false;window.__cwbReply(window.__heldAuthor.id,{ok:true,properties:window.__authorModel("author-b")});true');await waitFor(()=>ui('return !!s.getElementById("cwb-author-enabled")'));result.authorStaleSelectionCannotWrite=true;
  assert(await ui('return ["fxEnabled","fxClick","fxTrail","volume"].every(key=>{const input=s.getElementById("visual-"+key);return s.getElementById(input.getAttribute("aria-describedby"))?.textContent.length>0})'));
- await c.evaluate('window.__cwbInstallFx='+adapters.fx+';('+decorateShell.toString()+')({pauseOnBlur:false,visual:{fxEnabled:true,fxClick:true,fxTrail:true}});true');
+ const paintFx=config=>c.evaluate('window.__cwbInstallFx='+adapters.fx+';('+decorateShell.toString()+')('+JSON.stringify(config)+');true');
+ const fxBase={pauseOnBlur:false,visual:{fxEnabled:true,fxClick:true,fxTrail:true,fxBlend:'auto'}};
+ const paintLight={...fxBase,selectedId:'fixture',library:[{id:'fixture',palette:{r:223,g:235,b:245,dark:false}}],palette:{r:20,g:22,b:28,dark:true}};
+ await paintFx(paintLight);
  const effects=await c.call('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`(async()=>{
   const move=(type,x,y)=>document.body.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'mouse',clientX:x,clientY:y}));
   const painted=async()=>{
@@ -100,9 +104,23 @@ try{
   move('pointerdown',120,100);const click=await painted();
   await new Promise(resolve=>setTimeout(resolve,650));
   move('pointermove',60,70);move('pointermove',140,70);move('pointermove',225,100);
-  return {click,trail:await painted()};
+  return {click,trail:await painted(),blend:document.getElementById('we-fx-layer').style.mixBlendMode};
  })()`});
- assert.deepEqual(effects.result?.value,{click:true,trail:true});result.clickAndTrailPainted=true;
+ assert.deepEqual(effects.result?.value,{click:true,trail:true,blend:'normal'});result.clickAndTrailPainted=true;
+ assert.equal(await c.evaluate('document.body.style.getPropertyValue("--we-accent")'),'rgb(76,80,83)');
+ await paintFx({...fxBase,palette:{r:18,g:42,b:89,dark:true}});
+ const blendAfter=async()=>{
+  const outcome=await c.call('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`new Promise(resolve=>{
+   document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:120,clientY:100}));
+   requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(document.getElementById('we-fx-layer').style.mixBlendMode)));
+  })`});
+  return outcome.result.value;
+ };
+ assert.equal(await blendAfter(),'screen');
+ assert.equal(await c.evaluate('document.body.style.getPropertyValue("--we-accent")'),'rgb(168,177,193)');
+ await paintFx({...paintLight,visual:{...fxBase.visual,fxBlend:'lighten'}});
+ assert.equal(await blendAfter(),'lighten');
+ result.wallpaperAccentAndManualBlend=true;
  await c.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});assert.equal(await ui('return getComputedStyle(s.getElementById("engine-import")).transitionDuration'),'0s');
  await c.call('Runtime.evaluate',{awaitPromise:true,expression:'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))'});
  assert.equal(await c.evaluate('!!document.getElementById("we-fx-layer")'),false);result.reducedMotion=true;result.passed=true;
