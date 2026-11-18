@@ -316,7 +316,9 @@ try {
   }
   Save-TaskPhase $(if($taskRendered){'background-rendered'}else{'cdp-ready-background-not-yet-rendered'})
   if(-not $taskRendered){$taskOwnedRoot=$null;throw 'Codex 已打开，但壁纸首帧未就绪；客户端已保留，请检查壁纸宿主日志。'}
-  try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot -CodexAppId $taskCodex.AppUserModelId)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
+  if(-not $AttachOnly){
+    try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot -CodexAppId $taskCodex.AppUserModelId)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
+  }
   Save-TaskPhase 'background-rendered'
   if($taskLockOwned){$taskBootstrapLock.ReleaseMutex();$taskLockOwned=$false}
   if($TaskName -and $taskRendered -and $taskStatus.hostPid){Wait-Process -Id $taskStatus.hostPid -ErrorAction SilentlyContinue}

@@ -1215,8 +1215,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 25380,
-      "sha256": "a13f1ed18bf82632b663e15ead53f505dd9834b0d228388c859dd268552cbe37"
+      "utf8Bytes": 25410,
+      "sha256": "7053af67a5fb79f0b5876f8dcbb176b81f7e22dc60c4606440b5a5a4ee6df04a"
     },
     {
       "path": "windows/Start-ExternalApp.ps1",
