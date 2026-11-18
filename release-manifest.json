@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 24935,
-      "sha256": "a0a406e9fcd961527222ffc67e909147c4022a570f16dc473f6260c1162b809a"
+      "utf8Bytes": 25103,
+      "sha256": "99bb53276e1dc5ecdb89b7d3faacceffddb76ba072a3d6fa78f4bb0ceb904d9d"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -74,8 +74,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "utf8Bytes": 5368,
-      "sha256": "5423b8d38c2b8e6eb1e71598ebd3500b37e0020135a72a070168c8580a92819f"
+      "utf8Bytes": 5504,
+      "sha256": "ad7fe290d4213a1b806c16f895757e6eb301807340583314a3abc99ac6ef70ab"
     },
     {
       "path": "docs/AFTER-UPDATE-RECONNECT.zh-CN.md",
@@ -239,8 +239,8 @@
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
-      "utf8Bytes": 9837,
-      "sha256": "dc40cba68c0eb352014d22a13df19893392ac0a33e75b6bbe5401c5f2e0f6051"
+      "utf8Bytes": 10271,
+      "sha256": "b2d4590d9ba7ce386ae68849a4669407365b1870998d43875edfc4cd39294839"
     },
     {
       "path": "docs/TASKBAR-REOPEN-20261028.zh-CN.md",
@@ -425,8 +425,8 @@
     },
     {
       "path": "src/display-tiers.mjs",
-      "utf8Bytes": 2275,
-      "sha256": "1f0dfd3a721a013cb7f1391d2a2a2b2411a43a914ec1742d620c329edb4bda7b"
+      "utf8Bytes": 2315,
+      "sha256": "0211540e5383fce2f46c4fbe2706c5ca6aa8811f48c870807da00b46991e3c79"
     },
     {
       "path": "src/engine-library.mjs",
@@ -435,8 +435,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 41040,
-      "sha256": "d3a7ab483bfb6d75e9395b48d7f6d1929d18dcb2c124e879ef608737125f43f3"
+      "utf8Bytes": 41649,
+      "sha256": "90c50399fe0762a0dc72e393e4656536c63d2c1de14e51974a5240be6b190551"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -470,8 +470,8 @@
     },
     {
       "path": "src/media-power.mjs",
-      "utf8Bytes": 5291,
-      "sha256": "7115b238d926a332516bb428e33fd442e3111e040c6b73037c5a3bf9e31785cc"
+      "utf8Bytes": 5780,
+      "sha256": "b27399b0b0bed00a07c826a5fd884d98d16a5139fe64401f32ac0d9ed52a9f3a"
     },
     {
       "path": "src/media-preflight.mjs",
@@ -525,8 +525,8 @@
     },
     {
       "path": "src/system-media.mjs",
-      "utf8Bytes": 6612,
-      "sha256": "85090705adced1f22cba6139d9b9c3a220a94850873621458b1557dad5e31517"
+      "utf8Bytes": 7542,
+      "sha256": "acc6b8eafdcb6e644c55713ce92242258975810c86e559f08e9898cd7af268ca"
     },
     {
       "path": "src/upstream-adapters.mjs",
@@ -535,8 +535,8 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 48804,
-      "sha256": "7619b83614248e5028ea5a0565122ac88587c1c007d50c91bbdb2dadc86ad2c2"
+      "utf8Bytes": 48870,
+      "sha256": "f88c116dba1bcf3588214446dae7e9c579cce781dfef5a3f059a104362ddf350"
     },
     {
       "path": "src/wallpaper-actions.mjs",
@@ -675,8 +675,8 @@
     },
     {
       "path": "test/display-tiers.test.mjs",
-      "utf8Bytes": 8592,
-      "sha256": "b0008e6a8dac394ebfb2e2587261dac553ab07ae0988f92f73b7e84ef07e647a"
+      "utf8Bytes": 8763,
+      "sha256": "ada742e596e853136d20d70700bc513ccb6b2287e6891bc4d8081c3a1d8e1fa9"
     },
     {
       "path": "test/entry-queue.ps1",
@@ -785,8 +785,8 @@
     },
     {
       "path": "test/media-power.test.mjs",
-      "utf8Bytes": 7708,
-      "sha256": "7461f10e919e5dca8b862f31f4e74862732306dca17ef269e37e71f234c0a015"
+      "utf8Bytes": 8655,
+      "sha256": "e029272cd2e07ca2c7c1a88288f0c4834820dae4eda5b839e32db37d22178bfb"
     },
     {
       "path": "test/media-preparation.test.mjs",
@@ -795,8 +795,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 36588,
-      "sha256": "fac4f07cfa513f5ab90152188e92dbd655423d9ff9d4285d23c3773040644f37"
+      "utf8Bytes": 36734,
+      "sha256": "97a6fd6d884fd87a64029f161347c3da3c9e72eea6fac9252608ab82826a6f48"
     },
     {
       "path": "test/panel-entry-integration.mjs",
@@ -895,8 +895,8 @@
     },
     {
       "path": "test/system-media.test.mjs",
-      "utf8Bytes": 4551,
-      "sha256": "f3a48ae1ba3881f9515f132db2a001adfd7618599efb603ded4b538d948e33c1"
+      "utf8Bytes": 4707,
+      "sha256": "8689ff13bf0b739b851a21034617315c9756bec1d8ce4be0543fd42fc1f8eddd"
     },
     {
       "path": "test/tcp-listeners.ps1",
@@ -980,8 +980,8 @@
     },
     {
       "path": "tools/prepare-media-bridge.mjs",
-      "utf8Bytes": 1568,
-      "sha256": "f0940301d60dfad400911e278c99312644e4fe17ce15b3acae20089880b73e38"
+      "utf8Bytes": 5293,
+      "sha256": "9f9bc14fc79c91ec6a9387f5a97f0e5157bb220e1a8ca9874fcfb4fd0f88e1d5"
     },
     {
       "path": "tools/prepare-webwallgl.mjs",

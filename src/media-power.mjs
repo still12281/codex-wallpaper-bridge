@@ -18,6 +18,7 @@ export function installMediaActivity(token){
 
 export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=600}){
  let options={enabled:false,audio:false},backend=null,key='',wanted='',changedAt=0,retryAt=0,error=null,closed=false,queue=Promise.resolve();
+ let rateSample=null;
  const delivery=new WeakMap();const stats={starts:0,stops:0,spectrumSent:0,metadataSent:0,panelUpdates:0};
  const active=c=>!!(c.mediaActivity?.active&&c.mediaActivity?.webgl);
  const desired=()=>{const audio=!!(options.audio&&[...sessions()].some(c=>active(c)&&c.mediaActivity.audio!==false));return JSON.stringify([!!options.enabled||audio,audio,audio?normalizeAudioFps(options.audioFps):0]);};
@@ -26,7 +27,7 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
   const nextKey=desired();if(wanted!==nextKey){wanted=nextKey;changedAt=now();}
   if(nextKey===key&&(!backend||!backend.state.error))return;
   if(!force&&(now()-changedAt<debounceMs||now()<retryAt))return;
-  const old=backend;backend=null;key='';if(old){stats.stops++;await old.stop();}
+  const old=backend;backend=null;key='';rateSample=null;if(old){stats.stops++;await old.stop();}
   if(closed||nextKey!==desired())return;
   const [enabled,audio,audioFps]=JSON.parse(nextKey);
   try{
@@ -45,6 +46,13 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
   const {bands,position,...metadata}=payload;
   // Position is a separate correction; frequency frames never invalidate metadata.
   const signature=JSON.stringify(metadata),frame=backend?.state.spectrumFrames||0;
+  const targetRate=backend?.state.audioFps||0;
+  if(targetRate>60){
+   const at=now();
+   if(!rateSample)rateSample={at,frame,hz:null};
+   else if(at-rateSample.at>=1000)rateSample={at,frame,hz:Math.round((frame-rateSample.frame)*1000/(at-rateSample.at))};
+  }
+  const panelSignature=signature+':'+targetRate+':'+(rateSample?.hz??'');
   for(const c of clients){
    const activity=c.mediaActivity||{};let d=delivery.get(c);
    if(!d||d.renderer!==activity.renderer){d={renderer:activity.renderer,spectrum:false};delivery.set(c,d);}
@@ -54,14 +62,14 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
     if(payload.audioAvailable&&activity.audio!==false){if(!d.spectrum||d.frame!==frame){await send(c,'spectrum',{audioAvailable:true,bands});stats.spectrumSent++;d.spectrum=true;d.frame=frame;}}
     else if(d.spectrum){await send(c,'spectrum',{audioAvailable:false,bands:[]});stats.spectrumSent++;d.spectrum=false;}
    }else {d.metadata=null;d.positionAt=null;if(d.spectrum){await send(c,'spectrum',{audioAvailable:false,bands:[]});stats.spectrumSent++;d.spectrum=false;}}
-   if(activity.panel){if(!d.panelOpen||d.panel!==signature){await send(c,'panel',metadata);d.panel=signature;stats.panelUpdates++;}d.panelOpen=true;}else d.panelOpen=false;
+   if(activity.panel){if(!d.panelOpen||d.panel!==panelSignature){await send(c,'panel',{...metadata,targetRate,receivedHz:rateSample?.hz??null});d.panel=panelSignature;stats.panelUpdates++;}d.panelOpen=true;}else d.panelOpen=false;
   }
  };
  return {
   configure(next){options={...next};return serial(()=>reconcile(true));},
   tick(){return serial(pump);},
   get backend(){return backend;},
-  snapshot(){return {...stats,audioRequested:!!options.audio,audioFpsRequested:normalizeAudioFps(options.audioFps),audioRunning:!!backend&&JSON.parse(key||'[false,false]')[1],audioFps:backend?JSON.parse(key)[2]||0:0,pid:backend?.state.pid||null,spectrumFrames:backend?.state.spectrumFrames||0,error};},
+  snapshot(){return {...stats,audioRequested:!!options.audio,audioFpsRequested:normalizeAudioFps(options.audioFps),audioRunning:!!backend&&JSON.parse(key||'[false,false]')[1],audioFps:backend?(backend.state.audioFps??JSON.parse(key)[2])||0:0,receivedHz:rateSample?.hz??null,pid:backend?.state.pid||null,spectrumFrames:backend?.state.spectrumFrames||0,error};},
   stop(){closed=true;return serial(async()=>{const old=backend;backend=null;await old?.stop();});}
  };
 }

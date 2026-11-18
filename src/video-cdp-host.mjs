@@ -104,6 +104,7 @@ const save=()=>{
 };
 const sessions=new Map();let automaticSurfaces=null,busy=false,stopped=false,acting=false,importPreparing=false,actionQueue=Promise.resolve(),selectionRevision=0,activeSelection=null;
 let realtime=null,realtimeKey=null,streamTimer=null,streaming=false,timer=null,rotationTimer=null,spectrumTimer=null,mediaPower=null;
+let spectrumBusy=false;
 const selectionEpoch=randomUUID();
 const startupPalette=()=>settings.library.some(e=>e.id===settings.selectedId)?displaySettings(settings).palette:null;
 const syncStartup=async c=>{try{await syncStartupAppearance(c,startupPalette(),appUrl);delete c.startupPaletteError;}catch(error){c.startupPaletteError=error.message;}};
@@ -184,8 +185,8 @@ async function applySelected(){
  }
  timing.completedMs=performance.now()-started;timing.measurement='candidate readiness by target; not physical screen presentation';await configureMedia(settings.systemMedia);await automaticSurfaces?.refresh();
 }
-mediaPower=createMediaPower({start:options=>startSystemMedia(root,options),sessions:()=>sessions.values(),send:async(c,kind,payload)=>{const data=JSON.stringify(payload);if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');}});
-const configureMedia=async options=>{const effective=effectiveMediaSettings({...settings,systemMedia:options});await mediaPower.configure(effective);if(spectrumTimer){clearInterval(spectrumTimer);spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(effective.audioFps));spectrumTimer.unref();}};
+mediaPower=createMediaPower({start:options=>startSystemMedia(root,{...options,onSpectrum:()=>void pumpSpectrum()}),sessions:()=>sessions.values(),send:async(c,kind,payload)=>{const data=JSON.stringify(payload);if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');}});
+const configureMedia=async options=>{const effective=effectiveMediaSettings({...settings,systemMedia:options});await mediaPower.configure(effective);if(spectrumTimer){clearInterval(spectrumTimer);spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(Math.min(60,effective.audioFps)));spectrumTimer.unref();}};
 async function reportMedia(c){
  if(await c.evaluate('(()=>{const a=window.__cwbMediaActivity;if(a?.token!=='+JSON.stringify(c.token)+')return false;a.report();return true})()'))return;
  await c.evaluate('('+installMediaActivity.toString()+')('+JSON.stringify(c.token)+');true');
@@ -380,9 +381,8 @@ try{
  await automaticSurfaces.start();
 }catch(error){status.automaticSurfaces={error:error.message};}
 await configureMedia(settings.systemMedia).catch(()=>{});
-let spectrumBusy=false;
 async function pumpSpectrum(){if(spectrumBusy||stopped||busy||(acting&&!importPreparing)||streaming)return;spectrumBusy=true;try{await mediaPower.tick();}catch(error){status.mediaDeliveryError=error.message;}finally{spectrumBusy=false;}}
-spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(effectiveMediaSettings(settings).audioFps));spectrumTimer.unref();
+spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(Math.min(60,effectiveMediaSettings(settings).audioFps)));spectrumTimer.unref();
 const primaryPending=()=>{const main=status.targets.filter(t=>t.url===appUrl);return main.length?main.some(t=>!targetReady(t)):!status.targets.some(targetReady);};
 async function poll(){if(stopped)return;if(busy||acting||streaming){schedulePoll(targetWakePending?250:5000);return;}targetWakePending=false;await tick();if(!stopped)schedulePoll(targetWakePending?0:primaryPending()?250:5000);}
 pollStarted=true;if(!stopped)schedulePoll(targetWakePending?0:primaryPending()?250:5000);

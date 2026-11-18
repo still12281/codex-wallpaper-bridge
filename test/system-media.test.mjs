@@ -11,7 +11,9 @@ test('audio controls validate rates, persist independent choices and preserve fo
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-audio-options-')),settings=defaultSettings();let applies=0;const configured=[];
  const action=createActions(root,settings,async()=>applies++,undefined,{configureMedia:async o=>configured.push(o)});
  await assert.rejects(action(null,{action:'system-media-config',enabled:false,audio:true,audioFps:240}),/档位无效/);assert.equal(configured.length,0);
- await action(null,{action:'system-media-config',enabled:false,audio:true,audioFps:60});assert.equal(applies,1);assert.equal(settings.pauseOnBlur,true);
+ await action(null,{action:'system-media-config',enabled:false,audio:true,audioFps:120});assert.equal(applies,1);assert.equal(settings.pauseOnBlur,true);
+ assert.equal(configured.at(-1).audioFps,120);
+ assert.equal(JSON.parse(await readFile(path.join(root,'settings.json'),'utf8')).systemMedia.audioFps,120);
  await action(null,{action:'system-media-config',enabled:false,audio:true,audioFps:10});assert.equal(applies,1);
  await action(null,{action:'system-media-config',enabled:true,audio:false,audioFps:10});assert.equal(applies,2);
  assert.deepEqual(JSON.parse(await readFile(path.join(root,'settings.json'),'utf8')).systemMedia,{enabled:true,audio:false,audioFps:10});

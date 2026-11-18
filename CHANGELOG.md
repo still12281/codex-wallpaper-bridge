@@ -5,6 +5,7 @@
 - Preserve a taskbar launch request made while a previous request finishes. Retry temporarily unavailable Codex endpoint checks, reject a changed browser, and report a wallpaper host that exits before its first frame.
 - Start the next Codex instance when the previous main process has exited, even if old renderer helpers are still finishing. Verify the local listener in the launcher and the browser identity in the wallpaper host. Present the first wallpaper frame without the fade used when switching wallpapers.
 - Bring an already visible Codex window forward through Windows, including while the wallpaper is preparing. Restore a hidden window through its bound Codex page, and record an activation probe failure without showing raw diagnostics in the dialog.
+- Add optional 90 and 120 updates-per-second targets for WebGL audio response, with a separate Windows component and measured fresh-frame reporting in the media panel.
 
 - Keep transcript clipping synchronized with native scroll progress, preventing earlier turns from briefly showing through the transparent composer during scrolling.
 - Add stable GitHub release notifications, manual checks and verified one-click installer updates to the wallpaper panel. Preserve the library and integration settings; activate the installed version after exiting Codex normally and reopening the wallpaper entry.

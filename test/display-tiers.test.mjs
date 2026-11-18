@@ -12,7 +12,9 @@ test('static and economy stop audio/decorations without changing saved preferenc
  const view=displaySettings(s);assert.equal(view.systemMedia.audio,false);assert.equal(view.visual.fxEnabled,false);assert.equal(view.visual.parallax,0);assert.equal(s.systemMedia.audio,true);assert.equal(s.visual.fxEnabled,true);
  assert.equal(effectiveEntry(s.library[0]).mime,'image/png');assert.equal(effectiveEntry(s.library[0]).mode,undefined);
  s.library[0].displayTier='balanced';assert.equal(effectiveMediaSettings(s).audioFps,20);assert.equal(effectiveMediaSettings(s).audio,true);
- s.library[0].displayTier='full';assert.equal(effectiveMediaSettings(s).audioFps,60);assert.equal(DISPLAY_TIERS.full.videoTexScale,1);
+ s.systemMedia.audioFps=120;assert.equal(effectiveMediaSettings(s).audioFps,20);
+ s.library[0].displayTier='full';assert.equal(effectiveMediaSettings(s).audioFps,120);assert.equal(DISPLAY_TIERS.full.videoTexScale,1);
+ s.library[0].displayTier='custom';assert.equal(effectiveMediaSettings(s).audioFps,120);
 });
 test('tier application persists only after a usable still is ready and preserves source identity',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-tier-'));await mkdir(path.join(root,'media'));const s=defaultSettings();s.library=[{id:'scene',mode:'webwallgl',projectRoot:'unchanged',limits:{maxWidth:1280,fps:30}}];s.selectedId='scene';s.systemMedia.audio=true;let captures=0,applies=0,configured;

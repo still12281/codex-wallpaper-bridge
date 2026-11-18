@@ -56,3 +56,19 @@ test('audio-only mode works without exposing song metadata and rate changes rest
  await f.power.configure({enabled:false,audio:true,audioFps:60});assert(f.starts[0].stopped);assert.equal(f.starts.at(-1).options.audioFps,60);
  assert.equal(f.power.snapshot().audioFps,60);await f.power.configure({enabled:false,audio:false,audioFps:60});await f.power.tick();assert.equal(f.power.backend,null);assert.equal(f.power.snapshot().audioRunning,false);await f.power.stop();
 });
+
+test('high spectrum reports the component target and fresh-frame rate to an open panel',async()=>{
+ const f=fixture();Object.assign(f.clients[0].mediaActivity,{webgl:true,active:true,panel:true});
+ await f.power.configure({enabled:false,audio:true,audioFps:120});
+ const fallback=f.starts.at(-1);fallback.state.audioFps=60;
+ await f.power.tick();assert.equal(f.power.snapshot().audioFps,60);
+ assert.equal(f.calls.find(c=>c.kind==='panel').payload.targetRate,60);
+ await f.power.configure({enabled:false,audio:true,audioFps:90});
+ const high=f.starts.at(-1);high.state.audioFps=90;
+ await f.power.tick();f.advance(1000);high.state.spectrumFrames=78;await f.power.tick();
+ assert.equal(f.power.snapshot().receivedHz,78);
+ const panel=f.calls.filter(c=>c.kind==='panel').at(-1).payload;
+ assert.equal(panel.receivedHz,78);assert.equal(panel.targetRate,90);
+ assert.equal(f.calls.filter(c=>c.kind==='metadata').length,1);
+ await f.power.stop();
+});
