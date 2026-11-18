@@ -4,7 +4,14 @@
 
 A local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
 
-**v0.3.0** adds six stereo spectrum rates for WebGL wallpapers, improves startup handoff and chat scrolling, and adds release checks and one-click updates to the wallpaper panel. See the [changelog](CHANGELOG.md).
+**v0.3.0 highlights** include stereo spectrum, one-click updates, AMD hardware transport, and pointer effects that adapt to the wallpaper palette.
+
+- Enable WebGL audio response in **系统音乐联动** to choose 10, 20, 30, 60, 90 or 120 spectrum updates per second. The default is 30.
+- Use **版本与更新** to check for and install a stable release. Exit Codex normally and reopen the wallpaper entry to activate it.
+- Select **原版硬件传帧（AMD）** to use the original Wallpaper Engine scene renderer.
+- Enable click effects and cursor trails in **玻璃、字体与特效**. Automatic color and blending follow the wallpaper palette.
+
+See the [changelog](CHANGELOG.md) for startup and chat scrolling fixes.
 
 This is an independent community project, not an official OpenAI plugin. It connects through the local Chromium debugging interface. No accounts, wallpaper source files, or user configuration are included.
 

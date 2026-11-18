@@ -1,6 +1,6 @@
 // Actual host/queue and isolated browser. Never connects to the user's Codex.
 import {mkdtemp,mkdir,writeFile,readFile} from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import {spawn,execFile} from 'node:child_process';import {promisify} from 'node:util';import {createServer} from 'node:net';import {pathToFileURL} from 'node:url';import assert from 'node:assert/strict';
-import {connectCdp} from '../src/cdp-client.mjs';import {defaultSettings,findFFmpeg} from '../src/runtime-paths.mjs';
+import {connectCdp} from '../src/cdp-client.mjs';import {defaultSettings,findFFmpeg,getDataRoot} from '../src/runtime-paths.mjs';
 const temp=await mkdtemp(path.join(os.tmpdir(),'cwb-rotation-host-')),data=path.join(temp,'data'),project=path.join(temp,'scene');await mkdir(data);await mkdir(path.join(data,'media'));await mkdir(project);
 const pause=ms=>new Promise(r=>setTimeout(r,ms));async function until(check,ms=30000){const end=Date.now()+ms;while(Date.now()<end){try{const value=await check();if(value)return value;}catch{}await pause(100);}throw Error('Rotation host condition timed out');}
 let browser,host,c,errors='';const report={kind:'isolated-host-rotation-and-manual-priority-not-native-Codex'};
@@ -12,7 +12,8 @@ try{
  const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));
  browser=spawn(process.env.CODEX_WALLPAPER_TEST_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--disable-background-networking','--remote-debugging-port='+port,'--user-data-dir='+path.join(temp,'profile'),url],{windowsHide:true,stdio:'ignore'});
  const target=await until(async()=>(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url));c=await connectCdp(target.webSocketDebuggerUrl);
- host=spawn(process.execPath,[path.resolve('src/video-cdp-host.mjs'),'--cdp-port',String(port),'--test-url',url],{windowsHide:true,env:{...process.env,CODEX_WALLPAPER_DATA_DIR:data},stdio:['ignore','ignore','pipe']});host.stderr.on('data',b=>errors=(errors+b).slice(-4000));
+ const engine=process.env.CODEX_WALLPAPER_WEBWALLGL||path.join(getDataRoot(),'engines','webwallgl-3.0.0','webwallgl.global.min.js');
+ host=spawn(process.execPath,[path.resolve('src/video-cdp-host.mjs'),'--cdp-port',String(port),'--test-url',url],{windowsHide:true,env:{...process.env,CODEX_WALLPAPER_DATA_DIR:data,CODEX_WALLPAPER_WEBWALLGL:engine},stdio:['ignore','ignore','pipe']});host.stderr.on('data',b=>errors=(errors+b).slice(-4000));
  await until(()=>c.evaluate('!!window.__cwbPanelHost&&!!window.__codexWallpaperBridge?.ready'));
  await c.evaluate('window.__r={pending:new Map(),seq:2000000,reply:window.__cwbReply};window.__cwbReply=(id,value)=>{const p=__r.pending.get(id);if(p){__r.pending.delete(id);p(value);}else __r.reply(id,value);};__r.rpc=req=>new Promise(resolve=>{const id=++__r.seq;__r.pending.set(id,resolve);window.__codexWallpaperSend(JSON.stringify({...req,id,token:window.__cwbPanelHost.__cwbToken}));});true');
  const rpc=async req=>{const v=await c.call('Runtime.evaluate',{expression:'__r.rpc('+JSON.stringify(req)+')',awaitPromise:true,returnByValue:true});const value=v.result?.value;assert(value?.ok,JSON.stringify(value||v.exceptionDetails));return value;};

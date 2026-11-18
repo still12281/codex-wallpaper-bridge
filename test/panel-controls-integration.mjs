@@ -121,6 +121,18 @@ try{
  await paintFx({...paintLight,visual:{...fxBase.visual,fxBlend:'lighten'}});
  assert.equal(await blendAfter(),'lighten');
  result.wallpaperAccentAndManualBlend=true;
+ const filters=await c.evaluate(`(()=>{
+  const layer=document.createElement('div');
+  layer.id='codex-wallpaper-bridge-layer';
+  const shadow=layer.attachShadow({mode:'open'}),media=document.createElement('div'),frozen=document.createElement('div');
+  frozen.setAttribute('data-cwb-frozen','');shadow.append(media,frozen);document.body.append(layer);
+  const effects=[{},{wallpaperBlur:4},{brightness:.75},{wallpaperBlur:4,brightness:.75},{}].map(visual=>{
+   window.__cwbDecorations.update({visual});
+   return [getComputedStyle(media).filter,getComputedStyle(frozen).filter];
+  });
+  layer.remove();return effects;
+ })()`);
+ assert.deepEqual(filters,['none','blur(4px)','brightness(0.75)','blur(4px) brightness(0.75)','none'].map(filter=>[filter,filter]));result.identityFilterBypassed=true;
  await c.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});assert.equal(await ui('return getComputedStyle(s.getElementById("engine-import")).transitionDuration'),'0s');
  await c.call('Runtime.evaluate',{awaitPromise:true,expression:'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))'});
  assert.equal(await c.evaluate('!!document.getElementById("we-fx-layer")'),false);result.reducedMotion=true;result.passed=true;

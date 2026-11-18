@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node src/video-cdp-host.mjs --cdp-port 9335",
     "test": "node --test test/*.test.mjs",
+    "test:regression": "node test/run-regression.mjs",
     "check:privacy": "node tools/check-release.mjs",
     "test:integration": "node test/integration.mjs",
     "test:startup": "node test/startup-priority-integration.mjs",

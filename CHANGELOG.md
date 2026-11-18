@@ -2,15 +2,26 @@
 
 ## 0.3.0
 
-- Add an optional AMD hardware capture and H.264 transport for saved Wallpaper Engine scenes. Mute the scene's own soundtrack in the capture window while retaining system audio response. Fall back to JPEG capture of the same scene if the hardware path is unavailable.
+### Highlights
 
-- Preserve a taskbar launch request made while a previous request finishes. Retry temporarily unavailable Codex endpoint checks, reject a changed browser, and report a wallpaper host that exits before its first frame.
-- Start the next Codex instance when the previous main process has exited, even if old renderer helpers are still finishing. Verify the local listener in the launcher and the browser identity in the wallpaper host. Present the first wallpaper frame without the fade used when switching wallpapers.
-- Bring an already visible Codex window forward through Windows, including while the wallpaper is preparing. Restore a hidden window through its bound Codex page, and record an activation probe failure without showing raw diagnostics in the dialog.
-- Use sample-clock stereo spectrum at 10, 20, 30, 60, 90 and 120 updates per second for WebGL scenes. The Windows installer prepares the verified component, and the media panel shows the measured incoming rate. The default target is 30.
+- Six stereo spectrum rates for WebGL wallpapers
+- Release notifications and one-click updates in the wallpaper panel
+- Optional AMD hardware transport for Wallpaper Engine scenes
+- Pointer effects that adapt to the wallpaper palette
 
-- Keep transcript clipping synchronized with native scroll progress, preventing earlier turns from briefly showing through the transparent composer. Batch layout reads and skip unchanged clip values during scrolling.
-- Add stable GitHub release notifications, manual checks and verified one-click installer updates to the wallpaper panel. Preserve the library and integration settings; activate the installed version after exiting Codex normally and reopening the wallpaper entry.
+### New features
+
+- **Stereo spectrum**. Open **系统音乐联动** and enable WebGL audio response. Choose 10, 20, 30, 60, 90 or 120 updates per second. The default is 30, and the panel shows the measured incoming rate. The installer prepares the verified audio component.
+- **One-click updates**. Open **版本与更新** to check for a stable release and download its verified installer. The upgrade preserves your library and integration choices. Exit Codex normally and reopen the wallpaper entry to activate the installed version.
+- **AMD hardware transport**. Select **原版硬件传帧（AMD）** for a saved Wallpaper Engine scene. The capture window mutes the scene soundtrack while retaining its response to system audio. The bridge falls back to JPEG capture for that scene if hardware transport is unavailable.
+- **Adaptive pointer effects**. In **玻璃、字体与特效**, enable click effects or cursor trails. The automatic color and blending options use the wallpaper palette so effects remain visible on light and dark scenes.
+
+### Startup and reading fixes
+
+- Preserve a taskbar launch request while the previous request finishes. Start the next instance once the old main process exits, even while old renderer helpers are cleaning up.
+- Bring a visible Codex window forward while wallpaper preparation is still in progress. Restore a hidden window through its bound Codex page, and show a concise error when the wallpaper host exits before its first frame.
+- Present the first wallpaper frame without the fade used when switching wallpapers. Keep transcript clipping synchronized with scrolling to prevent old text from briefly showing through the composer.
+- Skip wallpaper compositing filters when blur is zero and brightness is unchanged.
 
 ## 0.2.2 — 2026-11-17
 

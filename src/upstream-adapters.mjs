@@ -8,15 +8,25 @@ export async function upstreamRuntime(){
 
 export function decorateShell(config){
  const state=window.__codexWallpaperBridge;if(!state?.ready)return;
- if(window.__cwbDecorations&&window.__cwbDecorations.version!==3)window.__cwbDecorations.dispose();
+ if(window.__cwbDecorations&&window.__cwbDecorations.version!==4)window.__cwbDecorations.dispose();
  if(!window.__cwbDecorations){
   const style=document.createElement('style');style.id='cwb-decoration-style';document.head.append(style);let current=config,frame=0,target={x:0,y:0},position={x:0,y:0},effectBlend='screen';const savedAccent=document.body.style.getPropertyValue('--we-accent'),animated=new WeakSet(),reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const render=()=>{frame=0;const amount=reduced.matches?0:current.visual?.parallax||0,layer=document.getElementById('codex-wallpaper-bridge-layer');position.x+=(target.x-position.x)*.12;position.y+=(target.y-position.y)*.12;if(layer){layer.style.transform=amount?'translate('+position.x.toFixed(2)+'px,'+position.y.toFixed(2)+'px) scale('+(1+amount*2/Math.max(200,Math.min(innerWidth,innerHeight)))+')':'';}if(amount&&(Math.abs(target.x-position.x)>.05||Math.abs(target.y-position.y)>.05))frame=requestAnimationFrame(render);};
   const kick=()=>{if(!frame)frame=requestAnimationFrame(render);};const move=event=>{const amount=reduced.matches?0:current.visual?.parallax||0;target={x:(event.clientX/innerWidth-.5)*amount,y:(event.clientY/innerHeight-.5)*amount};if(amount)kick();};
   const pause=()=>{const visual={...current.visual,fxBlend:effectBlend};if(document.hidden||(current.pauseOnBlur&&!document.hasFocus())||reduced.matches)visual.fxEnabled=false;window.__cwbInstallFx?.(visual);};
   document.addEventListener('pointermove',move,{passive:true});document.addEventListener('visibilitychange',pause);addEventListener('focus',pause);addEventListener('blur',pause);reduced.addEventListener('change',pause);
-  window.__cwbDecorations={version:3,update(next){current=next;const v=current.visual||{},layer=document.getElementById('codex-wallpaper-bridge-layer'),media=layer?.shadowRoot?.firstElementChild;
-   if(media){media.style.filter='blur('+(v.wallpaperBlur||0)+'px) brightness('+(v.brightness??1)+')';media.style.scale=v.flip?'-1 1':'';const frozen=layer.shadowRoot.querySelector('[data-cwb-frozen]');if(frozen){frozen.style.filter=media.style.filter;frozen.style.scale=media.style.scale;}if(media.tagName==='VIDEO'){media.playbackRate=v.speed||1;media.volume=v.volume||0;media.muted=!v.volume;}}
+  window.__cwbDecorations={version:4,update(next){current=next;const v=current.visual||{},layer=document.getElementById('codex-wallpaper-bridge-layer'),media=layer?.shadowRoot?.firstElementChild;
+   if(media){
+    // Even an identity CSS filter can require an extra compositing pass.
+    const blur=v.wallpaperBlur||0,brightness=v.brightness??1;
+    const filters=[];
+    if(blur)filters.push('blur('+blur+'px)');
+    if(brightness!==1)filters.push('brightness('+brightness+')');
+    media.style.filter=filters.join(' ');media.style.scale=v.flip?'-1 1':'';
+    const frozen=layer.shadowRoot.querySelector('[data-cwb-frozen]');
+    if(frozen){frozen.style.filter=media.style.filter;frozen.style.scale=media.style.scale;}
+    if(media.tagName==='VIDEO'){media.playbackRate=v.speed||1;media.volume=v.volume||0;media.muted=!v.volume;}
+   }
    window.__codexWallpaperBridge?.setVolume?.(v.volume||0);if(layer&&!animated.has(layer)){animated.add(layer);if(!window.__cwbStartupAppearance&&!reduced.matches&&v.transitionMs)layer.animate([{opacity:0},{opacity:1}],{duration:v.transitionMs,easing:'ease-out'});}
    const palette=current.library?.find(entry=>entry.id===current.selectedId)?.palette||current.palette;
    const lightBackground=palette?.dark===false;

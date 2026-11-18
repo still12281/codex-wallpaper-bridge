@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 25487,
-      "sha256": "7d3b2c48201e8a3d012bf1b3c56c01a33ae685d665b43c7f1be34f8f8c0c91b1"
+      "utf8Bytes": 25752,
+      "sha256": "3b4b2f3e0bb831094dde7c560751e9af42277c734800d31e6727e4cb0317d796"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 14845,
-      "sha256": "42fce3d42c5d1c5b2a2d6dabed192aa81f1dc5698c18a0a33254e8eb159e8574"
+      "utf8Bytes": 15355,
+      "sha256": "7cdb4db989d16ffdb90fa36f12aa8c860895c75d5f54b3dab072a61d067fe784"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 16959,
-      "sha256": "f26ff0b35b46435e253e9bb3e505374e358d36533a81554c10e8e57eb78b7a57"
+      "utf8Bytes": 17444,
+      "sha256": "e3d3ecacd8ea5dc6884f862dd429e5f6fe0f26aa51076caf9be8d6fb15f971c2"
     },
     {
       "path": "README.zh-CN.md",
@@ -274,8 +274,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "utf8Bytes": 15457,
-      "sha256": "6d60fcef91676ebe4dba3ccb156d48d1ebc3f5cafb7310001daa5d345abd2494"
+      "utf8Bytes": 17209,
+      "sha256": "d4835af7ec6c1cce215f17349328ed33b085708ae4fd299a16a300eca456ca54"
     },
     {
       "path": "docs/WEBWALLGL.md",
@@ -360,8 +360,8 @@
     },
     {
       "path": "package.json",
-      "utf8Bytes": 1006,
-      "sha256": "0caa7d98ae554932c3aba0eb14d12c7e028f5548da61086ba8795c72fb751266"
+      "utf8Bytes": 1061,
+      "sha256": "1380e7615fd9a7c0c1f979d9ea5cd4ec6958f8cd8b3bbc7f7158f0de11dba8a7"
     },
     {
       "path": "progress.md",
@@ -535,8 +535,8 @@
     },
     {
       "path": "src/upstream-adapters.mjs",
-      "utf8Bytes": 5496,
-      "sha256": "c194466a04528bc5d545e8c360f123ec4be19f0b4ffe2b32c585b69b8c64591f"
+      "utf8Bytes": 5739,
+      "sha256": "cb8a5a8d2e42f2e8c43bfe8b277830e3437be5c0d3c3075e3b2cd8b27fe20331"
     },
     {
       "path": "src/video-cdp-host.mjs",
@@ -694,9 +694,24 @@
       "sha256": "a3ee50811f238ba23da3f31c853a05c8ba6802fefa53298d06913d5af50cf30a"
     },
     {
+      "path": "test/fixtures/activate-codex.ps1",
+      "utf8Bytes": 1304,
+      "sha256": "64cf0951ec28ae1d7d527b7ed92b8475e4c17624b9328b3e79cfae6bad70bdeb"
+    },
+    {
+      "path": "test/fixtures/quiet-audio.mjs",
+      "utf8Bytes": 1529,
+      "sha256": "d5bd4ebe3808c69d01f7127875ba85229ba7a692c914a9dc89ff2873377ed4a0"
+    },
+    {
       "path": "test/fixtures/socket-inheritance.cs",
       "utf8Bytes": 3520,
       "sha256": "0b6d2d506c8d4de900013d722c85b25e4c2d4cc9d1a7d0578e810b210b68403b"
+    },
+    {
+      "path": "test/foreground-interaction.mjs",
+      "utf8Bytes": 11868,
+      "sha256": "23d52b32cdec3b3c9611715366ae52d91af9671fa8c726ec62cff06a08d2017e"
     },
     {
       "path": "test/host-handoff.ps1",
@@ -800,8 +815,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 39639,
-      "sha256": "739b0cef0fd198aaa22be3015fbb39b0311c2ddf52d822c34b9a387c09ccafbb"
+      "utf8Bytes": 40434,
+      "sha256": "cad7d5c4fb22dc8f155e4bb2db072bb657fa2f3fdee7205dd229d801193f244b"
     },
     {
       "path": "test/panel-entry-integration.mjs",
@@ -860,8 +875,13 @@
     },
     {
       "path": "test/rotation-host-integration.mjs",
-      "utf8Bytes": 6107,
-      "sha256": "6bffb9d8f217a8740ebda57d31639121cc6f5b9fb5a6fcf77959b67524afd358"
+      "utf8Bytes": 6285,
+      "sha256": "1b08c38333a7c378a0a4b5330e4d3a2a259236cdebe6aef8deb7cb24d551d9bb"
+    },
+    {
+      "path": "test/run-regression.mjs",
+      "utf8Bytes": 3673,
+      "sha256": "6ed4083d8e69b78d14eba17e3ff2be2297dd46e7ba08aab2ed7389d9b56fcdcc"
     },
     {
       "path": "test/startup-health.ps1",
@@ -902,6 +922,11 @@
       "path": "test/surfaces.test.mjs",
       "utf8Bytes": 2409,
       "sha256": "940bbd4ee10e7387fa23543695877ba786a02d1111842d3ca7d6eabe4ed9f6b5"
+    },
+    {
+      "path": "test/system-audio-integration.mjs",
+      "utf8Bytes": 1914,
+      "sha256": "62640b592460b6e235a87a0d75fe4dc5417775860c862641e00e1add61e95399"
     },
     {
       "path": "test/system-media.test.mjs",

@@ -1,5 +1,29 @@
 # Validation record
 
+## Regression commands
+
+Run `npm run test:regression -- --list` to see the test groups. Combine groups
+after changes that affect more than one area.
+
+| Group | Coverage |
+| --- | --- |
+| `unit` | Source tests for settings, startup, rendering, media, imports and updates, plus the release manifest and privacy check. |
+| `ui` | Control entry and panel, pointer effects, theme contrast, transcript clipping, code reading and owned-document adaptation. |
+| `render` | Media playback, scene and web rendering, resource cache, switching, import, rotation and host lifetime. |
+| `startup install` | Windows launch and ownership, shortcut policy, install and upgrade choices, and verified update bootstrap. |
+| `audio` | A short, stereo fixture through the installed Windows WASAPI component at all six rates. Checks sample cadence, left/right bands and queue drops. |
+| `desktop` | The running Codex window with an enabled WebGL audio scene. Repeats native scrolling, clicking and typing with the wallpaper paused, with WebGL alone and with audio response. |
+
+`npm run test:regression -- offline` runs the isolated groups. The browser checks
+use Chrome and a prepared WebWallGL runtime. Set `CODEX_WALLPAPER_DATA_DIR` to the
+installation under test for `audio` and `desktop`. The desktop test uses a
+scrollable conversation with an empty composer and can activate its verified
+window. It clears test text, restores scroll and wallpaper state, and writes
+timing results beside the regression summary. Audio probes use a bounded, quiet
+system playback fixture. Run these separately from heavy workloads when comparing
+latencies. Scene-specific Wallpaper Engine and AMD transport checks require
+their original engine, a supported adapter and a complete scene.
+
 ## 0.2.2 interface and style dependency checks — 2026-11-17
 
 Installed-client environment: Windows, Codex **26.1106.6628.0**. The checks below
