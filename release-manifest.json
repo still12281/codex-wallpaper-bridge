@@ -390,8 +390,8 @@
     },
     {
       "path": "src/bridge-update.mjs",
-      "utf8Bytes": 10501,
-      "sha256": "00995e2200894dbcbe8e54e6bcf817ffbf5c2e760376f55d77e69c9a0f568f98"
+      "utf8Bytes": 10933,
+      "sha256": "554104deac90eb4c44797f090d0d0d0aded4b14129e7613a35eae2bc2922eb85"
     },
     {
       "path": "src/browser-web-source.mjs",

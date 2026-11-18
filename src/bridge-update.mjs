@@ -3,6 +3,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+import {setTimeout as delay} from 'node:timers/promises';
 import {getPowerShell} from './runtime-paths.mjs';
 
 const repo='still12281/codex-wallpaper-bridge',base='https://github.com/'+repo;
@@ -44,7 +45,18 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
  const alive=pid=>{if(!Number.isSafeInteger(pid)||pid<1)return true;try{process.kill(pid,0);return true;}catch(error){return error.code!=='ESRCH';}};
  const readRelease=async()=>releaseUpdate(JSON.parse(await download(latest,1024*1024,{request,signal:AbortSignal.timeout(15000)})),currentVersion);
  const forget=async id=>{try{if(JSON.parse(await readFile(activeFile,'utf8')).id===id)await rm(activeFile);}catch(error){if(error.code!=='ENOENT')throw error;}};
- const saveResult=async(op,phase,message)=>{const temp=op.statusFile+'.next-'+process.pid;await writeFile(temp,JSON.stringify({id:op.id,phase,message}));await rename(temp,op.statusFile);};
+ const saveResult=async(op,phase,message)=>{
+  const temp=op.statusFile+'.next-'+randomUUID();
+  await writeFile(temp,JSON.stringify({id:op.id,phase,message}));
+  try{
+   // Windows can briefly hold the destination open while the panel polls it.
+   for(const wait of [0,25,75]){
+    if(wait)await delay(wait);
+    try{await rename(temp,op.statusFile);return;}
+    catch(error){if(process.platform!=='win32'||!['EPERM','EACCES','EBUSY'].includes(error.code)||wait===75)throw error;}
+   }
+  }catch(error){await rm(temp,{force:true}).catch(()=>{});throw error;}
+ };
  const check=async(force=false)=>{
   if(checking)return checking;
   if(!operation&&state.phase!=='installed'&&(force||!lastCheck||now()-lastCheck>=60*60*1000))state={...state,phase:'checking',message:'正在检查 GitHub 正式版本…'};
