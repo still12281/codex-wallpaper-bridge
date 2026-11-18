@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an optional AMD hardware capture and H.264 transport for saved Wallpaper Engine scenes. Preserve the original engine's audio response and fall back to JPEG capture of the same scene if the hardware path is unavailable.
+
 - Preserve a taskbar launch request made while a previous request finishes. Retry temporarily unavailable Codex endpoint checks, reject a changed browser, and report a wallpaper host that exits before its first frame.
 - Start the next Codex instance when the previous main process has exited, even if old renderer helpers are still finishing. Verify the local listener in the launcher and the browser identity in the wallpaper host. Present the first wallpaper frame without the fade used when switching wallpapers.
 - Bring an already visible Codex window forward through Windows, including while the wallpaper is preparing. Restore a hidden window through its bound Codex page, and record an activation probe failure without showing raw diagnostics in the dialog.

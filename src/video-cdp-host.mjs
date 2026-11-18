@@ -12,6 +12,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {startRealtime,nativeFullProfile} from './realtime-source.mjs';
+import {startHardwareCapture} from './realtime-h264.mjs';
 import {startBrowserWeb} from './browser-web-source.mjs';
 import {installRealtime} from './realtime-player.mjs';
 import {installFrameFreeze} from './freeze-frame.mjs';
@@ -128,15 +129,54 @@ const evaluateAsync=async(c,expression)=>{const result=await c.call('Runtime.eva
 async function stopRealtime(){const previous=realtime;realtime=null;realtimeKey=null;if(previous)await previous.stop()}
 async function ensureRealtime(entry,isCurrent){
  const key=JSON.stringify([entry.id,entry.engine,entry.projectRoot,entry.limits,entry.userProperties]);if(realtimeKey===key&&realtime&&!realtime.error&&!realtime.closed)return realtime;
- if(entry.engine&&!['wallpaper-engine','chromium-web'].includes(entry.engine))throw Error('未知实时渲染器');
- const next=await (entry.engine==='chromium-web'?startBrowserWeb:startRealtime)(entry,root,{isCurrent});next.key=key;return next;
+ if(entry.engine&&!['wallpaper-engine','wallpaper-engine-h264','chromium-web'].includes(entry.engine))throw Error('未知实时渲染器');
+ const next=await (entry.engine==='chromium-web'?startBrowserWeb:startRealtime)(entry,root,{isCurrent});next.key=key;
+ if(entry.engine==='wallpaper-engine-h264'){
+  next.hardwareRequested=true;
+  const stop=next.stop;
+  next.stop=async()=>{await next.hardware?.stop();await stop();};
+ }
+ return next;
+}
+async function endHardware(source,error){
+ const capture=source.hardware;source.hardware=null;
+ if(error){source.hardwareFailure=error;source.setPaused(false);}
+ await Promise.allSettled([capture?.stop(),...[...sessions.values()].filter(c=>c.captureSource===source&&c.hardwareDelivery).map(async c=>{
+  c.hardwareDelivery=null;
+  await c.call('Runtime.callFunctionOn',{objectId:c.captureObjectId,functionDeclaration:'function(){this.endHardware()}'},undefined,1000);
+ })]);
+ if(error)for(const c of sessions.values())if(c.captureSource===source&&c.installed)void c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbRuntimeError?.("硬件传帧不可用，已切换到原版 JPEG。");true').catch(()=>{});
+}
+function offerHardware(c,source){
+ const capture=source.hardware;
+ if(!capture?.config||!capture.frames.length||c.capturePaused||c.captureBlocked)return;
+ let delivery=c.hardwareDelivery;
+ if(delivery?.capture!==capture)delivery=c.hardwareDelivery={capture,sequence:0,ready:false,busy:false};
+ if(delivery.busy)return;
+ const first=capture.frames[0].sequence;
+ const reset=!delivery.sequence||delivery.sequence<first-1;
+ const frames=capture.frames.filter(frame=>reset||frame.sequence>delivery.sequence).slice(0,6);
+ if(!frames.length)return;
+ delivery.busy=true;
+ c.call('Runtime.callFunctionOn',{objectId:c.captureObjectId,functionDeclaration:'function(config,frames){return this.drawHardware(config,frames)}',
+  arguments:[{value:reset?capture.config:null},{value:frames}],awaitPromise:true,returnByValue:true},undefined,1500)
+  .then(result=>{
+   if(result.exceptionDetails)throw Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text);
+   if(c.hardwareDelivery!==delivery||source.hardware!==capture)return;
+   const sample=result.result?.value;
+   c.capturePaused=sample?.paused!==false;
+   delivery.ready=!!sample?.ready;
+   delivery.sequence=c.capturePaused?0:frames.at(-1).sequence;
+  }).catch(error=>{
+   if(c.hardwareDelivery===delivery&&source.hardware===capture&&c.ws.readyState===1)capture.error=error.message;
+  }).finally(()=>{delivery.busy=false;if(source===realtime&&source.hardware===capture&&capture.frames.at(-1)?.sequence>delivery.sequence&&!c.capturePaused)scheduleStream(0);});
 }
 async function stream(){
  if(stopped)return;
  if(streaming||busy||(acting&&!importPreparing)){scheduleStream(8);return}streaming=true;const cycleStart=Date.now();
  try{
   const source=realtime;if(!source)return;let anyActive=false;
-  if(source.kind!=='chromium-web'&&!source.paused&&Date.now()-Math.max(source.lastFrameAt,source.resumedAt||0)>10000)source.error='原生采集活动期间超过 10 秒没有新画面';
+  if(source.kind!=='chromium-web'&&!source.hardware&&!source.paused&&Date.now()-Math.max(source.lastFrameAt,source.resumedAt||0)>10000)source.error='原生采集活动期间超过 10 秒没有新画面';
   if(source.error&&!source.recoveryQueued){
    source.recoveryQueued=true;const failure=source.error;
    actionQueue=actionQueue.then(async()=>{
@@ -151,17 +191,33 @@ async function stream(){
     finally{acting=false}
    });return;
   }
-  await Promise.all([...sessions.values()].map(async c=>{
+  const targets=[...sessions.values()].filter(c=>c.installed&&c.isRealtime&&c.captureSource===source);
+  const active=targets.filter(c=>!c.capturePaused&&!c.captureBlocked);
+  if(source.hardwareRequested&&!source.hardwareFailure){
+   if(active.length&&!source.hardware){
+    try{source.hardware=startHardwareCapture(source.hwnd,source.profile,()=>{if(source===realtime&&!streaming)scheduleStream(0);},{sourceFps:source.desktop?.configuredFps});}
+    catch(error){source.hardwareFailure=error.message;}
+   }
+   const hardware=source.hardware;
+   if(hardware){
+    if(hardware.error)await endHardware(source,hardware.error);
+    else if(!active.length)await endHardware(source);
+    else if(Date.now()-(hardware.lastAt||hardware.startedAt)>6500)await endHardware(source,'硬件采集未持续输出画面');
+    else for(const c of active)offerHardware(c,source);
+   }
+  }
+  await Promise.all(targets.map(async c=>{
    if(!c.installed||!c.isRealtime)return;
    if(c.captureBlocked){if(!c.sampleInFlight&&Date.now()>=(c.nextCapturePoll||0)){c.sampleInFlight=true;c.nextCapturePoll=Date.now()+1000;const generation=c.captureGeneration;c.call('Runtime.evaluate',{expression:'window.__codexWallpaperBridge?.sample()',returnByValue:true},undefined,1000).then(r=>{const sample=r.result?.value;if(c.captureGeneration===generation&&sample?.decodePending===0){c.captureBlocked=false;delete c.captureError;c.capturePaused=sample.paused!==false;scheduleStream(0);}}).catch(()=>{}).finally(()=>{c.sampleInFlight=false;});}return;}
    if(c.drawInFlight>=2){if(!c.capturePaused)anyActive=true;return;}
    const now=Date.now(),sequence=source.sequence,frame=source.frame;
-   if(c.capturePaused||!frame||c.captureSequence===sequence||c.captureSentSequence===sequence){if(now>=(c.nextCapturePoll||0)&&!c.sampleInFlight){c.nextCapturePoll=now+250;c.sampleInFlight=true;const objectId=c.captureObjectId;c.call('Runtime.evaluate',{expression:'window.__codexWallpaperBridge?.sample()',returnByValue:true},undefined,1000).then(r=>{if(c.captureObjectId!==objectId)return;c.capturePaused=r.result?.value?.paused!==false;if(!c.capturePaused)scheduleStream(0);}).catch(()=>{c.capturePaused=true;}).finally(()=>{c.sampleInFlight=false;});}if(!c.capturePaused)anyActive=true;return;}
+   if(c.capturePaused||c.hardwareDelivery?.ready||!frame||c.captureSequence===sequence||c.captureSentSequence===sequence){if(now>=(c.nextCapturePoll||0)&&!c.sampleInFlight){c.nextCapturePoll=now+250;c.sampleInFlight=true;const objectId=c.captureObjectId;c.call('Runtime.evaluate',{expression:'window.__codexWallpaperBridge?.sample()',returnByValue:true},undefined,1000).then(r=>{if(c.captureObjectId!==objectId)return;c.capturePaused=r.result?.value?.paused!==false;if(!c.capturePaused)scheduleStream(0);}).catch(()=>{c.capturePaused=true;}).finally(()=>{c.sampleInFlight=false;});}if(!c.capturePaused)anyActive=true;return;}
    if(source.base64Sequence!==sequence){source.base64=frame.toString('base64');source.base64Sequence=sequence;}
    const objectId=c.captureObjectId,generation=c.captureGeneration,started=Date.now();c.drawInFlight=(c.drawInFlight||0)+1;c.captureSentSequence=sequence;anyActive=true;
    c.call('Runtime.callFunctionOn',{objectId,functionDeclaration:'function(frame,info){return this.draw(frame,info)}',arguments:[{value:source.base64},{value:{...source.frameInfo,sequence}}],awaitPromise:true,returnByValue:true},undefined,1500).then(called=>{if(called.exceptionDetails)throw Error(called.exceptionDetails.exception?.description||called.exceptionDetails.text);if(c.captureGeneration!==generation)return;const sample=called.result?.value;c.captureSequence=Math.max(c.captureSequence||0,sequence);c.capturePaused=sample?.paused!==false;c.captureTiming={roundtripMs:Date.now()-started,...sample?.timing};if(!c.captureBlocked)delete c.captureError;}).catch(error=>{if(c.captureGeneration===generation){c.captureError=error.message;c.captureBlocked=true;}}).finally(()=>{if(c.captureGeneration!==generation)return;c.drawInFlight=Math.max(0,(c.drawInFlight||1)-1);if(!c.captureBlocked&&source===realtime&&!c.capturePaused&&source.sequence!==c.captureSentSequence)scheduleStream(0);});
   }));
-  if(!source.error&&source.paused===anyActive)source.setPaused(!anyActive);
+  const jpegNeeded=anyActive&&(!source.hardware||targets.some(c=>!c.capturePaused&&!c.captureBlocked&&!c.hardwareDelivery?.ready));
+  if(!source.error&&source.paused===jpegNeeded)source.setPaused(!jpegNeeded);
  }catch(error){status.streamError=error.message}
  finally{streaming=false;const interval=!realtime?1000:realtime.paused?250:1000/realtime.profile.fps;scheduleStream(Math.max(1,interval-(Date.now()-cycleStart)));}
 }
@@ -259,14 +315,15 @@ async function mount(c,target){c.playbackReading=null;
  if(!entry){await stopRealtime();await c.evaluate('window.__cwbDecorations?.dispose();window.__cwbWidgets?.dispose?.();delete window.__cwbWidgets;window.__codexWallpaperBridge?.dispose?.();window.__cwbThemeGuard?.dispose();window.__cwbLayout?.dispose?.();window.__cwbTranscriptPaint?.dispose();delete window.__cwbLayout;document.getElementById("codex-wallpaper-bridge-layer")?.remove();document.getElementById("codex-wallpaper-bridge-style")?.remove();window.__codexWallpaperBridge={disabled:true,sample:()=>({ready:false,disabled:true,paused:true})};true');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');c.installed=true;setImmediate(()=>global.gc?.());return}
  if(entry.mode==='realtime'){
   const source=await ensureRealtime(entry,isCurrent);
+  let installed;
   try{
-  assertCurrent();const installed=await evaluateAsync(c,'('+installRealtime.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(source.frame.toString('base64'))+','+JSON.stringify({name:source.name,fps:source.profile.fps,engine:source.kind||'wallpaper-engine',transport:source.transport||'window-capture-jpeg',selectionStamp,entryId:entry.id})+')');if(installed.superseded)throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});assertCurrent();
+   assertCurrent();installed=await evaluateAsync(c,'('+installRealtime.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(source.frame.toString('base64'))+','+JSON.stringify({name:source.name,fps:source.profile.fps,engine:source.kind||'wallpaper-engine',transport:source.transport||'window-capture-jpeg',selectionStamp,entryId:entry.id})+')');if(installed.superseded)throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});assertCurrent();
   }catch(error){if(source!==realtime)await source.stop();throw error;}
   if(source!==realtime){const previous=realtime;realtime=source;realtimeKey=source.key;source.onFrame=()=>{if(source===realtime)scheduleStream(0);};if(previous)await previous.stop();}
   if(c.webPlayer){await c.webPlayer.dispose();c.webPlayer=null;}
   if(c.captureObjectId)await c.call('Runtime.releaseObject',{objectId:c.captureObjectId}).catch(()=>{});c.captureObjectId=(await c.call('Runtime.evaluate',{expression:'window.__codexWallpaperBridge',returnByValue:false})).result.objectId;
   settings.palette=retainPalette(entry.id,await c.evaluate('window.__codexWallpaperBridge.palette'));if(!acting)await saveConfig(root,settings);await c.evaluate('('+paintShell.toString()+')('+JSON.stringify(displaySettings(settings))+')');await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');
-  c.captureGeneration=(c.captureGeneration||0)+1;c.drawInFlight=0;c.captureBlocked=false;delete c.captureError;c.captureSentSequence=source.sequence;c.captureSequence=source.sequence;c.isRealtime=true;c.capturePaused=false;c.nextCapturePoll=0;c.reportedCaptureError=false;c.installed=true;return;
+   c.captureGeneration=(c.captureGeneration||0)+1;c.captureSource=source;c.hardwareDelivery=null;c.drawInFlight=0;c.captureBlocked=false;delete c.captureError;c.captureSentSequence=source.sequence;c.captureSequence=source.sequence;c.isRealtime=true;c.capturePaused=installed.paused;c.nextCapturePoll=0;c.reportedCaptureError=false;c.installed=true;return;
  }
  c.isRealtime=false;
  const mediaPath=path.resolve(root,entry.file),fileBacked=entry.mime?.startsWith('video/'),mediaLimit=fileBacked?Number.MAX_SAFE_INTEGER:Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024),info=await stat(mediaPath);
@@ -333,7 +390,7 @@ async function tick(){
     if(!c.installed){const mountStart=performance.now();await mount(c,target);c.mountMs=performance.now()-mountStart;c.activeKey=activeWallpaperKey();}
     const observed=await c.evaluate('(()=>{const value=window.__codexWallpaperBridge?.sample();return value?{...value,hidden:document.hidden,controls:window.__cwbPanelHost?.__cwbEntryState?.()||{visible:false,placement:"missing"},terminalTheme:window.__cwbWidgets?.status,viewportWidth:innerWidth,viewportHeight:innerHeight,windowGeometry:{x:screenX,y:screenY,width:outerWidth,height:outerHeight,dpr:devicePixelRatio}}:null})()');
     if(!observed){c.installed=false;continue}
-    targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':observed.paused?'realtime-capture-paused':realtime?.kind!=='chromium-web'&&Date.now()-realtime.lastFrameAt>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed,mountMs:c.mountMs,webglStartup:c.webPlayer?.startup,...(c.isRealtime?{delivery:c.captureTiming,deliveryError:c.captureError}:{} )});
+    targetState.phase=observed.disabled?'background-disabled':observed.mode==='realtime'?(realtime?.error?'realtime-source-error':observed.paused?'realtime-capture-paused':realtime?.kind!=='chromium-web'&&Date.now()-(observed.lastFrameAt||0)>10000?'realtime-no-new-frames':'realtime-capture-active'):'background-rendered';Object.assign(targetState,{installed:true,...observed,mountMs:c.mountMs,webglStartup:c.webPlayer?.startup,...(c.isRealtime?{delivery:c.captureTiming,deliveryError:c.captureError,hardwareFallback:realtime?.hardwareFailure}:{} )});
     if(targetReady(targetState)&&!c.readyObserved){c.readyObserved=true;startupEvent('page-wallpaper-ready',target.id);}
     if(targetReady(targetState)&&status.startup.firstReadyMs===null){status.startup.firstReadyMs=performance.now()-startupClock;startupEvent('first-wallpaper-ready',target.id);}
     if(targetReady(targetState)&&target.url===appUrl&&status.startup.mainReadyMs===null){status.startup.mainReadyMs=performance.now()-startupClock;startupEvent('main-wallpaper-ready',target.id);}

@@ -110,6 +110,8 @@ Open **壁纸** in the client. The current UI is in Chinese.
 
 Auto mode prefers complete GPU scenes and original Wallpaper Engine capture for Web projects. An explicit experimental Chromium Web mode is also available. Scene scripts and effects have project-dependent compatibility. See [WebGL](docs/WEBWALLGL.md), [native capture](docs/REALTIME.md) and [Chromium Web](docs/BROWSER-WEB-20261027.zh-CN.md) for mode-specific behavior.
 
+For a saved scene, choose **原版硬件传帧（AMD）** under **播放与画质 → 渲染方式** to use the original engine with hardware H.264 transport. This mode requires FFmpeg with `gfxcapture` and `h264_amf`, a compatible AMD driver, and WebCodecs. JPEG capture of the same scene takes over if the hardware transport is unavailable. [Native capture settings](docs/REALTIME.md)
+
 ## Development
 
 See the [surface policy](docs/SURFACE_POLICY.md) for material ownership, local style updates and regression checks.

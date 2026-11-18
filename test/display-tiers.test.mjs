@@ -49,6 +49,24 @@ test('switching a high-refresh GPU project to native uses a separate confirmed n
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-high-native-')),project=path.join(root,'project');await mkdir(project);await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene'}));const s=defaultSettings();s.library=[{id:'gpu',mode:'webwallgl',projectRoot:project,limits:{maxWidth:1280,fps:144}}];s.selectedId='gpu';s.playback.fps=30;
  const action=createActions(root,s,async()=>{}),r=await action({}, {action:'display-renderer',renderMode:'native'});assert.equal(r.confirmation.renderer,'native');assert.equal(r.confirmation.limits.fps,30);assert.equal(s.library[0].limits.fps,144);
 });
+test('hardware transport is saved as a separate original-engine scene entry',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-native-h264-')),project=path.join(root,'project');
+ await mkdir(project);await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene',title:'Fixture'}));
+ const settings=defaultSettings(),sourceKey=(await describeProject(project)).sourceKey;
+ const jpeg={id:'jpeg',mode:'realtime',engine:'wallpaper-engine',projectRoot:project,sourceKey,limits:{maxWidth:960,fps:24}};
+ const selected={id:'gpu',mode:'webwallgl',projectRoot:project,sourceKey,limits:{maxWidth:1280,maxHeight:900,fps:30}};
+ settings.library=[jpeg,selected];settings.selectedId=selected.id;
+ const owner={},act=createActions(root,settings,async()=>{});
+ const request=await act(owner,{action:'display-renderer',renderMode:'native-h264'});
+ assert.equal(settings.selectedId,selected.id);
+ await act(owner,{action:'wallpaper-engine-confirm',confirmationToken:request.confirmation.token,confirmed:true});
+ assert.equal(settings.library.length,3);
+ assert.deepEqual(settings.library.find(entry=>entry.id===jpeg.id),jpeg);
+ assert.deepEqual(settings.library.find(entry=>entry.id===selected.id),selected);
+ const added=settings.library.find(entry=>entry.id===settings.selectedId);
+ assert.equal(added.engine,'wallpaper-engine-h264');
+ assert.deepEqual(added.limits,selected.limits);
+});
 test('native FPS and width edits preserve capture quality and the selected aspect ratio',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-native-profile-')),s=defaultSettings();s.library=[{id:'native',mode:'realtime',limits:{maxWidth:1920,maxHeight:1320,fps:30,jpegQuality:92}}];s.selectedId='native';const action=createActions(root,s,async()=>{});
  await action(null,{action:'playback',maxWidth:1920,fps:24});assert.deepEqual(s.library[0].limits,{maxWidth:1920,maxHeight:1320,fps:24,jpegQuality:92});await action(null,{action:'playback',maxWidth:1280,fps:30});assert.equal(s.library[0].limits.maxHeight,880);assert.equal(s.library[0].limits.jpegQuality,92);

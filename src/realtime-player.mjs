@@ -14,7 +14,47 @@ export async function installRealtime(config,base64,info){
  state.pause=value=>{manualPause=typeof value==='boolean'?value:null;};
  state.setPauseOnBlur=value=>{config.pauseOnBlur=!!value};
  state.sample=()=>({ready:true,mode:'realtime',engine:state.engine,transport:state.transport,paused:paused(),width:canvas.width,height:canvas.height,frames:state.frames,lastFrameAt:state.lastFrameAt,sourceWindow:state.sourceWindow,captureFps:state.captureFps,error:state.captureError,hidden:document.hidden,focused:document.hasFocus(),timing:state.timing,decodePending:state.decodePending});
- let disposed=false;state.dispose=()=>{disposed=true};
- state.draw=async(encoded,info={})=>{if(disposed||paused())return state.sample();const started=performance.now(),image=new Image();state.decodePending++;try{image.decoding='async';image.src='data:image/jpeg;base64,'+encoded;await image.decode();const decoded=performance.now();if(!disposed&&!paused()&&(!info.sequence||info.sequence>(state.lastSequence||0))){if(canvas.width!==image.width||canvas.height!==image.height){canvas.width=image.width;canvas.height=image.height}context.drawImage(image,0,0);state.frames++;state.lastSequence=info.sequence;state.lastFrameAt=Date.now();state.timing={sequence:info.sequence,encodeMs:info.encodeMs,decodeMs:decoded-started,drawMs:performance.now()-decoded,receivedToDrawMs:Date.now()-(info.receivedAt||Date.now()),callbackToDrawMs:info.callbackAt?Date.now()-info.callbackAt:null,measurement:state.engine==='chromium-web'?'browser-JPEG-received-to-canvas-draw; not physical screen presentation':'capture-callback-to-canvas-draw; not physical screen presentation'};}}finally{image.src='';state.decodePending--;}return state.sample()};
+ const jpegTransport=state.transport;
+ let disposed=false,decoder=null,hardwareError=null,hardwareGeneration=0;
+ const arrivals=new Map();
+ state.endHardware=()=>{
+  const previous=decoder;hardwareGeneration++;decoder=null;hardwareError=null;arrivals.clear();state.transport=jpegTransport;
+  if(previous&&previous.state!=='closed')previous.close();
+ };
+ state.dispose=()=>{disposed=true;state.endHardware();};
+ state.drawHardware=async(configuration,frames)=>{
+  if(disposed||paused())return {paused:true};
+  if(configuration){
+   state.endHardware();
+   const generation=hardwareGeneration;
+   if(typeof VideoDecoder!=='function')throw Error('客户端没有 WebCodecs H.264 解码接口');
+   const options={codec:configuration.codec,description:Uint8Array.fromBase64(configuration.description),
+    codedWidth:canvas.width,codedHeight:canvas.height,hardwareAcceleration:'prefer-hardware',optimizeForLatency:true};
+   if(!(await VideoDecoder.isConfigSupported(options)).supported)throw Error('客户端不支持此 H.264 格式');
+   if(disposed||paused()||hardwareGeneration!==generation)return {paused:true};
+   const current=new VideoDecoder({
+    output(frame){
+     try{
+      const arrival=arrivals.get(frame.timestamp);arrivals.delete(frame.timestamp);
+      if(disposed||paused()||decoder!==current)return;
+      if(canvas.width!==frame.displayWidth||canvas.height!==frame.displayHeight){canvas.width=frame.displayWidth;canvas.height=frame.displayHeight;}
+      context.drawImage(frame,0,0);state.transport='window-capture-h264';state.frames++;state.lastFrameAt=Date.now();
+      state.timing={receivedToDrawMs:arrival?Date.now()-arrival:null,measurement:'encoded-frame-received-to-canvas-draw; not physical screen presentation'};
+     }catch(error){hardwareError=error.message;}finally{frame.close();}
+    },
+    error:error=>{if(decoder===current)hardwareError=error.message;}
+   });
+   decoder=current;current.configure(options);
+  }
+  if(hardwareError)throw Error(hardwareError);
+  if(decoder?.state!=='configured')throw Error('H.264 解码器未就绪');
+  if(arrivals.size+frames.length>24)throw Error('H.264 解码积压');
+  for(const frame of frames){
+   arrivals.set(frame.timestamp,frame.arrivedAt);
+   decoder.decode(new EncodedVideoChunk({type:frame.key?'key':'delta',timestamp:frame.timestamp,data:Uint8Array.fromBase64(frame.data)}));
+  }
+  return {paused:false,ready:state.transport==='window-capture-h264'};
+ };
+ state.draw=async(encoded,info={})=>{if(disposed||paused()||state.transport==='window-capture-h264')return state.sample();const started=performance.now(),image=new Image();state.decodePending++;try{image.decoding='async';image.src='data:image/jpeg;base64,'+encoded;await image.decode();const decoded=performance.now();if(!disposed&&!paused()&&state.transport!=='window-capture-h264'&&(!info.sequence||info.sequence>(state.lastSequence||0))){if(canvas.width!==image.width||canvas.height!==image.height){canvas.width=image.width;canvas.height=image.height}context.drawImage(image,0,0);state.frames++;state.lastSequence=info.sequence;state.lastFrameAt=Date.now();state.timing={sequence:info.sequence,encodeMs:info.encodeMs,decodeMs:decoded-started,drawMs:performance.now()-decoded,receivedToDrawMs:Date.now()-(info.receivedAt||Date.now()),callbackToDrawMs:info.callbackAt?Date.now()-info.callbackAt:null,measurement:state.engine==='chromium-web'?'browser-JPEG-received-to-canvas-draw; not physical screen presentation':'capture-callback-to-canvas-draw; not physical screen presentation'};}}finally{image.src='';state.decodePending--;}return state.sample()};
  return state.sample();
 }

@@ -41,6 +41,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   const project=await describeProject(projectRoot);
   if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
   if(renderer==='chromium-web'&&project.type!=='web')throw Error('网页浏览器模式仅支持网页项目');
+  if(renderer==='native-h264'&&project.type!=='scene')throw Error('原版硬件传帧仅支持场景项目');
   if(renderer==='webwallgl'&&project.type!=='scene')throw Error('网页 WebWallGL 资源通道尚未通过验收，请选择原生实时模式');
   const limits={...(renderer==='webwallgl'?gpuProfile:realtimeProfile)(profile||settings.playback),...(profile?.exactResolution?{exactResolution:true}:{})},token=randomUUID();
   for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
@@ -74,11 +75,11 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');
    const projectRoot=entry.projectRoot||(entry.workshopId?await findWorkshopProject(entry.workshopId):null);if(!projectRoot)throw Error('当前素材没有完整场景引用；请从 Wallpaper Engine 项目导入');
    const profile=services.nativeProfile?await services.nativeProfile(c,projectRoot):{maxWidth:3840,maxHeight:2160,fps:30,jpegQuality:92};
-   return requestRealtime(c,projectRoot,true,profile,'native','use',true);
+   return requestRealtime(c,projectRoot,true,profile,entry.engine==='wallpaper-engine-h264'?'native-h264':'native','use',true);
   }
   if(req.action==='display-renderer'){
    if(req.renderMode==='media'){const current=settings.library.find(e=>e.id===settings.selectedId),group=libraryGroups(settings.library,settings.selectedId).find(g=>g.entries.some(e=>e.id===current?.id)),media=group?.entries.find(e=>!['realtime','webwallgl'].includes(e.mode));if(!media)throw Error('这张壁纸没有保存的视频或图片版本');return action(c,{action:'select',selectedId:media.id});}
-   if(!['native','webwallgl','chromium-web'].includes(req.renderMode))throw Error('请选择渲染方式');
+   if(!['native','native-h264','webwallgl','chromium-web'].includes(req.renderMode))throw Error('请选择渲染方式');
    const entry=settings.library.find(e=>e.id===settings.selectedId);if(!entry)throw Error('请先选择壁纸');const projectRoot=entry.projectRoot||(entry.workshopId?await findWorkshopProject(entry.workshopId):null);if(!projectRoot)throw Error('此素材没有完整场景');
    const profile=entry.displayTier==='full'?(req.renderMode==='chromium-web'?{maxWidth:3840,maxHeight:2160,fps:30,jpegQuality:92}:services.nativeProfile?await services.nativeProfile(c,projectRoot):{maxWidth:3840,maxHeight:2160,fps:30,jpegQuality:92}):{...(entry.limits||settings.playback)};
    if(req.renderMode==='webwallgl'){delete profile.jpegQuality;if(entry.displayTier==='full')profile.exactResolution=true;}
@@ -164,10 +165,10 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const project=await describeProject(pending.project.root);
    if(project.sourceKey!==pending.project.sourceKey)throw Error('壁纸项目已改变，请重新确认');
    const mode=pending.renderer==='webwallgl'?'webwallgl':'realtime';
-   const engine=pending.renderer==='chromium-web'?'chromium-web':mode==='realtime'?'wallpaper-engine':undefined;
+   const engine=pending.renderer==='chromium-web'?'chromium-web':pending.renderer==='native-h264'?'wallpaper-engine-h264':mode==='realtime'?'wallpaper-engine':undefined;
    const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey&&(!engine||(e.engine||'wallpaper-engine')===engine));
    if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
-   const entry=existing||{id:randomUUID(),name:project.name+(engine==='chromium-web'?' · 网页浏览器':mode==='webwallgl'?' · WebGL':' · 实时'),mode,...(engine?{engine}:{}),projectType:project.type,scripts:mode==='webwallgl'||engine==='chromium-web',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:engine==='chromium-web'?'Chromium 本地网页沙箱（试验）':mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
+   const entry=existing||{id:randomUUID(),name:project.name+(engine==='chromium-web'?' · 网页浏览器':engine==='wallpaper-engine-h264'?' · 原版硬件传帧':mode==='webwallgl'?' · WebGL':' · 实时'),mode,...(engine?{engine}:{}),projectType:project.type,scripts:mode==='webwallgl'||engine==='chromium-web',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:engine==='chromium-web'?'Chromium 本地网页沙箱（试验）':mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
    if(!existing){const sibling=settings.library.find(e=>e.sourceKey===project.sourceKey||(e.workshopId&&e.workshopId===project.workshopId));if(sibling?.userProperties)entry.userProperties=structuredClone(sibling.userProperties);}await committing(c,req);const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
    try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};

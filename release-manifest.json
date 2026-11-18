@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 25103,
-      "sha256": "99bb53276e1dc5ecdb89b7d3faacceffddb76ba072a3d6fa78f4bb0ceb904d9d"
+      "utf8Bytes": 25329,
+      "sha256": "fd9bd77727530645cbf6f0f20e5ae1501f61a47538bd974e4bbbe15cbf75ca85"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 14485,
-      "sha256": "26e106e912b45692b94b42e9d2aa37b1067e823a2c7a62acb7a73c751792cf21"
+      "utf8Bytes": 14873,
+      "sha256": "a4583021a0ecf70a7355698a9ad2e639b90e03608ec8274b1fd5e09b4106b55d"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 16764,
-      "sha256": "2584074422b90069ae91a958bd4442d3f05e8ecbaef54959d04e7730bb41ca43"
+      "utf8Bytes": 17051,
+      "sha256": "2d0361d006142998b0928faaddc0f2b86fe7025eab66f67dc3742a2f04ae9717"
     },
     {
       "path": "README.zh-CN.md",
@@ -184,8 +184,8 @@
     },
     {
       "path": "docs/REALTIME.md",
-      "utf8Bytes": 5054,
-      "sha256": "b7d52fafe8a763bdaad34ab2ca7b4e4da128c6199a0b29e17a958099c5c59c5f"
+      "utf8Bytes": 5638,
+      "sha256": "47e7c660acc4e6b934c1ab4a2015f823b6f5b446357daa197246247f7ef7e896"
     },
     {
       "path": "docs/RELEASE_CHECKLIST.zh-CN.md",
@@ -435,8 +435,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 41649,
-      "sha256": "90c50399fe0762a0dc72e393e4656536c63d2c1de14e51974a5240be6b190551"
+      "utf8Bytes": 41893,
+      "sha256": "66b3c41e99284fb5f63eaebf7d2f047310ab8c46317cf3680fa2f2ddb3af7524"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -494,9 +494,14 @@
       "sha256": "235cc44074c49ac7bd16a59bbd3eec1bc7c1cde3f385e99b5deab2038bd57dc1"
     },
     {
+      "path": "src/realtime-h264.mjs",
+      "utf8Bytes": 5054,
+      "sha256": "5b0d08cfae0374d86130a971eeb1feef5398d57dee00fb558f83428c66a3f286"
+    },
+    {
       "path": "src/realtime-player.mjs",
-      "utf8Bytes": 3790,
-      "sha256": "a709fd7d603f9bdbb46783297bbb6478815bf0f561b4520b317d0b312473bbf6"
+      "utf8Bytes": 6256,
+      "sha256": "bc76cf840eaad6f42366556315949412eb1cda58a4b923fa51b1ffacf1aef5e6"
     },
     {
       "path": "src/realtime-source.mjs",
@@ -535,13 +540,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 49150,
-      "sha256": "ec16813b27f5caafcb1d83a21c8dd6fe8c2cf98be4bf4e47fa18959f18b6bba3"
+      "utf8Bytes": 52814,
+      "sha256": "7a296c1f5ea4d5faf76fa824264f91dcfb0850286b02b16149daf66c1d86c495"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 42296,
-      "sha256": "5730d79719ad0654eef46bbe4046fa3452ac465060b5c9ae0cf253480f9b9be0"
+      "utf8Bytes": 42588,
+      "sha256": "15b6d81d90f84fec0aab1e3a319ba0c6688ce263c12632e41ffff718f80befaf"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -675,8 +680,8 @@
     },
     {
       "path": "test/display-tiers.test.mjs",
-      "utf8Bytes": 8763,
-      "sha256": "ada742e596e853136d20d70700bc513ccb6b2287e6891bc4d8081c3a1d8e1fa9"
+      "utf8Bytes": 10166,
+      "sha256": "b4d34bbab497583b4af3296cd0c5772b7fa3923758cfb37dba0ce018963d832c"
     },
     {
       "path": "test/entry-queue.ps1",
@@ -822,6 +827,11 @@
       "path": "test/process-snapshot.ps1",
       "utf8Bytes": 5060,
       "sha256": "cf62ed794ac556ac93818573b33f57a6f50f433af55184a46341319927377818"
+    },
+    {
+      "path": "test/realtime-h264.test.mjs",
+      "utf8Bytes": 1619,
+      "sha256": "9d4a4273cd0be805ac2405a78b84cba484b529dfb539ccab2ec6f33e7c077a7c"
     },
     {
       "path": "test/release-images.test.mjs",
