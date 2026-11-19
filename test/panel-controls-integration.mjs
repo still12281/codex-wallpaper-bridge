@@ -105,7 +105,7 @@ try{
  await sleep(75);
  assert.equal(await c.evaluate('!!document.getElementById("we-fx-layer")'),false,'Enabling idle pointer effects allocated a canvas before input');
  const effects=await c.call('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`(async()=>{
-  const move=(type,x,y)=>document.body.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'mouse',clientX:x,clientY:y}));
+  const move=(type,x,y,target=document.body)=>target.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'mouse',clientX:x,clientY:y}));
   const painted=async()=>{
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
    const canvas=document.querySelector('#we-fx-layer canvas');
@@ -123,14 +123,24 @@ try{
   window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   const idle=original.hidden&&original===document.getElementById('we-fx-layer');
+  const transcript=document.createElement('div');transcript.setAttribute('data-app-action-timeline-scroll','');document.body.append(transcript);
+  move('pointerdown',120,100,transcript);move('pointermove',100,70,transcript);move('pointermove',160,70,transcript);
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const transcriptQuiet=original.hidden;transcript.remove();
+  const context=original.firstElementChild.getContext('2d'),clear=context.clearRect;
+  let draws=0;context.clearRect=function(...args){draws++;return clear.apply(this,args);};
+  const budgetStart=performance.now();
   move('pointermove',60,70);move('pointermove',140,70);move('pointermove',225,100);
   const trail=await painted(),reused=original===document.getElementById('we-fx-layer')&&!original.hidden;
+  await new Promise(resolve=>setTimeout(resolve,220));
+  const drawBudget=draws>=2&&draws<=Math.ceil((performance.now()-budgetStart)*30/1000)+1;
+  context.clearRect=clear;
   document.hasFocus=hasFocus;
-  return {click,trail,idle,reused,firstPointerMs,blend:original.style.mixBlendMode};
+  return {click,trail,idle,reused,transcriptQuiet,drawBudget,firstPointerMs,blend:original.style.mixBlendMode};
  })()`});
  if(effects.exceptionDetails)throw Error(effects.exceptionDetails.exception?.description||effects.exceptionDetails.text);
  const {firstPointerMs,...pointerEffects}=effects.result.value;
- assert.deepEqual(pointerEffects,{click:true,trail:true,idle:true,reused:true,blend:'normal'});
+ assert.deepEqual(pointerEffects,{click:true,trail:true,idle:true,reused:true,transcriptQuiet:true,drawBudget:true,blend:'normal'});
  result.clickAndTrailPainted=true;result.firstPointerMs=firstPointerMs;
  assert.equal(await c.evaluate('document.body.style.getPropertyValue("--we-accent")'),'rgb(76,80,83)');
  await paintFx({...fxBase,palette:{r:18,g:42,b:89,dark:true}});

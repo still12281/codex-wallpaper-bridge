@@ -540,8 +540,8 @@
     },
     {
       "path": "src/upstream-adapters.mjs",
-      "utf8Bytes": 6643,
-      "sha256": "9fe661b2a8662d5b031cfdd344c63ca4d6da3ae84ce2a82f0ef0a167fa778f53"
+      "utf8Bytes": 8077,
+      "sha256": "627623c4f35a82d10f8bc1b3b9315d8e89086fad9e2ec2bdb0214197ddab5a71"
     },
     {
       "path": "src/video-cdp-host.mjs",
@@ -825,8 +825,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 42251,
-      "sha256": "fa62590bb9ecac6cb38763595da3b0376c2f95c6e7b6c584a5f1c5f6c4e2fcd7"
+      "utf8Bytes": 43129,
+      "sha256": "d7c8ec58d28244efd37a9bc4f8d0a97650b2e28aacdad7dafc6ac2cfcb8081bd"
     },
     {
       "path": "test/panel-entry-integration.mjs",

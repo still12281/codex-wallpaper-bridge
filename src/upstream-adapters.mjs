@@ -8,20 +8,42 @@ export async function upstreamRuntime(){
 
 function fxAdapterSource(source){
  return 'function(config,suspended){'+
-  'if(window.__cwbFx){window.__cwbFx.update(config,suspended);return;}'+
+  'if(window.__cwbFx?.version===2){window.__cwbFx.update(config,suspended);return;}window.__cwbFx?.dispose();'+
   'let selection=config;const weNow=()=>performance.now(),weClampTo=(value,min,max,fallback)=>Number.isFinite(Number(value))?Math.max(min,Math.min(max,Number(value))):fallback;'+
   source+'\n'+String.raw`
-  const draw=fxFrame;
+  const draw=fxFrame,move=fxOnPointerMove,down=fxOnPointerDown,perf=fxPerfUpdate;
+  const framePeriod=1000/30;
+  const protectedSurface=FX_UI_SELECTOR+',[data-app-action-timeline-scroll],[data-composer-surface-variant],[data-app-shell-right-panel],aside.app-shell-left-panel,#codex-wallpaper-controls';
+  const inInterface=event=>event.composedPath().some(node=>node?.matches?.(protectedSurface));
+  let drawTimer=0;
+  const cancelDrawTimer=()=>{clearTimeout(drawTimer);drawTimer=0;};
+  // The effect is decorative. Give it a separate paint budget even on a
+  // high-refresh screen, without waking for every skipped display frame.
+  fxKick=function schedulePointerEffect(){
+   if(fxRaf||drawTimer||typeof requestAnimationFrame!=='function')return;
+   const remaining=fxLastDrawAt?framePeriod-(weNow()-fxLastDrawAt):0;
+   if(remaining>1)drawTimer=setTimeout(()=>{drawTimer=0;fxRaf=requestAnimationFrame(fxFrame);},remaining);
+   else fxRaf=requestAnimationFrame(fxFrame);
+  };
+  fxPerfUpdate=dt=>perf(dt<=framePeriod*1.5?16:dt-framePeriod);
+  fxOnPointerMove=event=>{
+   if(!inInterface(event)){move(event);return;}
+   if(fxTrail.length){fxTrail=[];fxKick();}
+  };
+  fxOnPointerDown=event=>{if(!inInterface(event))down(event);};
   fxFrame=function drawPointerEffects(){if(fxHost?.hidden)fxHost.hidden=false;draw();};
   function update(next,paused){
    const changed=selection!==next;
    selection=next;
    if(changed)fxAccent='';
    const settings=fxSettings();
-   if(!settings.on||(!settings.click&&!settings.trail)){if(fxOn||fxHost)fxStop();return;}
+   if(!settings.on||(!settings.click&&!settings.trail)){cancelDrawTimer();if(fxOn||fxHost)fxStop();return;}
+   fxNodeStyle(fxHost,'mix-blend-mode',settings.blend);
+   fxNodeStyle(fxHost,'opacity',String(settings.opacity/100));
    if(paused){
     if(!fxOn)return;
     fxOn=false;
+    cancelDrawTimer();
     if(fxRaf)cancelAnimationFrame(fxRaf);
     fxRaf=0;fxTrail=[];fxClicks=[];fxLastFrameAt=0;fxLastDrawAt=0;
     fxUnbind();
@@ -30,7 +52,7 @@ function fxAdapterSource(source){
    }
    if(!fxOn){fxOn=true;fxBind();}
   }
-  window.__cwbFx={update,dispose(){disposeFxLayer();delete window.__cwbFx;}};
+  window.__cwbFx={version:2,update,dispose(){cancelDrawTimer();disposeFxLayer();delete window.__cwbFx;}};
   update(config,suspended);
  }`;
 }
