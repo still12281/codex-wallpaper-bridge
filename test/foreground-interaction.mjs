@@ -10,7 +10,8 @@ import {getDataRoot,getPowerShell} from '../src/runtime-paths.mjs';
 import {playQuietAudio} from './fixtures/quiet-audio.mjs';
 
 // Opt-in desktop test. Run against an already running Codex with the bridge.
-const root=getDataRoot(), output=process.argv[2];
+const args=process.argv.slice(2),root=getDataRoot(),output=args.find(arg=>!arg.startsWith('--'));
+const scrollOnly=args.includes('--scroll-only'),performanceGate=scrollOnly||args.includes('--performance');
 const readStatus=()=>readFile(path.join(root,'runtime-status.json'),'utf8').then(JSON.parse);
 const runtime=await readStatus();
 const port=runtime.cdpPort;
@@ -23,37 +24,38 @@ async function activeTarget(){
  const status=await readStatus();
  assert.equal(status.browserId,runtime.browserId,'Codex browser changed');
  return (await inspect('/json/list')).find(t=>t.type==='page'&&t.url.startsWith('app://-/')&&
-  status.targets.some(x=>x.targetId===t.id&&x.installed&&x.mode==='webwallgl'&&!x.hidden&&x.focused));
+  status.targets.some(x=>x.targetId===t.id&&x.installed&&(performanceGate||x.mode==='webwallgl')&&!x.hidden&&x.focused));
 }
 let target=await activeTarget();
-if(!target){
+if(!target&&!performanceGate){
  const activate=fileURLToPath(new URL('./fixtures/activate-codex.ps1',import.meta.url));
  await promisify(execFile)(getPowerShell(),['-NoProfile','-File',activate,'-DataDirectory',root,'-BrowserId',runtime.browserId,'-Port',String(port)],{windowsHide:true,timeout:8000});
  for(let attempt=0;attempt<12&&!target;attempt++){await delay(250);target=await activeTarget();}
 }
-assert(target,'A foreground Codex window with a WebGL wallpaper is required');
+assert(target,performanceGate?'A foreground Codex chat with the Bridge attached is required':'A foreground Codex window with a WebGL wallpaper is required');
 const c=await connectCdp(target.webSocketDebuggerUrl);
 const call=(fn,...args)=>c.evaluate('('+fn.toString()+')('+args.map(value=>JSON.stringify(value)).join(',')+')');
 const key='__cwbInteractionAudit';
 
-function openAudit(key){
+function openAudit(key,scrollOnly,performanceGate){
  const state=window.__codexWallpaperBridge;
- if(document.hidden||!document.hasFocus()||!state?.ready||state.mode!=='webwallgl'||state.paused||window[key])return false;
+ if(document.hidden||!document.hasFocus()||(!performanceGate&&(!state?.ready||state.mode!=='webwallgl'||state.paused))||window[key])return false;
  const editors=[...document.querySelectorAll('[data-composer-surface-variant] [contenteditable="true"][role="textbox"]')];
  const scrolls=[...document.querySelectorAll('[data-app-action-timeline-scroll]')];
  const eligible=e=>e.getBoundingClientRect().width>200&&e.getBoundingClientRect().height>15;
  const empty=e=>!e.textContent.trim()&&!e.querySelector('img,[contenteditable=false]');
- const editor=editors.find(e=>eligible(e)&&empty(e));
- if(!editor)return false;
- const rect=editor.getBoundingClientRect();
+ const editor=scrollOnly?null:editors.find(e=>eligible(e)&&empty(e));
+ if(!scrollOnly&&!editor)return false;
+ const rect=editor?.getBoundingClientRect();
  const scroll=scrolls.find(e=>{
   const r=e.getBoundingClientRect();
-  return r.left<=rect.left&&r.right>=rect.right&&r.width>200&&e.scrollHeight-e.clientHeight>=200;
+  return (!rect||(r.left<=rect.left&&r.right>=rect.right))&&r.width>200&&r.height>100&&e.scrollHeight-e.clientHeight>=200&&
+   e.contains(document.elementFromPoint(Math.round(r.left+r.width/2),Math.round(r.top+Math.min(170,r.height*.25))));
  });
  if(!scroll)return false;
- const original={scroll:scroll.scrollTop,focus:document.activeElement,supportsAudio:state.supportsAudio};
+ const original={scroll:scroll.scrollTop,focus:document.activeElement,supportsAudio:state?.supportsAudio};
  const audit={editor,scroll,state,original};
- audit.ready=()=>!document.hidden&&document.hasFocus()&&state===window.__codexWallpaperBridge&&editor.isConnected&&scroll.isConnected;
+ audit.ready=()=>!document.hidden&&document.hasFocus()&&state===window.__codexWallpaperBridge&&(scrollOnly||editor.isConnected)&&scroll.isConnected;
  audit.configure=mode=>{
   if(!audit.ready())throw Error('Codex foreground changed');
   state.supportsAudio=mode==='full'?original.supportsAudio:false;
@@ -62,24 +64,26 @@ function openAudit(key){
   window.__cwbMediaActivity.report();
  };
  audit.points=()=>{
-  const r=scroll.getBoundingClientRect(),e=editor.getBoundingClientRect();
+  const r=scroll.getBoundingClientRect(),e=editor?.getBoundingClientRect();
   const x=Math.round(r.left+r.width/2),y=Math.round(r.top+Math.min(170,r.height*.25));
-  const xp=Math.round(e.left+Math.min(e.width*.4,100)),yp=Math.round(e.top+e.height/2);
-  if(!audit.ready()||!scroll.contains(document.elementFromPoint(x,y))||!editor.contains(document.elementFromPoint(xp,yp)))throw Error('Transcript or editor is obscured');
+  const xp=e&&Math.round(e.left+Math.min(e.width*.4,100)),yp=e&&Math.round(e.top+e.height/2);
+  if(!audit.ready()||!scroll.contains(document.elementFromPoint(x,y))||(editor&&!editor.contains(document.elementFromPoint(xp,yp))))throw Error('Transcript or editor is obscured');
   return {x,y,xp,yp,direction:scroll.scrollTop>=180?-1:1};
  };
  audit.measure=()=>{
-  const counts={scroll:0,wheel:0,click:0,input:0}, gaps=[], long=[], slowEvents=[];
+  const counts={scroll:0,wheel:0,pointer:0,click:0,input:0}, gaps=[], long=[], slowEvents=[],wheelDelay=[],pointerDelay=[],clickDelay=[],typingDelay=[];
   const scrollHandler=event=>{if(event.target===scroll)counts.scroll++;};
-  const editorHandler=event=>{if(editor.contains(event.target))counts[event.type]++;};
-  const wheelHandler=event=>{if(scroll.contains(event.target))counts.wheel++;};
+  const editorHandler=event=>{if(event.isTrusted&&editor?.contains(event.target)){counts[event.type]++;(event.type==='click'?clickDelay:typingDelay).push(performance.now()-event.timeStamp);}};
+  const wheelHandler=event=>{if(event.isTrusted&&scroll.contains(event.target)){counts.wheel++;wheelDelay.push(performance.now()-event.timeStamp);}};
+  const pointerHandler=event=>{if(event.isTrusted&&scroll.contains(event.target)){counts.pointer++;pointerDelay.push(performance.now()-event.timeStamp);}};
   document.addEventListener('scroll',scrollHandler,true);
   document.addEventListener('wheel',wheelHandler,true);
+  document.addEventListener('pointermove',pointerHandler,true);
   document.addEventListener('click',editorHandler,true);
   document.addEventListener('input',editorHandler,true);
   const taskObserver=new PerformanceObserver(list=>{for(const entry of list.getEntries())long.push(entry.duration);});
   taskObserver.observe({type:'longtask'});
-  const eventObserver=new PerformanceObserver(list=>{for(const entry of list.getEntries())if(editor.contains(entry.target))slowEvents.push({name:entry.name,delay:entry.processingStart-entry.startTime,duration:entry.duration});});
+  const eventObserver=new PerformanceObserver(list=>{for(const entry of list.getEntries())if(editor?.contains(entry.target))slowEvents.push({name:entry.name,delay:entry.processingStart-entry.startTime,duration:entry.duration});});
   if(PerformanceObserver.supportedEntryTypes.includes('event'))eventObserver.observe({type:'event',durationThreshold:16});
   let prior=0,first=0,last=0,request;
   const tick=now=>{if(prior)gaps.push(now-prior);else first=now;last=now;prior=now;request=requestAnimationFrame(tick);};
@@ -88,16 +92,18 @@ function openAudit(key){
    cancelAnimationFrame(request);taskObserver.disconnect();eventObserver.disconnect();
    document.removeEventListener('scroll',scrollHandler,true);
    document.removeEventListener('wheel',wheelHandler,true);
+   document.removeEventListener('pointermove',pointerHandler,true);
    document.removeEventListener('click',editorHandler,true);
    document.removeEventListener('input',editorHandler,true);
    gaps.sort((a,b)=>a-b);
    audit.finish=null;
-   return {counts,seconds:(last-first)/1000,frames:gaps.length,p50:gaps[Math.floor(gaps.length*.5)],p95:gaps[Math.floor(gaps.length*.95)],max:gaps.at(-1),gapsOver50:gaps.filter(ms=>ms>=50).length,longTasks:long.length,longestTask:Math.max(0,...long),slowEvents};
+   return {counts,seconds:(last-first)/1000,frames:gaps.length,p50:gaps[Math.floor(gaps.length*.5)],p95:gaps[Math.floor(gaps.length*.95)],max:gaps.at(-1),gapsOver50:gaps.filter(ms=>ms>=50).length,longTasks:long.length,longestTask:Math.max(0,...long),slowEvents,wheelDelay,pointerDelay,clickDelay,typingDelay};
   };
  };
  audit.restore=()=>{
+  clearTimeout(audit.timeout);
   audit.finish?.();
-  if(window.__codexWallpaperBridge===state){
+  if(!performanceGate&&window.__codexWallpaperBridge===state){
    state.supportsAudio=original.supportsAudio;
    state.pause(null);
    window.__cwbMediaActivity.report();
@@ -106,6 +112,7 @@ function openAudit(key){
   if(document.hasFocus()&&document.activeElement===editor&&original.focus?.isConnected)original.focus.focus({preventScroll:true});
   delete window[key];
  };
+ audit.timeout=setTimeout(audit.restore,45000);
  window[key]=audit;
  return true;
 }
@@ -116,11 +123,11 @@ function inspectScene(key){
   audio:sample.systemAudioActive===true,fps:sample.stats?.fps||0,frames:sample.spectrumUpdates||0,rate:sample.spectrumAudit?.targetRate};
 }
 const expectedScene=(scene,mode)=>scene.paused===(mode==='paused')&&scene.rendering===(mode!=='paused')&&scene.audio===(mode==='full');
-const prepared=await call(openAudit,key);
-if(!prepared){c.close();throw Error('The foreground Codex view needs a scrollable transcript and one empty composer');}
+const prepared=await call(openAudit,key,scrollOnly,performanceGate);
+if(!prepared){c.close();throw Error(scrollOnly?'A visible scrollable transcript is required':'The foreground Codex view needs a scrollable transcript and one empty composer');}
 const source='window['+JSON.stringify(key)+']';
 const ensure=async()=>assert(await c.evaluate(source+'.ready()'),'Codex foreground changed');
-const reply={target:target.id,run:new Date().toISOString(),results:[]};
+const reply={target:target.id,run:new Date().toISOString(),build:runtime.build,results:[]};
 let inserted='';
 let stopTone;
 const requireText=async text=>await call((key,text)=>{const a=window[key];return a.ready()&&document.activeElement===a.editor&&a.editor.textContent===text;},key,text);
@@ -138,6 +145,77 @@ const delta=(a,b)=>Object.fromEntries(['TaskDuration','ScriptDuration','LayoutDu
 const mouse=(type,x,y,more={})=>c.call('Input.dispatchMouseEvent',{type,x,y,...more});
 try{
  await c.call('Performance.enable');
+ if(performanceGate){
+  const points=await c.evaluate(source+'.points()'),scrollTop=()=>c.evaluate(source+'.scroll.scrollTop');
+  const p95=items=>[...items].sort((a,b)=>a-b)[Math.floor(items.length*.95)]??null;
+  const probe=async(name,perform)=>{
+   const before=await metrics();
+   await c.evaluate(source+'.measure();true');
+   const measured=await perform();
+   await delay(180);await ensure();
+   const interaction=await c.evaluate(source+'.finish()'),after=await metrics();
+   const overBudget=interaction.p95>50||interaction.max>=100||interaction.longestTask>=100||(measured.focusMs??0)>=100;
+   const result={name,...measured,interaction,overBudget,delta:delta(before,after)};
+   reply.results.push(result);
+   const delays={scroll:interaction.wheelDelay,pointer:interaction.pointerDelay,click:interaction.clickDelay,typing:interaction.typingDelay};
+   console.log(JSON.stringify({name,...measured,counts:interaction.counts,p95FrameMs:interaction.p95,maxFrameMs:interaction.max,
+    over50:interaction.gapsOver50,longestTaskMs:interaction.longestTask,inputP95Ms:p95(delays[name]),overBudget}));
+   assert(interaction.frames>=5,'Too few frame samples in '+name);
+   return interaction;
+  };
+  const pointer=await probe('pointer',async()=>{
+   const dispatch=[];
+   for(let i=0;i<20;i++){await ensure();dispatch.push(await timing(()=>mouse('mouseMoved',points.x+i%7*4,points.y+i%3*3)));await delay(32);}
+   return {dispatchP95Ms:p95(dispatch)};
+  });
+  assert(pointer.counts.pointer>=10,'The transcript did not receive pointer motion');
+  const wheel=await probe('scroll',async()=>{
+   const start=await scrollTop(),dispatch=[];
+   const step=async direction=>{
+    for(let i=0;i<7;i++){await ensure();dispatch.push(await timing(()=>mouse('mouseWheel',points.x,points.y,{deltaX:0,deltaY:direction*32})));await delay(45);}
+    await delay(130);return scrollTop();
+   };
+   const middle=await step(points.direction),end=await step(-points.direction);
+   return {dispatchP95Ms:p95(dispatch),scrollPixels:[middle-start,end-middle]};
+  });
+  const [forward,back]=reply.results.at(-1).scrollPixels;
+  assert(wheel.counts.wheel>=10&&wheel.counts.scroll>=2&&forward*points.direction>20&&back*points.direction<-20,'Wheel input did not scroll the transcript in both directions');
+  if(!scrollOnly){
+   const clicked=await probe('click',async()=>{
+    const point=await c.evaluate(source+'.points()');
+    assert(await c.evaluate(source+'.editor.textContent.length===0'),'The composer is no longer empty');
+    const started=performance.now();
+    const dispatchMs=await timing(async()=>{
+     await mouse('mousePressed',point.xp,point.yp,{button:'left',buttons:1,clickCount:1});
+     await mouse('mouseReleased',point.xp,point.yp,{button:'left',buttons:0,clickCount:1});
+    });
+    while(!await requireText('')){
+     await ensure();
+     if(performance.now()-started>=400)throw Error('The click did not focus the empty composer within 400 ms');
+     await delay(16);
+    }
+    return {dispatchMs,focusMs:performance.now()-started};
+   });
+   assert(clicked.counts.click>=1,'The composer did not receive the click');
+   const typed=await probe('typing',async()=>{
+    const dispatch=[];
+    for(const char of 'cwbtest'){
+     assert(await requireText(inserted),'The composer changed during the input test');
+     const next=inserted+char;
+     dispatch.push(await timing(async()=>{
+      await c.call('Input.insertText',{text:char});
+      assert(await requireText(next),'The composer did not receive the synthetic input');
+     }));
+     inserted=next;await delay(40);
+    }
+    await clearText();
+    return {dispatchP95Ms:p95(dispatch)};
+   });
+   assert(typed.counts.input>=7,'The composer did not receive the typing samples');
+  }
+  const slow=reply.results.filter(result=>result.overBudget).map(result=>result.name);
+  assert(!slow.length,'Foreground stutter exceeded the frame budget in '+slow.join(', '));
+ }else{
  const deck=process.env.CWB_INTERACTION_MODES?.split(',')||['full','paused','webgl','webgl','paused','full'];
  assert(deck.every(mode=>['full','paused','webgl'].includes(mode)));
  if(deck.includes('full'))stopTone=playQuietAudio(50);
@@ -188,6 +266,7 @@ try{
   await call(key=>{const a=window[key];a.scroll.scrollTop=a.original.scroll;return true;},key);
  }
  assert(reply.results.every(row=>row.stable),'At least one comparison mode did not reach its expected renderer and audio state');
+ }
 }catch(error){reply.error=error.message;process.exitCode=1;console.error(error.message);}
 finally{
  try{await clearText();}

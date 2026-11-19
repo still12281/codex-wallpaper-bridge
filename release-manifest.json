@@ -575,13 +575,13 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 25628,
-      "sha256": "5042527e1e651bb5a8766a41170ab4c8fd2c5fc4d1571c1468069aefcb1e60a8"
+      "utf8Bytes": 26134,
+      "sha256": "876ee689c0afe46fb06060e38b13d1c89e8c8af8527c30fa8d3080eb29e79270"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
-      "utf8Bytes": 11001,
-      "sha256": "9ec001df8f961640871721fef6a958c9e0c8e8c5a597ef033a9cf019417792d0"
+      "utf8Bytes": 16192,
+      "sha256": "62b2e0c3fb96714d099859bc53f0bbae8f15e22275f14a7bd001138499240667"
     },
     {
       "path": "src/webwallgl-player.mjs",
@@ -720,8 +720,8 @@
     },
     {
       "path": "test/foreground-interaction.mjs",
-      "utf8Bytes": 11868,
-      "sha256": "23d52b32cdec3b3c9611715366ae52d91af9671fa8c726ec62cff06a08d2017e"
+      "utf8Bytes": 17099,
+      "sha256": "47f1b3b2f70be836060bbafcd2727e64a4b996e748dc5b85f13c2f0f68c3455b"
     },
     {
       "path": "test/host-handoff.ps1",
@@ -890,8 +890,8 @@
     },
     {
       "path": "test/run-regression.mjs",
-      "utf8Bytes": 3907,
-      "sha256": "c036e660cd5b748b0e76112e0620e98a5b2122e4cb6192f07feb4323f20a2708"
+      "utf8Bytes": 3982,
+      "sha256": "85d0990632173b3dbca8c706b649e714671da5212da74c520e82bf31627da61e"
     },
     {
       "path": "test/runtime-status.test.mjs",
@@ -930,8 +930,8 @@
     },
     {
       "path": "test/style-invalidation-integration.mjs",
-      "utf8Bytes": 9316,
-      "sha256": "cf96ef9f4b8e604125b78444b74324404e6c3ba71c98e0c2eaaf94282a10b0a7"
+      "utf8Bytes": 10628,
+      "sha256": "ebc10d1df7bb2b567b2137d32fd94b85c2596709e8ccfa82f7748d7b82bf0cc3"
     },
     {
       "path": "test/surfaces.test.mjs",
@@ -990,8 +990,8 @@
     },
     {
       "path": "test/widgets.test.mjs",
-      "utf8Bytes": 11095,
-      "sha256": "a85674a91448c6881fdf211c4086127cec68f5dbfd3d43d5ca35ea1230c6ab9c"
+      "utf8Bytes": 14332,
+      "sha256": "f1bc5302abc85aa88a960a9dee52735500cac0cfeaf414386600c8600daaf1ec"
     },
     {
       "path": "tools/build-installer.ps1",

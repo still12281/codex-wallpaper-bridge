@@ -84,6 +84,10 @@ export function paintShell(config){
  diffs-container{--color-surface:${sync.code?'transparent':'var(--app-color-background-editor-opaque,Canvas)'}!important;--codex-diffs-surface:${sync.code?'transparent':'var(--app-color-background-editor-opaque,Canvas)'}!important}
  ${!sync.code?`:root[data-theme="light"] :is(.cm-editor,.monaco-editor,diffs-container){color-scheme:light}:root[data-theme="dark"] :is(.cm-editor,.monaco-editor,diffs-container){color-scheme:dark}:is(.cm-editor,.monaco-editor,diffs-container){--color-text:CanvasText;--color-text-primary:CanvasText;color:CanvasText}`:''}
  ${sync.code?`[data-cwb-terminal-surface]{--color-text:${ink}!important;--color-text-primary:${ink}!important;--color-text-secondary:${secondary}!important;--color-text-tertiary:${secondary}!important;--app-color-text-foreground:${ink}!important;--app-color-text-foreground-secondary:${secondary}!important;--app-color-icon-primary:${ink}!important;--app-color-icon-secondary:${secondary}!important}`:''}
+ ${sync.code?`/* The terminal DOM renderer flattens its selection against an opaque background. */
+ [data-cwb-terminal-surface] .xterm .xterm-selection>div{background-color:var(--cwb-terminal-selection-inactive)!important}
+ [data-cwb-terminal-surface] .xterm.focus .xterm-selection>div{background-color:var(--cwb-terminal-selection-active)!important}
+ [data-cwb-terminal-surface] .xterm[data-cwb-clipped-selection] .xterm-selection{width:100%;height:100%;clip-path:var(--cwb-terminal-selection-clip)}`:''}
  [data-app-shell-page-surface]{color:${ink}!important}
  [data-app-shell-page-surface][data-app-shell-application-menu-bar]{background:transparent!important}
  [data-app-navigation-rail]{background:transparent!important;color:${ink}!important}

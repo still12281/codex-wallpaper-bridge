@@ -49,6 +49,21 @@ try{
  assert(updates.length>=5&&updates.some(n=>n>0),'Missing style recalculation evidence');const most=Math.max(...updates);
  assert(most<appearances.nodes/10,`Unrelated leaf class restyled ${most}/${appearances.nodes} elements`);
  for(const prop of ['--cwb-transcript-clip','--cwb-code-clip-top'])assert.equal(await page.evaluate('getComputedStyle(document.querySelector("#tree span")).getPropertyValue('+JSON.stringify(prop)+')'),'0px',prop+' leaked into text descendants');
+ const selection=await page.evaluate(`(()=>{
+  const surface=document.createElement('div');
+  surface.innerHTML='<div class="xterm"><div class="xterm-selection"><div style="background-color:rgb(144,157,171)"></div></div></div>';
+  document.body.append(surface);
+  const selection=surface.querySelector('.xterm-selection div'),term=surface.firstElementChild,color=()=>getComputedStyle(selection).backgroundColor;
+  const native=color();surface.setAttribute('data-cwb-terminal-surface','');
+  surface.style.setProperty('--cwb-terminal-selection-active','#386b9c44');
+  surface.style.setProperty('--cwb-terminal-selection-inactive','#386b9c33');
+  const inactive=color();term.classList.add('focus');const active=color();
+  term.setAttribute('data-cwb-clipped-selection','');term.style.setProperty('--cwb-terminal-selection-clip','inset(0 0 100% 0)');
+  const empty=getComputedStyle(selection.parentElement).clipPath.startsWith('inset(');term.removeAttribute('data-cwb-clipped-selection');
+  surface.removeAttribute('data-cwb-terminal-surface');const restored=color();surface.remove();
+  return {native,inactive,active,empty,restored};
+ })()`);
+ assert.deepEqual(selection,{native:'rgb(144, 157, 171)',inactive:'rgba(56, 107, 156, 0.2)',active:'rgba(56, 107, 156, 0.267)',empty:true,restored:'rgb(144, 157, 171)'});
  const animation=await page.evaluate(`(()=>{
   const root=document.documentElement,key='--decorative-animation-play-state';
   const style=document.createElement('style');

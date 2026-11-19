@@ -20,7 +20,8 @@ const tests={
  audio:[['node','test/system-audio-integration.mjs']],
  recovery:[['node','--test','test/media-power.test.mjs','test/system-media.test.mjs'],
   ...['lifetime','webwallgl','panel-controls'].map(integration),powershell('entry-window-dispatch')],
- desktop:[['node','test/foreground-interaction.mjs']]
+ desktop:[['node','test/foreground-interaction.mjs']],
+ performance:[['node','test/foreground-interaction.mjs','--performance']]
 };
 function integration(name){return ['node','test/'+name+'-integration.mjs'];}
 function powershell(name){return ['pwsh','test/'+name+'.ps1'];}
