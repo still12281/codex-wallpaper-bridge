@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {installNativeWidgets} from '../src/wallpaper-widgets.mjs';
 
 function environment(supported=true){
- const names=['window','document','MutationObserver','requestAnimationFrame','cancelAnimationFrame'],saved=new Map(names.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+ const names=['window','document','MutationObserver','requestAnimationFrame','cancelAnimationFrame','getComputedStyle'],saved=new Map(names.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
  const props=new Map();
  const surface={toggleAttribute(){},removeAttribute(){},style:{setProperty:(key,value)=>props.set(key,value),getPropertyValue:key=>props.get(key),removeProperty:key=>props.delete(key)}};
  Object.assign(globalThis,{window:{},document:{body:{},querySelectorAll:()=>supported?[{href:'app://-/assets/app-initial-ad16eaadf81f.js'}]:[]},MutationObserver:class{observe(){}disconnect(){}},requestAnimationFrame:()=>1,cancelAnimationFrame:()=>{}});
@@ -83,6 +83,74 @@ test('new native module hashes and renamed exports resolve by one manager contra
 test('no terminal is armed rather than marked adapted; a later native renderer is themed',async()=>{
  const e=environment();try{e.manager.renderers.clear();const result=await installNativeWidgets(config,async()=>e.module);assert.equal(result.phase,'armed');assert.equal(result.terminals,0);e.manager.getOrCreateRenderer();assert.equal(window.__cwbWidgets.status.phase,'adapted');assert.equal(window.__cwbWidgets.status.terminals,1);assert.equal(e.terminal.options.theme.background,'#4a4b5000');e.terminal.dispose();assert.equal(window.__cwbWidgets.status.phase,'armed');assert.equal(window.__cwbWidgets.status.terminals,0);}finally{e.restore()}
 });
+test('reacquiring an existing terminal tab does not rewrite its theme or refresh its rows',async()=>{
+ const e=environment();
+ try{
+  let refreshes=0;
+  e.terminal.refresh=()=>{refreshes++;};
+  await installNativeWidgets(config,async()=>e.module);
+  const theme=e.terminal.options.theme;
+  assert.equal(refreshes,1);
+  for(let i=0;i<3;i++){e.manager.getOrCreateRenderer();await window.__cwbWidgets.refresh();}
+  assert.equal(e.terminal.options.theme,theme);
+  assert.equal(refreshes,1);
+  e.terminal.element={closest:e.terminal.element.closest};
+  e.terminal.open();
+  assert.equal(refreshes,2,'Moving the renderer to another tab surface must still repaint');
+  await installNativeWidgets({...config,visual:{glassOpacity:1}},async()=>e.module);
+  assert.notEqual(e.terminal.options.theme.background,theme.background);
+  assert.equal(refreshes,3,'An appearance change must still repaint');
+ }finally{e.restore();}
+});
+test('a reopened terminal shares measured widths only for the same font and display settings',async()=>{
+ const e=environment();
+ try{
+  const fonts=Object.assign(new EventTarget(),{status:'loaded'});
+  document.fonts=fonts;
+  window.devicePixelRatio=1;
+  globalThis.getComputedStyle=element=>element.metrics;
+  let measured=0,width=8;
+  class WidthCache{
+   constructor(font){
+    this._measureElements=Array.from({length:4},()=>({
+     isConnected:true,metrics:{fontFamily:font},getClientRects:()=>[{}],
+     get offsetWidth(){measured++;return width*32;},
+    }));
+    this.clear();
+   }
+   clear(){this._flat=new Float64Array(256);this._holey=new Map();}
+   get(glyph,bold=false,italic=false){
+    const i=glyph.charCodeAt(0);
+    if(!bold&&!italic&&glyph.length===1&&i<256)return this._flat[i]||(this._flat[i]=this._measure(glyph,0));
+    const key=glyph+(bold?"B":"")+(italic?"I":"");
+    if(!this._holey.has(key))this._holey.set(key,this._measure(glyph,Number(bold)+Number(italic)*2));
+    return this._holey.get(key);
+   }
+   _measure(glyph,variant){const element=this._measureElements[variant];element.textContent=glyph.repeat(32);return element.offsetWidth/32;}
+  }
+  const renderer={_widthCache:new WidthCache('mono')};
+  e.terminal._core={_renderService:{_renderer:{value:renderer}}};
+  renderer._widthCache.get('W');renderer._widthCache.get('界',true);
+  await installNativeWidgets(config,async()=>e.module);
+  const reopen=font=>{renderer._widthCache=new WidthCache(font);e.terminal.open();return renderer._widthCache;};
+  const reopened=reopen('mono');
+  assert.equal(reopened.get('W'),8);
+  assert.equal(reopened.get('界',true),8);
+  assert.equal(measured,2);
+  assert.equal(reopened.get('新'),8);
+  assert.equal(measured,3,'A new glyph is measured with the native method');
+  width=9;
+  assert.equal(reopen('another mono').get('W'),9);
+  window.devicePixelRatio=2;
+  assert.equal(reopen('mono').get('W'),9);
+  fonts.dispatchEvent(new Event('loadingdone'));width=10;
+  const renewed=reopen('mono');
+  assert.equal(renewed.get('W'),10);
+  await installNativeWidgets({...config,surfaceSync:{code:false}},async()=>e.module);
+  assert.equal(Object.hasOwn(renewed,'_measure'),false);
+  assert.equal(measured,6);
+ }finally{e.restore();}
+});
 test('a native module loaded after initialization can recover without polling or a new adapter instance',async()=>{
  const e=environment(false);try{await installNativeWidgets(config,async()=>e.module);const first=window.__cwbWidgets;assert.equal(first.status.phase,'unsupported');document.querySelectorAll=()=>[{href:'app://-/assets/app-initial-db76c3384587.js'}];await installNativeWidgets(config,async()=>({Bat:e.manager}));assert.equal(window.__cwbWidgets,first);assert.equal(first.status.phase,'adapted');}finally{e.restore()}
 });
@@ -93,7 +161,7 @@ test('disposing during module loading cannot install a late manager hook',async(
  const e=environment();try{let resolve;const pending=new Promise(r=>{resolve=r}),original=e.manager.getOrCreateRenderer,installing=installNativeWidgets(config,()=>pending);window.__cwbWidgets.dispose();delete window.__cwbWidgets;resolve(e.module);await installing;assert.equal(e.manager.getOrCreateRenderer,original);assert.equal(Object.hasOwn(e.terminal,'options'),false)}finally{e.restore()}
 });
 test('renderer failure removes hooks and cannot silently reapply after fallback',async()=>{
- const e=environment();try{const original=e.manager.getOrCreateRenderer;await installNativeWidgets(config,async()=>e.module);e.terminal.fail=true;window.__cwbWidgets.update();assert.equal(window.__cwbWidgets.status.phase,'unsupported');assert.equal(e.manager.getOrCreateRenderer,original);assert.equal(e.terminal.options.theme.background,'#fff');e.terminal.fail=false;e.manager.getOrCreateRenderer();assert.equal(Object.hasOwn(e.terminal,'options'),false);assert.equal(e.terminal.options.theme.background,'#fff')}finally{e.restore()}
+ const e=environment();try{const original=e.manager.getOrCreateRenderer;await installNativeWidgets(config,async()=>e.module);e.terminal.fail=true;await installNativeWidgets({...config,visual:{glassOpacity:1}},async()=>e.module);assert.equal(window.__cwbWidgets.status.phase,'unsupported');assert.equal(e.manager.getOrCreateRenderer,original);assert.equal(e.terminal.options.theme.background,'#fff');e.terminal.fail=false;e.manager.getOrCreateRenderer();assert.equal(Object.hasOwn(e.terminal,'options'),false);assert.equal(e.terminal.options.theme.background,'#fff')}finally{e.restore()}
 });
 test('theme restoration uses latest native colors and preserves other terminal options',async()=>{
  const e=environment();try{await installNativeWidgets(config,async()=>e.module);const held=e.terminal.options;held.fontSize=17;held.theme={background:'#eee',foreground:'#222'};assert.equal(e.terminal.options.theme.background,'#4a4b5000');await installNativeWidgets({...config,surfaceSync:{code:false}},async()=>e.module);assert.equal(e.terminal.options.theme.background,'#eee');assert.equal(e.terminal.options.fontSize,17);window.__cwbWidgets.dispose();held.theme={background:'#ddd'};assert.equal(e.terminal.options.theme.background,'#ddd');assert.equal(Object.hasOwn(e.terminal,'options'),false)}finally{e.restore()}

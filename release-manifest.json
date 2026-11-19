@@ -580,8 +580,8 @@
     },
     {
       "path": "src/wallpaper-widgets.mjs",
-      "utf8Bytes": 16192,
-      "sha256": "62b2e0c3fb96714d099859bc53f0bbae8f15e22275f14a7bd001138499240667"
+      "utf8Bytes": 21254,
+      "sha256": "b94cc42e3dbe7a8bde01a63dfed052ceb0645e485202e6213f48f0919017bf04"
     },
     {
       "path": "src/webwallgl-player.mjs",
@@ -990,8 +990,8 @@
     },
     {
       "path": "test/widgets.test.mjs",
-      "utf8Bytes": 14332,
-      "sha256": "f1bc5302abc85aa88a960a9dee52735500cac0cfeaf414386600c8600daaf1ec"
+      "utf8Bytes": 17575,
+      "sha256": "51a65ef3d7658a9cd40d452d26c12b49ead48086c305e222b259b8feaf359c9b"
     },
     {
       "path": "tools/build-installer.ps1",

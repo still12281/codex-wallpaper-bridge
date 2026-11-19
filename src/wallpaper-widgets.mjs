@@ -1,11 +1,89 @@
 // Runs in the native page. Only cells inside an active pointer selection are inspected.
 export async function installNativeWidgets(config,loadModule=url=>import(url)){
  const prior=window.__cwbWidgets;
- if(prior?.version===15&&!prior.disposed){prior.config=config;await prior.refresh();return prior.status}
+ if(prior?.version===16&&!prior.disposed){prior.config=config;await prior.refresh();return prior.status}
  prior?.dispose?.();
- const state=window.__cwbWidgets={version:15,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
+ const state=window.__cwbWidgets={version:16,config,disposed:false,terminals:new Set(),status:{phase:'initializing'},moduleKey:null};
  const copy=theme=>theme?{...theme}:theme;
+ const themeMatches=(current,next)=>{
+  if(current===next)return true;
+  if(!current||!next)return false;
+  const keys=Object.keys(next);
+  return Object.keys(current).length===keys.length&&keys.every(key=>{
+   if(!Object.hasOwn(current,key))return false;
+   const a=current[key],b=next[key];
+   return a===b||(key==='extendedAnsi'&&Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((value,i)=>value===b[i]));
+  });
+ };
  const contrast=value=>state.config.surfaceSync?.code===false?value:Math.max(4.5,Number.isFinite(value)?value:1);
+ const fonts=document.fonts,widthsByStyle=new Map();
+ let fontRevision=0;
+ const invalidateWidths=()=>{fontRevision++;widthsByStyle.clear();};
+ const fontEvents=['loading','loadingdone','loadingerror'];
+ for(const name of fontEvents)fonts?.addEventListener(name,invalidateWidths);
+ const metricProperties=[
+  'fontFamily','fontSize','fontWeight','fontStyle','fontStretch','fontKerning','fontFeatureSettings',
+  'fontVariationSettings','fontVariant','fontOpticalSizing','fontSynthesis','letterSpacing','wordSpacing',
+  'textTransform','textRendering','whiteSpace','writingMode','textOrientation','direction','tabSize','zoom',
+  'boxSizing','minWidth','maxWidth','paddingLeft','paddingRight','borderLeftWidth','borderRightWidth',
+ ];
+ const widthCache=terminal=>terminal._core?._renderService?._renderer?.value?._widthCache;
+ const bindWidths=cache=>{
+  if(!fonts||typeof cache?._measure!=='function'||typeof cache.get!=='function'||
+   cache._flat?.length!==256||!(cache._holey instanceof Map)||cache._measureElements?.length!==4)return null;
+  const measure=cache._measure,descriptor=Object.getOwnPropertyDescriptor(cache,'_measure');
+  // Only share the measured values for the xterm DOM renderer's native cache
+  // layout. Other renderers and browser versions retain their own measurement.
+  const source=Function.prototype.toString.call(cache.get),measureSource=Function.prototype.toString.call(measure);
+  if(!['._flat','._holey','<256','"B"','"I"'].every(part=>source.includes(part))||
+   !measureSource.includes('.repeat(32)')||!measureSource.includes('.offsetWidth/32'))return null;
+  if(descriptor?!descriptor.writable:!Object.isExtensible(cache))return null;
+  let group,signature,queued=false;
+  const styleGroup=()=>{
+   if(state.disposed||fonts.status!=='loaded'||!cache._measureElements[0]?.isConnected)return null;
+   const dpi=window.devicePixelRatio,scale=window.visualViewport?.scale??1;
+   const stamp=[fontRevision,dpi,scale,cache._holey];
+   if(signature?.every((value,i)=>value===stamp[i]))return group;
+   signature=stamp;group=null;
+   if(!queued){queued=true;queueMicrotask(()=>{queued=false;signature=null;group=null;});}
+   if(!cache._measureElements[0].getClientRects().length)return null;
+   const styles=cache._measureElements.map(element=>{
+    const style=getComputedStyle(element);
+    return metricProperties.map(property=>style[property]);
+   });
+   const key=JSON.stringify([dpi,scale,styles]);
+   group=widthsByStyle.get(key);
+   if(!group){
+    if(widthsByStyle.size>=4)widthsByStyle.delete(widthsByStyle.keys().next().value);
+    group={flat:new Float64Array(256),other:new Map()};
+    widthsByStyle.set(key,group);
+   }
+   return group;
+  };
+  // The mounted renderer may already know the exact widths. Keep them
+  // available when native tab navigation creates a fresh width cache.
+  const known=styleGroup();
+  if(known){
+   for(const [i,width]of cache._flat.entries())if(width>0)known.flat[i]=width;
+   for(const [key,width]of cache._holey)if(width>0&&known.other.size<2048)known.other.set(key,width);
+  }
+  const wrapped=function(glyph,variant){
+   const current=styleGroup();
+   if(!current)return measure.call(this,glyph,variant);
+   const ascii=!variant&&glyph.length===1&&glyph.charCodeAt(0)<256;
+   const key=ascii?glyph.charCodeAt(0):glyph+(variant&1?'B':'')+(variant&2?'I':'');
+   const known=ascii?current.flat[key]:current.other.get(key);
+   if(known>0)return known;
+   const width=measure.call(this,glyph,variant);
+   if(width>0){
+    if(ascii)current.flat[key]=width;
+    else if(current.other.size<2048)current.other.set(key,width);
+   }
+   return width;
+  };
+  cache._measure=wrapped;
+  return {cache,dispose(){if(cache._measure!==wrapped)return;if(descriptor)Object.defineProperty(cache,'_measure',descriptor);else delete cache._measure;}};
+ };
  const effective=native=>{
   if(state.config.surfaceSync?.code===false)return native;
   const p=state.config.palette||{},dark=p.dark!==false,ink=dark?'#e9eff5':'#15212c',fallback=dark?[20,22,28]:[240,242,246];
@@ -105,10 +183,17 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
  };
  const apply=record=>{
   const native=state.config.surfaceSync?.code===false;
-  const surface=record.terminal.element?.closest('[data-theme]')||record.terminal.element?.parentElement;
-  if(record.surface&&record.surface!==surface)clearSurface(record.surface);
-  record.surface=surface;
   const terminalElement=record.terminal.element;
+  const surface=terminalElement?.closest('[data-theme]')||terminalElement?.parentElement;
+  const cache=native?null:widthCache(record.terminal)??null;
+  if(record.measureCache!==cache){
+   record.widths?.dispose();
+   try{record.widths=bindWidths(cache);}catch{record.widths=null;}
+   record.measureCache=cache;
+  }
+  const moved=record.element!==terminalElement||record.surface!==surface;
+  if(record.surface&&record.surface!==surface)clearSurface(record.surface);
+  record.element=terminalElement;record.surface=surface;
   if(record.selection&&(native||record.selection.element!==terminalElement)){record.selection.dispose();record.selection=null;}
   if(!native&&!record.selection)record.selection=bindSelection(record.terminal);
   const theme=effective(record.nativeTheme);
@@ -120,9 +205,14 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
     if(surface.style?.getPropertyValue(property)!==color)surface.style?.setProperty(property,color);
    }
   }
-  record.options.theme=theme;
-  record.options.minimumContrastRatio=contrast(record.nativeContrast);
-  if(record.terminal.element&&record.terminal.rows>0)record.terminal.refresh(0,record.terminal.rows-1);
+  // A tab can reacquire its renderer several times during one native commit.
+  // xterm invalidates all rows on a theme write even if every color is equal.
+  const nextContrast=contrast(record.nativeContrast);
+  const themeChanged=!themeMatches(record.options.theme,theme);
+  const contrastChanged=record.options.minimumContrastRatio!==nextContrast;
+  if(themeChanged)record.options.theme=theme;
+  if(contrastChanged)record.options.minimumContrastRatio=nextContrast;
+  if((moved||themeChanged||contrastChanged)&&terminalElement&&record.terminal.rows>0)record.terminal.refresh(0,record.terminal.rows-1);
  };
  const register=renderer=>{
   if(state.disposed)return;
@@ -134,10 +224,10 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
   const options=descriptor.get.call(terminal),record={terminal,options,nativeTheme:copy(options.theme),nativeContrast:options.minimumContrastRatio,open:terminal.open,dispose:terminal.dispose,surface:null};
   const proxy=new Proxy(options,{set(target,key,value){if(!state.disposed&&key==='theme'){record.nativeTheme=copy(value);target.theme=effective(value)}else if(!state.disposed&&key==='minimumContrastRatio'){record.nativeContrast=value;target.minimumContrastRatio=contrast(value)}else Reflect.set(target,key,value);return true}});
   Object.defineProperty(terminal,'options',{configurable:true,get:()=>proxy,set(value){if(!state.disposed&&value){const patch={...value};if(Object.hasOwn(value,'theme')){record.nativeTheme=copy(value.theme);patch.theme=effective(value.theme);}if(Object.hasOwn(value,'minimumContrastRatio')){record.nativeContrast=value.minimumContrastRatio;patch.minimumContrastRatio=contrast(value.minimumContrastRatio);}descriptor.set.call(terminal,patch);}else descriptor.set.call(terminal,value)}});
-  record.restore=()=>{record.selection?.dispose();clearSurface(record.surface);try{options.theme=record.nativeTheme;options.minimumContrastRatio=record.nativeContrast}catch{}delete terminal.options;if(terminal.open===record.wrappedOpen)terminal.open=record.open;if(terminal.dispose===record.wrappedDispose)terminal.dispose=record.dispose;state.terminals.delete(record)};
+  record.restore=()=>{record.widths?.dispose();record.selection?.dispose();clearSurface(record.surface);try{options.theme=record.nativeTheme;options.minimumContrastRatio=record.nativeContrast}catch{}delete terminal.options;if(terminal.open===record.wrappedOpen)terminal.open=record.open;if(terminal.dispose===record.wrappedDispose)terminal.dispose=record.dispose;state.terminals.delete(record)};
   record.wrappedOpen=function(...args){const result=record.open.apply(this,args);if(!state.disposed)apply(record);return result};terminal.open=record.wrappedOpen;
   record.wrappedDispose=function(...args){record.restore();try{return record.dispose.apply(this,args)}finally{state.update()}};terminal.dispose=record.wrappedDispose;
-  state.terminals.add(record);apply(record);
+  state.terminals.add(record);
  };
  state.update=()=>{if(state.disposed||!state.manager)return;try{for(const r of state.terminals)apply(r);state.status={phase:state.config.surfaceSync?.code===false?'native':state.terminals.size?'adapted':'armed',terminals:state.terminals.size,module:state.moduleUrl,adapter:'terminal-manager-contract-v1'}}catch(error){fail(error)}};
  let frame=null;
@@ -145,7 +235,7 @@ export async function installNativeWidgets(config,loadModule=url=>import(url)){
  const observer=new MutationObserver(changes=>{if(!state.disposed&&frame===null&&changes.some(c=>[...c.addedNodes].some(n=>n.nodeType===1&&(n.matches?.(selector)||n.querySelector?.(selector))))){frame=requestAnimationFrame(()=>{frame=null;state.refresh()})}});
  observer.observe(document.body,{childList:true,subtree:true});
  const restore=()=>{for(const r of [...state.terminals])r.restore();if(state.manager&&typeof state.wrappedCreate==='function'&&state.manager.getOrCreateRenderer===state.wrappedCreate)state.manager.getOrCreateRenderer=state.originalCreate;state.manager=null};
- state.dispose=()=>{if(state.disposed)return;state.disposed=true;observer.disconnect();if(frame!==null){cancelAnimationFrame(frame);frame=null}restore();state.status={phase:'disposed'}};
+ state.dispose=()=>{if(state.disposed)return;state.disposed=true;observer.disconnect();if(frame!==null){cancelAnimationFrame(frame);frame=null}for(const name of fontEvents)fonts?.removeEventListener(name,invalidateWidths);invalidateWidths();restore();state.status={phase:'disposed'}};
  const fail=error=>{restore();state.status={phase:'unsupported',reason:error.message,terminals:0,module:state.moduleUrl}};
  const dataMethod=(object,key)=>{for(let p=object;p;p=Object.getPrototypeOf(p)){const d=Object.getOwnPropertyDescriptor(p,key);if(d)return typeof d.value==='function'?d.value:null}return null};
  const modules=()=>[...new Set([...document.querySelectorAll('link[rel="modulepreload"],script[src]')].filter(e=>/^app:\/\/-\/assets\/app-initial-[a-f0-9]{8,64}\.js$/.test(e.href||e.src)||(e.tagName==='SCRIPT'&&e.type==='module'&&/^app:\/\/-\/assets\/\d+\.[a-f0-9]{8,64}\.js$/.test(e.src))).map(e=>e.href||e.src))].sort();
