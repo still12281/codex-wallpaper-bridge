@@ -1,7 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Collections.Generic;
+using System.Net.WebSockets;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 internal static class CodexEntry {
@@ -28,8 +32,9 @@ internal static class CodexEntry {
  static bool Starting(string root){try{var s=Read(root,"launch-status.json");string phase=Convert.ToString(s["phase"]);if(phase=="failed"||phase=="inspect-only"||phase=="background-rendered"||phase=="cdp-ready-background-not-yet-rendered")return false;double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)s["updatedAt"])).TotalSeconds;if(age<0||age>150)return false;using(var p=Process.GetProcessById(Convert.ToInt32(s["helperPid"])))return !p.HasExited&&String.Equals(p.MainModule.FileName,FindPowerShell(),StringComparison.OrdinalIgnoreCase)&&p.StartTime.ToUniversalTime().ToString("o")==(string)s["helperStartedAtUtc"];}catch{return false;}}
  static bool TryWarm(string root,bool inspect,out string repair,bool visibleOnly=false){
   repair=null;bool attempted=false,foregroundGranted=false;int foregroundGrantError=0,verifiedPid=0;long verifiedHandle=0;var clock=Stopwatch.StartNew();
-  string activationMode="inspection",bridgeWarning=null;
+  string activationMode="inspection",bridgeWarning=null,restoreTransport=null;
   int exitWaitBudgetMs=0;double exitCheckMs=0;
+  double identityMs=0,restoreMs=0,foregroundMs=0,windowWaitMs=0;
   try{
    var hint=Read(root,"main-window.json");var endpoint=Read(root,"cdp-endpoint.json");
    if(Convert.ToInt32(hint["schemaVersion"])!=2||Convert.ToInt32(endpoint["schemaVersion"])!=1||Convert.ToString(endpoint["address"])!="127.0.0.1")return false;
@@ -42,6 +47,7 @@ internal static class CodexEntry {
     string mainTarget=(string)hint["mainTarget"];
     if(!System.Text.RegularExpressions.Regex.IsMatch(mainTarget??"","^[a-fA-F0-9]+$")||Convert.ToInt32(endpoint["sessionId"])!=p.SessionId)return false;
     verifiedPid=pid;verifiedHandle=handle;
+    identityMs=clock.Elapsed.TotalMilliseconds;
     if(!inspect){
      bool visible=WindowShown(handle);
      if(visibleOnly&&!visible)return false;
@@ -51,14 +57,18 @@ internal static class CodexEntry {
      }else{
       activationMode="codex-native-show-bridge";
       foregroundGranted=AllowSetForegroundWindow(pid);if(!foregroundGranted)foregroundGrantError=Marshal.GetLastWin32Error();
-      try{ShowCurrentMain(root,port,browser,mainTarget);}
+      var restoreClock=Stopwatch.StartNew();
+      try{restoreTransport=ShowCurrentMain(root,port,browser,mainTarget);}
       catch(Exception error){
        if(p.WaitForExit(250))return false;
        if(!WallpaperClientWindow.Bound(handle,pid,cookie)||!WindowShown(handle))throw;
        bridgeWarning=error.ToString();
       }
+      finally{restoreMs=restoreClock.Elapsed.TotalMilliseconds;}
      }
+     var foregroundClock=Stopwatch.StartNew();
      if(WindowShown(handle)&&!WallpaperClientWindow.Foreground(handle))WallpaperClientWindow.Activate(handle,pid,executable,ticks,cookie);
+     foregroundMs=foregroundClock.Elapsed.TotalMilliseconds;
      // The native bridge already acknowledged the hidden page's restore.
      // Keep the existing exit-race fallback for a window merely found visible.
      exitWaitBudgetMs=visible||bridgeWarning!=null?250:0;
@@ -68,6 +78,7 @@ internal static class CodexEntry {
      if(!visible){
       var wait=Stopwatch.StartNew();
       while(!WindowShown(handle)&&wait.ElapsedMilliseconds<350){if(p.WaitForExit(25))return false;}
+      windowWaitMs=wait.Elapsed.TotalMilliseconds;
      }
      if(!WindowShown(handle)){
       if(visible)return false; // The window was withdrawn while accepting the click.
@@ -83,6 +94,8 @@ internal static class CodexEntry {
     if(needsRepair)repair=String.Format(System.Globalization.CultureInfo.InvariantCulture,"{0}:{1}:{2}:{3}:{4}:{5}:{6}",pid,ticks,handle,cookie,port,browser,mainTarget);
     bool foreground=WallpaperClientWindow.Foreground(handle);
     var report=new System.Collections.Generic.Dictionary<string,object>{{"kind","native-existing-main-window"},{"activationMode",activationMode},{"activationResult",inspect?"inspected":foreground?"foreground":"restored-without-foreground"},{"foregroundPermissionGranted",foregroundGranted},{"foregroundPermissionError",foregroundGrantError},{"sameClient",true},{"rootPid",pid},{"handle",handle},{"inspectOnly",inspect},{"visible",WallpaperClientWindow.Visible(handle)},{"minimized",WallpaperClientWindow.Minimized(handle)},{"foreground",foreground},{"repairNeeded",needsRepair},{"exitWaitBudgetMs",exitWaitBudgetMs},{"exitCheckMs",exitCheckMs},{"elapsedMs",clock.Elapsed.TotalMilliseconds},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};
+    report["restoreTransport"]=restoreTransport;
+    report["timingMs"]=new Dictionary<string,double>{{"identity",identityMs},{"nativeRestore",restoreMs},{"foreground",foregroundMs},{"windowWait",windowWaitMs}};
     if(bridgeWarning!=null)report["bridgeWarning"]=bridgeWarning;
     try{File.WriteAllText(Path.Combine(root,inspect?"entry-warm-check.json":"activation-status.json"),new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(report));}catch{}
     return true;
@@ -90,7 +103,54 @@ internal static class CodexEntry {
   }catch(Exception error){if(attempted){try{var failed=new System.Collections.Generic.Dictionary<string,object>{{"kind","native-existing-main-window"},{"activationResult","failed"},{"clientPreserved",true},{"rootPid",verifiedPid},{"handle",verifiedHandle},{"foregroundPermissionGranted",foregroundGranted},{"foregroundPermissionError",foregroundGrantError},{"visible",WallpaperClientWindow.Visible(verifiedHandle)},{"minimized",WallpaperClientWindow.Minimized(verifiedHandle)},{"foreground",WallpaperClientWindow.Foreground(verifiedHandle)},{"error",error.Message},{"elapsedMs",clock.Elapsed.TotalMilliseconds},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};File.WriteAllText(Path.Combine(root,"activation-status.json"),new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(failed));}catch{}throw;}return false;}
  }
  static bool WindowShown(long handle){return WallpaperClientWindow.Visible(handle)&&!WallpaperClientWindow.Minimized(handle);}
- static void ShowCurrentMain(string root,int port,string browser,string mainTarget){
+ static Dictionary<string,object> CdpCall(ClientWebSocket socket,int id,string method,object parameters,string session,CancellationToken cancel){
+  var json=new System.Web.Script.Serialization.JavaScriptSerializer();
+  var request=new Dictionary<string,object>{{"id",id},{"method",method},{"params",parameters}};
+  if(session!=null)request["sessionId"]=session;
+  socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(json.Serialize(request))),WebSocketMessageType.Text,true,cancel).GetAwaiter().GetResult();
+  var bytes=new byte[4096];
+  while(true){
+   using(var message=new MemoryStream()){
+    WebSocketReceiveResult frame;
+    do{
+     frame=socket.ReceiveAsync(new ArraySegment<byte>(bytes),cancel).GetAwaiter().GetResult();
+     if(frame.MessageType!=WebSocketMessageType.Text||message.Length+frame.Count>1024*1024)throw new IOException("Invalid CDP response");
+     message.Write(bytes,0,frame.Count);
+    }while(!frame.EndOfMessage);
+    var reply=json.Deserialize<Dictionary<string,object>>(Encoding.UTF8.GetString(message.ToArray()));
+    if(!reply.ContainsKey("id")||Convert.ToInt32(reply["id"])!=id)continue;
+    if(reply.ContainsKey("error"))throw new IOException(json.Serialize(reply["error"]));
+    return (Dictionary<string,object>)reply["result"];
+   }
+  }
+ }
+ static string ShowCurrentMain(string root,int port,string browser,string mainTarget){
+  bool dispatched=false;
+  try{
+   using(var socket=new ClientWebSocket())
+   using(var setup=new CancellationTokenSource(1000))
+   using(var restore=new CancellationTokenSource()){
+    socket.Options.Proxy=new System.Net.WebProxy();
+    socket.ConnectAsync(new Uri("ws://127.0.0.1:"+port+"/devtools/browser/"+browser),setup.Token).GetAwaiter().GetResult();
+    var target=(Dictionary<string,object>)CdpCall(socket,1,"Target.getTargetInfo",new{targetId=mainTarget},null,setup.Token)["targetInfo"];
+    if((string)target["type"]!="page"||(string)target["url"]!="app://-/index.html")throw new IOException("The bound target is not the Codex main view");
+    string session=(string)CdpCall(socket,2,"Target.attachToTarget",new{targetId=mainTarget,flatten=true},null,setup.Token)["sessionId"];
+    const string show=@"(async()=>{if(location.href!=='app://-/index.html'||typeof window.electronBridge?.sendMessageFromView!=='function')throw Error('Codex window bridge unavailable');
+      await window.electronBridge.sendMessageFromView({type:'open-current-main-window',stealFocus:true});
+      if(document.hidden)await new Promise(resolve=>{const finish=()=>{clearTimeout(timer);document.removeEventListener('visibilitychange',changed);resolve();};const changed=()=>{if(!document.hidden)finish();};const timer=setTimeout(finish,600);document.addEventListener('visibilitychange',changed);changed();});
+      return !document.hidden;})()";
+    restore.CancelAfter(2000);dispatched=true;
+    var result=CdpCall(socket,3,"Runtime.evaluate",new{expression=show,awaitPromise=true,returnByValue=true},session,restore.Token);
+    if(result.ContainsKey("exceptionDetails")||!Convert.ToBoolean(((Dictionary<string,object>)result["result"])["value"]))throw new IOException("Codex 主页面未完成内部显示恢复。");
+    return "direct-browser-cdp";
+   }
+  }catch(Exception error){
+   if(dispatched)throw new IOException("Codex 内部显示状态未及时恢复。",error);
+  }
+  ShowCurrentMainWithHelper(root,port,browser,mainTarget);
+  return "node-helper";
+ }
+ static void ShowCurrentMainWithHelper(string root,int port,string browser,string mainTarget){
   if(!System.Text.RegularExpressions.Regex.IsMatch(mainTarget??"","^[a-fA-F0-9]+$"))throw new IOException("Codex 主窗口标识不可用；现有客户端已保留。");
   string bootstrap=File.ReadAllText(Path.Combine(root,"launch-script.txt")).Trim(),helper=Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(bootstrap)),"src","activate-client.mjs");
   if(!File.Exists(helper))throw new IOException("Codex 主窗口恢复模块缺失，现有客户端已保留。");

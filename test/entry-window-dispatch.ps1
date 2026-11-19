@@ -113,6 +113,30 @@ try{
     $restored=Get-Content -LiteralPath (Join-Path $root 'activation-status.json') -Raw|ConvertFrom-Json
     if($restored.activationMode -ne 'codex-native-show-bridge' -or $restored.repairNeeded -or $restored.exitWaitBudgetMs -ne 0){throw 'Acknowledged healthy restore used the fixed exit wait or invoked repair'}
     Write-Output ('PASS: acknowledged restore exit check {0:F1} ms; fixture entry {1:F1} ms.' -f $restored.exitCheckMs,$restored.elapsedMs)
+    $socketInfo=[Diagnostics.ProcessStartInfo]::new($entryInfo.Environment['CODEX_WALLPAPER_NODE'])
+    $socketInfo.UseShellExecute=$false;$socketInfo.CreateNoWindow=$true
+    $socketReady=Join-Path $root 'cdp-ready'
+    $entryInfo.Environment['CWB_FIXTURE_SHOWN_MARKER']=Join-Path $root 'fixture-show-direct'
+    foreach($value in @((Join-Path $PSScriptRoot 'fixtures/launcher-cdp.mjs'),$socketReady,$entryInfo.Environment['CWB_FIXTURE_SHOWN_MARKER'],$browser)){$socketInfo.ArgumentList.Add($value)}
+    $socketFixture=[Diagnostics.Process]::Start($socketInfo)
+    try{
+      $clock=[Diagnostics.Stopwatch]::StartNew()
+      while(-not [IO.File]::Exists($socketReady)){
+        if($socketFixture.HasExited -or $clock.ElapsedMilliseconds -gt 5000){throw 'Fixture CDP socket did not start'}
+        Start-Sleep -Milliseconds 20
+      }
+      $endpoint.port=[int][IO.File]::ReadAllText($socketReady)
+      $runtime.cdpPort=$endpoint.port;$runtime.updatedAt=[DateTimeOffset]::UtcNow.ToString('o')
+      [IO.File]::WriteAllText((Join-Path $root 'cdp-endpoint.json'),($endpoint|ConvertTo-Json))
+      [IO.File]::WriteAllText((Join-Path $root 'runtime-status.json'),($runtime|ConvertTo-Json))
+      Invoke-FixtureEntry
+      $direct=Get-Content -LiteralPath (Join-Path $root 'activation-status.json') -Raw|ConvertFrom-Json
+      if($direct.restoreTransport -ne 'direct-browser-cdp' -or $direct.repairNeeded -or [IO.File]::ReadAllText($entryInfo.Environment['CWB_FIXTURE_SHOWN_MARKER']) -ne 'direct'){throw 'Direct restore did not dispatch via the verified browser socket'}
+      Write-Output ('PASS: direct browser CDP {0:F1} ms; fixture entry {1:F1} ms.' -f $direct.timingMs.nativeRestore,$direct.elapsedMs)
+    }finally{
+      if(-not $socketFixture.HasExited){$socketFixture.Kill()}
+      $socketFixture.Dispose()
+    }
   }finally{
     if(-not $fixtureHost.HasExited){$fixtureHost.Kill()}
     $fixtureHost.Dispose()

@@ -18,6 +18,8 @@ const tests={
  install:['install-options','install-upgrade','install-dependencies','uninstall-shortcuts','update-reconnect',
   'update-runner','bridge-update-runner','remote-bootstrap','install-runtime'].map(powershell),
  audio:[['node','test/system-audio-integration.mjs']],
+ recovery:[['node','--test','test/media-power.test.mjs','test/system-media.test.mjs'],
+  ...['lifetime','webwallgl','panel-controls'].map(integration),powershell('entry-window-dispatch')],
  desktop:[['node','test/foreground-interaction.mjs']]
 };
 function integration(name){return ['node','test/'+name+'-integration.mjs'];}
@@ -36,7 +38,7 @@ const scratch=await mkdtemp(path.join(work,'cwb-regression-'));
 const results=[];
 for(const group of selected){
  for(const [kind,...args]of tests[group]){
-  const id=args[0]==='--test'?'unit tests':args[0];
+  const id=args[0]==='--test'?(group==='unit'?'unit tests':'media recovery unit tests'):args[0];
   console.log('\n['+group+'] '+id);
   const started=performance.now();
   if(id==='test/install-runtime.ps1')args.push('-ScratchDirectory',path.join(scratch,'runtime'));

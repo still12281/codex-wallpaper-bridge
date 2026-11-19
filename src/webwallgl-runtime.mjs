@@ -14,5 +14,12 @@ export function codexRuntimeSource(source){
  const nativeAudio=adaptations.every(([pattern])=>source.split(pattern).length===2);
  let adapted=fontBuffers?source.replace(before,after):source;
  if(nativeAudio)for(const [pattern,replacement] of adaptations)adapted=adapted.replace(pattern,replacement);
- return {source:adapted,fontBuffers,nativeAudio};
+ const drawAdapters=[
+  ['.then(()=>{if(F=!0,!d){if(t.onFirstFrame)', '.then(()=>{if(F=!0,!d){globalThis.__cwbDidDraw?.(o);if(t.onFirstFrame)'],
+  ['if(!oe&&F&&!Ve&&!Ue&&!it&&!(vt!==L))', 'if(!oe&&F&&!Ve&&!Ue&&!it&&!(vt!==L)&&!globalThis.__cwbFreshDrawPending?.(o))'],
+  ['try{tm()}catch{}_n.beginFrame();', 'globalThis.__cwbDidDraw?.(n);try{tm()}catch{}_n.beginFrame();'],
+ ];
+ const frameReady=drawAdapters.every(([pattern])=>adapted.split(pattern).length===2);
+ if(frameReady)for(const [pattern,replacement] of drawAdapters)adapted=adapted.replace(pattern,replacement);
+ return {source:adapted,fontBuffers,nativeAudio,frameReady};
 }

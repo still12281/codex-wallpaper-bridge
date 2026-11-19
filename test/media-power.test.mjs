@@ -153,3 +153,30 @@ test('slow or disconnected pages cannot block healthy delivery or accumulate mor
  assert(power.snapshot().deliveryDrops>0);
  await power.stop();
 });
+
+test('audio events wake delivery, short blur retains capture, and idle never keeps a frequency timer',async()=>{
+ const turn=()=>new Promise(resolve=>setImmediate(resolve));
+ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+ const activity={renderer:'test',active:false,webgl:true,audio:true,panel:true},client={mediaActivity:activity};
+ const state={audioEnabled:true,audioFps:30,spectrumFrames:0};let starts=0,stops=0,frames=[],reads=0;
+ const panels=[];
+ const power=createMediaPower({sessions:()=>[client],debounceMs:0,idleMs:45,
+  send:async(c,kind,payload)=>{if(kind==='panel')panels.push(payload.audioStage);},
+  start:async()=>{starts++;return {state,payload:()=>{reads++;return {audioAvailable:state.spectrumFrames>0};},drainSpectrum:()=>frames.splice(0),stop:async()=>{stops++;}};}
+ });
+ try{
+  await power.configure({audio:true});power.wake();await turn();
+  assert.equal(panels.at(-1),'scene-paused');assert.equal(starts,0);
+  activity.active=true;power.wake();await turn();
+  assert.equal(starts,1);
+  state.spectrumFrames=1;frames.push({sampleEnd:1});power.spectrum();await turn();
+  assert.equal(power.snapshot().spectrumSent,1);assert.equal(panels.at(-1),'awaiting-renderer');
+  activity.spectrumAt=Date.now();power.wake();await turn();assert.equal(panels.at(-1),'receiving');
+  activity.active=false;power.wake();await turn();
+  activity.active=true;power.wake();await turn();assert.equal(stops,0);
+  activity.active=false;power.wake();await wait(100);assert.equal(stops,1);
+  const idleReads=reads;
+  for(let n=0;n<5;n++)power.spectrum();
+  await wait(80);assert.equal(reads,idleReads);assert.equal(starts,1);
+ }finally{await power.stop();}
+});

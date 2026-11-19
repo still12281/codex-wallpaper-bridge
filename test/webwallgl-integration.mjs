@@ -19,19 +19,24 @@ let chrome=process.env.CODEX_WALLPAPER_TEST_CHROME||findCommand('chrome');if(!ch
 if(!chrome)throw Error('Set CODEX_WALLPAPER_TEST_CHROME');
 const server=createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;await new Promise(resolve=>server.close(resolve));
 const url=pathToFileURL(html).href,browser=spawn(chrome,['--headless=new','--no-first-run','--no-default-browser-check','--disable-background-networking','--enable-unsafe-swiftshader','--remote-debugging-port='+port,'--user-data-dir='+path.join(temp,'profile'),url],{windowsHide:true,stdio:'ignore'});
-const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));let c,player;const result={kind:'isolated-synthetic-webwallgl-not-native-codex'};
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));let c,player,targetSocket;const result={kind:'isolated-synthetic-webwallgl-not-native-codex'};
 try{
- for(let i=0;i<100;i++){try{const target=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url);if(target){c=await connectCdp(target.webSocketDebuggerUrl);break;}}catch{}await sleep(100);}
+ for(let i=0;i<100;i++){try{const target=(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url);if(target){targetSocket=target.webSocketDebuggerUrl;c=await connectCdp(targetSocket);break;}}catch{}await sleep(100);}
  assert(c);for(let i=0;i<50&&await c.evaluate('document.readyState')!=='complete';i++)await sleep(100);player=await mountWebWallGL(c,{id:'synthetic',projectRoot:project,userProperties:{gain:.7},limits:{maxWidth:640,fps:24}},{dataRoot:getDataRoot(),config:{},probe:true});
  const first=await player.sample();result.firstFrame=first;assert(first.ready);assert(first.width<=640);assert(first.height>0);
  const signature=await player.signature();assert(signature?.startsWith('data:image/png'));result.pixelReadback=true;
  assert.deepEqual(await player.getProperties(),{gain:.7,internal:true});const updated=await player.setProperties({gain:.9,internal:true});assert.equal(updated.gain,.9);result.initialAndLiveAuthorProperties=true;
  await c.call('Emulation.setDeviceMetricsOverride',{width:2200,height:1400,deviceScaleFactor:1,mobile:false});await sleep(400);assert((await player.sample()).width<=640);result.resizeBounded=true;
- await player.pointer(.25,.75);result.pointerCall=true;await player.pause(true);assert.equal((await player.sample()).paused,true);result.pause=true;await player.pause(false);await sleep(1200);const resumed=await player.sample();assert.equal(resumed.paused,false);result.resume=true;
+ await player.pointer(.25,.75);result.pointerCall=true;await player.pause(true);const held=await player.sample();assert(held.paused&&held.frozen&&held.frameReadyHook);result.pause=true;
+ await player.pause(false);for(let i=0;i<20&&(await player.sample()).frozen;i++)await sleep(50);const resumed=await player.sample();assert(!resumed.paused&&!resumed.frozen);result.resume=true;
  await player.dispose();assert.equal(await c.evaluate('document.querySelectorAll("[data-cwb-renderer-id]").length'),0);result.dispose=true;
  const broken=path.join(temp,'broken');await mkdir(broken);await writeFile(path.join(broken,'project.json'),JSON.stringify({type:'scene'}));await assert.rejects(mountWebWallGL(c,{id:'missing',projectRoot:broken},{dataRoot:getDataRoot(),config:{},probe:true}),/没有可读取的场景包/);assert.equal(await c.evaluate('document.querySelectorAll("[data-cwb-renderer-id]").length'),0);result.failedMountCleaned=true;
  const countListeners=async expression=>{const object=(await c.call('Runtime.evaluate',{expression,returnByValue:false})).result.objectId;const listeners=(await c.call('DOMDebugger.getEventListeners',{objectId:object})).listeners;await c.call('Runtime.releaseObject',{objectId:object});return listeners.length;};const before=[await countListeners('window'),await countListeners('document')];
- player=await mountWebWallGL(c,{id:'active',projectRoot:project,limits:{maxWidth:640,fps:24}},{dataRoot:getDataRoot(),config:{pauseOnBlur:false,systemMedia:{audio:true},palette:{r:20,g:22,b:28,dark:true}}});const activeId=await c.evaluate('window.__codexWallpaperBridge.rendererId');
+ const activeEntry={id:'active',projectRoot:project,limits:{maxWidth:640,fps:24}},activeConfig={pauseOnBlur:false,systemMedia:{audio:true},palette:{r:20,g:22,b:28,dark:true}};
+ player=await mountWebWallGL(c,activeEntry,{dataRoot:getDataRoot(),config:activeConfig});const activeId=await c.evaluate('window.__codexWallpaperBridge.rendererId');
+ const disconnected=new Promise(resolve=>c.ws.addEventListener('close',resolve,{once:true}));c.close();await disconnected;c=await connectCdp(targetSocket);
+ player=await mountWebWallGL(c,activeEntry,{dataRoot:getDataRoot(),config:activeConfig,reconnect:true});
+ assert.equal(player.id,activeId);assert(player.startup.reusedScene);assert(await player.signature());result.sameSceneAfterSocketClose=true;
  await c.evaluate('window.__codexWallpaperBridge.setSystemSpectrum({audioAvailable:true,bands:Array(64).fill(128)});true');await sleep(100);assert.equal((await player.sample()).systemAudioActive,true);await c.evaluate('window.__codexWallpaperBridge.setSystemSpectrum({audioAvailable:false,bands:Array(64).fill(0)});true');await sleep(100);assert.equal((await player.sample()).systemAudioActive,false);result.systemSpectrumAttachDetach=true;
  await c.evaluate('window.__testMediaActivity=[];window.__cwbMediaActivitySend=p=>window.__testMediaActivity.push(JSON.parse(p));('+installMediaActivity.toString()+')(' + JSON.stringify('test-token')+');true');
  assert.equal(await c.evaluate('window.__testMediaActivity.at(-1).active'),true);

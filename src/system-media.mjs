@@ -46,7 +46,7 @@ export async function startSystemMedia(root,{audio=false,audioFps=30,onSpectrum}
     state.spectrumDetails={sampleEnd,sampleRate};
     state.spectrumReceivedAt=Date.now();
     state.spectrumFrames++;
-    spectrumQueue.push({audioAvailable:true,left,right,sampleEnd,sampleRate,targetRate:configured,generation:child.pid});
+    spectrumQueue.push({audioAvailable:true,left,right,sampleEnd,sampleRate,targetRate:configured,generation:child.pid,receivedAt:state.spectrumReceivedAt});
     // Keep at most one second of sampled history so a short renderer stall
     // can catch up without an unbounded queue or replaying older audio.
     if(spectrumQueue.length>configured){spectrumQueue.shift();state.queueDrops++;}
@@ -66,7 +66,7 @@ export async function startSystemMedia(root,{audio=false,audioFps=30,onSpectrum}
     }
     state.bands=bands;state.spectrumReceivedAt=Date.now();state.spectrumFrames++;
     state.spectrumDetails={sampleRate,tsMs,peak,rms,sampleEnd};
-    hasNewFrames=state.audioFps>60;
+    hasNewFrames=true;
     continue;
    }
    const call=pending.get(message.id);
