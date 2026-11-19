@@ -26,9 +26,10 @@ internal static class CodexEntry {
   using(var reader=new StreamReader(stream))return new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(reader.ReadToEnd());
  }
  static bool Starting(string root){try{var s=Read(root,"launch-status.json");string phase=Convert.ToString(s["phase"]);if(phase=="failed"||phase=="inspect-only"||phase=="background-rendered"||phase=="cdp-ready-background-not-yet-rendered")return false;double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)s["updatedAt"])).TotalSeconds;if(age<0||age>150)return false;using(var p=Process.GetProcessById(Convert.ToInt32(s["helperPid"])))return !p.HasExited&&String.Equals(p.MainModule.FileName,FindPowerShell(),StringComparison.OrdinalIgnoreCase)&&p.StartTime.ToUniversalTime().ToString("o")==(string)s["helperStartedAtUtc"];}catch{return false;}}
- static bool TryWarm(string root,bool inspect,out bool repair,bool visibleOnly=false){
-  repair=true;bool attempted=false,foregroundGranted=false;int foregroundGrantError=0,verifiedPid=0;long verifiedHandle=0;var clock=Stopwatch.StartNew();
+ static bool TryWarm(string root,bool inspect,out string repair,bool visibleOnly=false){
+  repair=null;bool attempted=false,foregroundGranted=false;int foregroundGrantError=0,verifiedPid=0;long verifiedHandle=0;var clock=Stopwatch.StartNew();
   string activationMode="inspection",bridgeWarning=null;
+  int exitWaitBudgetMs=0;double exitCheckMs=0;
   try{
    var hint=Read(root,"main-window.json");var endpoint=Read(root,"cdp-endpoint.json");
    if(Convert.ToInt32(hint["schemaVersion"])!=2||Convert.ToInt32(endpoint["schemaVersion"])!=1||Convert.ToString(endpoint["address"])!="127.0.0.1")return false;
@@ -38,6 +39,8 @@ internal static class CodexEntry {
    using(var p=Process.GetProcessById(pid)){
     var pinned=p.Handle;if(p.HasExited||!WallpaperIdentity.Official(p)||p.SessionId!=Process.GetCurrentProcess().SessionId||p.SessionId!=Convert.ToInt32(hint["sessionId"])||p.StartTime.ToUniversalTime().Ticks!=ticks||!String.Equals(p.MainModule.FileName,executable,StringComparison.OrdinalIgnoreCase)||!WallpaperClientWindow.Bound(handle,pid,cookie))return false;
     var listeners=CodexWallpaperBridge.TcpListeners.Read(port);if(listeners.Length==0)return false;foreach(var listener in listeners)if(listener.OwningProcess!=pid||(listener.LocalAddress!="127.0.0.1"&&listener.LocalAddress!="::1"))return false;
+    string mainTarget=(string)hint["mainTarget"];
+    if(!System.Text.RegularExpressions.Regex.IsMatch(mainTarget??"","^[a-fA-F0-9]+$")||Convert.ToInt32(endpoint["sessionId"])!=p.SessionId)return false;
     verifiedPid=pid;verifiedHandle=handle;
     if(!inspect){
      bool visible=WindowShown(handle);
@@ -48,7 +51,7 @@ internal static class CodexEntry {
      }else{
       activationMode="codex-native-show-bridge";
       foregroundGranted=AllowSetForegroundWindow(pid);if(!foregroundGranted)foregroundGrantError=Marshal.GetLastWin32Error();
-      try{ShowCurrentMain(root,port,browser,(string)hint["mainTarget"]);}
+      try{ShowCurrentMain(root,port,browser,mainTarget);}
       catch(Exception error){
        if(p.WaitForExit(250))return false;
        if(!WallpaperClientWindow.Bound(handle,pid,cookie)||!WindowShown(handle))throw;
@@ -56,7 +59,12 @@ internal static class CodexEntry {
       }
      }
      if(WindowShown(handle)&&!WallpaperClientWindow.Foreground(handle))WallpaperClientWindow.Activate(handle,pid,executable,ticks,cookie);
-     if(p.WaitForExit(250))return false;
+     // The native bridge already acknowledged the hidden page's restore.
+     // Keep the existing exit-race fallback for a window merely found visible.
+     exitWaitBudgetMs=visible||bridgeWarning!=null?250:0;
+     double beforeExitCheck=clock.Elapsed.TotalMilliseconds;
+     if(p.WaitForExit(exitWaitBudgetMs))return false;
+     exitCheckMs=clock.Elapsed.TotalMilliseconds-beforeExitCheck;
      if(!visible){
       var wait=Stopwatch.StartNew();
       while(!WindowShown(handle)&&wait.ElapsedMilliseconds<350){if(p.WaitForExit(25))return false;}
@@ -68,9 +76,13 @@ internal static class CodexEntry {
     }
     p.Refresh();if(p.HasExited)return false;
     if(!WallpaperClientWindow.Bound(handle,pid,cookie))throw new IOException("唤回期间主窗口身份发生变化，现有客户端已保留。");
-    try{var state=Read(root,"runtime-status.json");double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)state["updatedAt"])).TotalSeconds;string phase=Convert.ToString(state["phase"]);repair=age<0||age>12||Convert.ToString(state["browserId"])!=browser||Convert.ToInt32(state["cdpPort"])!=port||Array.IndexOf(new[]{"background-rendered","background-disabled","realtime-capture-active","realtime-capture-paused"},phase)<0;}catch{repair=true;}
+    bool needsRepair=true;
+    try{var state=Read(root,"runtime-status.json");double age=(DateTimeOffset.UtcNow-DateTimeOffset.Parse((string)state["updatedAt"])).TotalSeconds;string phase=Convert.ToString(state["phase"]);needsRepair=age<0||age>12||Convert.ToString(state["browserId"])!=browser||Convert.ToInt32(state["cdpPort"])!=port||Array.IndexOf(new[]{"background-rendered","background-disabled","realtime-capture-active","realtime-capture-paused"},phase)<0;
+     if(!needsRepair){using(var host=Process.GetProcessById(Convert.ToInt32(state["pid"])))needsRepair=host.HasExited||!String.Equals(host.ProcessName,"node",StringComparison.OrdinalIgnoreCase);}
+    }catch{needsRepair=true;}
+    if(needsRepair)repair=String.Format(System.Globalization.CultureInfo.InvariantCulture,"{0}:{1}:{2}:{3}:{4}:{5}:{6}",pid,ticks,handle,cookie,port,browser,mainTarget);
     bool foreground=WallpaperClientWindow.Foreground(handle);
-    var report=new System.Collections.Generic.Dictionary<string,object>{{"kind","native-existing-main-window"},{"activationMode",activationMode},{"activationResult",inspect?"inspected":foreground?"foreground":"restored-without-foreground"},{"foregroundPermissionGranted",foregroundGranted},{"foregroundPermissionError",foregroundGrantError},{"sameClient",true},{"rootPid",pid},{"handle",handle},{"inspectOnly",inspect},{"visible",WallpaperClientWindow.Visible(handle)},{"minimized",WallpaperClientWindow.Minimized(handle)},{"foreground",foreground},{"repairNeeded",repair},{"elapsedMs",clock.Elapsed.TotalMilliseconds},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};
+    var report=new System.Collections.Generic.Dictionary<string,object>{{"kind","native-existing-main-window"},{"activationMode",activationMode},{"activationResult",inspect?"inspected":foreground?"foreground":"restored-without-foreground"},{"foregroundPermissionGranted",foregroundGranted},{"foregroundPermissionError",foregroundGrantError},{"sameClient",true},{"rootPid",pid},{"handle",handle},{"inspectOnly",inspect},{"visible",WallpaperClientWindow.Visible(handle)},{"minimized",WallpaperClientWindow.Minimized(handle)},{"foreground",foreground},{"repairNeeded",needsRepair},{"exitWaitBudgetMs",exitWaitBudgetMs},{"exitCheckMs",exitCheckMs},{"elapsedMs",clock.Elapsed.TotalMilliseconds},{"checkedAt",DateTimeOffset.UtcNow.ToString("o")}};
     if(bridgeWarning!=null)report["bridgeWarning"]=bridgeWarning;
     try{File.WriteAllText(Path.Combine(root,inspect?"entry-warm-check.json":"activation-status.json"),new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(report));}catch{}
     return true;
@@ -94,9 +106,9 @@ internal static class CodexEntry {
    if(!String.Equals(Convert.ToString(result["mainTarget"]),mainTarget,StringComparison.Ordinal)||restored==null||!Convert.ToBoolean(restored["bridgeUsed"])||Convert.ToBoolean(restored["hidden"]))throw new IOException("Codex 主页面未完成内部显示恢复。");
   }}finally{try{if(File.Exists(output))File.Delete(output);if(File.Exists(error))File.Delete(error);}catch{}}
  }
- static void WarmRepair(string root){
+ static void WarmRepair(string root,string binding){
   try{if(Starting(root))return;string script=File.ReadAllText(Path.Combine(root,"launch-script.txt")).Trim();if(!File.Exists(script))return;
-   var info=new ProcessStartInfo{FileName=FindPowerShell(),Arguments="-NoProfile -NonInteractive -File \""+script+"\" -AttachOnly",UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=Path.GetDirectoryName(script)};
+   var info=new ProcessStartInfo{FileName=FindPowerShell(),Arguments="-NoProfile -NonInteractive -File \""+script+"\" -AttachOnly -WarmBinding "+binding,UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=Path.GetDirectoryName(script)};
    info.EnvironmentVariables["CODEX_WALLPAPER_DATA_DIR"]=root;info.EnvironmentVariables["CODEX_WALLPAPER_PWSH"]=FindPowerShell();info.EnvironmentVariables["CODEX_WALLPAPER_NODE"]=FindNode();using(var child=WallpaperCleanProcess.Start(info)){}
   }catch{}
  }
@@ -108,7 +120,7 @@ internal static class CodexEntry {
     acquired=Acquire(entryLock,0);
     if(!acquired&&args.Length==0){
      // An already visible, bound window can respond while the wallpaper is preparing.
-     try{bool repair;if(TryWarm(AppDomain.CurrentDomain.BaseDirectory,false,out repair,true))return;}catch{}
+     try{string repair;if(TryWarm(AppDomain.CurrentDomain.BaseDirectory,false,out repair,true))return;}catch{}
      // One waiting taskbar click is enough. It rechecks the live client from
      // scratch when the preceding request finishes, including after a quit.
      using(var pending=new System.Threading.Mutex(false,"Local\\CodexWallpaperBridge.Entry.Pending.9335")){
@@ -140,10 +152,10 @@ internal static class CodexEntry {
     var updateInfo=new ProcessStartInfo{FileName=FindPowerShell(),Arguments="-NoProfile -NonInteractive -File \""+runner+"\" -Root \""+dataRoot.TrimEnd(Path.DirectorySeparatorChar)+"\" -EventRecordId "+record,UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=Path.GetDirectoryName(runner)};
     using(var update=WallpaperCleanProcess.Start(updateInfo)){if(!update.WaitForExit(180000)){Environment.ExitCode=1;return;}Environment.ExitCode=update.ExitCode;}return;
    }
-   if(inspectWarm){bool repair;bool eligible=TryWarm(dataRoot,true,out repair);if(!eligible){File.WriteAllText(Path.Combine(dataRoot,"entry-warm-check.json"),"{\"eligible\":false,\"inspectOnly\":true}");Environment.ExitCode=2;}return;}
+   if(inspectWarm){string repair;bool eligible=TryWarm(dataRoot,true,out repair);if(!eligible){File.WriteAllText(Path.Combine(dataRoot,"entry-warm-check.json"),"{\"eligible\":false,\"inspectOnly\":true}");Environment.ExitCode=2;}return;}
    if(!inspect){
    SetCurrentProcessExplicitAppUserModelID(WallpaperIdentity.AppId);
-   bool repair;if(TryWarm(dataRoot,false,out repair)){if(repair)WarmRepair(dataRoot);return;}
+   string repair;if(TryWarm(dataRoot,false,out repair)){if(repair!=null)WarmRepair(dataRoot,repair);return;}
    // Every entry checks the currently registered package. The bootstrap reuses
    // a healthy client/host without loading the wallpaper a second time.
    }

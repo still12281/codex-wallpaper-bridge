@@ -27,7 +27,7 @@ function initializeRenderer(project,options,binding,dshSource){
  const source={key:options.key,project:async()=>project,sceneDir:async()=>{if(!/\.json$/i.test(project.file||''))return null;return await read(project.file)?{entry:project.file,read}:null;},scenePkg:async()=>{for(const name of [...(/\.pkg$/i.test(project.file||'')?[project.file]:[]),'scene.pkg','scenes/scene.pkg','gifscene.pkg']){const bytes=await read(name);if(bytes)return bytes;}throw Error('项目没有可读取的场景包');}};
  host.addEventListener('webglcontextlost',()=>{state.error='壁纸图形上下文丢失，已停止采用此场景';},true);
  state.sample=()=>{const canvas=host.querySelector('canvas');return {ready:state.ready,error:state.error,paused:state.paused,width:canvas?.width||0,height:canvas?.height||0,backend:'dsh-v1.4.0',configuredFps:state.configuredFps||options.fps,fontBufferAdapter:options.fontBuffers===true,fontAdapterExpected:options.fontAdapterExpected,fontsLoaded:[...document.fonts].filter(f=>f.family.startsWith('wefont_')&&f.status==='loaded').length,videoTexScale:instance.getVideoTexScale?.(),qualityEffective:instance.getQuality?.(),audioResponseEnabled:state.audioResponseEnabled,systemAudioActive:!!state.externalAudio,spectrumUpdates:state.spectrumUpdates||0,lastSpectrumAt:state.lastSpectrumAt||0,spectrumAudit:state.spectrumAudit,stats:{...instance.stats},diagnostics:state.diagnostics};};
- state.pause=value=>{state.paused=!!value;if(value){getFreeze().hold();instance.pause();}else{instance.resume();freeze?.release();}};
+ state.pause=value=>{const paused=!!value;if(state.paused===paused)return;state.paused=paused;if(paused){getFreeze().hold();instance.pause();}else{instance.resume();freeze?.release();}};
  // DSH's renderer control plane uses the already configured scene and our
  // project capability instead of a network httpSource. Its source is vendored
  // unchanged; import.meta is only used for its fallback URL, rejected here.
@@ -180,7 +180,7 @@ function adoptRenderer(info){
  const state=window.__codexWallpaperBridge={rendererId:info.id,ready:true,mode:'webwallgl',supportsAudio:info.supportsAudio,transport:'sandbox-webgl',palette:info.palette,pauseOnBlur:info.pauseOnBlur,receivedAt:Date.now(),detail:{}};
  const reduced=matchMedia('(prefers-reduced-motion: reduce)'),send=message=>frame.contentWindow?.postMessage({token:info.controlToken,...message},'*');
  let manualPause=null;
- const visibility=()=>{state.paused=manualPause===null?(document.hidden||(state.pauseOnBlur&&!document.hasFocus())||reduced.matches):manualPause;send({paused:state.paused});if(state.paused)send({systemSpectrum:{audioAvailable:false,bands:[]}});window.__cwbMediaActivity?.report();};
+ const visibility=()=>{const paused=manualPause===null?(document.hidden||(state.pauseOnBlur&&!document.hasFocus())||reduced.matches):manualPause;if(state.paused===paused)return;state.paused=paused;send({paused});if(state.paused)send({systemSpectrum:{audioAvailable:false,bands:[]}});window.__cwbMediaActivity?.report();};
  state.pause=value=>{manualPause=typeof value==='boolean'?value:null;visibility();};
  const receive=event=>{if(event.source===frame.contentWindow&&event.data?.token===info.controlToken&&event.data.sample){state.detail=event.data.sample;state.error=state.detail.error;state.ready=state.detail.ready&&!state.error;state.receivedAt=Date.now();window.__cwbMediaActivity?.report();}};
  const disposePointer=window.__cwbInstallWallpaperPointer(send,{fps:info.fps,type:info.type,bounds:()=>frame.getBoundingClientRect()});

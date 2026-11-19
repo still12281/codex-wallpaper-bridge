@@ -4,6 +4,13 @@ public static class WallpaperClientWindow {
  delegate bool Callback(IntPtr h,IntPtr l);
  [DllImport("user32.dll")]static extern bool EnumWindows(Callback cb,IntPtr l);
  [DllImport("user32.dll")]static extern uint GetWindowThreadProcessId(IntPtr h,out uint pid);
+ [DllImport("kernel32.dll",CharSet=CharSet.Unicode)]static extern int GetPackageFullName(IntPtr process,ref uint length,StringBuilder name);
+ public static string RunningPackageName(IntPtr process){
+  uint length=0;
+  if(GetPackageFullName(process,ref length,null)!=122||length==0||length>1024)return null;
+  var name=new StringBuilder((int)length);
+  return GetPackageFullName(process,ref length,name)==0?name.ToString():null;
+ }
  [DllImport("user32.dll")]static extern IntPtr GetWindow(IntPtr h,uint cmd);
  [DllImport("user32.dll")]static extern bool GetWindowRect(IntPtr h,out Rect r);
  [DllImport("user32.dll")]static extern bool IsWindowVisible(IntPtr h);

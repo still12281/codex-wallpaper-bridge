@@ -102,7 +102,8 @@ try{
  const fxBase={pauseOnBlur:false,visual:{fxEnabled:true,fxClick:true,fxTrail:true,fxBlend:'auto'}};
  const paintLight={...fxBase,selectedId:'fixture',library:[{id:'fixture',palette:{r:223,g:235,b:245,dark:false}}],palette:{r:20,g:22,b:28,dark:true}};
  await paintFx(paintLight);
- assert(await c.evaluate('!!document.getElementById("we-fx-layer")'), 'The fixture did not activate pointer effects');
+ await sleep(75);
+ assert.equal(await c.evaluate('!!document.getElementById("we-fx-layer")'),false,'Enabling idle pointer effects allocated a canvas before input');
  const effects=await c.call('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`(async()=>{
   const move=(type,x,y)=>document.body.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerType:'mouse',clientX:x,clientY:y}));
   const painted=async()=>{
@@ -112,13 +113,25 @@ try{
    for(let i=3;i<rgba.length;i+=4)if(rgba[i])return true;
    return false;
   };
-  move('pointerdown',120,100);const click=await painted();
-  await new Promise(resolve=>setTimeout(resolve,650));
+  const start=performance.now();move('pointerdown',120,100);const click=await painted(),firstPointerMs=performance.now()-start;
+  const original=document.getElementById('we-fx-layer'),hasFocus=document.hasFocus;
+  document.hasFocus=()=>false;
+  const config={...${JSON.stringify(paintLight)},pauseOnBlur:true};
+  window.__cwbDecorations.update(config);
+  if(!original.hidden)throw Error('Pointer canvas did not pause on blur');
+  document.hasFocus=()=>true;
+  window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const idle=original.hidden&&original===document.getElementById('we-fx-layer');
   move('pointermove',60,70);move('pointermove',140,70);move('pointermove',225,100);
-  return {click,trail:await painted(),blend:document.getElementById('we-fx-layer').style.mixBlendMode};
+  const trail=await painted(),reused=original===document.getElementById('we-fx-layer')&&!original.hidden;
+  document.hasFocus=hasFocus;
+  return {click,trail,idle,reused,firstPointerMs,blend:original.style.mixBlendMode};
  })()`});
  if(effects.exceptionDetails)throw Error(effects.exceptionDetails.exception?.description||effects.exceptionDetails.text);
- assert.deepEqual(effects.result?.value,{click:true,trail:true,blend:'normal'});result.clickAndTrailPainted=true;
+ const {firstPointerMs,...pointerEffects}=effects.result.value;
+ assert.deepEqual(pointerEffects,{click:true,trail:true,idle:true,reused:true,blend:'normal'});
+ result.clickAndTrailPainted=true;result.firstPointerMs=firstPointerMs;
  assert.equal(await c.evaluate('document.body.style.getPropertyValue("--we-accent")'),'rgb(76,80,83)');
  await paintFx({...fxBase,palette:{r:18,g:42,b:89,dark:true}});
  const blendAfter=async()=>{

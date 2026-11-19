@@ -1,6 +1,7 @@
 import {getDataRoot,loadSettings} from './runtime-paths.mjs';
 import {createBridgeUpdater} from './bridge-update.mjs';
-import {readFile,writeFile,rename,stat} from 'node:fs/promises';
+import {createRuntimeStatusWriter} from './runtime-status.mjs';
+import {readFile,writeFile,stat} from 'node:fs/promises';
 import {writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -83,25 +84,13 @@ const status={pid:process.pid,build,browserId:browserMatch[1],source:'native-vid
 const startupEvent=(phase,targetId)=>{if(status.startup.events.length<24)status.startup.events.push({phase,targetId,afterMs:performance.now()-startupClock});};
 const targetReady=t=>t.installed&&(t.ready||t.disabled)&&(t.mode!=='realtime'||t.frames>0);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-let statusWrite=Promise.resolve(),statusWriteRetries=0;
+const statusWriter=createRuntimeStatusWriter(root,{onFailure:detail=>console.error('Wallpaper runtime snapshot: '+detail)});
 const save=()=>{
  status.mediaPower=mediaPower?.snapshot()??null;status.memory=process.memoryUsage();status.updatedAt=new Date().toISOString();
- if(statusWriteRetries)status.statusWriteRetries=statusWriteRetries;
- const value=JSON.stringify(status,null,2);
- statusWrite=statusWrite.catch(()=>{}).then(async()=>{
-  const temp=path.join(root,'runtime-status.next.json'),destination=path.join(root,'runtime-status.json');
-  await writeFile(temp,value);
-  // A Windows reader can briefly hold the status file across atomic replacement.
-  for(const delay of [0,25,75]){
-   if(delay)await sleep(delay);
-   try{await rename(temp,destination);return;}
-   catch(error){
-    if(process.platform!=='win32'||!['EPERM','EACCES','EBUSY'].includes(error.code)||delay===75)throw error;
-    statusWriteRetries++;
-   }
-  }
- });
- return statusWrite;
+ if(statusWriter.retries)status.statusWriteRetries=statusWriter.retries;
+ if(statusWriter.failures)status.statusWriteFailures=statusWriter.failures;
+ if(statusWriter.error)status.statusWriteError=statusWriter.error;else delete status.statusWriteError;
+ return statusWriter.save(JSON.stringify(status,null,2));
 };
 const sessions=new Map();let automaticSurfaces=null,busy=false,stopped=false,acting=false,importPreparing=false,actionQueue=Promise.resolve(),selectionRevision=0,activeSelection=null;
 let realtime=null,realtimeKey=null,streamTimer=null,streaming=false,timer=null,rotationTimer=null,spectrumTimer=null,mediaPower=null;
@@ -250,16 +239,19 @@ async function applySelected(){
 }
 mediaPower=createMediaPower({
  start:options=>startSystemMedia(root,{...options,onSpectrum:()=>void pumpSpectrum()}),
- sessions:()=>sessions.values(),
- send:async(c,kind,payload)=>{
-  if(kind==='spectrum'&&payload.frames){
-   const frames=payload.frames.map(frame=>Array.isArray(frame)?{audioAvailable:true,bands:frame}:frame);
-   await c.evaluate('window.__codexWallpaperBridge?.setSystemSpectrum?.('+JSON.stringify({frames})+');true');
-   return;
-  }
-  const data=JSON.stringify(payload);
-  if(kind==='panel')await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbSystemMedia?.('+data+');true');
-  else await c.evaluate('window.__codexWallpaperBridge?.'+({metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'})[kind]+'?.('+data+');true');
+ sessions:()=>[...sessions.values()].filter(c=>c.ws.readyState===1),
+ send:async(c,kind,payload,renderer)=>{
+  const data=JSON.stringify(kind==='spectrum'&&payload.frames
+   ? {frames:payload.frames.map(frame=>Array.isArray(frame)?{audioAvailable:true,bands:frame}:frame)}
+   : payload);
+  const method={metadata:'setSystemMedia',position:'setSystemPosition',spectrum:'setSystemSpectrum'}[kind];
+  const deadline=Date.now()+750;
+  const expression=kind==='panel'
+   ?'(()=>{const panel=document.getElementById("codex-wallpaper-controls");if(Date.now()>'+deadline+'||!panel?.__cwbSystemMedia)return false;panel.__cwbSystemMedia('+data+');return true})()'
+   :'(()=>{const scene=window.__codexWallpaperBridge;if(Date.now()>'+deadline+'||!scene||scene.rendererId!=='+JSON.stringify(renderer)+'||!scene.'+method+')return false;scene.'+method+'('+data+');return true})()';
+  const result=await c.call('Runtime.evaluate',{expression,returnByValue:true},undefined,750);
+  if(result.exceptionDetails)throw Error(result.exceptionDetails.text||'Wallpaper media delivery failed');
+  return result.result?.value===true;
  }
 });
 const configureMedia=async options=>{const effective=effectiveMediaSettings({...settings,systemMedia:options});await mediaPower.configure(effective);if(spectrumTimer){clearInterval(spectrumTimer);spectrumTimer=setInterval(pumpSpectrum,spectrumInterval(Math.min(60,effective.audioFps)));spectrumTimer.unref();}};
@@ -336,7 +328,7 @@ async function mount(c,target){c.playbackReading=null;
  c.isRealtime=false;
  const mediaPath=path.resolve(root,entry.file),fileBacked=entry.mime?.startsWith('video/'),mediaLimit=fileBacked?Number.MAX_SAFE_INTEGER:Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024),info=await stat(mediaPath);
  if(!mediaPath.startsWith(root+path.sep)||info.size>mediaLimit)throw Error('Unsupported local media path or size');
- status.mediaBytes=info.size;status.phase='loading-lightweight-video';delete status.error;await save();assertCurrent();
+ status.mediaBytes=info.size;status.phase='loading-lightweight-video';delete status.error;void save();assertCurrent();
  const candidateId='media-'+randomUUID();await c.evaluate('('+prepareLayer.toString()+')('+info.size+','+JSON.stringify(entry.mime)+','+JSON.stringify(candidateId)+')');
  const key=createHash('sha256').update(JSON.stringify([mediaPath,info.size,info.mtimeMs,info.ctimeMs])).digest('hex');
  if(fileBacked){await bindMediaFile(c,root,entry.file,candidateId,{isCurrent});}
@@ -364,7 +356,7 @@ async function tick(){
   const list=await(await fetch('http://127.0.0.1:'+port+'/json/list',{signal:AbortSignal.timeout(2000)})).json();
   const targets=list.filter(t=>t.type==='page'&&(t.url===appUrl||(appUrl==='app://-/index.html'&&t.url.startsWith('app://-/detached-window.html')))).sort((a,b)=>Number(b.url===appUrl)-Number(a.url===appUrl));
   const observations=[];status.targets=observations;
-  if(!targets.length){await stopRealtime();status.phase='waiting-for-target';status.targets=[];await save()}
+  if(!targets.length){await stopRealtime();status.phase='waiting-for-target';status.targets=[];void save()}
   for(const [id,c]of sessions)if(!targets.some(t=>t.id===id)){await actions.disposeOwner(c);await c.webPlayer?.dispose();c.webPlayer=null;await clearStartupAppearance(c);c.close();sessions.delete(id)}
   for(const target of targets){
    const targetState={targetId:target.id,url:target.url,installed:false,ready:false,phase:'waiting-for-shell'};observations.push(targetState);
@@ -416,11 +408,11 @@ async function tick(){
    }catch(error){c.installed=false;if(error.code==='CWB_SELECTION_SUPERSEDED'){c.retryAt=0;Object.assign(targetState,{phase:'selection-superseded'});continue;}c.failures=(c.failures||0)+1;c.retryAt=Date.now()+Math.min(30000,1000*2**Math.min(c.failures-1,5));c.lastError=error.message;Object.assign(targetState,{phase:'background-retrying',error:error.message,retryAt:new Date(c.retryAt).toISOString()});}
   }
   await publishTargets(observations);
- }catch(error){const ready=status.targets.find(targetReady);status.phase=ready?.phase||'waiting-for-cdp';if(ready)status.syncError=error.message;else status.error=error.message;await save()}
+ }catch(error){const ready=status.targets.find(targetReady);status.phase=ready?.phase||'waiting-for-cdp';if(ready)status.syncError=error.message;else status.error=error.message;void save()}
  finally{busy=false}
 }
 async function publishTargets(observations){
- status.targets=observations;const usable=observations.filter(targetReady);status.phase=usable.some(t=>t.phase==='realtime-capture-active')?'realtime-capture-active':usable.find(t=>t.phase==='background-rendered')?.phase||usable[0]?.phase||(observations.length?'background-retrying':'waiting-for-target');status.targetErrors=observations.filter(t=>t.error).map(t=>({targetId:t.targetId,error:t.error}));status.selectedId=settings.selectedId;status.source=realtime?(realtime.transport||'native-window-capture-jpeg'):usable.some(t=>t.mode==='webwallgl')?'sandboxed-webwallgl':usable.some(t=>t.transport==='native-media-file')?'native-media-file':'native-media-blob';status.realtime=realtime?{engine:realtime.kind||'wallpaper-engine',browserPid:realtime.browserPid,starting:realtime.starting,sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile,desktop:realtime.desktop}:null;await save();
+ status.targets=observations;const usable=observations.filter(targetReady);status.phase=usable.some(t=>t.phase==='realtime-capture-active')?'realtime-capture-active':usable.find(t=>t.phase==='background-rendered')?.phase||usable[0]?.phase||(observations.length?'background-retrying':'waiting-for-target');status.targetErrors=observations.filter(t=>t.error).map(t=>({targetId:t.targetId,error:t.error}));status.selectedId=settings.selectedId;status.source=realtime?(realtime.transport||'native-window-capture-jpeg'):usable.some(t=>t.mode==='webwallgl')?'sandboxed-webwallgl':usable.some(t=>t.transport==='native-media-file')?'native-media-file':'native-media-blob';status.realtime=realtime?{engine:realtime.kind||'wallpaper-engine',browserPid:realtime.browserPid,starting:realtime.starting,sourceWindow:realtime.name,sequence:realtime.sequence,lastFrameAt:realtime.lastFrameAt,hwnd:realtime.hwnd,error:realtime.error,profile:realtime.profile,desktop:realtime.desktop}:null;void save();
 }
 let rotationAt=0,rotationKey='',rotating=false;
 rotationTimer=setInterval(()=>{
@@ -450,7 +442,7 @@ browserLifetime.ws.addEventListener('message',event=>{let message;try{message=JS
  if(message.method==='Target.targetDestroyed'&&sessions.has(message.params.targetId))requestTargetTick();
 });
 try{await browserLifetime.call('Target.setDiscoverTargets',{discover:true});}catch(error){status.targetDiscoveryError=error.message;}
-await save();await tick();
+void save();await tick();
 // Keep the first shell/wallpaper frame ahead of optional document integration.
 try{
  const surfaceBrowser=await connectCdp(version.webSocketDebuggerUrl);
@@ -460,7 +452,7 @@ try{
 await configureMedia(settings.systemMedia).catch(()=>{});
 let spectrumPending=false;
 async function pumpSpectrum(){
- if(stopped||busy||(acting&&!importPreparing)||streaming)return;
+ if(stopped)return;
  if(spectrumBusy){spectrumPending=true;return;}
  spectrumBusy=true;
  try{await mediaPower.tick();}catch(error){status.mediaDeliveryError=error.message;}

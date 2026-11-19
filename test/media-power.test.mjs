@@ -92,3 +92,64 @@ test('default 30 Hz delivers every stereo frame from a packet once and reports t
  assert.equal(f.power.snapshot().maxQueued,2);
  await f.power.stop();
 });
+
+test('only expected capture with persistently missing frames restarts, and silent packets count as progress',async()=>{
+ let time=1000;
+ const clients=[{mediaActivity:{renderer:'a',webgl:true,active:true,audio:true}}],starts=[];
+ const power=createMediaPower({sessions:()=>clients,now:()=>time,send:async()=>{},debounceMs:0,start:async()=>{
+  const state={audioEnabled:true,now:{playback:{state:'paused'}},spectrumFrames:0};
+  const source={state,payload:()=>({audioAvailable:Number.isFinite(state.spectrumReceivedAt)&&time-state.spectrumReceivedAt<1000,bands:Array(64).fill(0)}),stop:async()=>{source.stopped=true;}};
+  starts.push(source);return source;
+ }});
+ await power.configure({enabled:true,audio:true});
+ time+=60000;await power.tick();assert.equal(starts.length,1);assert.equal(power.snapshot().audioRunning,false);
+ const first=starts[0];
+ first.state.now.playback.state='playing';
+ await power.tick();
+ for(let i=0;i<6;i++){
+  time+=800;first.state.spectrumReceivedAt=time;first.state.spectrumFrames++;
+  await power.tick();assert.equal(power.snapshot().audioRunning,true);
+ }
+ assert.equal(starts.length,1,'All-zero FFT packets must still count as fresh capture');
+ time+=3400;await power.tick();assert.equal(starts.length,1);
+ time+=150;await power.tick();assert.equal(starts.length,2);assert(first.stopped);
+ starts[1].state.now.playback.state='playing';
+ await power.tick();time+=4000;await power.tick();assert.equal(starts.length,2,'Stalled capture must honor bounded recovery');
+ assert.equal(power.snapshot().captureRestarts,1);
+ clients[0].mediaActivity.active=false;time+=60000;await power.tick();
+ assert.equal(power.snapshot().captureRestarts,1,'Inactive targets must never trigger capture recovery');
+ await power.stop();
+});
+
+test('slow or disconnected pages cannot block healthy delivery or accumulate more than a small recent batch',async()=>{
+ let time=1000,release,nextSequence=0;
+ const delivered=[],pending=[];let inflight=0,maxInflight=0;
+ const slow={mediaActivity:{renderer:'slow',active:true,webgl:true}},fast={mediaActivity:{renderer:'fast',active:true,webgl:true}};
+ const state={spectrumFrames:0,audioFps:30,spectrumDetails:{sampleEnd:0}};
+ const power=createMediaPower({sessions:()=>[slow,fast],now:()=>time,debounceMs:0,
+  start:async()=>({state,payload:()=>({audioAvailable:true}),drainSpectrum:()=>pending.splice(0),stop:async()=>{}}),
+  send:async(client,kind,payload)=>{
+   if(kind!=='spectrum')return;
+   if(client===slow&&payload.frames[0].sampleEnd===1){
+    inflight++;maxInflight=Math.max(maxInflight,inflight);
+    try{await new Promise((resolve,reject)=>release=reject);}finally{inflight--;}
+   }
+   delivered.push({client,frames:payload.frames.map(f=>f.sampleEnd)});
+  }
+ });
+ await power.configure({audio:true,audioFps:30});
+ for(let n=0;n<14;n++){
+  time+=33;state.spectrumFrames=state.spectrumDetails.sampleEnd=++nextSequence;
+  pending.push({sampleEnd:nextSequence});
+  await power.tick();
+ }
+ assert.equal(maxInflight,1);
+ assert.deepEqual(delivered.filter(x=>x.client===fast).flatMap(x=>x.frames),Array.from({length:14},(_,i)=>i+1));
+ assert.equal(delivered.filter(x=>x.client===slow).length,0);
+ release(Error('CDP disconnected'));await new Promise(r=>setImmediate(r));
+ time+=275;pending.push({sampleEnd:15});await power.tick();await new Promise(r=>setImmediate(r));
+ assert.deepEqual(delivered.filter(x=>x.client===slow).flatMap(x=>x.frames),[15],'Recovery must not replay stale queued frames');
+ assert.equal(power.snapshot().deliveryErrors,1);
+ assert(power.snapshot().deliveryDrops>0);
+ await power.stop();
+});

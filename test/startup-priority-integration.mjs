@@ -34,7 +34,8 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
   const mainTarget=await until(async()=>(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.url===url));main=await connectCdp(mainTarget.webSocketDebuggerUrl);
   // The target URL may update before the old about:blank document is replaced.
   await until(()=>main.evaluate('location.href==='+JSON.stringify(url)+'&&document.readyState==="complete"&&!!document.querySelector("aside.app-shell-left-panel")&&!!document.querySelector("main[data-app-shell-main-surface]")'));
-  const preloader=path.join(root,'fixture-preloader.mjs');let auxId='';
+  const preloader=path.join(root,'fixture-preloader.mjs');
+  const statusLock=path.join(root,'hold-status-writes');let auxId='';
   if(scenario==='auxiliary'){
    const created=await browserCdp.call('Target.createTarget',{url:auxUrl,background:true});auxId=created.targetId;
    const auxTarget=await until(async()=>(await(await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(t=>t.id===auxId));aux=await connectCdp(auxTarget.webSocketDebuggerUrl);
@@ -51,7 +52,10 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
    await writeFile(preloader,'// Early body fixture has no native shell until after the first frame.');
    await main.evaluate('document.querySelector("aside").remove();document.querySelector("main").remove();document.documentElement.style.setProperty("color-scheme","light","important");document.documentElement.classList.add("native-fixture");document.head.insertAdjacentHTML("beforeend",\'<style>:root{--app-color-text-foreground:#1a1c1f}:root[data-theme="dark"]{--app-color-text-foreground:#dfdfdf}body{color:var(--app-color-text-foreground)}</style>\');true');
   }else if(webgl){
-   await writeFile(preloader,`import fs from 'node:fs/promises';import {syncBuiltinESMExports} from 'node:module';const rename=fs.rename;let blocked=false;fs.rename=async(from,to)=>{if(!blocked&&String(to).endsWith('runtime-status.json')&&JSON.parse(await fs.readFile(from,'utf8')).phase==='background-rendered'){blocked=true;throw Object.assign(Error('Fixture status sharing violation'),{code:'EPERM'});}return rename(from,to);};syncBuiltinESMExports();`);
+   await writeFile(preloader,`import fs from 'node:fs/promises';import {syncBuiltinESMExports} from 'node:module';const rename=fs.rename;let blocked=false;fs.rename=async(from,to)=>{if(String(to).endsWith('runtime-status.json')){
+    if(await fs.readFile(${JSON.stringify(statusLock)},'utf8').catch(()=>null)==='held')throw Object.assign(Error('Fixture repeated status sharing violation'),{code:'EPERM'});
+    if(!blocked&&JSON.parse(await fs.readFile(from,'utf8')).phase==='background-rendered'){blocked=true;throw Object.assign(Error('Fixture status sharing violation'),{code:'EPERM'});}
+   }return rename(from,to);};syncBuiltinESMExports();`);
    await main.evaluate('window.__wallpaperAnimations=0;const nativeAnimate=Element.prototype.animate;Element.prototype.animate=function(...args){if(this.id==="codex-wallpaper-bridge-layer")window.__wallpaperAnimations++;return nativeAnimate.apply(this,args);};true');
   }else{
    await writeFile(preloader,scenario==='shell'?`const originalFetch=globalThis.fetch;let firstVersion=true;globalThis.fetch=async(...args)=>{if(firstVersion&&String(args[0])==='http://127.0.0.1:${port}/json/version'){firstVersion=false;return {ok:true,json:async()=>{throw new DOMException('Delayed browser response body','TimeoutError');}};}return originalFetch(...args);};`:'// No target substitution in the delayed-shell scenario.');
@@ -79,7 +83,24 @@ for(const scenario of scenarioArg>=0?[process.argv[scenarioArg+1]]:process.argv.
   if(webgl){
    assert(state.targets.some(t=>t.mode==='webwallgl'&&t.ready));
    assert.equal(await main.evaluate('window.__wallpaperAnimations'),0,'WebGL first frame started a second animation');
-   if(!baseline&&process.platform==='win32')await until(async()=>JSON.parse(await readFile(path.join(data,'runtime-status.json'),'utf8')).statusWriteRetries===1);
+   if(!baseline&&process.platform==='win32'){
+    const runtimePath=path.join(data,'runtime-status.json');
+    const readRuntime=()=>readFile(runtimePath,'utf8').then(JSON.parse);
+    await until(async()=>(await readRuntime()).statusWriteRetries===1);
+    const previous=await readRuntime();
+    await writeFile(statusLock,'held');
+    await until(()=>errors.includes('Fixture repeated status sharing violation'));
+    await sleep(5200);
+    assert.equal((await readRuntime()).updatedAt,previous.updatedAt,'A failed write replaced the last verified snapshot');
+    assert.equal(host.exitCode,null,'Status I/O killed the host');
+    assert(await main.evaluate('window.__codexWallpaperBridge?.ready&&!!document.getElementById("codex-wallpaper-controls")'),'Status I/O interrupted the WebGL scene');
+    await writeFile(statusLock,'released');
+    const recovered=await until(async()=>{const current=await readRuntime();return current.updatedAt!==previous.updatedAt&&current});
+    assert(recovered.statusWriteFailures>=2,'Fixture did not hold consecutive writes');
+    assert.equal(recovered.pid,previous.pid);
+    errors=errors.split('\n').filter(line=>!line.includes('Fixture repeated status sharing violation')).join('\n');
+    observation.statusWriteFailurePreservedScene=true;
+   }
    observation.realWebglCleanup=true;
   }
   if(early){

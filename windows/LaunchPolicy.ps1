@@ -74,6 +74,7 @@ function Get-WallpaperHostState {
   param([object[]]$Processes,[string]$Root,[string]$CodeRoot,[string]$Node,[string]$BrowserId)
   $owned=@(Select-WallpaperOwnedHosts $Processes $Root $CodeRoot)
   if(-not $owned.Count){return [pscustomobject]@{mode='absent';pid=0}}
+  $record=$null
   if($owned.Count -eq 1){
     try{
       $record=Read-WallpaperRuntimeStatus (Join-Path $Root 'runtime-status.json')
@@ -81,6 +82,10 @@ function Get-WallpaperHostState {
         return [pscustomobject]@{mode='reuse';pid=[int]$owned[0].ProcessId}
       }
     }catch{}
+  }
+  if($owned.Count -eq 1 -and $record.phase -ne 'stopped' -and $owned[0].ExecutablePath -ieq $Node -and
+    $owned[0].CommandLine -match ('(?:^|\s)--browser-id\s+"?'+[regex]::Escape($BrowserId)+'"?(?=\s|$)')){
+    return [pscustomobject]@{mode='live-unconfirmed';pid=[int]$owned[0].ProcessId}
   }
   [pscustomobject]@{mode='conflict';pid=0}
 }
@@ -90,7 +95,7 @@ function Wait-WallpaperHostDrain {
   $clock=[Diagnostics.Stopwatch]::StartNew()
   do{
     $state=& $ReadState
-    if($state.mode -ne 'conflict' -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds){return $state}
+    if($state.mode -notin @('conflict','live-unconfirmed') -or $clock.ElapsedMilliseconds -ge $TimeoutMilliseconds){return $state}
     & $Pause
   }while($true)
 }
@@ -240,7 +245,7 @@ function Get-WallpaperCdpProbePorts([string]$Root) {
   @($ports+@(9335)|Select-Object -Unique)
 }
 function Get-WallpaperVerifiedEndpoint {
-  param([int]$Port,$Codex,[switch]$AllowPendingPage)
+  param([int]$Port,$Codex,[switch]$AllowPendingPage,[string]$MainTarget)
   $listeners=@(Get-DreamSkinPortListeners -Port $Port)
   if(-not $listeners.Count -or @($listeners|Where-Object LocalAddress -notin @('127.0.0.1','::1')).Count){return $null}
   $owners=@($listeners.OwningProcess|Select-Object -Unique)
@@ -255,6 +260,7 @@ function Get-WallpaperVerifiedEndpoint {
   if(-not $browser){return $null}
   $targets=if($AllowPendingPage){@()}else{@(Get-DreamSkinCdpTargets -Port $Port)}
   if(-not $AllowPendingPage -and -not $targets.Count){return $null}
+  if($MainTarget -and -not @($targets | Where-Object {$_.id -ceq $MainTarget -and $_.url -ceq 'app://-/index.html'}).Count){return $null}
   $identity=[pscustomobject]@{BrowserId=$browser.BrowserId;BrowserWebSocketDebuggerUrl=$browser.WebSocketDebuggerUrl;Browser=$browser.Browser;TargetCount=$targets.Count}
   $afterListeners=@(Get-DreamSkinPortListeners -Port $Port)
   $afterOwners=@($afterListeners.OwningProcess|Select-Object -Unique)
@@ -270,6 +276,58 @@ function Get-WallpaperVerifiedEndpoint {
     [pscustomobject]@{BrowserId=$identity.BrowserId;BrowserWebSocketDebuggerUrl=$identity.BrowserWebSocketDebuggerUrl;Browser=$identity.Browser;TargetCount=$identity.TargetCount;RootProcessId=[int]$owners[0];RootCreatedAtUtc=$native.StartTime.ToUniversalTime().ToString('o');RootExecutable=$owner.ExecutablePath;SessionId=$session}
   }catch{return $null}finally{if($native){$native.Dispose()}}
 }
+function Test-WallpaperPreviousExecutable([string]$Executable,$RegisteredCodex) {
+  # Direct launch may have no AppModel identity after Store deregisters the old
+  # package. The old protected executable must still have the Store publisher.
+  $registeredSignature=Get-AuthenticodeSignature -LiteralPath $RegisteredCodex.Executable -ErrorAction Stop
+  $runningSignature=Get-AuthenticodeSignature -LiteralPath $Executable -ErrorAction Stop
+  return $registeredSignature.Status -eq 'Valid' -and $runningSignature.Status -eq 'Valid' -and
+    $registeredSignature.SignerCertificate.Subject -and
+    $runningSignature.SignerCertificate.Subject -ceq $registeredSignature.SignerCertificate.Subject
+}
+
+function Get-WallpaperWarmEndpoint([string]$Root,[string]$ExpectedBinding,$RegisteredCodex) {
+  try {
+    $hint=Read-WallpaperRuntimeStatus (Join-Path $Root 'main-window.json')
+    $endpoint=Read-WallpaperRuntimeStatus (Join-Path $Root 'cdp-endpoint.json')
+    if($hint.schemaVersion -ne 2 -or $endpoint.schemaVersion -ne 1 -or $endpoint.address -cne '127.0.0.1'){return $null}
+    $clientId=[int]$hint.clientId
+    $port=[int]$endpoint.port
+    $browser=[string]$hint.browserId
+    $target=[string]$hint.mainTarget
+    $cookie=[long]$hint.cookie
+    $handle=[long]$hint.handle
+    $started=([DateTimeOffset]$hint.startedAt).UtcTicks
+    $exe=[string]$hint.executable
+    if($clientId -le 0 -or $port -lt 9335 -or $port -gt 9354 -or $cookie -le 0 -or $handle -le 0 -or
+      $browser -notmatch '^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$' -or $target -notmatch '^[0-9a-f]+$' -or
+      $endpoint.browserId -cne $browser -or $endpoint.processId -ne $clientId -or $endpoint.executable -ine $exe -or
+      $endpoint.sessionId -ne $hint.sessionId -or ([DateTimeOffset]$endpoint.createdAtUtc).UtcTicks -ne $started -or
+      -not (Test-WallpaperOfficialCodexPath $exe)){return $null}
+    $binding=@($clientId,$started,$handle,$cookie,$port,$browser,$target) -join ':'
+    if($ExpectedBinding -and $ExpectedBinding -cne $binding){return $null}
+    if(-not ('WallpaperClientWindow' -as [type])){Add-Type -Path (Join-Path $PSScriptRoot 'ClientWindow.cs')}
+    $process=Get-Process -Id $clientId -ErrorAction Stop
+    try {
+      if($process.HasExited -or $process.SessionId -ne (Get-Process -Id $PID).SessionId -or $process.SessionId -ne $hint.sessionId -or
+        $process.StartTime.ToUniversalTime().Ticks -ne $started -or $process.MainModule.FileName -ine $exe -or
+        -not [WallpaperClientWindow]::Bound($handle,$clientId,$cookie)){return $null}
+      $package=[WallpaperClientWindow]::RunningPackageName($process.Handle)
+      $folder=Split-Path -Leaf (Split-Path -Parent (Split-Path -Parent $exe))
+      if($folder -notmatch '^OpenAI\.Codex_(\d+\.\d+\.\d+\.\d+)_(?:x64|arm64)__2p2nqsd0c76g0$'){return $null}
+      $version=$Matches[1]
+      if($package -and $package -ine $folder){return $null}
+      if(-not $package -and $exe -ine $RegisteredCodex.Executable -and -not (Test-WallpaperPreviousExecutable $exe $RegisteredCodex)){return $null}
+      $codex=[pscustomobject]@{Executable=$exe;PackageFullName=$folder;Version=$version}
+      $verified=Get-WallpaperVerifiedEndpoint -Port $port -Codex $codex -MainTarget $target
+      if(-not $verified -or $verified.BrowserId -cne $browser -or $verified.RootProcessId -ne $clientId -or
+        ([DateTimeOffset]$verified.RootCreatedAtUtc).UtcTicks -ne $started -or
+        $process.HasExited -or -not [WallpaperClientWindow]::Bound($handle,$clientId,$cookie)){return $null}
+      return [pscustomobject]@{port=$port;identity=$verified;reason='verified-warm-binding';Codex=$codex;MainTarget=$target;Handle=$handle;Cookie=$cookie}
+    }finally{$process.Dispose()}
+  }catch{return $null}
+}
+
 function Select-WallpaperCdpEndpoint {
   param([string]$Root,$Codex,[int[]]$Candidates=@(9335..9354),
     [scriptblock]$Probe={param($Port,$Install) Get-WallpaperVerifiedEndpoint -Port $Port -Codex $Install},

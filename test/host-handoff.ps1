@@ -16,6 +16,12 @@ $state=Wait-WallpaperHostDrain -Pause {} -ReadState {$script:reads++;if($script:
 Assert-Handoff ($state.mode -eq 'absent' -and $script:reads -eq 2) 'Natural old-host exit did not allow handoff'
 $status.browserId='new-browser';$status|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'runtime-status.json')
 Assert-Handoff ((& $read).mode -eq 'reuse') 'Matching healthy host was not reused'
+$hostProcess.CommandLine+=' --browser-id new-browser'
+$status.updatedAt=[DateTimeOffset]::UtcNow.AddMinutes(-1).ToString('o')
+$status|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'runtime-status.json')
+Assert-Handoff ((& $read).mode -eq 'live-unconfirmed') 'A live host with stale telemetry was treated as absent or unrelated'
+$status.updatedAt=[DateTimeOffset]::UtcNow.ToString('o')
+$status|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'runtime-status.json')
 $status.phase='stopped';$status|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'runtime-status.json')
 Assert-Handoff ((& $read).mode -eq 'conflict') 'A host already stopping was reused'
 $status.phase='background-rendered';$status|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root 'runtime-status.json')

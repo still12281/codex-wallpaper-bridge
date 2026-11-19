@@ -24,7 +24,8 @@ internal static class WallpaperClientWindow {
  internal static bool Visible(long h){
   var marker=Environment.GetEnvironmentVariable("CWB_FIXTURE_EXIT_MARKER");
   if(!string.IsNullOrEmpty(marker))File.WriteAllText(marker,"accepted");
-  return true;
+  var showMarker=Environment.GetEnvironmentVariable("CWB_FIXTURE_SHOWN_MARKER");
+  return string.IsNullOrEmpty(showMarker)||File.Exists(showMarker);
  }
  internal static bool Minimized(long h){return false;}
  internal static bool Foreground(long h){return true;}
@@ -69,7 +70,7 @@ try{
   }
   $started=$fakeRoot.StartTime.ToUniversalTime().ToString('o')
   $browser='11111111-2222-4333-8444-555555555555'
-  $endpoint=@{schemaVersion=1;address='127.0.0.1';port=9335;processId=$fakeRoot.Id;browserId=$browser;executable=$pwsh;createdAtUtc=$started}
+  $endpoint=@{schemaVersion=1;address='127.0.0.1';port=9335;processId=$fakeRoot.Id;browserId=$browser;executable=$pwsh;createdAtUtc=$started;sessionId=$fakeRoot.SessionId}
   $binding=@{schemaVersion=2;clientId=$fakeRoot.Id;startedAt=$started;executable=$pwsh;sessionId=$fakeRoot.SessionId;browserId=$browser;mainTarget='A11';handle=123;cookie='456'}
   $runtime=@{cdpPort=9335;browserId=$browser;phase='background-rendered';updatedAt=[DateTimeOffset]::UtcNow.ToString('o')}
   foreach($record in @{ 'cdp-endpoint.json'=$endpoint; 'main-window.json'=$binding; 'runtime-status.json'=$runtime }.GetEnumerator()){
@@ -91,6 +92,33 @@ try{
   try{Invoke-FixtureEntry}finally{$lock.ReleaseMutex();$lock.Dispose()}
   $activation=Get-Content -LiteralPath (Join-Path $root 'activation-status.json') -Raw|ConvertFrom-Json
   if($activation.activationMode -ne 'native-visible-window' -or $activation.activationResult -ne 'foreground' -or [IO.File]::Exists((Join-Path $root 'bootstrap-ran'))){throw 'The visible window depended on CDP or wallpaper startup completion'}
+
+  $helperRoot=Join-Path $root 'native-bridge-fixture'
+  [void][IO.Directory]::CreateDirectory((Join-Path $helperRoot 'windows'))
+  [void][IO.Directory]::CreateDirectory((Join-Path $helperRoot 'src'))
+  $stubShow=Join-Path $helperRoot 'src/activate-client.mjs'
+  $fixtureShowSource='import {writeFileSync} from "node:fs";writeFileSync(process.env.CWB_FIXTURE_SHOWN_MARKER,"shown");console.log(JSON.stringify({mainTarget:"A11",nativeRestore:{bridgeUsed:true,hidden:false}}));'
+  [IO.File]::WriteAllText($stubShow,$fixtureShowSource)
+  $launchPath=Join-Path $root 'launch-script.txt'
+  [IO.File]::WriteAllText($launchPath,(Join-Path $helperRoot 'windows/start.ps1'))
+  $entryInfo.Environment['CWB_FIXTURE_SHOWN_MARKER']=Join-Path $root 'fixture-show'
+  $hostInfo=[Diagnostics.ProcessStartInfo]::new($entryInfo.Environment['CODEX_WALLPAPER_NODE'])
+  $hostInfo.UseShellExecute=$false;$hostInfo.CreateNoWindow=$true
+  $hostInfo.ArgumentList.Add('-e');$hostInfo.ArgumentList.Add('setTimeout(()=>{},15000)')
+  $fixtureHost=[Diagnostics.Process]::Start($hostInfo)
+  try{
+    $runtime.pid=$fixtureHost.Id;$runtime.updatedAt=[DateTimeOffset]::UtcNow.ToString('o')
+    [IO.File]::WriteAllText((Join-Path $root 'runtime-status.json'),($runtime|ConvertTo-Json))
+    Invoke-FixtureEntry
+    $restored=Get-Content -LiteralPath (Join-Path $root 'activation-status.json') -Raw|ConvertFrom-Json
+    if($restored.activationMode -ne 'codex-native-show-bridge' -or $restored.repairNeeded -or $restored.exitWaitBudgetMs -ne 0){throw 'Acknowledged healthy restore used the fixed exit wait or invoked repair'}
+    Write-Output ('PASS: acknowledged restore exit check {0:F1} ms; fixture entry {1:F1} ms.' -f $restored.exitCheckMs,$restored.elapsedMs)
+  }finally{
+    if(-not $fixtureHost.HasExited){$fixtureHost.Kill()}
+    $fixtureHost.Dispose()
+    [void]$entryInfo.Environment.Remove('CWB_FIXTURE_SHOWN_MARKER')
+    [IO.File]::WriteAllText($launchPath,$bootstrap)
+  }
 
   $entryInfo.Environment['CWB_FIXTURE_EXIT_MARKER']=$exitMarker
   Invoke-FixtureEntry
