@@ -23,8 +23,17 @@ assert.equal(browser.webSocketDebuggerUrl,'ws://127.0.0.1:'+port+'/devtools/brow
 async function activeTarget(){
  const status=await readStatus();
  assert.equal(status.browserId,runtime.browserId,'Codex browser changed');
- return (await inspect('/json/list')).find(t=>t.type==='page'&&t.url.startsWith('app://-/')&&
-  status.targets.some(x=>x.targetId===t.id&&x.installed&&(performanceGate||x.mode==='webwallgl')&&!x.hidden&&x.focused));
+ const candidates=(await inspect('/json/list')).filter(t=>t.type==='page'&&t.url.startsWith('app://-/')&&
+  t.webSocketDebuggerUrl==='ws://127.0.0.1:'+port+'/devtools/page/'+t.id&&
+  status.targets.some(x=>x.targetId===t.id&&x.installed&&(performanceGate||x.mode==='webwallgl')));
+ // Host telemetry lags a real focus transition. Validate the live renderer
+ // before the test sends any input.
+ for(const candidate of candidates){
+  const probe=await connectCdp(candidate.webSocketDebuggerUrl).catch(()=>null);
+  if(!probe)continue;
+  try{if(await probe.evaluate('document.hasFocus()&&!document.hidden').catch(()=>false))return candidate;}
+  finally{probe.close();}
+ }
 }
 let target=await activeTarget();
 if(!target&&!performanceGate){

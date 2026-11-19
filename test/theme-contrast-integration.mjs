@@ -177,9 +177,23 @@ try{
   }finally{delete style.setProperty;scroll.scrollTop=0}
  })()`);
  assert.deepEqual(scrollStyleWrites,{writes:[],fallbackUnchanged:true});
- // Disable the JS scroll callback: native wheel scrolling must still move the
- // clip boundary with the transcript, including when scrolling back upward.
- await c.evaluate('document.removeEventListener("scroll",window.__cwbTranscriptPaint.refresh,true);true');
+ // Native wheel scrolling must move the clip boundary without rediscovering
+ // the transcript. Ordinary composer activity must leave its geometry alone.
+ await c.evaluate(`(()=>{
+  const footer=document.querySelector('[data-thread-scroll-footer]'),editor=document.createElement('input');
+  footer.append(editor);editor.focus();
+  const query=document.querySelectorAll;
+  window.__clipGeometryQueries=0;
+  document.querySelectorAll=function(selector){
+   if(selector==='[data-app-action-timeline-scroll]'||selector.startsWith('[data-code-block]'))window.__clipGeometryQueries++;
+   return query.call(this,selector);
+  };
+  editor.dispatchEvent(new InputEvent('input',{bubbles:true}));
+  editor.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));
+  editor.click();
+  footer.append(document.createElement('span'));
+  return true;
+ })()`);
  const stableFallback=await c.evaluate('document.getElementById("stream").style.getPropertyValue("--cwb-transcript-clip")');
  for(const deltaY of [240,180,-160,-120]){
   await c.call('Input.dispatchMouseEvent',{type:'mouseWheel',x:200,y:200,deltaX:0,deltaY});
@@ -187,6 +201,8 @@ try{
   const sample=await c.evaluate('(()=>{const e=document.getElementById("stream"),f=document.querySelector("[data-thread-scroll-footer]"),s=document.querySelector("[data-app-action-timeline-scroll]"),clip=parseFloat(getComputedStyle(e).clipPath.split(" ")[2]);return {boundary:e.getBoundingClientRect().bottom-clip,edge:f.getBoundingClientRect().top,top:s.scrollTop,fallback:e.style.getPropertyValue("--cwb-transcript-clip"),mode:e.getAttribute("data-cwb-transcript-content")}})()');
   assert.equal(sample.mode,'scroll');assert(sample.top>0);assert(Math.abs(sample.boundary-sample.edge)<1,JSON.stringify(sample));assert.equal(sample.fallback,stableFallback,'JS scroll handler changed the fallback clip');
  }
+ assert.equal(await c.evaluate('window.__clipGeometryQueries'),0,'Stable scroll and composer activity rediscovered the document geometry');
+ await c.evaluate('delete document.querySelectorAll;delete window.__clipGeometryQueries;true');
  await c.evaluate('('+clearShell.toString()+')();true');assert.equal(await c.evaluate('!!window.__cwbTranscriptPaint||!!document.querySelector("[data-cwb-transcript-content]")||!!document.getElementById("codex-wallpaper-bridge-style")'),false);
  console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results,materialResults,portalResults,layoutResults,streamingPaintAndCleanup:true},null,2));
 }finally{c?.close();browser?.kill()}

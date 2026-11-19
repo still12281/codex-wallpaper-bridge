@@ -115,68 +115,110 @@ export function paintShell(config){
  // A transparent composer reveals wallpaper, never earlier turns. Clip only
  // transcript painting using native footer bounds; leave scrollport dimensions,
  // padding, scroll positions and the composer itself entirely native.
- if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==6)window.__cwbTranscriptPaint.dispose();
+ if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==7)window.__cwbTranscriptPaint.dispose();
  if(!window.__cwbTranscriptPaint){
-  const marked=new Set(),codeMarked=new Set(),observed=new Set();let frame=0,disposed=false;
+  const marked=new Set(),codeMarked=new Set(),observed=new Set(),pendingCode=new Set();
+  let frame=0,codeFrame=0,disposed=false;
   const timelines=CSS.supports('animation-timeline','scroll(nearest y)');
+  const scrollSelector='[data-app-action-timeline-scroll]',footerSelector='[data-thread-scroll-footer]';
+  const codeSelector='[data-code-block][data-markdown-copy="code-block"]';
+  const structureSelector=[scrollSelector,footerSelector,codeSelector,'[data-code-block-source]','[data-code-block-controls]'].join(',');
+  let structureParents=new Set(),fallbackScrolls=new Set(),codeRoots=[];
   const clean=e=>{e.removeAttribute('data-cwb-transcript-content');for(const p of ['--cwb-transcript-clip','--cwb-transcript-start','--cwb-transcript-end'])e.style.removeProperty(p);marked.delete(e);};
   const cleanCode=e=>{e.removeAttribute('data-cwb-code-source');e.style.removeProperty('--cwb-code-clip-top');codeMarked.delete(e);};
   const writePx=(element,property,pixels)=>{
    const value=pixels+'px';
    if(element.style.getPropertyValue(property)!==value)element.style.setProperty(property,value);
   };
-  const update=event=>{
+  const update=()=>{
    if(disposed)return;
-   const scrolling=event?.type==='scroll',transcripts=new Map(),codes=new Map(),watch=new Set();
-   for(const scroll of document.querySelectorAll('[data-app-action-timeline-scroll]')){
+   cancelAnimationFrame(frame);frame=0;
+   cancelAnimationFrame(codeFrame);codeFrame=0;pendingCode.clear();
+   const transcripts=new Map(),watch=new Set();
+   structureParents=new Set();fallbackScrolls=new Set();
+   for(const scroll of document.querySelectorAll(scrollSelector)){
+    structureParents.add(scroll);watch.add(scroll);
     const sr=scroll.getBoundingClientRect();if(!sr.width||!sr.height)continue;
     const layout=scroll.closest('[data-request-input-activity-root]')||scroll.parentElement;
     let footerRect;
-    const footer=[...layout.querySelectorAll('[data-thread-scroll-footer]')].find(f=>{
+    const footer=[...layout.querySelectorAll(footerSelector)].find(f=>{
+     watch.add(f);
      footerRect=f.getBoundingClientRect();
      return footerRect.width&&footerRect.height&&footerRect.bottom>sr.top&&footerRect.top<sr.bottom;
     });
     if(!footer)continue;
     const edge=Math.max(sr.top,Math.min(sr.bottom,footerRect.top)),range=scroll.scrollHeight-scroll.clientHeight,top=scroll.scrollTop;
     const mode=timelines&&range>0?'scroll':'';
-    watch.add(scroll);watch.add(footer);
+    if(!mode)fallbackScrolls.add(scroll);
     const contents=[...scroll.children];
     for(let i=0;i<contents.length;i++){const e=contents[i];
-     if(e.matches('[data-thread-scroll-footer]'))continue;
-     if(e.querySelector('[data-thread-scroll-footer]')){contents.push(...e.children);continue;}
+     if(e.matches(footerSelector))continue;
+     if(e.querySelector(footerSelector)){structureParents.add(e);contents.push(...e.children);continue;}
      const bottom=e.getBoundingClientRect().bottom-edge,start=bottom+top;
      transcripts.set(e,{mode,bottom,start,end:start-range});watch.add(e);
     }
    }
-   if(window.__cwbTranscriptPaint?.codeEnabled!==false)for(const root of document.querySelectorAll('[data-code-block][data-markdown-copy="code-block"]')){
-    const r=root.getBoundingClientRect();if(!r.width||!r.height||r.bottom<=0||r.top>=innerHeight)continue;
-    const header=root.querySelector(':scope > [data-markdown-copy="exclude"]:has([data-code-block-controls])'),source=root.querySelector('[data-code-block-source]');if(!header||!source)continue;
-    const h=header.getBoundingClientRect(),s=source.getBoundingClientRect();if(!h.height||!s.height)continue;
-    codes.set(source,Math.max(0,Math.min(s.height,h.bottom-s.top)));for(const e of [root,header,source])watch.add(e);
-   }
-   // Finish geometry reads before changing clip styles. The scroll timeline
-   // already advances with scrolling; leave its fallback clip alone.
+   codeRoots=window.__cwbTranscriptPaint.codeEnabled?[...document.querySelectorAll(codeSelector)]:[];
+   const codes=measureCode(codeRoots,watch);
+   // Finish geometry reads before changing clip styles.
    for(const [e,{mode,bottom,start,end}]of transcripts){
-    const previous=e.getAttribute('data-cwb-transcript-content');
-    if(previous!==mode)e.setAttribute('data-cwb-transcript-content',mode);
-    if(!mode||!scrolling||previous!==mode)writePx(e,'--cwb-transcript-clip',Math.max(0,bottom));
+    if(e.getAttribute('data-cwb-transcript-content')!==mode)e.setAttribute('data-cwb-transcript-content',mode);
+    writePx(e,'--cwb-transcript-clip',Math.max(0,bottom));
     if(mode){writePx(e,'--cwb-transcript-start',start);writePx(e,'--cwb-transcript-end',end);}
     marked.add(e);
    }
+   for(const e of marked)if(!transcripts.has(e))clean(e);
+   paintCode(codes);
+   for(const e of codeMarked)if(!codes.has(e))cleanCode(e);
+   for(const e of watch)if(!observed.has(e)){observed.add(e);resize.observe(e);}
+   for(const e of observed)if(!watch.has(e)){resize.unobserve(e);observed.delete(e);}
+  };
+  const measureCode=(roots,watch)=>{
+   const codes=new Map();
+   for(const root of roots){
+    const header=root.querySelector(':scope > [data-markdown-copy="exclude"]:has([data-code-block-controls])'),source=root.querySelector('[data-code-block-source]');
+    if(!header||!source)continue;
+    if(watch)for(const e of [root,header,source])watch.add(e);
+    const r=root.getBoundingClientRect();if(!r.width||!r.height||r.bottom<=0||r.top>=innerHeight)continue;
+    const h=header.getBoundingClientRect(),s=source.getBoundingClientRect();if(!h.height||!s.height)continue;
+    codes.set(source,Math.max(0,Math.min(s.height,h.bottom-s.top)));
+   }
+   return codes;
+  };
+  const paintCode=codes=>{
    for(const [e,clip]of codes){
     if(!e.hasAttribute('data-cwb-code-source'))e.setAttribute('data-cwb-code-source','');
     writePx(e,'--cwb-code-clip-top',clip);
     codeMarked.add(e);
    }
-   for(const e of marked)if(!transcripts.has(e))clean(e);
-   for(const e of codeMarked)if(!codes.has(e))cleanCode(e);
-   for(const e of watch)if(!observed.has(e)){observed.add(e);resize.observe(e);}
-   for(const e of [...observed])if(!watch.has(e)){resize.unobserve(e);observed.delete(e);}
   };
-  const queue=()=>{if(!frame&&!disposed)frame=requestAnimationFrame(()=>{frame=0;update();});};
-  const resize=new ResizeObserver(update),mutation=new MutationObserver(changes=>{if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&!n.closest?.('#codex-wallpaper-bridge-layer,#codex-wallpaper-controls'))))queue();});
-  mutation.observe(document.body,{childList:true,subtree:true});document.addEventListener('scroll',update,{capture:true,passive:true});document.addEventListener('input',queue,true);document.addEventListener('focusin',queue,true);document.addEventListener('click',queue,true);window.addEventListener('resize',queue);
-  window.__cwbTranscriptPaint={version:6,codeEnabled:sync.code,refresh:update,dispose(){disposed=true;cancelAnimationFrame(frame);resize.disconnect();mutation.disconnect();document.removeEventListener('scroll',update,true);document.removeEventListener('input',queue,true);document.removeEventListener('focusin',queue,true);document.removeEventListener('click',queue,true);window.removeEventListener('resize',queue);for(const e of marked)clean(e);for(const e of codeMarked)cleanCode(e);delete window.__cwbTranscriptPaint;}};update();
+  const queue=()=>{if(!frame&&!disposed)frame=requestAnimationFrame(update);};
+  const affectedBy=(target,element)=>target===element||target.contains(element)||element.contains(target);
+  const scrollPaint=event=>{
+   const target=event.target;
+   for(const scroll of fallbackScrolls)if(affectedBy(target,scroll)){queue();return;}
+   // Native timelines already move transcript clips. Only sticky code in the
+   // scrolled region needs fresh geometry, coalesced into one pass per frame.
+   for(const root of codeRoots)if(affectedBy(target,root))pendingCode.add(root);
+   if(pendingCode.size&&!codeFrame)codeFrame=requestAnimationFrame(()=>{
+    codeFrame=0;
+    if(!frame)paintCode(measureCode(pendingCode));
+    pendingCode.clear();
+   });
+  };
+  const resize=new ResizeObserver(update);
+  const mutation=new MutationObserver(changes=>{
+   if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(
+    structureParents.has(c.target)||n.matches(structureSelector)||n.querySelector(structureSelector)
+   ))))queue();
+  });
+  mutation.observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('scroll',scrollPaint,{capture:true,passive:true});window.addEventListener('resize',queue);
+  window.__cwbTranscriptPaint={version:7,codeEnabled:sync.code,refresh:update,dispose(){
+   disposed=true;cancelAnimationFrame(frame);cancelAnimationFrame(codeFrame);resize.disconnect();mutation.disconnect();
+   document.removeEventListener('scroll',scrollPaint,true);window.removeEventListener('resize',queue);
+   for(const e of marked)clean(e);for(const e of codeMarked)cleanCode(e);delete window.__cwbTranscriptPaint;
+  }};update();
  }else{window.__cwbTranscriptPaint.codeEnabled=sync.code;window.__cwbTranscriptPaint.refresh();}
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
  window.__cwbDecorate?.(config);

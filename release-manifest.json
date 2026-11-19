@@ -575,8 +575,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 26134,
-      "sha256": "876ee689c0afe46fb06060e38b13d1c89e8c8af8527c30fa8d3080eb29e79270"
+      "utf8Bytes": 27195,
+      "sha256": "c3ab6faa643a826c94ae4ba3e890e12489f44e7c7fd21d4c51ae7a335ad4c9e5"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -720,8 +720,8 @@
     },
     {
       "path": "test/foreground-interaction.mjs",
-      "utf8Bytes": 17099,
-      "sha256": "47f1b3b2f70be836060bbafcd2727e64a4b996e748dc5b85f13c2f0f68c3455b"
+      "utf8Bytes": 17552,
+      "sha256": "e276ec40d44154f265d57aa08ad2f56d8d0b2088aaae5ceab1b88371ca59723d"
     },
     {
       "path": "test/host-handoff.ps1",
@@ -955,8 +955,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 29877,
-      "sha256": "803a8813c8e4a5802ee110ef6ddc7a28c2c6f9a03f25e35a9ef724c32d83b2d5"
+      "utf8Bytes": 30693,
+      "sha256": "821d2d8910fba28af0ddba4b655925716f6bda99683a4805dd1905f5f472216b"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",
