@@ -31,7 +31,8 @@ try{
   if(!ready)await pause(30);
  }
  assert(ready,'Fixture document did not finish loading');
- await page.evaluate('window.__codexWallpaperBridge={ready:true};('+paintShell.toString()+')('+JSON.stringify({palette:{r:239,g:240,b:245,dark:false},visual:{glassOpacity:.5,glassBlur:0},darkOverlay:.4,lightOverlay:.4})+');true');
+ const paint='('+paintShell.toString()+')('+JSON.stringify({palette:{r:239,g:240,b:245,dark:false},visual:{glassOpacity:.5,glassBlur:0},darkOverlay:.4,lightOverlay:.4})+')';
+ await page.evaluate('window.__codexWallpaperBridge={ready:true};'+paint+';true');
  // Token attribute selectors observe every class-attribute mutation in :has()
  // dependency chains. Keep that proven hazard out of generated shell rules.
  const broadClassRules=await page.evaluate(`Array.from(document.getElementById('codex-wallpaper-bridge-style').sheet.cssRules).filter(r=>r.selectorText&&/\\[class\\s*~=/.test(r.selectorText)).map(r=>r.selectorText)`);
@@ -48,5 +49,47 @@ try{
  assert(updates.length>=5&&updates.some(n=>n>0),'Missing style recalculation evidence');const most=Math.max(...updates);
  assert(most<appearances.nodes/10,`Unrelated leaf class restyled ${most}/${appearances.nodes} elements`);
  for(const prop of ['--cwb-transcript-clip','--cwb-code-clip-top'])assert.equal(await page.evaluate('getComputedStyle(document.querySelector("#tree span")).getPropertyValue('+JSON.stringify(prop)+')'),'0px',prop+' leaked into text descendants');
- console.log(JSON.stringify({kind:'isolated-style-invalidation',passed:true,nodes:appearances.nodes,maxRestyledElements:most,localUpdateMs:costs.map(x=>Math.round(x*10)/10),appearancePreserved:true}));
+ const animation=await page.evaluate(`(()=>{
+  const root=document.documentElement,key='--decorative-animation-play-state';
+  const style=document.createElement('style');
+  style.textContent='.animate-pulse,.Placeholder-GJXpwo[data-animate]::before,.ink-TiVe8k[data-pending]>path{animation-play-state:var(--decorative-animation-play-state,running)}';
+  document.head.append(style);
+  const area=document.createElement('div');
+  area.innerHTML='<div class="animate-pulse"></div><div class="Placeholder-GJXpwo" data-animate></div><div class="animate-pulse" style="--decorative-animation-play-state: running"></div><svg class="ink-TiVe8k" data-pending><path d="M0 0"/></svg>';
+  document.body.append(area);
+  const nativeState=()=>({
+   ordinary:getComputedStyle(document.querySelector('#tree span')).getPropertyValue(key).trim(),
+   pulse:getComputedStyle(area.children[0]).animationPlayState,
+   pseudo:getComputedStyle(area.children[1],'::before').animationPlayState,
+   local:getComputedStyle(area.children[2]).animationPlayState,
+   newBuild:getComputedStyle(area.querySelector('path')).animationPlayState
+  });
+  const signature=paths=>paths.map(path=>{
+   const element=document.createElement('script');element.type='application/json';element.setAttribute('src',path);
+   document.head.append(element);return element;
+  });
+  root.style.setProperty(key,'paused');
+  const unknown=nativeState();
+  const old=signature(['/assets/782259.7a3e865ee5.js','/assets/348410.1a97dde15f.js']);
+  ${paint};
+  const paused=nativeState();
+  root.style.removeProperty(key);
+  const resumed=nativeState();
+  old.forEach(e=>e.remove());
+  const newer=signature(['/assets/903838.979fd3f34c.js','/assets/348410.374a9b8f98.js']);
+  ${paint};
+  root.style.setProperty(key,'paused');
+  const latest=nativeState();
+  newer.forEach(e=>e.remove());
+  ${paint};
+  const fallback=nativeState();
+  root.style.removeProperty(key);area.remove();style.remove();
+  return {unknown,paused,resumed,latest,fallback};
+ })()`);
+ assert.deepEqual(animation.unknown,{ordinary:'paused',pulse:'paused',pseudo:'paused',local:'running',newBuild:'paused'});
+ assert.deepEqual(animation.paused,{...animation.unknown,ordinary:'running',newBuild:'running'});
+ assert.deepEqual(animation.resumed,{ordinary:'running',pulse:'running',pseudo:'running',local:'running',newBuild:'running'});
+ assert.deepEqual(animation.latest,{...animation.unknown,ordinary:'running'});
+ assert.deepEqual(animation.fallback,animation.unknown);
+ console.log(JSON.stringify({kind:'isolated-style-invalidation',passed:true,nodes:appearances.nodes,maxRestyledElements:most,localUpdateMs:costs.map(x=>Math.round(x*10)/10),appearancePreserved:true,nativeDecorativeStateScoped:true}));
 }finally{if(started)await browser?.call('Tracing.end').catch(()=>{});browser?.close();page?.close();chrome.kill()}

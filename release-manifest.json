@@ -575,8 +575,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 23945,
-      "sha256": "0e1a858c3778ce2a24daa65ed49847af923037366bed9f161380f80ca1da7309"
+      "utf8Bytes": 25628,
+      "sha256": "5042527e1e651bb5a8766a41170ab4c8fd2c5fc4d1571c1468069aefcb1e60a8"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -925,8 +925,8 @@
     },
     {
       "path": "test/style-invalidation-integration.mjs",
-      "utf8Bytes": 6778,
-      "sha256": "40058e75eff35d2a8a49a68eb79136c9bed41a74f0cf97044867ec3a7c79f2e8"
+      "utf8Bytes": 9316,
+      "sha256": "cf96ef9f4b8e604125b78444b74324404e6c3ba71c98e0c2eaaf94282a10b0a7"
     },
     {
       "path": "test/surfaces.test.mjs",

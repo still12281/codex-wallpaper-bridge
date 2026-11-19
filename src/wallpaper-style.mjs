@@ -30,13 +30,34 @@ export function paintShell(config){
  // Match card semantics, independent of native background utility variants.
  const controlSelectors=[sync.composer&&':root [data-composer-surface-variant][data-composer-layout]',sync.context&&'main .overflow-hidden:has(>.group\\/turn-diff-header)',':root [data-user-message-bubble]'].filter(Boolean).join(',');
  const raisedSelectors='[data-composer-overlay-floating-ui] > :is(.bg-surface-elevated-secondary,.bg-surface-elevated-secondary\\/90),[data-composer-expanded-top-tray]:not([data-composer-overlay-floating-ui]),.global-command-menu-dialog > :is([cmdk-root],[data-cmdk-root]),[role="dialog"]:not(.global-command-menu-dialog),[role="alertdialog"],[role="menu"],[role="listbox"]:not([cmdk-list],[data-cmdk-list]),[role="tooltip"]:not(.group\\/diff-preview),[data-slot="popover-content"],[data-slot="hover-card-content"],[data-radix-menu-content],[data-radix-tooltip-content]:not(.group\\/diff-preview),[class*="_SidebarPopover"],[class*="_SidebarFlyout"],[data-browser-comment-editor-surface] > .bg-surface-elevated-secondary,.group\\/diff-preview div:has(> [data-testid="diff-preview-scroll"])';
+ // These Codex builds use a root custom property to pause decorative animations.
+ // Keep its inherited computed value stable and relay the native pause only to
+ // the animation selectors in the matched build. Other builds keep native CSS.
+ const assets=new Set(Array.from(document.scripts??[],script=>script.getAttribute('src')));
+ const oldMotion=assets.has('/assets/782259.7a3e865ee5.js')&&assets.has('/assets/348410.1a97dde15f.js');
+ const newMotion=assets.has('/assets/903838.979fd3f34c.js')&&assets.has('/assets/348410.374a9b8f98.js');
+ let nativeMotionCss='';
+ if(oldMotion||newMotion){
+  const property='--decorative-animation-play-state';
+  const paused=':where(:root[style*="'+property+': paused"])';
+  const animated=String.raw`.animate-pulse,.animate-spin,.loading-shimmer-mask,.loading-shimmer-pure-text,
+   .loading-shimmer,.loading-shimmer-dot-grid,.motion-safe\:animate-pulse,.motion-safe\:animate-spin,
+   .pulsing-dot,.waveDot-qgKugp,.PrimaryAction-l16Nk7[data-animate-ready],.ReadyPulse-nQiolT[data-animate-ready],
+   .LoadingResultsShimmer-IzeCFB[data-variant=chatgpt],.Overlay-UCNs2a,.screen-H27rG_`;
+  const added=newMotion?',.drifting-hMMvfl.sleeping-tS2eBh>span,.frames-EwrXvD,.gentleDot-qSvDKz,.ink-TiVe8k[data-pending]>path,.multiRow-gjn_FO .rows-zGFWQj,.reveal-uB2mBR,.box-Yz_phO,.revealing-apMfJ3,.travel-uSvNwI.paused-lapaxL,.wakeGlyphs-h36OSO':'';
+  nativeMotionCss=` :root{${property}:running!important}
+   ${paused} :where(${animated}${added}),
+   ${paused} :where(.Placeholder-GJXpwo[data-animate],.LoadingResultsShimmer-IzeCFB)::before,
+   ${paused} :where(.dots-Qf_9QK,.DetailsShimmer-w0X_00)::after{${property}:paused}
+  `;
+ }
  const mediaRoot=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot;
  if(mediaRoot){let tint=mediaRoot.querySelector('[data-cwb-shade]');if(!tint){tint=document.createElement('div');tint.setAttribute('data-cwb-shade','');mediaRoot.appendChild(tint)}tint.style.cssText=`position:absolute;inset:0;pointer-events:none;background:rgba(${shade},${overlay})`}
  let style=document.getElementById('codex-wallpaper-bridge-style');if(!style){style=document.createElement('style');style.id='codex-wallpaper-bridge-style';document.head.appendChild(style)}
  // Native browser guests are portaled beside #root. A positive root z-index
  // would place its transparent pane above the guest and intercept mouse input.
  // Clipping belongs to the marked element, not every text/code descendant.
- style.textContent=`@property --cwb-transcript-clip{syntax:"<length>";inherits:false;initial-value:0px}
+ style.textContent=`${nativeMotionCss}@property --cwb-transcript-clip{syntax:"<length>";inherits:false;initial-value:0px}
  @property --cwb-code-clip-top{syntax:"<length>";inherits:false;initial-value:0px}
  @property --cwb-transcript-start{syntax:"<length>";inherits:false;initial-value:0px}
  @property --cwb-transcript-end{syntax:"<length>";inherits:false;initial-value:0px}
