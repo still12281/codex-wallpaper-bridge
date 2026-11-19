@@ -8,13 +8,11 @@ export async function upstreamRuntime(){
 
 function fxAdapterSource(source){
  return 'function(config,suspended){'+
-  'if(window.__cwbFx?.version===2){window.__cwbFx.update(config,suspended);return;}window.__cwbFx?.dispose();'+
+  'if(window.__cwbFx?.version===3){window.__cwbFx.update(config,suspended);return;}window.__cwbFx?.dispose();'+
   'let selection=config;const weNow=()=>performance.now(),weClampTo=(value,min,max,fallback)=>Number.isFinite(Number(value))?Math.max(min,Math.min(max,Number(value))):fallback;'+
   source+'\n'+String.raw`
-  const draw=fxFrame,move=fxOnPointerMove,down=fxOnPointerDown,perf=fxPerfUpdate;
+  const draw=fxFrame,perf=fxPerfUpdate;
   const framePeriod=1000/30;
-  const protectedSurface=FX_UI_SELECTOR+',[data-app-action-timeline-scroll],[data-composer-surface-variant],[data-app-shell-right-panel],aside.app-shell-left-panel,#codex-wallpaper-controls';
-  const inInterface=event=>event.composedPath().some(node=>node?.matches?.(protectedSurface));
   let drawTimer=0;
   const cancelDrawTimer=()=>{clearTimeout(drawTimer);drawTimer=0;};
   // The effect is decorative. Give it a separate paint budget even on a
@@ -26,11 +24,6 @@ function fxAdapterSource(source){
    else fxRaf=requestAnimationFrame(fxFrame);
   };
   fxPerfUpdate=dt=>perf(dt<=framePeriod*1.5?16:dt-framePeriod);
-  fxOnPointerMove=event=>{
-   if(!inInterface(event)){move(event);return;}
-   if(fxTrail.length){fxTrail=[];fxKick();}
-  };
-  fxOnPointerDown=event=>{if(!inInterface(event))down(event);};
   fxFrame=function drawPointerEffects(){if(fxHost?.hidden)fxHost.hidden=false;draw();};
   function update(next,paused){
    const changed=selection!==next;
@@ -52,7 +45,7 @@ function fxAdapterSource(source){
    }
    if(!fxOn){fxOn=true;fxBind();}
   }
-  window.__cwbFx={version:2,update,dispose(){cancelDrawTimer();disposeFxLayer();delete window.__cwbFx;}};
+  window.__cwbFx={version:3,update,dispose(){cancelDrawTimer();disposeFxLayer();delete window.__cwbFx;}};
   update(config,suspended);
  }`;
 }
