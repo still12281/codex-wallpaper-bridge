@@ -35,16 +35,16 @@ export function paintShell(config){
  // the animation selectors in the matched build. Other builds keep native CSS.
  const assets=new Set(Array.from(document.scripts??[],script=>script.getAttribute('src')));
  const oldMotion=assets.has('/assets/782259.7a3e865ee5.js')&&assets.has('/assets/348410.1a97dde15f.js');
- const newMotion=assets.has('/assets/903838.979fd3f34c.js')&&assets.has('/assets/348410.374a9b8f98.js');
+ const testedBuild=assets.has('/assets/903838.979fd3f34c.js')&&assets.has('/assets/348410.374a9b8f98.js');
  let nativeMotionCss='';
- if(oldMotion||newMotion){
+ if(oldMotion||testedBuild){
   const property='--decorative-animation-play-state';
   const paused=':where(:root[style*="'+property+': paused"])';
   const animated=String.raw`.animate-pulse,.animate-spin,.loading-shimmer-mask,.loading-shimmer-pure-text,
    .loading-shimmer,.loading-shimmer-dot-grid,.motion-safe\:animate-pulse,.motion-safe\:animate-spin,
    .pulsing-dot,.waveDot-qgKugp,.PrimaryAction-l16Nk7[data-animate-ready],.ReadyPulse-nQiolT[data-animate-ready],
    .LoadingResultsShimmer-IzeCFB[data-variant=chatgpt],.Overlay-UCNs2a,.screen-H27rG_`;
-  const added=newMotion?',.drifting-hMMvfl.sleeping-tS2eBh>span,.frames-EwrXvD,.gentleDot-qSvDKz,.ink-TiVe8k[data-pending]>path,.multiRow-gjn_FO .rows-zGFWQj,.reveal-uB2mBR,.box-Yz_phO,.revealing-apMfJ3,.travel-uSvNwI.paused-lapaxL,.wakeGlyphs-h36OSO':'';
+  const added=testedBuild?',.drifting-hMMvfl.sleeping-tS2eBh>span,.frames-EwrXvD,.gentleDot-qSvDKz,.ink-TiVe8k[data-pending]>path,.multiRow-gjn_FO .rows-zGFWQj,.reveal-uB2mBR,.box-Yz_phO,.revealing-apMfJ3,.travel-uSvNwI.paused-lapaxL,.wakeGlyphs-h36OSO':'';
   nativeMotionCss=` :root{${property}:running!important}
    ${paused} :where(${animated}${added}),
    ${paused} :where(.Placeholder-GJXpwo[data-animate],.LoadingResultsShimmer-IzeCFB)::before,
@@ -116,13 +116,14 @@ export function paintShell(config){
  // Remove legacy bridge geometry once; native layout owns transcript spacing.
  if(window.__cwbLayout){window.__cwbLayout.dispose?.();delete window.__cwbLayout;for(const e of document.querySelectorAll('[data-cwb-thread-space],[style*="--cwb-footer-height"]')){e.removeAttribute('data-cwb-thread-space');e.style.removeProperty('--cwb-footer-height');}}
  // Sticky code retains its own local clip; the transcript uses browser overflow.
- if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==8)window.__cwbTranscriptPaint.dispose();
+ if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==9)window.__cwbTranscriptPaint.dispose();
  if(!window.__cwbTranscriptPaint){
   const codeMarked=new Set(),observed=new Set(),pendingCode=new Set();
   let frame=0,codeFrame=0,disposed=false;
   const codeSelector='[data-code-block][data-markdown-copy="code-block"]';
   const structureSelector=[codeSelector,'[data-code-block-source]','[data-code-block-controls]'].join(',');
   let codeRoots=[];
+  let readingAnchor;
   const cleanCode=e=>{e.removeAttribute('data-cwb-code-source');e.style.removeProperty('--cwb-code-clip-top');codeMarked.delete(e);};
   const writePx=(element,property,pixels)=>{
    const value=pixels+'px';
@@ -172,21 +173,106 @@ export function paintShell(config){
   };
   const resize=new ResizeObserver(update);
   const mutation=new MutationObserver(changes=>{
+   readingAnchor?.changed(changes);
    if(window.__cwbTranscriptPaint.codeEnabled&&changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&
     (n.matches(structureSelector)||n.querySelector(structureSelector)))))queue();
   });
   mutation.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('scroll',scrollPaint,{capture:true,passive:true});window.addEventListener('resize',queue);
-  window.__cwbTranscriptPaint={version:8,codeEnabled:sync.code,refresh:update,dispose(){
+  window.__cwbTranscriptPaint={version:9,codeEnabled:sync.code,refresh(anchorSupported){
+   if(anchorSupported)readingAnchor??=watchReadingAnchor();
+   else{readingAnchor?.dispose();readingAnchor=null;}
+   readingAnchor?.refresh();update();
+  },dispose(){
    disposed=true;cancelAnimationFrame(frame);cancelAnimationFrame(codeFrame);resize.disconnect();mutation.disconnect();
+   readingAnchor?.dispose();
    document.removeEventListener('scroll',scrollPaint,true);window.removeEventListener('resize',queue);
    for(const e of codeMarked)cleanCode(e);delete window.__cwbTranscriptPaint;
-  }};update();
- }else{window.__cwbTranscriptPaint.codeEnabled=sync.code;window.__cwbTranscriptPaint.refresh();}
+  }};
+ }
+ window.__cwbTranscriptPaint.codeEnabled=sync.code;window.__cwbTranscriptPaint.refresh(testedBuild);
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});
  window.__cwbDecorate?.(config);
  window.__cwbStartupAppearance?.dispose();
  return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? controlOpacity : null,surfaces:sync};
+
+ function watchReadingAnchor(){
+  const port='.scrollContainer-fG6qEo',content='.transcriptContent-l_FOQD';
+  const gate='[data-thread-has-reading-passage]:not([data-native-end-snap-following])';
+  const selector=prefix=>[port,prefix+' > :not(:first-child)',prefix+' > :first-child > :not('+content+')',prefix+' '+content+' > *'].join(', ');
+  const native=selector(port+gate),stable=selector(port);
+  const files=new Set(['59d93f9e7acb.css','8f26e793d206.css','ad03c4677215.css']);
+  const isNativeSheet=href=>files.has(href?.split('/').at(-1));
+  const patches=new Set();
+  let layouts=[],containers=new Set(),seenSheets=new WeakSet();
+  const attributes=new MutationObserver(refresh);
+  const restore=()=>{
+   for(const rule of patches)if(rule.selectorText===stable)rule.selectorText=native;
+   patches.clear();
+   seenSheets=new WeakSet();
+  };
+  const rulesIn=function*(rules){
+   for(const rule of rules){
+    if(rule.style?.cssText==='overflow-anchor: none;')yield rule;
+    if(rule.cssRules?.length)yield* rulesIn(rule.cssRules);
+   }
+  };
+  function refresh(){
+   const next=[...document.querySelectorAll(port)].map(host=>{
+    const [wrapper,footer]=host.children;
+    const [transcript,padding]=wrapper?.children??[];
+    return [host,wrapper,transcript,footer,padding,transcript?.firstElementChild];
+   });
+   if(next.length!==layouts.length||next.some((nodes,i)=>nodes.some((node,j)=>node!==layouts[i][j]))){
+    attributes.disconnect();
+    containers.clear();
+    for(const nodes of next){
+     for(const e of nodes.slice(0,3))if(e){containers.add(e);attributes.observe(e,{attributeFilter:['class']});}
+     for(const e of nodes.slice(3))if(e)attributes.observe(e,{attributeFilter:['class','style']});
+    }
+    layouts=next;
+   }
+   // A direct nested scroller can pick its own anchor even when the outer
+   // port has opted out. All mounted conversations share this stylesheet.
+   if(!layouts.length||layouts.some(([host,wrapper,transcript,footer,padding,turns])=>
+    !host.matches('[data-app-action-timeline-scroll]')||host.children.length!==2||
+    !wrapper?.matches('div.overflow-clip')||wrapper.children.length!==2||
+    !footer?.matches('div.footer-A8ZvKV.absolute')||
+    !transcript?.matches('div'+content+'[data-thread-user-message-navigation-content]')||transcript.children.length!==1||
+    !padding?.matches('div[aria-hidden=true].pointer-events-none'+spacer)||
+    !turns?.matches('div[data-thread-find-target]')||
+    [footer,padding,turns].some(e=>{
+     const {overflowX,overflowY}=getComputedStyle(e);
+     return !['visible','clip'].includes(overflowX)||!['visible','clip'].includes(overflowY);
+    }))){
+    restore();
+    return;
+   }
+   try{
+    for(const sheet of document.styleSheets){
+     if(!isNativeSheet(sheet.href)||seenSheets.has(sheet))continue;
+     for(const rule of rulesIn(sheet.cssRules)){
+      if(rule.selectorText!==native)continue;
+      rule.selectorText=stable;
+      if(rule.selectorText!==stable)throw Error('Native reading anchor selector did not update');
+      patches.add(rule);
+     }
+     seenSheets.add(sheet);
+    }
+   }catch{restore();}
+  }
+  const stylesheetLoaded=event=>{if(isNativeSheet(event.target?.href))refresh();};
+  document.addEventListener('load',stylesheetLoaded,true);
+  return {
+   refresh,
+   changed(changes){
+    if(layouts.some(([host])=>!host.isConnected)||changes.some(({target,addedNodes})=>
+     containers.has(target)||[...addedNodes].some(node=>
+      node.nodeType===1&&(node.matches(port)||node.querySelector(port)))))refresh();
+   },
+   dispose(){document.removeEventListener('load',stylesheetLoaded,true);attributes.disconnect();restore();}
+  };
+ }
 }
 
 // Serialized cleanup shared by disabling wallpaper and stopping its host while

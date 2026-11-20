@@ -575,8 +575,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 24818,
-      "sha256": "c55c82b1b75586734a3b1fa13321f45073bb78e40106edc4edaa53df3f310b9d"
+      "utf8Bytes": 28724,
+      "sha256": "ab932dc2fd667312cb0cbce58658bdf06f15d447a7d296a05b084bfe891bc37c"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -930,8 +930,8 @@
     },
     {
       "path": "test/style-invalidation-integration.mjs",
-      "utf8Bytes": 10506,
-      "sha256": "ca25679fbcdd88a57065399f4e30b7be62f5a5fb187d5c9d09a8b7b651c5731e"
+      "utf8Bytes": 14800,
+      "sha256": "f4cdd1ff90bac9479e6ac96b832c47e6baeb436752e8c7b6a1150a25e6bd6faf"
     },
     {
       "path": "test/surfaces.test.mjs",

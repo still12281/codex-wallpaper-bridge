@@ -12,6 +12,14 @@ import {paintShell} from '../src/wallpaper-style.mjs';
 const work=process.env.CODEX_WALLPAPER_TEST_WORK||'E:/codexwallpaper/test-scratch';
 await mkdir(work,{recursive:true});const dir=await mkdtemp(path.join(work,'style-invalidation-'));
 const file=path.join(dir,'fixture.html');
+const anchorSelector='.scrollContainer-fG6qEo';
+const anchorGate='[data-thread-has-reading-passage]:not([data-native-end-snap-following])';
+const anchorContent='.transcriptContent-l_FOQD';
+const gated=anchorSelector+anchorGate;
+await writeFile(path.join(dir,'59d93f9e7acb.css'),`
+${[anchorSelector,gated+' > :not(:first-child)',gated+' > :first-child > :not('+anchorContent+')',gated+' '+anchorContent+' > *'].join(', ')}{overflow-anchor:none}
+${gated}[data-thread-reading=anchored]{overflow-anchor:auto}
+`);
 await writeFile(file,`<!doctype html><style>body{margin:0}.bg-inherit{background:inherit}</style>
 <div id="root"><main data-app-shell-main-surface><div class="electron:bg-surface"><section class="group/settings">Settings</section></div>
 <div role="menu"><div class="bg-inherit" id="menu-inner">Menu</div></div>
@@ -21,7 +29,7 @@ await writeFile(file,`<!doctype html><style>body{margin:0}.bg-inherit{background
 <div id="tree">${'<div><span>one</span><span>two</span><span>three</span></div>'.repeat(800)}</div><span id="probe">Thinking</span></main></div>`);
 const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));
 const url=pathToFileURL(file).href;
-const chrome=spawn(process.env.CODEX_WALLPAPER_TEST_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--disable-extensions','--remote-debugging-port='+port,'--user-data-dir='+path.join(dir,'profile'),url],{windowsHide:true,stdio:'ignore'});
+const chrome=spawn(process.env.CODEX_WALLPAPER_TEST_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--disable-extensions','--allow-file-access-from-files','--remote-debugging-port='+port,'--user-data-dir='+path.join(dir,'profile'),url],{windowsHide:true,stdio:'ignore'});
 const pause=ms=>new Promise(r=>setTimeout(r,ms));let page,browser,started=false;
 try{
  for(let n=0;n<100&&!page;n++){try{const ts=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();const t=ts.find(t=>t.url===url);if(t)page=await connectCdp(t.webSocketDebuggerUrl)}catch{}if(!page)await pause(30)}assert(page,'Chromium did not start');
@@ -106,5 +114,58 @@ try{
  assert.deepEqual(animation.resumed,{ordinary:'running',pulse:'running',pseudo:'running',local:'running',newBuild:'running'});
  assert.deepEqual(animation.latest,{...animation.unknown,ordinary:'running'});
  assert.deepEqual(animation.fallback,animation.unknown);
- console.log(JSON.stringify({kind:'isolated-style-invalidation',passed:true,nodes:appearances.nodes,maxRestyledElements:most,localUpdateMs:costs.map(x=>Math.round(x*10)/10),appearancePreserved:true,nativeDecorativeStateScoped:true}));
+ const {result:anchorResult,exceptionDetails}=await page.call('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`(async()=>{
+  const link=document.createElement('link');
+  link.rel='stylesheet';link.href='59d93f9e7acb.css';
+  await new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject;document.head.append(link);});
+  const assets=['/assets/903838.979fd3f34c.js','/assets/348410.374a9b8f98.js'].map(src=>{
+   const script=document.createElement('script');script.type='application/json';script.setAttribute('src',src);
+   document.head.append(script);return script;
+  });
+  const surface=document.createElement('div');
+  surface.innerHTML='<div class="scrollContainer-fG6qEo" data-app-action-timeline-scroll><div class="overflow-clip"><div class="transcriptContent-l_FOQD" data-thread-user-message-navigation-content><div data-thread-find-target><div style="overflow:auto;height:40px"><div style="height:140px"></div></div></div></div><div class="pointer-events-none" aria-hidden="true"></div></div><div class="footer-A8ZvKV absolute"></div></div>';
+  const host=surface.firstElementChild,transcript=host.firstElementChild.firstElementChild,padding=transcript.nextElementSibling,turns=transcript.firstElementChild;
+  padding.classList.add('h-[calc(var(--thread-scroll-padding-bottom)-var(--spacing)*4)]');
+  document.body.append(surface);
+  const rule=link.sheet.cssRules[0];
+  const observed=()=>[rule.selectorText.includes('data-thread-has-reading-passage'),getComputedStyle(host).overflowAnchor,getComputedStyle(turns).overflowAnchor,getComputedStyle(turns.firstElementChild).overflowAnchor];
+  const native=observed();
+  ${paint};
+  const patched=observed();
+  host.setAttribute('data-thread-has-reading-passage','');
+  host.setAttribute('data-thread-reading','anchored');
+  const anchored=observed();
+  host.setAttribute('data-native-end-snap-following','');
+  const following=observed();
+  turns.style.overflow='auto';
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const nestedFallback=observed();
+  turns.style.removeProperty('overflow');
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const recovered=observed();
+  const unexpected=transcript.appendChild(document.createElement('section'));
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const shapeFallback=observed();
+  unexpected.remove();
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const shapeRecovered=observed();
+  const cachedConversation=host.cloneNode(true);
+  cachedConversation.hidden=true;surface.append(cachedConversation);
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const cachedPatched=observed();
+  cachedConversation.firstElementChild.firstElementChild.firstElementChild.style.overflow='auto';
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const cachedFallback=observed();
+  cachedConversation.remove();
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  const cachedRemoved=observed();
+  window.__cwbTranscriptPaint.dispose();
+  const disposed=observed();
+  assets.forEach(script=>script.remove());surface.remove();link.remove();
+  return {native,patched,anchored,following,nestedFallback,recovered,shapeFallback,shapeRecovered,cachedPatched,cachedFallback,cachedRemoved,disposed};
+ })()`});
+ assert.ifError(exceptionDetails);
+ const native=[true,'none','auto','auto'],patched=[false,'none','none','auto'];
+ assert.deepEqual(anchorResult.value,{native,patched,anchored:[false,'auto','none','auto'],following:patched,nestedFallback:native,recovered:patched,shapeFallback:native,shapeRecovered:patched,cachedPatched:patched,cachedFallback:native,cachedRemoved:patched,disposed:native});
+ console.log(JSON.stringify({kind:'isolated-style-invalidation',passed:true,nodes:appearances.nodes,maxRestyledElements:most,localUpdateMs:costs.map(x=>Math.round(x*10)/10),appearancePreserved:true,nativeDecorativeStateScoped:true,readingAnchorScopeRestored:true}));
 }finally{if(started)await browser?.call('Tracing.end').catch(()=>{});browser?.close();page?.close();chrome.kill()}
