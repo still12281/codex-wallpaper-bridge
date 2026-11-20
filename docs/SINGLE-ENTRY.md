@@ -4,7 +4,7 @@ Use the generated CodexEntry shortcut as the unified wallpaper entry. A repeat c
 
 An explicit click with no verified endpoint allows a bounded shutdown drain (48 checks, 250 ms apart) for the preceding client to finish exiting. A newly appearing main process is preserved immediately; leftover renderer/helper processes alone are not treated as a running ordinary main. Prelaunch failure never opens an ordinary client after the previous instance disappears. Normal-client fallback is available only after this invocation created and verified its own client. The update-event path does not gain this wait or any new close/retry behavior.
 
-The wallpaper bridge stays connected while import, switching, detached-window support and optional system media are available. It retains page synchronization and media timers; it does not scan OS processes or restart Codex. A browser WebSocket disconnect triggers cleanup and bridge exit. There is no external five-second process supervisor or automatic restart loop. Existing installations should disable the legacy `CodexWallpaperBridge-Supervisor` scheduled task. A failed bridge can be reconnected on the next explicit entry click.
+The recovery helper waits on Windows process handles for the active Codex client and its wallpaper host. When the host exits first, it records the exit code and recent stderr in `host-recovery.jsonl`, then attempts attach-only recovery against the same client and browser. Rapid failures get at most two attempts. Closing Codex ends the wait. Double-click `Repair.cmd` in the data directory to request the same attach-only recovery manually.
 
 Launcher and shortcut icons use the installed Windows manifest's original unplated PNG assets, wrapped in an ICO directory with their payloads unchanged. The Electron `app/resources/icon-chatgpt.ico` has a different glossy design and must not be used for Windows-native consistency. The canonical icon is `icons/Codex-Native.ico`; `Codex.ico` remains a matching compatibility copy. No pixels are redrawn, resized or bundled with the source.
 
@@ -30,4 +30,4 @@ After building into an isolated data directory, run `pwsh -NoProfile -File test/
 
 An already verified browser/root is reactivated through the official package activation API, then the exact main CDP page is brought forward. Detached pages cannot substitute for the main page. The deployed app/src host path is recognized as the existing host. Real activation retained the same client/browser/main target and took approximately 1.25 seconds. A later one-shot reopen restored both wallpaper windows and successfully reused the saved fallback endpoint.
 
-The unused supervisor source and its deployed executables were retired; the exact disabled legacy scheduled task was removed. No new resident supervisor or monitoring service was added.
+The legacy polling supervisor and its scheduled task were retired.

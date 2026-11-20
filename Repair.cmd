@@ -8,6 +8,10 @@ if /I "%~1"=="--check" (
   echo Manual recovery entry is ready. No client was started or closed.
   exit /b 0
 )
+if /I "%~1"=="--reopen" goto reopen
+start "" "%~dp0CodexEntry.exe" --recover-wallpaper
+exit /b %errorlevel%
+:reopen
 echo Save your work and EXIT Codex normally before continuing.
 echo If it is still running in the background, use the app's Exit command.
 echo This tool does not close processes or reset your wallpaper settings.

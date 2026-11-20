@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 27085,
-      "sha256": "39c8056e71da49a149ac0841a20b962db9c73695b61835f4674395d085c33072"
+      "utf8Bytes": 27381,
+      "sha256": "e9f11dc2751331bb6f9cf4cd59404e8a38dc9a260b8479477f766b04de3380ee"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 15495,
-      "sha256": "88e305410fdc2acd3bf1251aa3999baaaf3ff4ef0714dba261441812aed04c3a"
+      "utf8Bytes": 15352,
+      "sha256": "f2817804eda71544fdf040eb570f3b99d9af0e921b3f90852a68e8d9f646ac3c"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 17722,
-      "sha256": "3dea4b78603a4b2f60113e254f23f0978368d06778568d885e54e0e4ee09d351"
+      "utf8Bytes": 17661,
+      "sha256": "6af50c9ead1267e3b5b05de58362aa79afa2375d529bf04e2fe91724f4407052"
     },
     {
       "path": "README.zh-CN.md",
@@ -64,8 +64,8 @@
     },
     {
       "path": "Repair.cmd",
-      "utf8Bytes": 1034,
-      "sha256": "2c3ab622f85e54d5b18c6a2a3b349b4ad58081fcb7e3b254f7e2391ee1e75c7c"
+      "utf8Bytes": 1150,
+      "sha256": "e25518e739d66d9a0e61d08e8caef147a972d5acdf760e618cc05c0bed9ff778"
     },
     {
       "path": "SECURITY.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 18189,
-      "sha256": "0a00539a5ed9b07c850d85416fcbabe9dee60eb03dd386e814ed86cd8d12dfc9"
+      "utf8Bytes": 17302,
+      "sha256": "342362abc5722a994b67a90f11d1edf564544f24a59a23d5a35a3c86c88625cb"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -204,8 +204,8 @@
     },
     {
       "path": "docs/SINGLE-ENTRY.md",
-      "utf8Bytes": 7571,
-      "sha256": "df92060c451949475c61b9c35ee8ceed5d6e84b6c08e1d2e07b8740c120da02d"
+      "utf8Bytes": 7357,
+      "sha256": "41d5e5e4e2828fe67c3749b3d77f40f701633738ab5c981059dbfb4124423b8a"
     },
     {
       "path": "docs/STARTUP-EFFECTS.md",
@@ -729,6 +729,11 @@
       "sha256": "715f270b95751ceb8df67041e798e6346612a69b6e3e8839b5aec8a26196600a"
     },
     {
+      "path": "test/host-recovery.ps1",
+      "utf8Bytes": 3975,
+      "sha256": "d1aa9c907a3bd1429655b8f9957d0d4686a13de107702103edb56d6cc999a6a8"
+    },
+    {
       "path": "test/import-cancellation.test.mjs",
       "utf8Bytes": 5433,
       "sha256": "a1f0c71a51e1f256bed2d78c3e008d381b6a5a5afe7c217d5c7f259a91fe67e8"
@@ -890,8 +895,8 @@
     },
     {
       "path": "test/run-regression.mjs",
-      "utf8Bytes": 3982,
-      "sha256": "85d0990632173b3dbca8c706b649e714671da5212da74c520e82bf31627da61e"
+      "utf8Bytes": 4010,
+      "sha256": "26085d0204498109855422b169a0b9174f58fcb66a1d35119e3416c2f8090a4a"
     },
     {
       "path": "test/runtime-status.test.mjs",
@@ -1165,8 +1170,8 @@
     },
     {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 3242,
-      "sha256": "f6453f31b999952a42ecde223f6e21c5fd24c9ed8638bf4795da06ea87fa97b0"
+      "utf8Bytes": 3863,
+      "sha256": "a53ed0a5bc81f446210be1380bf3d0ba767631167160a5884694c0893d228599"
     },
     {
       "path": "windows/CleanProcess.cs",
@@ -1185,13 +1190,18 @@
     },
     {
       "path": "windows/CodexEntry.cs",
-      "utf8Bytes": 23259,
-      "sha256": "f40bc5dabc7c1d5f3d8c0b595e5c1674b63b1f369fcc39585ad208432873f776"
+      "utf8Bytes": 23593,
+      "sha256": "258b51cbee5ede821ebd570b4a656fdb23699c8d40b46fd02ac45c2d013cd9b5"
     },
     {
       "path": "windows/FastTcp.ps1",
       "utf8Bytes": 181,
       "sha256": "ad965d325c1d63f585a5eaa52dc7fd17b83bd11f116c2fb58fcb790b79ed0e11"
+    },
+    {
+      "path": "windows/HostRecovery.cs",
+      "utf8Bytes": 6576,
+      "sha256": "88ad877fbc24320ccdcd9e3ce066f18e4acb39dc5c0bfb7f8821246b3e7443bc"
     },
     {
       "path": "windows/Install-BridgeUpdate.ps1",
@@ -1280,8 +1290,8 @@
     },
     {
       "path": "windows/Start-CodexWallpaper.ps1",
-      "utf8Bytes": 26910,
-      "sha256": "6563f537acf5a85b90235ba2837c34a8624bb9daec891d265d22ec10000b5783"
+      "utf8Bytes": 28922,
+      "sha256": "66684aaadfd6921afea773a1046965dd90ffda24f2e81f983e0643d69aed7cc5"
     },
     {
       "path": "windows/Start-ExternalApp.ps1",
@@ -1310,8 +1320,8 @@
     },
     {
       "path": "windows/Uninstall-Wallpaper.ps1",
-      "utf8Bytes": 3240,
-      "sha256": "f199459c18f8f77f3f929b15d806fb6da1b45b88ae9f5d28757bd84a9c4d53b3"
+      "utf8Bytes": 3702,
+      "sha256": "7c77859dca08eea879c8c45d61b1e53c5e0ef173705c8f27070f26f8495ffb20"
     },
     {
       "path": "windows/UninstallSupport.ps1",

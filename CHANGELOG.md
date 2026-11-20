@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Reattach a failed wallpaper host to the same Codex session, with bounded retries and per-exit diagnostics. Double-click the installed `Repair.cmd` for manual recovery.
+- Use native scrollport clipping for supported translucent composers, and an opaque footer for other layouts.
+
 ## 0.3.2
 
 - Launch the verified setup EXE directly from the wallpaper panel. Keep the previous launcher active until setup completes, and record the result separately from the running wallpaper host.

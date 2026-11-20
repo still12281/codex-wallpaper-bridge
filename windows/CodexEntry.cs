@@ -178,6 +178,10 @@ internal static class CodexEntry {
    bool acquired=false;
    try{
     acquired=Acquire(entryLock,0);
+    if(!acquired&&args.Length==1&&args[0]=="--recover-wallpaper"){
+     acquired=Acquire(entryLock,65000);
+     if(!acquired){Environment.ExitCode=1;message="上一次接入仍在处理，请稍后重新恢复壁纸。";}
+    }
     if(!acquired&&args.Length==0){
      // An already visible, bound window can respond while the wallpaper is preparing.
      try{string repair;if(TryWarm(AppDomain.CurrentDomain.BaseDirectory,false,out repair,true))return;}catch{}
@@ -203,6 +207,7 @@ internal static class CodexEntry {
   bool inspect=Array.IndexOf(args,"--check-runtime")>=0;
   bool inspectWarm=Array.IndexOf(args,"--inspect-warm")>=0;
   bool afterUpdate=args.Length>0&&args[0]=="--after-update-event";
+  bool recover=args.Length==1&&args[0]=="--recover-wallpaper";
   try {
    if(afterUpdate){
     long record;if(args.Length!=2||!Int64.TryParse(args[1],out record)||record<=0){Environment.ExitCode=1;return;}
@@ -213,7 +218,7 @@ internal static class CodexEntry {
     using(var update=WallpaperCleanProcess.Start(updateInfo)){if(!update.WaitForExit(180000)){Environment.ExitCode=1;return;}Environment.ExitCode=update.ExitCode;}return;
    }
    if(inspectWarm){string repair;bool eligible=TryWarm(dataRoot,true,out repair);if(!eligible){File.WriteAllText(Path.Combine(dataRoot,"entry-warm-check.json"),"{\"eligible\":false,\"inspectOnly\":true}");Environment.ExitCode=2;}return;}
-   if(!inspect){
+   if(!inspect&&!recover){
    SetCurrentProcessExplicitAppUserModelID(WallpaperIdentity.AppId);
    string repair;if(TryWarm(dataRoot,false,out repair)){if(repair!=null)WarmRepair(dataRoot,repair);return;}
    // Every entry checks the currently registered package. The bootstrap reuses
@@ -223,7 +228,7 @@ internal static class CodexEntry {
    if(!File.Exists(script))throw new FileNotFoundException("Launcher source moved; rebuild the launcher.");
    var info=new ProcessStartInfo {
     FileName=FindPowerShell(),
-    Arguments="-NoProfile -NonInteractive -File \""+script+"\""+(inspect?" -InspectOnly":""),
+    Arguments="-NoProfile -NonInteractive -File \""+script+"\""+(inspect?" -InspectOnly":recover?" -AttachOnly":""),
     WorkingDirectory=Path.GetDirectoryName(script),UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden
    };
    info.EnvironmentVariables["CODEX_WALLPAPER_DATA_DIR"]=dataRoot;
@@ -231,7 +236,7 @@ internal static class CodexEntry {
    string node=FindNode();info.EnvironmentVariables["CODEX_WALLPAPER_NODE"]=node;
    string inspectOut=Path.Combine(dataRoot,"entry-runtime-stdout.log"),inspectError=Path.Combine(dataRoot,"entry-runtime-stderr.log");
    using(var process=inspect?WallpaperCleanProcess.Start(info,inspectOut,inspectError):WallpaperCleanProcess.Start(info)) {
-    if(!inspect)AllowSetForegroundWindow(process.Id);
+    if(!inspect&&!recover)AllowSetForegroundWindow(process.Id);
     if(!inspect){
      if(!process.WaitForExit(180000))throw new IOException("壁纸启动尚未完成，请查看 launch-status.json；现有 Codex 已保留。");
      if(process.ExitCode==3)throw new IOException("上一次接入仍在处理，请稍后再点击 Codex。");

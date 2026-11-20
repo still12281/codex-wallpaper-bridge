@@ -110,15 +110,11 @@ $script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).
 
 ## 更新后壁纸消失：手动恢复
 
-自动任务的版本记录只用于事件去重。手动入口独立运行，正常退出后重新识别当前包并恢复已保存壁纸。
+1. **双击数据目录的 `Repair.cmd`。** 默认路径是 `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`。它会核对当前 Codex 窗口并补接壁纸宿主。
+2. **窗口无法附加时，保存内容并正常退出 Codex。** 然后点击壁纸入口，或运行 `Repair.cmd --reopen` 并按提示重新打开。数据目录的 `CodexEntry.exe` 和 `Codex.lnk` 也可以直接打开。
+3. **依赖或安装文件缺失时，用原数据目录重新安装。** 壁纸库和配置会保留。
 
-1. **先重新点一次壁纸入口。** 专用模式用 Codex Wallpaper，替换模式用原名称的 Codex；如果只是壁纸宿主断开，入口会检查并补接。
-2. **仍无壁纸时，保存内容并正常退出 Codex。** 关闭全部窗口，并从应用退出菜单结束仍在后台的实例。不要在任务管理器中强制结束来代替正常退出。
-3. **运行安装目录的 `Repair.cmd`。** 默认位置可按 `Win + R` 输入 `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`。自定义安装时使用自己选择的数据目录。确认已正常退出后按键，工具会通过 `CodexEntry.exe` 重新识别当前包并启动。
-4. **入口丢失也能恢复。** 同一数据目录中的 `CodexEntry.exe` 和 `Codex.lnk` 均为稳定入口，不依赖桌面快捷方式或自动任务。
-5. **依赖/安装文件缺失时重新安装。** 下载 Release 安装包，运行安装器并选择原数据目录；壁纸库和配置会保留。若新版客户端改变了接入方式，使用兼容该客户端的新版桥接程序。
-
-手动恢复不重置设置、不删除素材、不消费自动重连次数，不修改官方包或 CSP。`Repair.cmd` 只提示你先自行退出，然后打开原一体入口，不负责自动关进程。错误可查看数据目录中的 `entry-error.log` 和 `launch-status.json`；分享前隐藏个人路径和内容。
+错误可查看数据目录的 `entry-error.log`、`launch-status.json` 和 `host-recovery.jsonl`。分享前隐藏个人路径和内容。
 
 ### 更换安装盘
 
