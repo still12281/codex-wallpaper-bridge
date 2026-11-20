@@ -41,14 +41,12 @@ owners and values.
 
 ## Transparent input and native scrolling
 
-Native layout reserves composer space but also relies on a footer background to
-occlude earlier turns. Making that background transparent is insufficient.
-The bridge clips only the transcript content's painting at the native footer's
-top edge. It never changes scrollport height, padding, scroll positions or the
-composer's dimensions. Scroll, content/footer resize and document events update
-the clip; streaming text growth is included. `clearShell` releases these document
-listeners and removes paint markers when wallpaper is disabled or its host stops.
-The same document events clip a code block's source below its native sticky
+The bridge uses Codex's native bottom-inset variable to shorten the scrollport and
+remove the matching spacer. In the supported layout, browser overflow clips the
+transcript above the composer and the footer can stay transparent. Other layouts
+use an opaque footer so history remains covered.
+
+Document scroll and resize events clip a code block's source below its native sticky
 control bar. The header inherits the block's single material layer, and source
 text cannot show through it. Native code-background opt-out removes this code
 clip along with the wallpaper code styles.
@@ -60,9 +58,8 @@ unrelated class changes, including the native thinking shimmer, out of broad
 class-attribute invalidation chains involving relational selectors. Substring
 selectors remain limited to native generated class names that lack stable tokens.
 
-Transcript and code clipping lengths are registered with `inherits: false`.
-They affect their marked element rather than propagating on every scroll through
-the text beneath it. Shared palette tokens still inherit and change with saved
+The sticky code clipping length is registered with `inherits: false`.
+It affects its marked element. Shared palette tokens still inherit and change with saved
 appearance settings. The registrations disappear with the owned stylesheet.
 
 `npm test` checks the generated production stylesheet's dependency contract in
@@ -70,7 +67,7 @@ both themes and code-background modes, so local edits can detect these patterns
 without launching a browser. The style invalidation integration check executes
 the production painter against
 more than 3,000 elements. It rejects exact-class attribute selectors, checks that
-both clipping lengths stay out of descendants, and reads Chromium's affected-node
+the code clipping length stays out of descendants, and reads Chromium's affected-node
 counts to catch local updates that restyle a substantial part of the document.
 The check uses structural limits rather than machine-dependent time thresholds.
 

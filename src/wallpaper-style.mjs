@@ -54,14 +54,16 @@ export function paintShell(config){
  const mediaRoot=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot;
  if(mediaRoot){let tint=mediaRoot.querySelector('[data-cwb-shade]');if(!tint){tint=document.createElement('div');tint.setAttribute('data-cwb-shade','');mediaRoot.appendChild(tint)}tint.style.cssText=`position:absolute;inset:0;pointer-events:none;background:rgba(${shade},${overlay})`}
  let style=document.getElementById('codex-wallpaper-bridge-style');if(!style){style=document.createElement('style');style.id='codex-wallpaper-bridge-style';document.head.appendChild(style)}
+ // Require the native spacer and out-of-flow footer before shrinking the
+ // scrollport. Both the port and spacer lose the same native clearance.
+ const spacer=String.raw`.h-\[calc\(var\(--thread-scroll-padding-bottom\)-var\(--spacing\)\*4\)\]`;
+ const thread='[data-request-input-activity-root] > .thread-scroll-container[data-app-action-timeline-scroll][style*="--thread-scroll-padding-bottom:"]';
+ const footer='> .absolute.bottom-0 > [data-thread-scroll-footer]';
+ const separated=thread+':has(> div > '+spacer+'):has('+footer+'):not(:has([data-expanded-composer],[data-thread-focus-mode]))';
  // Native browser guests are portaled beside #root. A positive root z-index
  // would place its transparent pane above the guest and intercept mouse input.
  // Clipping belongs to the marked element, not every text/code descendant.
- style.textContent=`${nativeMotionCss}@property --cwb-transcript-clip{syntax:"<length>";inherits:false;initial-value:0px}
- @property --cwb-code-clip-top{syntax:"<length>";inherits:false;initial-value:0px}
- @property --cwb-transcript-start{syntax:"<length>";inherits:false;initial-value:0px}
- @property --cwb-transcript-end{syntax:"<length>";inherits:false;initial-value:0px}
- @keyframes cwb-transcript-scroll{from{clip-path:inset(0 0 var(--cwb-transcript-start) 0)}to{clip-path:inset(0 0 var(--cwb-transcript-end) 0)}}
+ style.textContent=`${nativeMotionCss}@property --cwb-code-clip-top{syntax:"<length>";inherits:false;initial-value:0px}
  html,body{background:transparent!important}body{isolation:isolate}#root,#app{position:relative;background:transparent!important}
  :root{${themeTokens};--color-bg-primary:rgba(${shade},.4);--color-bg-secondary:rgba(${shade},.48);--color-bg-tertiary:rgba(${shade},.6);--color-border-primary:rgba(128,150,170,.24);--color-border-secondary:rgba(128,150,170,.14)}
  [data-composer-surface-variant]{--composer-editor-placeholder-opacity:1!important}
@@ -104,27 +106,23 @@ export function paintShell(config){
  ${sync.context?`[data-composer-rail]{background:transparent!important;backdrop-filter:none!important}[data-composer-utility-rail]{background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
  ${sync.context?`[data-composer-rail-item].bg-surface-elevated-secondary,main .relative.w-fit.overflow-hidden.rounded-3xl>.bg-surface-elevated-secondary{background:var(--cwb-control-background)!important;color:${ink}!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
  ${sync.context?`main .overflow-hidden:has(>.group\\/turn-diff-header){background:var(--cwb-control-background)!important;backdrop-filter:var(--cwb-control-filter)!important}`:''}
- [data-thread-scroll-footer] > [aria-hidden="true"]{background:transparent!important}
- [data-cwb-transcript-content]{clip-path:inset(0 0 var(--cwb-transcript-clip,0px) 0)}
- [data-cwb-transcript-content="scroll"]{animation:cwb-transcript-scroll 1s linear both;animation-timeline:scroll(nearest y)}
+ [data-thread-scroll-footer]{background-color:rgb(${shade})!important}
+ ${separated}{height:calc(100% - max(0px, var(--thread-scroll-padding-bottom) - var(--spacing)*4))!important;scroll-padding-bottom:0!important}
+ ${separated} > div > ${spacer}{height:0!important}
+ ${separated} ${footer},${separated} ${footer} > [aria-hidden="true"]{background:transparent!important}
  [data-cwb-code-source]{clip-path:inset(var(--cwb-code-clip-top,0px) 0 0 0)}
  [data-app-shell-main-content-top-fade]:not(:has(*)),[class*="_MainContentTopFade_"]{background:transparent!important}
  #codex-wallpaper-bridge-layer{opacity:1!important;position:fixed!important;inset:0!important;z-index:-1!important;pointer-events:none!important}`;
  // Remove legacy bridge geometry once; native layout owns transcript spacing.
  if(window.__cwbLayout){window.__cwbLayout.dispose?.();delete window.__cwbLayout;for(const e of document.querySelectorAll('[data-cwb-thread-space],[style*="--cwb-footer-height"]')){e.removeAttribute('data-cwb-thread-space');e.style.removeProperty('--cwb-footer-height');}}
- // A transparent composer reveals wallpaper, never earlier turns. Clip only
- // transcript painting using native footer bounds; leave scrollport dimensions,
- // padding, scroll positions and the composer itself entirely native.
- if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==7)window.__cwbTranscriptPaint.dispose();
+ // Sticky code retains its own local clip; the transcript uses browser overflow.
+ if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==8)window.__cwbTranscriptPaint.dispose();
  if(!window.__cwbTranscriptPaint){
-  const marked=new Set(),codeMarked=new Set(),observed=new Set(),pendingCode=new Set();
+  const codeMarked=new Set(),observed=new Set(),pendingCode=new Set();
   let frame=0,codeFrame=0,disposed=false;
-  const timelines=CSS.supports('animation-timeline','scroll(nearest y)');
-  const scrollSelector='[data-app-action-timeline-scroll]',footerSelector='[data-thread-scroll-footer]';
   const codeSelector='[data-code-block][data-markdown-copy="code-block"]';
-  const structureSelector=[scrollSelector,footerSelector,codeSelector,'[data-code-block-source]','[data-code-block-controls]'].join(',');
-  let structureParents=new Set(),fallbackScrolls=new Set(),codeRoots=[];
-  const clean=e=>{e.removeAttribute('data-cwb-transcript-content');for(const p of ['--cwb-transcript-clip','--cwb-transcript-start','--cwb-transcript-end'])e.style.removeProperty(p);marked.delete(e);};
+  const structureSelector=[codeSelector,'[data-code-block-source]','[data-code-block-controls]'].join(',');
+  let codeRoots=[];
   const cleanCode=e=>{e.removeAttribute('data-cwb-code-source');e.style.removeProperty('--cwb-code-clip-top');codeMarked.delete(e);};
   const writePx=(element,property,pixels)=>{
    const value=pixels+'px';
@@ -134,40 +132,9 @@ export function paintShell(config){
    if(disposed)return;
    cancelAnimationFrame(frame);frame=0;
    cancelAnimationFrame(codeFrame);codeFrame=0;pendingCode.clear();
-   const transcripts=new Map(),watch=new Set();
-   structureParents=new Set();fallbackScrolls=new Set();
-   for(const scroll of document.querySelectorAll(scrollSelector)){
-    structureParents.add(scroll);watch.add(scroll);
-    const sr=scroll.getBoundingClientRect();if(!sr.width||!sr.height)continue;
-    const layout=scroll.closest('[data-request-input-activity-root]')||scroll.parentElement;
-    let footerRect;
-    const footer=[...layout.querySelectorAll(footerSelector)].find(f=>{
-     watch.add(f);
-     footerRect=f.getBoundingClientRect();
-     return footerRect.width&&footerRect.height&&footerRect.bottom>sr.top&&footerRect.top<sr.bottom;
-    });
-    if(!footer)continue;
-    const edge=Math.max(sr.top,Math.min(sr.bottom,footerRect.top)),range=scroll.scrollHeight-scroll.clientHeight,top=scroll.scrollTop;
-    const mode=timelines&&range>0?'scroll':'';
-    if(!mode)fallbackScrolls.add(scroll);
-    const contents=[...scroll.children];
-    for(let i=0;i<contents.length;i++){const e=contents[i];
-     if(e.matches(footerSelector))continue;
-     if(e.querySelector(footerSelector)){structureParents.add(e);contents.push(...e.children);continue;}
-     const bottom=e.getBoundingClientRect().bottom-edge,start=bottom+top;
-     transcripts.set(e,{mode,bottom,start,end:start-range});watch.add(e);
-    }
-   }
+   const watch=new Set();
    codeRoots=window.__cwbTranscriptPaint.codeEnabled?[...document.querySelectorAll(codeSelector)]:[];
    const codes=measureCode(codeRoots,watch);
-   // Finish geometry reads before changing clip styles.
-   for(const [e,{mode,bottom,start,end}]of transcripts){
-    if(e.getAttribute('data-cwb-transcript-content')!==mode)e.setAttribute('data-cwb-transcript-content',mode);
-    writePx(e,'--cwb-transcript-clip',Math.max(0,bottom));
-    if(mode){writePx(e,'--cwb-transcript-start',start);writePx(e,'--cwb-transcript-end',end);}
-    marked.add(e);
-   }
-   for(const e of marked)if(!transcripts.has(e))clean(e);
    paintCode(codes);
    for(const e of codeMarked)if(!codes.has(e))cleanCode(e);
    for(const e of watch)if(!observed.has(e)){observed.add(e);resize.observe(e);}
@@ -196,9 +163,6 @@ export function paintShell(config){
   const affectedBy=(target,element)=>target===element||target.contains(element)||element.contains(target);
   const scrollPaint=event=>{
    const target=event.target;
-   for(const scroll of fallbackScrolls)if(affectedBy(target,scroll)){queue();return;}
-   // Native timelines already move transcript clips. Only sticky code in the
-   // scrolled region needs fresh geometry, coalesced into one pass per frame.
    for(const root of codeRoots)if(affectedBy(target,root))pendingCode.add(root);
    if(pendingCode.size&&!codeFrame)codeFrame=requestAnimationFrame(()=>{
     codeFrame=0;
@@ -208,16 +172,15 @@ export function paintShell(config){
   };
   const resize=new ResizeObserver(update);
   const mutation=new MutationObserver(changes=>{
-   if(changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(
-    structureParents.has(c.target)||n.matches(structureSelector)||n.querySelector(structureSelector)
-   ))))queue();
+   if(window.__cwbTranscriptPaint.codeEnabled&&changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&
+    (n.matches(structureSelector)||n.querySelector(structureSelector)))))queue();
   });
   mutation.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('scroll',scrollPaint,{capture:true,passive:true});window.addEventListener('resize',queue);
-  window.__cwbTranscriptPaint={version:7,codeEnabled:sync.code,refresh:update,dispose(){
+  window.__cwbTranscriptPaint={version:8,codeEnabled:sync.code,refresh:update,dispose(){
    disposed=true;cancelAnimationFrame(frame);cancelAnimationFrame(codeFrame);resize.disconnect();mutation.disconnect();
    document.removeEventListener('scroll',scrollPaint,true);window.removeEventListener('resize',queue);
-   for(const e of marked)clean(e);for(const e of codeMarked)cleanCode(e);delete window.__cwbTranscriptPaint;
+   for(const e of codeMarked)cleanCode(e);delete window.__cwbTranscriptPaint;
   }};update();
  }else{window.__cwbTranscriptPaint.codeEnabled=sync.code;window.__cwbTranscriptPaint.refresh();}
  window.__cwbApplyWidgets?.(config)?.catch(error=>{if(window.__cwbWidgets)window.__cwbWidgets.status={phase:'unsupported',reason:error.message}});

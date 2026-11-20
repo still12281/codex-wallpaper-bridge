@@ -234,8 +234,8 @@
     },
     {
       "path": "docs/SURFACE_POLICY.md",
-      "utf8Bytes": 7650,
-      "sha256": "83712ca56b09151d1756f4df0fc24da3826139d0c94760904a8157c7d54d3911"
+      "utf8Bytes": 7323,
+      "sha256": "634b7e20fe7c93b82ac9f5e9b128797a9ea44e6f183f37a733b2632072a2f2d9"
     },
     {
       "path": "docs/SYSTEM-MEDIA.md",
@@ -575,8 +575,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 27195,
-      "sha256": "c3ab6faa643a826c94ae4ba3e890e12489f44e7c7fd21d4c51ae7a335ad4c9e5"
+      "utf8Bytes": 24818,
+      "sha256": "c55c82b1b75586734a3b1fa13321f45073bb78e40106edc4edaa53df3f310b9d"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -925,13 +925,13 @@
     },
     {
       "path": "test/style-contract.test.mjs",
-      "utf8Bytes": 1750,
-      "sha256": "1da1160db17f38a580a2e9a8bf540cc02eeb8201ed3102ecd45d0b6310084dec"
+      "utf8Bytes": 1746,
+      "sha256": "33cc2b9745dc7fc0bd66263808c41b5f34dcabd978b2dc5ce5ae8eb665c5d646"
     },
     {
       "path": "test/style-invalidation-integration.mjs",
-      "utf8Bytes": 10628,
-      "sha256": "ebc10d1df7bb2b567b2137d32fd94b85c2596709e8ccfa82f7748d7b82bf0cc3"
+      "utf8Bytes": 10506,
+      "sha256": "ca25679fbcdd88a57065399f4e30b7be62f5a5fb187d5c9d09a8b7b651c5731e"
     },
     {
       "path": "test/surfaces.test.mjs",
@@ -955,8 +955,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 30693,
-      "sha256": "821d2d8910fba28af0ddba4b655925716f6bda99683a4805dd1905f5f472216b"
+      "utf8Bytes": 25187,
+      "sha256": "6bc106aa5163fe2917a0940b9022dc5f819f6e79767609e98fd980bb26013f58"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",

@@ -137,72 +137,38 @@ try{
   assert.equal(await c.evaluate('getComputedStyle(document.getElementById("native-shadow-diff").shadowRoot.firstElementChild).backgroundColor'),'rgba(0, 0, 0, 0)');
  }
  const layoutResults=[];
- for(const structure of ['inside-transcript','sibling-wrapper','nested-footer']){
-  await c.evaluate(`(()=>{window.__cwbLayout?.dispose();delete window.__cwbLayout;document.body.innerHTML='<div style="position:relative;height:500px;background:rgb(10,80,90)" id="viewport"><div data-app-action-timeline-scroll style="height:100%;overflow:auto"><div id="history" style="height:1800px;background:rgb(200,0,0)">Transcript</div></div><div id="footer-wrapper" style="position:absolute;inset:auto 0 0"><div data-thread-scroll-footer style="height:120px;position:relative"><div aria-hidden="true" class="bg-surface"></div><input id="draft" value="Draft" style="position:absolute;left:20px;top:20px;width:100px;height:30px;background:rgb(0,200,0);border:0;padding:0;color:black"></div></div></div>';if(${JSON.stringify(structure)}==='inside-transcript'){const f=document.querySelector('[data-thread-scroll-footer]');f.style.position='absolute';f.style.bottom='0';f.style.width='100%';document.querySelector('[data-app-action-timeline-scroll]').append(f);document.getElementById('footer-wrapper').remove();}window.__codexWallpaperBridge={ready:true};(${paintShell.toString()})({palette:{r:20,g:22,b:28,dark:true},visual:{glassOpacity:.5},darkOverlay:.4});return true})()`);
-  if(structure==='nested-footer')await c.evaluate(`(()=>{const scroll=document.querySelector('[data-app-action-timeline-scroll]'),history=document.getElementById('history'),footer=document.querySelector('[data-thread-scroll-footer]'),content=document.createElement('div');footer.style.position='absolute';footer.style.bottom='0';footer.style.width='100%';content.append(history,footer);scroll.append(content);document.getElementById('footer-wrapper').remove();return true})()`);
-  for(const height of [120,180]){
-   await c.evaluate('document.querySelector("[data-thread-scroll-footer]").style.height='+JSON.stringify(height+'px')+';true');
-   const sample=await c.call('Runtime.evaluate',{expression:'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const s=document.querySelector("[data-app-action-timeline-scroll]"),f=document.querySelector("[data-thread-scroll-footer]");resolve({gap:f.getBoundingClientRect().top-s.getBoundingClientRect().bottom,height:s.clientHeight,adapted:s.hasAttribute("data-cwb-thread-space")})})))',awaitPromise:true,returnByValue:true});
-   const value=sample.result.value;assert(!value.adapted&&value.height===500,JSON.stringify({structure,height,...value}));assert.equal(await c.evaluate('!!window.__cwbLayout'),false);assert.equal(await c.evaluate('getComputedStyle(document.querySelector("[data-thread-scroll-footer] > [aria-hidden=true]")).backgroundColor'),'rgba(0, 0, 0, 0)');
-   for(const top of [0,400,1300]){
-    await c.evaluate('document.querySelector("[data-app-action-timeline-scroll]").scrollTop='+top+';window.__cwbTranscriptPaint.refresh();true');
-    const geometry=await c.evaluate(`(()=>{const s=document.querySelector('[data-app-action-timeline-scroll]'),f=document.querySelector('[data-thread-scroll-footer]'),r=f.getBoundingClientRect();return {height:s.clientHeight,scrollHeight:s.scrollHeight,top:s.scrollTop,clip:getComputedStyle(document.getElementById('history')).clipPath,point:{x:r.left+160,y:r.top+60},input:{x:r.left+110,y:r.top+40},draft:document.getElementById('draft').value}})()`);
-    assert.equal(geometry.height,500);assert.equal(geometry.scrollHeight,1800);assert.equal(geometry.top,top);assert.notEqual(geometry.clip,'none');assert.equal(geometry.draft,'Draft');
-    const png=(await c.call('Page.captureScreenshot',{format:'png'})).data;
-    const pixels=await c.call('Runtime.evaluate',{expression:`new Promise(resolve=>{const img=new Image();img.onload=()=>{const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;const x=canvas.getContext('2d');x.drawImage(img,0,0);const pixel=p=>[...x.getImageData(Math.round(p.x),Math.round(p.y),1,1).data].slice(0,3);resolve({under:pixel(${JSON.stringify(geometry.point)}),input:pixel(${JSON.stringify(geometry.input)})})};img.src='data:image/png;base64,${png}'})`,awaitPromise:true,returnByValue:true});
-    assert.deepEqual(pixels.result.value.under,[10,80,90],`${structure} footer=${height} scroll=${top}: history leaked`);assert.deepEqual(pixels.result.value.input,[0,200,0],'Composer was clipped with transcript');
-   }
-   layoutResults.push({structure,footerHeight:height,nativeGeometryPreserved:true,historyOccludedAtThreeScrollPositions:true});
+ const spacerClass='h-[calc(var(--thread-scroll-padding-bottom)-var(--spacing)*4)]';
+ const fixture=`<div data-request-input-activity-root id="viewport" style="position:relative;height:500px;background:rgb(10,80,90);--spacing:4px">
+ <div class="thread-scroll-container" data-app-action-timeline-scroll style="height:100%;display:flex;flex-direction:column;overflow:auto;--thread-scroll-padding-bottom:130px">
+  <div style="min-height:100%;display:flex;flex-direction:column;flex:none"><div id="history" style="height:1800px;flex:none;background:rgb(200,0,0)">Transcript</div><div class="${spacerClass}" style="height:calc(var(--thread-scroll-padding-bottom) - var(--spacing)*4);flex:none"></div></div>
+  <div class="absolute bottom-0" style="position:absolute;inset:auto 0 0;z-index:2"><div data-thread-scroll-footer style="height:114px;position:relative"><div aria-hidden="true" class="bg-surface"></div><input id="draft" value="Draft" style="position:absolute;left:20px;top:20px;width:100px;height:30px;background:rgb(0,200,0);border:0"></div></div></div></div>`;
+ await c.evaluate('document.body.innerHTML='+JSON.stringify(fixture)+';true');
+ const measure=()=>c.evaluate(`(()=>{const s=document.querySelector('[data-app-action-timeline-scroll]'),f=document.querySelector('[data-thread-scroll-footer]'),d=document.getElementById('draft'),edge=f.getBoundingClientRect().top;return {client:s.clientHeight,range:s.scrollHeight-s.clientHeight,top:s.scrollTop,edge,bottom:s.getBoundingClientRect().bottom,footer:getComputedStyle(f).backgroundColor,editor:document.elementFromPoint(32,edge+28)===d,draft:d.value,history:document.elementsFromPoint(140,edge+40).some(e=>e.id==='history')}})()`);
+ const setHeight=height=>c.evaluate(`(()=>{const s=document.querySelector('[data-app-action-timeline-scroll]');s.style.setProperty('--thread-scroll-padding-bottom',${height+16}+'px');document.querySelector('[data-thread-scroll-footer]').style.height=${height}+'px';return true})()`);
+ const apply=()=>c.evaluate('window.__codexWallpaperBridge={ready:true};('+paintShell.toString()+')({palette:{r:20,g:22,b:28,dark:true},visual:{glassOpacity:.5},darkOverlay:.4});true');
+ await c.evaluate('('+clearShell.toString()+')();true');
+ const reference=(await measure()).range;
+ await apply();
+ const first=await measure();
+ assert.equal(first.range,reference);assert.equal(first.edge,first.bottom);assert(first.editor);assert(!first.history);
+ for(const height of [114,180]){
+  await setHeight(height);
+  const start=await measure();
+  assert.equal(start.edge,start.bottom);assert.equal(start.footer,'rgba(0, 0, 0, 0)');
+  for(const deltaY of [240,380,-160,-120]){
+   await c.call('Input.dispatchMouseEvent',{type:'mouseWheel',x:200,y:160,deltaX:0,deltaY});
+   const sample=await measure();
+   assert.equal(sample.edge,sample.bottom);assert(sample.editor);assert(!sample.history);assert.equal(sample.draft,'Draft');
   }
+  const end=await measure();assert(end.top>0);
+  layoutResults.push({footerHeight:height,composerInteractive:end.editor,historyOutsideComposer:!end.history});
  }
- // Streaming may update existing text nodes without child-list mutations or
- // changing the scrollport/footer. Its content box must drive the paint clip.
- await c.evaluate(`(()=>{window.__cwbTranscriptPaint?.dispose();document.body.innerHTML='<div id="stream-viewport" style="height:500px;position:relative"><div data-app-action-timeline-scroll style="height:100%;overflow:auto;overflow-anchor:none"><div id="stream" style="white-space:pre;line-height:20px;font-size:14px">'+('Line\\n'.repeat(60))+'</div></div><div data-thread-scroll-footer style="position:absolute;inset:auto 0 0;height:120px"></div></div>';window.__codexWallpaperBridge={ready:true};(${paintShell.toString()})({palette:{r:20,g:22,b:28,dark:true},darkOverlay:.4});return true})()`);
- const clipBefore=await c.evaluate('parseFloat(document.getElementById("stream").style.getPropertyValue("--cwb-transcript-clip"))');
- await c.evaluate('document.getElementById("stream").firstChild.data+="More\\n".repeat(10);true');
- await c.call('Runtime.evaluate',{expression:'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))',awaitPromise:true});
- const grown=await c.evaluate('({clip:parseFloat(document.getElementById("stream").style.getPropertyValue("--cwb-transcript-clip")),top:document.querySelector("[data-app-action-timeline-scroll]").scrollTop})');assert(grown.clip>=clipBefore+199);assert.equal(grown.top,0);
- // A scroll should advance the native timeline without rewriting fixed clip
- // endpoints or the fallback value. Streaming still requires a geometry pass.
- const scrollStyleWrites=await c.evaluate(`(()=>{
-  const scroll=document.querySelector('[data-app-action-timeline-scroll]'),stream=document.getElementById('stream');
-  const style=stream.style,original=style.setProperty;
-  const fallback=style.getPropertyValue('--cwb-transcript-clip');
-  const writes=[];
-  style.setProperty=function(property,...args){if(property.startsWith('--cwb-transcript-'))writes.push(property);return original.call(this,property,...args);};
-  try{
-   scroll.scrollTop=80;
-   scroll.dispatchEvent(new Event('scroll'));
-   return {writes,fallbackUnchanged:fallback===style.getPropertyValue('--cwb-transcript-clip')};
-  }finally{delete style.setProperty;scroll.scrollTop=0}
- })()`);
- assert.deepEqual(scrollStyleWrites,{writes:[],fallbackUnchanged:true});
- // Native wheel scrolling must move the clip boundary without rediscovering
- // the transcript. Ordinary composer activity must leave its geometry alone.
- await c.evaluate(`(()=>{
-  const footer=document.querySelector('[data-thread-scroll-footer]'),editor=document.createElement('input');
-  footer.append(editor);editor.focus();
-  const query=document.querySelectorAll;
-  window.__clipGeometryQueries=0;
-  document.querySelectorAll=function(selector){
-   if(selector==='[data-app-action-timeline-scroll]'||selector.startsWith('[data-code-block]'))window.__clipGeometryQueries++;
-   return query.call(this,selector);
-  };
-  editor.dispatchEvent(new InputEvent('input',{bubbles:true}));
-  editor.dispatchEvent(new FocusEvent('focusin',{bubbles:true}));
-  editor.click();
-  footer.append(document.createElement('span'));
-  return true;
- })()`);
- const stableFallback=await c.evaluate('document.getElementById("stream").style.getPropertyValue("--cwb-transcript-clip")');
- for(const deltaY of [240,180,-160,-120]){
-  await c.call('Input.dispatchMouseEvent',{type:'mouseWheel',x:200,y:200,deltaX:0,deltaY});
-  await c.call('Runtime.evaluate',{expression:'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))',awaitPromise:true});
-  const sample=await c.evaluate('(()=>{const e=document.getElementById("stream"),f=document.querySelector("[data-thread-scroll-footer]"),s=document.querySelector("[data-app-action-timeline-scroll]"),clip=parseFloat(getComputedStyle(e).clipPath.split(" ")[2]);return {boundary:e.getBoundingClientRect().bottom-clip,edge:f.getBoundingClientRect().top,top:s.scrollTop,fallback:e.style.getPropertyValue("--cwb-transcript-clip"),mode:e.getAttribute("data-cwb-transcript-content")}})()');
-  assert.equal(sample.mode,'scroll');assert(sample.top>0);assert(Math.abs(sample.boundary-sample.edge)<1,JSON.stringify(sample));assert.equal(sample.fallback,stableFallback,'JS scroll handler changed the fallback clip');
- }
- assert.equal(await c.evaluate('window.__clipGeometryQueries'),0,'Stable scroll and composer activity rediscovered the document geometry');
- await c.evaluate('delete document.querySelectorAll;delete window.__clipGeometryQueries;true');
+ await c.evaluate('document.getElementById("history").style.height="2100px";true');
+ const grown=await measure();
+ assert.equal(grown.edge,grown.bottom);assert(!grown.history);assert(grown.range>reference);
+ await c.evaluate('document.querySelector(".bottom-0").classList.remove("bottom-0");true');
+ const fallback=await measure();
+ assert.equal(fallback.client,500);assert.equal(fallback.footer,'rgb(20, 22, 28)');assert(fallback.editor);
  await c.evaluate('('+clearShell.toString()+')();true');assert.equal(await c.evaluate('!!window.__cwbTranscriptPaint||!!document.querySelector("[data-cwb-transcript-content]")||!!document.getElementById("codex-wallpaper-bridge-style")'),false);
  console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results,materialResults,portalResults,layoutResults,streamingPaintAndCleanup:true},null,2));
 }finally{c?.close();browser?.kill()}

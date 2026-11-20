@@ -14,10 +14,9 @@ function generatedSheet(config){
 }
 function localStyleContract(css){
  assert(!/\[class\s*~=/.test(css),'Exact class tokens must use class selectors');
- for(const name of ['--cwb-transcript-clip','--cwb-code-clip-top','--cwb-transcript-start','--cwb-transcript-end']){
-  const rule=css.match(new RegExp('@property\\s+'+name+'\\s*\\{([^}]*)\\}'))?.[1];
-  assert(rule&&/inherits\s*:\s*false\s*(?:;|$)/.test(rule),name+' must stay local to its element');
- }
+ const rule=css.match(/@property\s+--cwb-code-clip-top\s*\{([^}]*)\}/)?.[1];
+ assert(rule&&/inherits\s*:\s*false\s*(?:;|$)/.test(rule),'Code clipping must stay local to its element');
+ assert(!/--cwb-transcript-|animation-timeline:scroll/.test(css),'Transcript scrolling must use native overflow');
 }
 test('generated shell styles bound class and clipping dependencies in native modes',()=>{
  for(const dark of [false,true])for(const code of [false,true]){
