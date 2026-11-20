@@ -5,3 +5,6 @@
 *.json text eol=lf
 *.ps1 text eol=crlf
 *.cs text eol=crlf
+/task_plan.md export-ignore
+/findings.md export-ignore
+/progress.md export-ignore

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+- Reduce brief stalls after fast scrolling in supported Codex chat layouts. Keep the native reading anchor, and use Codex's original styling when the layout is unfamiliar.
+
 ## 0.3.3
 
 - Reload the current wallpaper and reconnect audio from the wallpaper panel. Use the installed `Repair.cmd` to reattach an offline host.

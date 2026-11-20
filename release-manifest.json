@@ -4,8 +4,8 @@
   "files": [
     {
       "path": ".gitattributes",
-      "utf8Bytes": 122,
-      "sha256": "26f34a115aa825069ae4f3b7eb69e6e305a0988dd9d264c1cc9b02a8fbff572b"
+      "utf8Bytes": 204,
+      "sha256": "54bdf6df23ef7aa46c0f29cf0b204281090a00ce78218f070c9985a22508a268"
     },
     {
       "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 27343,
-      "sha256": "263c5812170f55e3f49ebd657ca92b0314613e12cb40697908eb07c6fbcd6b82"
+      "utf8Bytes": 27526,
+      "sha256": "d1055c4aab0d7ddaf08abd13485ffb8eff0f7b0c34b51f1b69c009153bb95bf3"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 15367,
-      "sha256": "e2968d02d9c8d1474f504e02399a3beac7ef162ac4dd658fb3afb6224c8456a6"
+      "utf8Bytes": 15360,
+      "sha256": "a0f0e5931c9e2c86744a107b393c3042d60e8c2b429a65114921d1e98ebb8c3c"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 17760,
-      "sha256": "2e8d812d74c53e826a40cfefcc5e9c2c8e50becbc93964c90202d7becf3adfb9"
+      "utf8Bytes": 17753,
+      "sha256": "863720fa8848ae87a64afe9e280ba4cbd9c3daac6dd4ec6ca66ade29fc7a49f9"
     },
     {
       "path": "README.zh-CN.md",
@@ -125,7 +125,7 @@
     {
       "path": "docs/INSTALL.zh-CN.md",
       "utf8Bytes": 17379,
-      "sha256": "22425029c6deabdccebf367fdd7e70c6f265095d98ed15c08b281ce0b4fdd5f1"
+      "sha256": "8e192bc15bd1e144ca071585aff14dada24c8ae93c63ee7c7b41f168a0a81723"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -354,19 +354,9 @@
       "sha256": "224b2d0d9aacfe038eacd8a46abb5de6d03eea154551702040c034a18cde482b"
     },
     {
-      "path": "findings.md",
-      "utf8Bytes": 25152,
-      "sha256": "deacaa5b8cbe624d3d2cf28468d0a3167e52250150356b42ac84e938f24ca151"
-    },
-    {
       "path": "package.json",
       "utf8Bytes": 1061,
-      "sha256": "2ebd898de9860afd705542fab29e4dd659b9f183be7bdcfb2234877ba8f4ea3b"
-    },
-    {
-      "path": "progress.md",
-      "utf8Bytes": 27124,
-      "sha256": "5e3ff2558d26dda81a16cdfab721fa5d27ff0af99e80f135b9741fee5634892e"
+      "sha256": "d9959c639f04e91d9e96b4cce2247e092f3084027a6fc02f8bd957443562b268"
     },
     {
       "path": "settings.example.json",
@@ -597,11 +587,6 @@
       "path": "src/webwallgl-source.mjs",
       "utf8Bytes": 2281,
       "sha256": "3b3d493650c1f80e343d23a6511ec0002ee8f1ca0eebb1953a24c9f6f6748ff0"
-    },
-    {
-      "path": "task_plan.md",
-      "utf8Bytes": 42483,
-      "sha256": "254c84a0fa0edf58a564790689c68a7141e6b8695d1633a282c6353d77918803"
     },
     {
       "path": "test/activate-client.test.mjs",
@@ -1041,7 +1026,7 @@
     {
       "path": "tools/prepare-media-bridge.mjs",
       "utf8Bytes": 1844,
-      "sha256": "dfafce1d6b36c42ac1c09f88840a6ad8787f6b56b0052d72654857413d97e845"
+      "sha256": "5e1e4829aa4355dc52c42c783fa0b227c9453bd2319011be3166147e77934a08"
     },
     {
       "path": "tools/prepare-webwallgl.mjs",
@@ -1050,8 +1035,8 @@
     },
     {
       "path": "tools/release-files.mjs",
-      "utf8Bytes": 1421,
-      "sha256": "8d1a2be4e90cd4d356129a1dcdf2d71dce8656e07e401e3f122bd9cea5098b4b"
+      "utf8Bytes": 1535,
+      "sha256": "5d05943a7841a58ccad698a1b7dfc4ce719940e38f497164ad725d153d1c4df4"
     },
     {
       "path": "tools/release-images.mjs",
