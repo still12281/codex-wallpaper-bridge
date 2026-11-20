@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.3
 
 - Reload the current wallpaper and reconnect audio from the wallpaper panel. Use the installed `Repair.cmd` to reattach an offline host.
 - Use native scrollport clipping for supported translucent composers, and an opaque footer for other layouts.
