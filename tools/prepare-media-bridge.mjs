@@ -4,7 +4,7 @@ import path from 'node:path';
 import {getDataRoot} from '../src/runtime-paths.mjs';
 import {stereoMediaDirectory} from '../src/system-media.mjs';
 
-const version='0.3.0';
+const version='0.3.1';
 const asset='media-bridge-stereo-win32-x64.exe';
 const bytesExpected=2991104;
 const sha256='8ca658fc1b9381716b61ea5f51835ba0ddb54d358604c746231e22313cf7a46e';

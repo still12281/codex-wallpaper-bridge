@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- Recover WebGL spectrum capture when updates stall during system audio playback. Skip stale spectrum samples and show the active, paused, or recovering state in the wallpaper panel.
+- Bring the existing Codex window forward from the taskbar and recover the wallpaper connection after a brief interruption. Reuse a loaded scene when possible and keep the previous wallpaper frame visible until a fresh frame is drawn.
+- Reduce redundant layout reads during pointer movement, native control clicks and transcript scrolling. Preserve click effects and cursor trails across the Codex window.
+- Reuse measured character widths when reopening terminal tabs with the same font and display settings. Avoid rewriting an unchanged terminal theme and trim blank edges during ordinary text selection.
+
 ## 0.3.0
 
 ### Highlights
