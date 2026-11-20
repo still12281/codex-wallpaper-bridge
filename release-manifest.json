@@ -565,8 +565,8 @@
     },
     {
       "path": "src/wallpaper-pointer.mjs",
-      "utf8Bytes": 3025,
-      "sha256": "1746607b01df7a764bf3c4200b621e483b67505c4609d1c9ddc575e24c03d2ce"
+      "utf8Bytes": 3591,
+      "sha256": "da9fcde94917b499b2ddc5677dfa1a84b52c277d2ff8e5064747d588ad17ece0"
     },
     {
       "path": "src/wallpaper-properties.mjs",
@@ -980,8 +980,8 @@
     },
     {
       "path": "test/webwallgl-integration.mjs",
-      "utf8Bytes": 12945,
-      "sha256": "f6a66fdeb4a8e1cbc4270881d3ae91ceed52fe2e001c980a34ddad6e26d98375"
+      "utf8Bytes": 14034,
+      "sha256": "3a158c1f417027a3e987771b412260c252e639ab7f744e30d7f2e807e6452069"
     },
     {
       "path": "test/webwallgl-source.test.mjs",
