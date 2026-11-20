@@ -22,13 +22,6 @@ if (-not $NoIcon) {
 $buildArguments += (Join-Path $PSScriptRoot 'CleanProcess.cs'),(Join-Path $PSScriptRoot 'ClientWindow.cs'),(Join-Path $PSScriptRoot 'TcpListeners.cs'),(Join-Path $PSScriptRoot 'CodexEntry.cs')
 & $buildCompiler @buildArguments
 if ($LASTEXITCODE -ne 0) { throw 'Launcher compilation failed' }
-$buildRecoverySource=@((Join-Path $PSScriptRoot 'HostRecovery.cs'),(Join-Path $PSScriptRoot 'CleanProcess.cs'))
-$buildRecoveryHash=(@(Get-FileHash -LiteralPath $buildRecoverySource | ForEach-Object {$_.Hash.Substring(0,12)}) -join '-')
-$buildRecovery=Join-Path $buildDataRoot "CodexHostRecovery-$buildRecoveryHash.exe"
-if(-not (Test-Path -LiteralPath $buildRecovery -PathType Leaf)){
-  & $buildCompiler /nologo /target:winexe /platform:x64 /reference:System.Web.Extensions.dll ('/out:'+$buildRecovery) @buildRecoverySource
-  if($LASTEXITCODE -ne 0){throw 'Host recovery compilation failed'}
-}
 & $buildCompiler /nologo /target:exe /platform:x64 /reference:System.Web.Extensions.dll ('/out:' + (Join-Path $buildDataRoot 'Align-Taskbar.exe')) (Join-Path $PSScriptRoot 'TaskbarIdentity.cs') (Join-Path $PSScriptRoot 'ClientWindow.cs') (Join-Path $PSScriptRoot 'Align-Taskbar.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Taskbar helper compilation failed' }
 $buildPowerShell=(Get-Process -Id $PID -ErrorAction Stop).Path
@@ -36,7 +29,7 @@ if($PSVersionTable.PSVersion.Major -lt 7 -or [IO.Path]::GetFileName($buildPowerS
 if($env:CODEX_WALLPAPER_PWSH -and (Test-Path -LiteralPath $env:CODEX_WALLPAPER_PWSH -PathType Leaf)){
   $buildPowerShell=[IO.Path]::GetFullPath($env:CODEX_WALLPAPER_PWSH)
 }
-$buildRuntime=[ordered]@{schemaVersion=1;powerShell=$buildPowerShell;node=(Get-WallpaperNode);hostRecovery=$buildRecovery}
+$buildRuntime=[ordered]@{schemaVersion=1;powerShell=$buildPowerShell;node=(Get-WallpaperNode)}
 foreach($optional in @(@{key='ffmpeg';value=$env:CODEX_WALLPAPER_FFMPEG},@{key='uv';value=$env:CODEX_WALLPAPER_UV})){
   if($optional.value){if(-not (Test-Path -LiteralPath $optional.value -PathType Leaf)){throw ('Optional executable not found: '+$optional.key)};$buildRuntime[$optional.key]=[IO.Path]::GetFullPath($optional.value)}
 }

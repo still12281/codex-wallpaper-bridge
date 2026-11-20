@@ -6,6 +6,15 @@ function fixture(){
  const power=createMediaPower({now:()=>time,debounceMs:0,sessions:()=>clients,send:async(c,kind,payload)=>calls.push({c,kind,payload}),start:async options=>{const state={spectrumFrames:0},payload={hasMedia:true,title:'fixture',position:0,audioAvailable:false,bands:[],sources:[],capabilities:{}};const backend={state,payload:()=>payload,stop:async()=>backend.stopped=true,options};starts.push(backend);return backend;}});
  return {power,calls,starts,clients,advance(ms){time+=ms;},payload(){return starts.at(-1).payload();}};
 }
+test('manual restart reconnects audio at the saved rate only when media is enabled',async()=>{
+ const f=fixture();Object.assign(f.clients[0].mediaActivity,{webgl:true,active:true});
+ await f.power.restart();assert.equal(f.starts.length,0);
+ await f.power.configure({enabled:false,audio:true,audioFps:60});
+ await f.power.restart();
+ assert.equal(f.starts.length,2);assert(f.starts[0].stopped);
+ assert.deepEqual(f.starts[1].options,{audio:true,audioFps:60});
+ await f.power.stop();
+});
 test('video keeps metadata enabled but never starts audio, metadata and closed panel stay quiet',async()=>{
  const f=fixture();await f.power.configure({enabled:true,audio:true});await f.power.tick();assert.equal(f.starts[0].options.audio,false);assert.equal(f.calls.length,0);
  const a=f.clients[0].mediaActivity;a.panel=true;await f.power.tick();assert.equal(f.calls.length,1);assert.equal(f.calls[0].kind,'panel');

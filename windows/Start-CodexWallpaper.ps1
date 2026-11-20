@@ -1,11 +1,10 @@
 [CmdletBinding()]
-param([switch]$RestartCurrent,[switch]$WaitForClientExit,[switch]$InspectOnly,[string]$TaskName,[switch]$AfterUpdate,[switch]$AttachOnly,[string]$WarmBinding,[string]$ExpectedRecoveryClient,[ValidateRange(0,2)][int]$RecoveryAttempt=0)
+param([switch]$RestartCurrent,[switch]$WaitForClientExit,[switch]$InspectOnly,[string]$TaskName,[switch]$AfterUpdate,[switch]$AttachOnly,[string]$WarmBinding)
 
 $ErrorActionPreference = 'Stop'
 if($AfterUpdate -and ($RestartCurrent -or $WaitForClientExit -or $TaskName)){throw 'Automatic update mode cannot close clients or wait for their lifetime'}
 if($AttachOnly -and ($RestartCurrent -or $WaitForClientExit -or $AfterUpdate -or $TaskName)){throw 'Attach-only recovery cannot close or launch clients'}
 if($WarmBinding -and -not $AttachOnly){throw 'A warm binding is only valid for attach-only recovery'}
-if(($ExpectedRecoveryClient -or $RecoveryAttempt) -and (-not $AttachOnly -or -not $ExpectedRecoveryClient -or -not $RecoveryAttempt)){throw 'Automatic recovery requires an expected client and an attempt number'}
 $taskCodeRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'Runtime.ps1')
 . (Join-Path $PSScriptRoot 'CleanProcess.ps1')
@@ -19,7 +18,7 @@ $taskNode = Get-WallpaperNode
 $taskStatusPath = Join-Path $taskRoot 'launch-status.json'
 $taskStatus = [ordered]@{launchId=[guid]::NewGuid().ToString();startedAt=[DateTimeOffset]::Now.ToString('o');phase='preparing';helperPid=$PID;sessionId=(Get-Process -Id $PID).SessionId;appFilesModified=$false;configModified=$false}
 $taskStatus.helperStartedAtUtc=(Get-Process -Id $PID).StartTime.ToUniversalTime().ToString('o')
-$taskStatus.lifecycle='one-shot-bootstrap'
+$taskStatus.lifecycle='one-shot-no-supervisor'
 $taskPhaseClock=[Diagnostics.Stopwatch]::StartNew()
 $taskStatus.phaseHistory=@()
 $taskOwnedRoot = $null
@@ -30,9 +29,8 @@ $taskCreatedVerifiedClient=$false
 $taskPreserveVerifiedClient=$false
 $taskBootstrapLock=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridgeBootstrap')
 $taskLockOwned=$false
-try{$taskLockOwned=$taskBootstrapLock.WaitOne($(if($WarmBinding -or $AfterUpdate -or $InspectOnly){0}elseif($AttachOnly){15000}else{30000}))}catch [Threading.AbandonedMutexException]{$taskLockOwned=$true}
-if(-not $taskLockOwned){$taskBootstrapLock.Dispose();if($WarmBinding -or $AfterUpdate -or $InspectOnly){exit 0};exit 3}
-$taskLauncherRuntime=$null
+try{$taskLockOwned=$taskBootstrapLock.WaitOne($(if($AttachOnly -or $AfterUpdate -or $InspectOnly){0}else{30000}))}catch [Threading.AbandonedMutexException]{$taskLockOwned=$true}
+if(-not $taskLockOwned){$taskBootstrapLock.Dispose();if($AttachOnly -or $AfterUpdate -or $InspectOnly){exit 0};exit 3}
 $taskStatus.profileMode='official-default'
 
 function Save-TaskPhase([string]$Phase) {
@@ -134,13 +132,6 @@ try {
   if($InspectOnly){$taskStatus.phase='inspect-only';$taskStatus.updatedAt=[DateTimeOffset]::UtcNow.ToString('o');$taskStatus | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $taskRoot 'entry-inspect-status.json') -Encoding utf8 -ErrorAction Stop;$taskStatus | ConvertTo-Json -Depth 8;exit 0}
   $taskEndpoint=if($AttachOnly){Get-WallpaperWarmEndpoint -Root $taskRoot -ExpectedBinding $WarmBinding -RegisteredCodex $taskCodex}else{Select-WallpaperCdpEndpoint -Root $taskRoot -Codex $taskCodex}
   if(-not $taskEndpoint){throw '无法复核任务栏唤回的 Codex 窗口与本地连接，已保留客户端。'}
-  if($ExpectedRecoveryClient){
-    $taskLauncherRuntime=Read-WallpaperRuntimeStatus (Join-Path $taskRoot 'launcher-runtime.json')
-    if(-not $taskLauncherRuntime.hostRecovery){throw '自动恢复已停用。'}
-    $recoveryIdentity=$taskEndpoint.identity
-    $recoveryKey=@($recoveryIdentity.RootProcessId,([DateTimeOffset]$recoveryIdentity.RootCreatedAtUtc).UtcTicks,$recoveryIdentity.BrowserId) -join ':'
-    if($ExpectedRecoveryClient -cne $recoveryKey){throw '自动恢复时 Codex 实例已变化，已停止壁纸接入。'}
-  }
   $taskPort=[int]$taskEndpoint.port
   $taskStatus.cdpPort=$taskPort
   $taskStatus.endpointSelection=$taskEndpoint.reason
@@ -356,24 +347,6 @@ try {
   if(-not $AttachOnly){
     try{$taskStatus.shortcutChecks=@(Repair-WallpaperEntryShortcuts -Root $taskRoot -CodexAppId $taskCodex.AppUserModelId)}catch{$taskStatus.shortcutChecks=@([ordered]@{changed=$false;error=$_.Exception.Message})}
   }
-  try{
-    if(-not $taskLauncherRuntime){$taskLauncherRuntime=Read-WallpaperRuntimeStatus (Join-Path $taskRoot 'launcher-runtime.json')}
-    $watcherPath=[string]$taskLauncherRuntime.hostRecovery
-    if($watcherPath){
-      if((Split-Path -Parent $watcherPath) -ine [IO.Path]::TrimEndingDirectorySeparator($taskRoot) -or
-        (Split-Path -Leaf $watcherPath) -notmatch '^CodexHostRecovery-[0-9a-f]{12}-[0-9a-f]{12}\.exe$'){
-        throw 'Invalid installed host recovery executable path'
-      }
-      $watchHost=Get-Process -Id $taskStatus.hostPid -ErrorAction Stop
-      try{
-        $watchArgs=@($taskRoot,$taskLauncherRuntime.powerShell,"$($taskVerifiedRoot.Id)","$($taskVerifiedRoot.StartTime.ToUniversalTime().Ticks)",
-          "$($watchHost.Id)","$($watchHost.StartTime.ToUniversalTime().Ticks)","$($taskIdentity.BrowserId)","$RecoveryAttempt")
-        $watcher=Start-WallpaperCleanProcess -FilePath $watcherPath -ArgumentList $watchArgs -Hidden
-        $taskStatus.hostRecoveryPid=$watcher.Id
-        $watcher.Dispose()
-      }finally{$watchHost.Dispose()}
-    }
-  }catch{$taskStatus.hostRecoveryWarning=$_.Exception.Message}
   Save-TaskPhase 'background-rendered'
   if($taskLockOwned){$taskBootstrapLock.ReleaseMutex();$taskLockOwned=$false}
   if($TaskName -and $taskRendered -and $taskStatus.hostPid){Wait-Process -Id $taskStatus.hostPid -ErrorAction SilentlyContinue}

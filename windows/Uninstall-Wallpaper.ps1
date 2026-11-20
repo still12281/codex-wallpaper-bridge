@@ -27,14 +27,6 @@ try{
   $restore=@(& (Join-Path $PSScriptRoot 'Restore-Shortcuts.ps1') -Root $Root)
   if(@($restore|Where-Object error).Count){throw 'Could not restore all original shortcuts; data and recovery files were preserved.'}
   $shortcuts=@(Remove-WallpaperManagedShortcuts -Root $Root -AllowedPaths $paths)
-  $runtimeFile=Join-Path $Root 'launcher-runtime.json'
-  $runtime=Get-Content -LiteralPath $runtimeFile -Raw -ErrorAction Stop | ConvertFrom-Json
-  if($runtime.PSObject.Properties['hostRecovery']){
-    $runtime.PSObject.Properties.Remove('hostRecovery')
-    $nextRuntime=$runtimeFile+'.uninstall.next'
-    [IO.File]::WriteAllText($nextRuntime,($runtime | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
-    [IO.File]::Move($nextRuntime,$runtimeFile,$true)
-  }
   [ordered]@{uninstalled=$true;dataPreserved=$true;dataDirectory=$Root;shortcuts=$shortcuts;clientStarted=$false}|ConvertTo-Json -Depth 5
 }catch{Write-Error $_ -ErrorAction Continue;exit 1}
 finally{if($uninstallOwned){$uninstallMutex.ReleaseMutex()};$uninstallMutex.Dispose();if($uninstallTranscript){Stop-Transcript|Out-Null}}

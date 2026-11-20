@@ -102,7 +102,7 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 
 ### 更新后壁纸消失，怎么手动恢复
 
-1. 双击壁纸数据目录的 `Repair.cmd`，让 Bridge 重新接入当前 Codex 窗口。默认路径是 `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`。
+1. 点击壁纸面板右上角的「一键恢复」，重新加载当前壁纸和音频。宿主离线时，双击壁纸数据目录的 `Repair.cmd`，让 Bridge 重新接入当前 Codex 窗口。默认路径是 `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`。
 2. 若当前窗口无法附加，保存工作并通过应用菜单**正常退出 Codex**，再点击壁纸入口。也可运行 `Repair.cmd --reopen`，按提示重新打开。
 3. 若提示安装文件或依赖缺失，重新运行本项目安装包，选择原来的数据目录。
 

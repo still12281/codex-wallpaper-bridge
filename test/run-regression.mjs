@@ -19,7 +19,7 @@ const tests={
   'update-runner','bridge-update-runner','remote-bootstrap','install-runtime'].map(powershell),
  audio:[['node','test/system-audio-integration.mjs']],
  recovery:[['node','--test','test/media-power.test.mjs','test/system-media.test.mjs'],
-  ...['lifetime','webwallgl','panel-controls'].map(integration),powershell('entry-window-dispatch'),powershell('host-recovery')],
+  ...['lifetime','webwallgl','panel-controls'].map(integration),powershell('entry-window-dispatch')],
  desktop:[['node','test/foreground-interaction.mjs']],
  performance:[['node','test/foreground-interaction.mjs','--performance']]
 };

@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===29){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===31){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=29;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=31;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
@@ -21,7 +21,7 @@ export function installPanel(config,token){
  const surfaceRepair=document.createElement('div');surfaceRepair.id='cwb-surface-repair';surfaceRepair.style.cssText='margin:12px 0;padding:12px 0;border-top:1px solid var(--cwb-divider,#8195a440)';
  surfaceRepair.innerHTML='<button id="cwb-surface-scan" type="button" data-cwb-control aria-describedby="cwb-surface-scan-note" style="width:100%;min-height:36px">扫描并适配</button><p id="cwb-surface-scan-note" style="margin:8px 0 0">检查所有已打开的页面。菜单或弹窗打开时，也可按 Ctrl+Alt+Shift+W 直接扫描；完成后停止。</p><p id="cwb-surface-scan-result" role="status" aria-live="polite" aria-atomic="true" style="margin:6px 0 0"></p>';
  const scanToast=document.createElement('output');scanToast.id='cwb-scan-toast';scanToast.setAttribute('popover','manual');scanToast.setAttribute('role','status');scanToast.style.cssText='position:fixed;inset:auto 16px 20px auto;max-width:min(420px,80vw);margin:0;padding:12px 16px;border:1px solid var(--cwb-border);border-radius:12px;background:var(--cwb-canvas);color:var(--cwb-ink);font:13px system-ui;box-shadow:0 4px 20px #0003';s.append(scanToast);
- const notifyScan=text=>{scanToast.textContent=text;scanToast.showPopover?.();clearTimeout(scanToastTimer);scanToastTimer=setTimeout(()=>scanToast.hidePopover?.(),6000);};
+ const notifyStatus=text=>{scanToast.textContent=text;scanToast.showPopover?.();clearTimeout(scanToastTimer);scanToastTimer=setTimeout(()=>scanToast.hidePopover?.(),6000);};
  const playback=document.createElement('section');
  playback.innerHTML=`<label>最大宽度<select id="resolution"><option value="960">960 · 省电</option><option value="1280">1280 · 均衡</option><option value="1920">1920 · 清晰</option><option value="2560">2560 · 高画质</option><option value="3840">3840 · 原画优先</option></select></label><label>帧率上限<select id="fps"><option value="12">12 FPS</option><option value="24">24 FPS · 推荐</option><option value="30">30 FPS</option><option value="60">60 FPS</option><option value="120">120 FPS · 仅GPU</option><option value="144">144 FPS · 仅GPU</option></select></label><p id="cwb-import-profile-note"></p><p>120/144仅用于GPU场景。高规格会增加占用。不会放大原素材或补高帧率；静态图片只调整尺寸。</p><button id="apply">应用播放规格</button>`;
  const quality=document.createElement('details');quality.id='cwb-playback-options';quality.className='cwb-feature';quality.innerHTML='<summary>播放与画质</summary>';const customPlayback=document.createElement('details');customPlayback.className='cwb-feature';customPlayback.innerHTML='<summary>自定义播放规格</summary>';customPlayback.append(playback);quality.append(customPlayback);s.getElementById('status').before(quality);
@@ -55,8 +55,22 @@ export function installPanel(config,token){
  extraStyle.textContent+=' #engine-picker input:not([type=checkbox]){width:100%;box-sizing:border-box;margin-top:8px;padding:8px;border:1px solid #5c849b70;border-radius:8px;color:inherit;background:transparent}#engine-scan,#choose-folder{width:100%;margin-top:8px}#engine-roots{margin-top:12px}#engine-locations,#engine-selection{font-size:11px;overflow-wrap:anywhere;white-space:pre-line}';
  const kindLabel=document.createElement('label');kindLabel.innerHTML='搜索类型<select id="engine-kind"><option value="engine">Wallpaper Engine 壁纸</option><option value="media">其它图片 / 视频（指定文件夹）</option></select>';picker.prepend(kindLabel);
  let seq=0,activeImportId=null,importCancelled=false;const pending=new Map();
- const send=payload=>new Promise((resolve,reject)=>{const id=++seq;const timer=setTimeout(()=>{pending.delete(id);reject(Error('处理超时，请检查背景助手'))},['import-end','wallpaper-engine'].includes(payload.action)?1200000:180000);pending.set(id,{resolve,reject,timer});window.__codexWallpaperSend(JSON.stringify({...payload,...(activeImportId?{operationId:activeImportId}:{}),id,token}))});
- window.__cwbReply=(id,result)=>{const p=pending.get(id);if(!p)return;pending.delete(id);clearTimeout(p.timer);result.ok?p.resolve(result):p.reject(Object.assign(Error(result.error||'操作失败'),{code:result.code}))};
+ const offlineMessage='壁纸宿主无响应。请运行壁纸数据目录中的 Repair.cmd。';
+ const send=payload=>new Promise((resolve,reject)=>{
+  const id=++seq,repair=payload.action==='wallpaper-repair';
+  if(repair&&typeof window.__codexWallpaperSend!=='function'){reject(Error(offlineMessage));return;}
+  const timeout=(duration,text)=>setTimeout(()=>{pending.delete(id);reject(Error(text));},duration);
+  const entry={resolve,reject,timer:repair?timeout(5000,offlineMessage):timeout(['import-end','wallpaper-engine'].includes(payload.action)?1200000:180000,'处理超时，请检查背景助手')};
+  if(repair)entry.accept=()=>{clearTimeout(entry.timer);entry.timer=timeout(120000,'恢复尚未完成，请检查当前壁纸。');};
+  pending.set(id,entry);
+  try{window.__codexWallpaperSend(JSON.stringify({...payload,...(activeImportId?{operationId:activeImportId}:{}),id,token}));}
+  catch(error){pending.delete(id);clearTimeout(entry.timer);reject(repair?Error(offlineMessage):error);}
+ });
+ window.__cwbReply=(id,result)=>{
+  const p=pending.get(id);if(!p)return;
+  if(result.accepted){p.accept?.();p.accept=null;return;}
+  pending.delete(id);clearTimeout(p.timer);result.ok?p.resolve(result):p.reject(Object.assign(Error(result.error||'操作失败'),{code:result.code}));
+ };
  const $=id=>s.getElementById(id),dialog=s.querySelector('dialog');
  let windowChrome;const restorePanelPosition=()=>windowChrome?.restore(),placePanel=(...args)=>windowChrome?.place(...args);
  const groups=c=>window.__cwbLibraryGroups(c.library,c.selectedId);
@@ -75,7 +89,8 @@ export function installPanel(config,token){
  const lockSelectionControls=()=>{const locked=processing||livePending;dialog.setAttribute('aria-busy',String(locked));for(const id of ['library-apply','library-delete','cwb-batch-import','cwb-batch-clear','import','engine','library','shade','pause','resolution','fps','apply','delete','delete-target','browse','engine-import','engine-save','engine-library','engine-search','engine-render-mode','engine-kind','engine-scope','engine-folder','choose-folder','engine-scan',...regions.map(([key])=>'sync-'+key),...Array.from(s.querySelectorAll('[data-cwb-control]'),element=>element.id)]){if($(id))$(id).disabled=id==='library'?processing||!config.library.length:locked;}if(!locked){features?.render(config);if(!config.library.length)for(const id of ['delete','apply','library'])$(id).disabled=true;}};
  const settle=async(r,{batchSave=false}={})=>{while(r.confirmation||r.duplicate||r.mediaReview){if(r.mediaReview){const review=r.mediaReview;if(!await askChoice('导入前容量检查','当前规格估算可能约 '+review.estimatedMiB+' MiB，播放上限为 '+review.maxMiB+' MiB。\n实际结果可能不同；超过上限会停止并清理，不采用截短视频。\n可返回调整规格，或按原规格尝试。','按原规格尝试','返回调整规格')){await send({action:'import-cancel',uploadId:review.retry.uploadId});return {config,cancelled:true,message:'已取消本次准备，请调整规格后重试；原素材和当前背景保持不变。'};}r=await send({...review.retry,acceptSizeRisk:true});continue;}if(r.duplicate){const info=r.duplicate;if(!await askChoice('壁纸已存在',info.name+'\n已在“我的壁纸”中，无需重复导入。',info.apply?'应用已有壁纸':'保留已有壁纸'))return {config,cancelled:true,message:'已取消重复导入，当前背景保持不变。'};r=await send({action:'duplicate-use',existingId:info.existingId,apply:info.apply});continue;}const info=r.confirmation;if(!(batchSave&&!info.apply)&&!await confirmRealtime(info)){await send({action:'import-cancel'});return {config,cancelled:true,message:'已取消实时导入；未启动渲染，当前背景保持不变。'};}message(info.apply?'正在启动实时渲染并等待首帧…':'正在保存实时壁纸引用…');r=await send({action:'wallpaper-engine-confirm',confirmationToken:info.token,confirmed:true});}return r;};
  const busy=async(fn,failureTitle='操作失败',cancelable=false)=>{if(processing||livePending)return;processing=true;if(cancelable){activeImportId='import-'+crypto.randomUUID();importCancelled=false;cancelImport.hidden=false;cancelImport.disabled=false;}dialog.setAttribute('aria-busy','true');const controls=['library-apply','library-delete','cwb-batch-import','cwb-batch-clear','import','engine','library','shade','pause','resolution','fps','apply','delete','delete-target','browse','engine-import','engine-save','engine-library','engine-search','engine-render-mode','engine-kind','engine-scope','engine-folder','choose-folder','engine-scan',...regions.map(([key])=>'sync-'+key),...Array.from(s.querySelectorAll('[data-cwb-control]'),element=>element.id)];for(const id of controls)if($(id))$(id).disabled=true;message('正在处理…');try{let r=await fn();r=await settle(r);if(r.config)render(r.config);message(r.message||'已热更新并保存，无需重启 Codex。');return r}catch(e){if(cancelable&&activeImportId)await send({action:'import-cancel'}).catch(()=>{});render(config);message(e.message);if(e.code!=='IMPORT_CANCELLED')showError(failureTitle,e.message)}finally{activeImportId=null;cancelImport.hidden=true;if(cancelable)$('file').value='';processing=false;dialog.setAttribute('aria-busy','false');for(const id of controls)if($(id))$(id).disabled=false;if(!config.library.length)for(const id of ['delete','apply','library'])$(id).disabled=true;features?.render(config);selection()}};
- host.__cwbMediaPanelVisible=()=>dialog.open&&!!s.getElementById('cwb-media-options')?.open;dialog.addEventListener('close',()=>window.__cwbMediaActivity?.report());
+ host.__cwbMediaPanelVisible=()=>dialog.open&&!!s.getElementById('cwb-media-options')?.open;
+ dialog.addEventListener('close',()=>{clearTimeout(scanToastTimer);scanToast.hidePopover?.();window.__cwbMediaActivity?.report();});
  const applyLive=async id=>{
   if(processing)return;const revision=++selectionUiRevision;desiredId=id;window.__cwbDesiredWallpaperId=id;livePending=true;lockSelectionControls();message('正在切换壁纸…');
   try{const result=await send({action:'select',selectedId:id});if(revision!==selectionUiRevision||result.superseded)return;livePending=false;if(result.config)render(result.config);message('已切换壁纸。');}
@@ -84,6 +99,15 @@ export function installPanel(config,token){
  };
  const deleteWallpaper=async id=>{const group=groups(config).find(g=>g.entries.some(e=>e.id===id));if(!group)throw Error('壁纸不存在');if(!await askChoice('删除壁纸',group.name+'\n从 Codex 删除此壁纸的全部播放版本，原素材保持不变。','删除'))return {config,cancelled:true,message:'已取消删除。'};return send({action:'delete',selectedId:id,allVersions:true});};
  $('toggle').onclick=()=>{dialog.showModal();window.__cwbMediaActivity?.report();restorePanelPosition();const r=dialog.getBoundingClientRect();placePanel(r.left,r.top);const body=dialog.querySelector('.cwb-window-body');if(body)body.scrollTop=0;($('library').disabled?$('browse'):$('library')).focus({preventScroll:true});};$('close').onclick=$('done').onclick=()=>dialog.close();
+ const repair=document.createElement('button');repair.id='cwb-repair';repair.type='button';repair.dataset.cwbControl='';repair.textContent='一键恢复';repair.title='重新加载当前壁纸及其音频连接';
+ repair.onclick=async()=>{
+  if(processing||livePending)return;
+  repair.textContent='正在恢复…';
+  try{
+   const result=await busy(()=>{message('正在恢复壁纸和音频…');return send({action:'wallpaper-repair'});},'壁纸恢复失败');
+   if(result)notifyStatus(result.message);
+  }finally{repair.textContent='一键恢复';}
+ };
  $('library').onchange=()=>features?.selectSaved($('library').value,true);
  $('shade').oninput=()=>{$('opacity').value=$('shade').value+'%';const tint=document.getElementById('codex-wallpaper-bridge-layer')?.shadowRoot?.querySelector('[data-cwb-shade]');if(tint){const p=config.palette||{r:20,g:22,b:28};tint.style.background=`rgba(${p.r},${p.g},${p.b},${Number($('shade').value)/100})`}};
  $('shade').onchange=$('pause').onchange=()=>busy(()=>send({action:'appearance',darkOverlay:Number($('shade').value)/100,pauseOnBlur:$('pause').checked}));
@@ -118,11 +142,13 @@ export function installPanel(config,token){
  importEntry.append(browse,$('import'));(savedPreview||libraryLabel).after(importEntry);importEntry.after(picker);
  const displayOptions=$('cwb-display-options');if(displayOptions)quality.querySelector('summary').after(displayOptions);
  $('pause').parentElement.after(quality);$('status').before(management);
- host.__cwbRenderConfig=render;windowChrome=window.__cwbInstallPanelWindow?.(host,s,dialog);render(config);
+ host.__cwbRenderConfig=render;windowChrome=window.__cwbInstallPanelWindow?.(host,s,dialog);
+ const title=$('title');title.after(repair);extraStyle.textContent+=' .cwb-titlebar #cwb-repair{width:auto;padding:0 8px!important;white-space:nowrap}';
+ render(config);
  host.__cwbScanSurfaces=async()=>{
   if(processing||livePending)return;
   const button=$('cwb-surface-scan'),output=$('cwb-surface-scan-result');button.textContent='正在扫描…';surfaceRepair.setAttribute('aria-busy','true');output.textContent='正在检查已打开的页面…';
-  try{notifyScan('正在检查已打开的页面…');const result=await busy(()=>send({action:'surface-rescan'}),'扫描适配失败');output.textContent=result?.message||'扫描未完成，请查看下方提示。';notifyScan(output.textContent);}
+  try{notifyStatus('正在检查已打开的页面…');const result=await busy(()=>send({action:'surface-rescan'}),'扫描适配失败');output.textContent=result?.message||'扫描未完成，请查看下方提示。';notifyStatus(output.textContent);}
   finally{button.textContent='扫描并适配';surfaceRepair.setAttribute('aria-busy','false');}
  };
  $('cwb-surface-scan').onclick=host.__cwbScanSurfaces;

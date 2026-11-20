@@ -95,7 +95,7 @@ The wallpaper panel's **Version and updates** section checks stable GitHub relea
 
 When enabled, the [automatic update recovery task](docs/AFTER-UPDATE-RECONNECT.zh-CN.md) handles each new package version once. It reuses a healthy connection, reconnects a missing host, or requests normal exit of the verified update-created client before reopening through the unified entry. A refused close, timeout or new client stops that run and preserves the client. Startup colors apply after the CDP connection is established; Codex draws the earlier native window.
 
-Double-click `Repair.cmd` in your wallpaper data directory to reconnect the host to the running Codex window. The default path is `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`. If the window cannot be attached, save your work, exit Codex normally, and reopen it through the wallpaper entry or run `Repair.cmd --reopen`. The executable and `Codex.lnk` in the same directory also work if desktop shortcuts are missing.
+Select **一键恢复** in the wallpaper panel's title bar to reload the current wallpaper and audio. If the host is offline, double-click `Repair.cmd` in your wallpaper data directory to reconnect it to the running Codex window. The default path is `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`. If the window cannot be attached, save your work, exit Codex normally, and reopen it through the wallpaper entry or run `Repair.cmd --reopen`.
 
 Manual startup is independent of the automatic update task's one-attempt-per-version limit. Reinstall the release package into the same data directory if installation files/dependencies are missing. See [manual recovery](docs/INSTALL.zh-CN.md) for detailed steps and error locations.
 

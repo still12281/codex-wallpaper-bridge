@@ -56,10 +56,19 @@ function openAudit(key,scrollOnly,performanceGate){
  const editor=scrollOnly?null:editors.find(e=>eligible(e)&&empty(e));
  if(!scrollOnly&&!editor)return false;
  const rect=editor?.getBoundingClientRect();
+ // Prefer the transcript gutter. Hovering a diff trigger in the center can
+ // open a native floating preview that consumes the subsequent wheel input.
+ const transcriptPoint=scroll=>{
+  const r=scroll.getBoundingClientRect(),y=Math.round(r.top+Math.min(170,r.height*.25));
+  const x=[r.left+28,r.right-32,r.left+r.width/2].map(Math.round).find(x=>{
+   const target=document.elementFromPoint(x,y);
+   return scroll.contains(target)&&!target.closest('button,a,[role="menuitem"],[data-radix-popper-content-wrapper]');
+  });
+  return x===undefined?null:{x,y};
+ };
  const scroll=scrolls.find(e=>{
   const r=e.getBoundingClientRect();
-  return (!rect||(r.left<=rect.left&&r.right>=rect.right))&&r.width>200&&r.height>100&&e.scrollHeight-e.clientHeight>=200&&
-   e.contains(document.elementFromPoint(Math.round(r.left+r.width/2),Math.round(r.top+Math.min(170,r.height*.25))));
+  return (!rect||(r.left<=rect.left&&r.right>=rect.right))&&r.width>200&&r.height>100&&e.scrollHeight-e.clientHeight>=200&&transcriptPoint(e);
  });
  if(!scroll)return false;
  const original={scroll:scroll.scrollTop,focus:document.activeElement,supportsAudio:state?.supportsAudio};
@@ -73,11 +82,10 @@ function openAudit(key,scrollOnly,performanceGate){
   window.__cwbMediaActivity.report();
  };
  audit.points=()=>{
-  const r=scroll.getBoundingClientRect(),e=editor?.getBoundingClientRect();
-  const x=Math.round(r.left+r.width/2),y=Math.round(r.top+Math.min(170,r.height*.25));
+  const point=transcriptPoint(scroll),e=editor?.getBoundingClientRect();
   const xp=e&&Math.round(e.left+Math.min(e.width*.4,100)),yp=e&&Math.round(e.top+e.height/2);
-  if(!audit.ready()||!scroll.contains(document.elementFromPoint(x,y))||(editor&&!editor.contains(document.elementFromPoint(xp,yp))))throw Error('Transcript or editor is obscured');
-  return {x,y,xp,yp,direction:scroll.scrollTop>=180?-1:1};
+  if(!audit.ready()||!point||(editor&&!editor.contains(document.elementFromPoint(xp,yp))))throw Error('Transcript or editor is obscured');
+  return {...point,xp,yp,direction:scroll.scrollTop>=180?-1:1};
  };
  audit.measure=()=>{
   const counts={scroll:0,wheel:0,pointer:0,click:0,input:0}, gaps=[], long=[], slowEvents=[],wheelDelay=[],pointerDelay=[],clickDelay=[],typingDelay=[];

@@ -29,12 +29,23 @@ try{
   await ui(`s.getElementById('toggle').click();document.getElementById('codex-wallpaper-controls').__cwbSetPanelSize(${width},${height});return true`);
   const primary=await ui('const b=s.querySelector(".cwb-window-body"),r=s.getElementById("library").getBoundingClientRect(),clip=b.getBoundingClientRect();return {first:b.firstElementChild.contains(s.getElementById("library")),visible:r.top>=clip.top&&r.bottom<=clip.bottom,focus:s.activeElement?.id,playback:s.getElementById("cwb-playback-options").open,repair:s.getElementById("surface-options").open,importButtons:s.getElementById("cwb-import-entry").contains(s.getElementById("import"))&&s.getElementById("cwb-import-entry").contains(s.getElementById("browse")),overflow:b.scrollWidth>b.clientWidth+1};');
   assert.deepEqual(primary,{first:true,visible:true,focus:'library',playback:false,repair:false,importButtons:true,overflow:false});
+  assert.equal(await ui('const b=s.getElementById("cwb-repair"),r=b.getBoundingClientRect();return b.closest(".cwb-titlebar")!==null&&s.elementFromPoint(r.left+r.width/2,r.top+r.height/2)===b'),true);
   await ui('s.querySelector(".cwb-window-body").scrollTop=10000;s.getElementById("close").click();s.getElementById("toggle").click();return true');
   assert.equal(await ui('return s.querySelector(".cwb-window-body").scrollTop'),0);
   if(process.env.CWB_PANEL_EVIDENCE_DIR){await mkdir(process.env.CWB_PANEL_EVIDENCE_DIR,{recursive:true});const png=await c.call('Page.captureScreenshot',{format:'png'});await writeFile(path.join(process.env.CWB_PANEL_EVIDENCE_DIR,'primary-panel-'+width+'.png'),Buffer.from(png.data,'base64'));}
   await ui('s.getElementById("close").click();return true');
  }
  result.primarySelectorFirstAndVisible=true;result.reopenReturnsToSelection=true;
+ await ui('s.getElementById("toggle").click();window.__savedSend=window.__codexWallpaperSend;window.__codexWallpaperSend=raw=>{const q=JSON.parse(raw);if(q.action!=="wallpaper-repair")return window.__savedSend(raw);window.__repairRequest=q;window.__cwbReply(q.id,{accepted:true});};s.getElementById("cwb-repair").click();return true');
+ assert.equal(await ui('return s.getElementById("cwb-repair").disabled'),true);
+ assert.equal(await c.evaluate('window.__repairRequest.action'),'wallpaper-repair');
+ await c.evaluate('window.__cwbReply(window.__repairRequest.id,{ok:true,message:"恢复完成"});window.__codexWallpaperSend=window.__savedSend;true');
+ assert.equal(await ui('return s.getElementById("status").textContent'),'恢复完成');
+ assert.equal(await ui('return s.getElementById("cwb-repair").disabled'),false);
+ await ui('window.__codexWallpaperSend=undefined;s.getElementById("cwb-repair").click();return true');
+ assert.match(await ui('return s.getElementById("error-message").textContent'),/Repair\.cmd/);
+ await ui('s.getElementById("error-dismiss").click();window.__codexWallpaperSend=window.__savedSend;return true');
+ await ui('s.getElementById("close").click();return true');result.manualRepairReportsCompletion=true;
  // Keyboard scan is independent of the blocked menu-row button. Keep the
  // native modal/focus/drafts intact and dispatch a real trusted CDP key event.
  await c.evaluate('(()=>{const d=document.createElement("dialog");d.id="native-modal";d.innerHTML="<button id=native-focus>Native dialog</button>";document.body.append(d);d.showModal();document.getElementById("native-focus").focus();window.__scanSaved=JSON.stringify(window.__testConfig);return true})()');

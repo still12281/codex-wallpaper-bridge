@@ -110,11 +110,11 @@ $script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).
 
 ## 更新后壁纸消失：手动恢复
 
-1. **双击数据目录的 `Repair.cmd`。** 默认路径是 `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`。它会核对当前 Codex 窗口并补接壁纸宿主。
+1. **点击壁纸面板右上角的「一键恢复」。** 它会重新加载当前壁纸并重新连接系统音频。宿主离线时，双击数据目录的 `Repair.cmd` 补接。默认路径是 `%LOCALAPPDATA%\CodexWallpaperBridge\Repair.cmd`。
 2. **窗口无法附加时，保存内容并正常退出 Codex。** 然后点击壁纸入口，或运行 `Repair.cmd --reopen` 并按提示重新打开。数据目录的 `CodexEntry.exe` 和 `Codex.lnk` 也可以直接打开。
 3. **依赖或安装文件缺失时，用原数据目录重新安装。** 壁纸库和配置会保留。
 
-错误可查看数据目录的 `entry-error.log`、`launch-status.json` 和 `host-recovery.jsonl`。分享前隐藏个人路径和内容。
+错误可查看数据目录的 `entry-error.log`、`launch-status.json` 和 `video-error.log`。分享前隐藏个人路径和内容。
 
 ### 更换安装盘
 

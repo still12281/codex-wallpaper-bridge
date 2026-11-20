@@ -25,7 +25,7 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
  const demand=()=>!!(options.audio&&[...sessions()].some(c=>active(c)&&c.mediaActivity.audio!==false));
  const desired=()=>{const audio=demand();return JSON.stringify([!!options.enabled||audio,audio,audio?normalizeAudioFps(options.audioFps):0]);};
  const changeDelay=()=>activeAudio&&!JSON.parse(wanted)[1]?idleMs:debounceMs;
- const reconcile=async(force=false)=>{
+ const reconcile=async(force=false,restart=false)=>{
   if(closed)return;
   const nextKey=desired();if(wanted!==nextKey){wanted=nextKey;changedAt=now();}
   const [enabled,audio,audioFps]=JSON.parse(nextKey);
@@ -39,7 +39,7 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
   expectedSince=expected?(expectedSince??at):null;
   const stalled=audio&&activeAudio&&at>=nextStallRecoveryAt&&
    ((wakeGap&&!recent)||(expected&&at-Math.max(expectedSince,state.spectrumReceivedAt??0)>=3500));
-  if(nextKey===key&&(!backend||!state.error)&&!stalled)return;
+  if(!(restart&&enabled)&&nextKey===key&&(!backend||!state.error)&&!stalled)return;
   if(!force&&((nextKey!==key&&at-changedAt<changeDelay())||at<retryAt))return;
   if(stalled){stats.captureRestarts++;nextStallRecoveryAt=at+30000;recoveryReason=interrupted?'output-unavailable':wakeGap?'wake-gap':'capture-stalled';}
   const old=backend;backend=null;key='';activeAudio=false;rateSample=null;expectedSince=null;if(old){stats.stops++;await old.stop();}
@@ -156,6 +156,7 @@ export function createMediaPower({start,sessions,send,now=Date.now,debounceMs=60
  };
  return {
   configure(next){options={...next};return serial(()=>reconcile(true));},
+  restart(){return serial(()=>reconcile(true,true)).finally(wake);},
   tick(){return serial(pump);},
   wake,
   spectrum(){if(activeAudio&&demand())wake();},

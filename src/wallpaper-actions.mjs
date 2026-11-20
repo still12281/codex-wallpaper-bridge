@@ -49,6 +49,12 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   return {confirmation:{token,name:project.name,apply:applyNow,limits,renderer},message:'此壁纸需要实时渲染，请确认后继续。'};
  };
  const execute=async function action(c,req){
+  if(req.action==='wallpaper-repair'){
+   if(!settings.library.some(e=>e.id===settings.selectedId)||settings.enabled===false)throw Error('请先选择并启用一张壁纸');
+   if(!services.repairWallpaper)throw Error('当前窗口的壁纸恢复功能不可用');
+   await services.repairWallpaper(c);
+   return {message:'已重新加载当前壁纸，并按现有设置重新连接系统音频。'};
+  }
   if(req.action==='surface-rescan'){
    if(!settings.library.some(e=>e.id===settings.selectedId)||settings.enabled===false)throw Error('请先选择并启用一张壁纸，再扫描界面');
    if(!services.scanSurfaces)throw Error('页面适配服务尚未就绪，请稍后再试');
