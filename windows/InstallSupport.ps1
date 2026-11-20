@@ -1,4 +1,4 @@
-# Dependency discovery and installer helpers for PowerShell 7.
+# Dependency discovery shared by the installer bootstrap and PowerShell backend.
 function Update-WallpaperInstallPath {
   $env:PATH=$env:PATH+';'+[Environment]::GetEnvironmentVariable('Path','Machine')+';'+[Environment]::GetEnvironmentVariable('Path','User')
 }
@@ -33,7 +33,10 @@ function Get-WallpaperInstallCandidates([string]$Name) {
   $candidates=@($commands|ForEach-Object Source)
   switch($Name){
     node {$candidates+=Join-Path $env:ProgramFiles 'nodejs/node.exe'}
-    pwsh {$candidates+=Join-Path $env:ProgramFiles 'PowerShell/7/pwsh.exe'}
+    pwsh {
+      $candidates+=Join-Path $env:ProgramFiles 'PowerShell/7/pwsh.exe'
+      $candidates+=Join-Path $env:LOCALAPPDATA 'Microsoft/WindowsApps/pwsh.exe'
+    }
     uv {$candidates+=Join-Path $env:USERPROFILE '.local/bin/uv.exe'}
   }
   $candidates+=Join-Path $env:LOCALAPPDATA ('Microsoft/WinGet/Links/'+$Name+'.exe')

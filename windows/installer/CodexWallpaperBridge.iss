@@ -31,6 +31,7 @@ SolidCompression=yes
 CloseApplications=no
 RestartApplications=no
 SetupLogging=yes
+SetupMutex=CodexWallpaperBridge.Setup
 UninstallDisplayName=Codex Wallpaper Bridge
 UninstallFilesDir={app}
 
@@ -38,7 +39,29 @@ UninstallFilesDir={app}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
+[Types]
+Name: "basic"; Description: "{cm:BasicSetup}"
+Name: "full"; Description: "{cm:FullSetup}"
+Name: "custom"; Description: "{cm:CustomSetup}"; Flags: iscustom
+
+[Components]
+Name: "bridge"; Description: "{cm:CoreComponent}"; Types: basic full custom; Flags: fixed
+Name: "video"; Description: "{cm:VideoComponent}"; Types: full
+Name: "capture"; Description: "{cm:CaptureComponent}"; Types: full
+
 [CustomMessages]
+english.BasicSetup=Standard installation
+english.FullSetup=All features
+english.CustomSetup=Custom installation
+english.CoreComponent=Wallpaper Bridge and music response
+english.VideoComponent=Image and video import (FFmpeg)
+english.CaptureComponent=Native Wallpaper Engine capture (uv and Python)
+chinesesimp.BasicSetup=标准安装
+chinesesimp.FullSetup=完整安装
+chinesesimp.CustomSetup=自定义安装
+chinesesimp.CoreComponent=壁纸 Bridge 和音乐联动
+chinesesimp.VideoComponent=图片与视频导入（FFmpeg）
+chinesesimp.CaptureComponent=Wallpaper Engine 原版采集（uv 和 Python）
 english.DataTitle=Wallpaper data
 english.DataSubtitle=Choose the folder containing your wallpaper library and settings.
 english.DataNote=For a ZIP installation, select its existing data folder. Upgrades reuse this folder; uninstall keeps personal data.
@@ -93,11 +116,18 @@ Filename: "{app}\installation.ini"; Section: "Install"; Key: "PowerShell"; Strin
 Type: files; Name: "{app}\installation.ini"
 
 [Code]
+const
+  MoveFileReplaceExisting = 1;
+  MoveFileWriteThrough = 8;
+
 var
   DataPage: TInputDirWizardPage;
   OptionsPage: TWizardPage;
   ShortcutBox, RecoveryBox, LoginBox: TNewComboBox;
-  PreviousRoot, ResultIni, BackendLog: String;
+  PreviousRoot, ResultIni, BackendLog, PanelUpdateId, PanelUpdateDirectory: String;
+
+function MoveFileEx(const ExistingFileName, NewFileName: String; Flags: DWORD): Boolean;
+  external 'MoveFileExW@kernel32 stdcall';
 
 function Q(const Value: String): String;
 begin
@@ -193,6 +223,18 @@ begin
   end;
 end;
 
+function IsUpdateId(const Value: String): Boolean;
+var I: Integer;
+begin
+  Result := False;
+  if Length(Value) <> 36 then exit;
+  for I := 1 to 36 do
+    if (I = 9) or (I = 14) or (I = 19) or (I = 24) then begin
+      if Value[I] <> '-' then exit;
+    end else if Pos(Value[I], '0123456789abcdef') = 0 then exit;
+  Result := True;
+end;
+
 procedure InitializeWizard;
 var InitialRoot, Choice: String;
 begin
@@ -204,6 +246,12 @@ begin
   DataPage := CreateInputDirPage(wpSelectDir, CustomMessage('DataTitle'), CustomMessage('DataSubtitle'), CustomMessage('DataNote'), False, '');
   DataPage.Add('');
   DataPage.Values[0] := ExpandConstant('{param:DATADIR|' + InitialRoot + '}');
+  PanelUpdateId := ExpandConstant('{param:BRIDGEUPDATE|}');
+  if PanelUpdateId <> '' then begin
+    if not IsUpdateId(PanelUpdateId) then Abort;
+    PanelUpdateDirectory := DataRoot('') + '\updates\' + PanelUpdateId;
+    if not FileExists(PanelUpdateDirectory + '\request.json') then Abort;
+  end;
   OptionsPage := CreateCustomPage(DataPage.ID, CustomMessage('OptionsTitle'), CustomMessage('OptionsSubtitle'));
   AddLabel(OptionsPage, CustomMessage('Shortcuts'), 0);
   ShortcutBox := AddChoice(OptionsPage, 24);
@@ -257,15 +305,38 @@ begin
   Payload := ExpandConstant('{tmp}\') + '{app}\payload';
   ResultIni := ExpandConstant('{tmp}\setup-result.ini');
   BackendLog := ExpandConstant('{localappdata}\CodexWallpaperBridge-setup.log');
+  if PanelUpdateDirectory <> '' then BackendLog := PanelUpdateDirectory + '\setup-backend.log';
   Params := '-NoProfile -ExecutionPolicy Bypass -File ' + Q(Payload + '\windows\Setup-Bridge.ps1') +
     ' -DataDirectory ' + Q(DataRoot('')) + ' -ResultPath ' + Q(ResultIni) + ' -LogPath ' + Q(BackendLog) +
     ' -ShortcutMode ' + ShortcutValue + ' -UpdateReconnect ' + ToggleValue(RecoveryBox) + ' -LoginStartup ' + ToggleValue(LoginBox);
+  if PanelUpdateDirectory <> '' then Params := Params + ' -PanelUpdateId ' + PanelUpdateId;
+  if WizardIsComponentSelected('video') then Params := Params + ' -InstallVideoTools';
+  if WizardIsComponentSelected('capture') then Params := Params + ' -InstallNativeCapture';
   if ExpandConstant('{param:SKIPPREPARATION|0}') = '1' then Params := Params + ' -SkipPreparation';
   if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Params, '', SW_HIDE, ewWaitUntilTerminated, ExitCode) then
     Result := CustomMessage('Failed') + #13#10 + BackendLog
   else if (ExitCode <> 0) or not FileExists(ResultIni) then
     Result := CustomMessage('Failed') + #13#10 + BackendLog;
   Log('Backend exit code: ' + IntToStr(ExitCode));
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var Marker: String;
+begin
+  if (CurStep = ssDone) and (PanelUpdateDirectory <> '') then begin
+    Marker := PanelUpdateDirectory + '\setup-complete';
+    if not SaveStringToFile(Marker + '.next', PanelUpdateId, False) then begin
+      Log('Could not stage update completion receipt.');
+      exit;
+    end;
+    if not MoveFileEx(PanelUpdateDirectory + '\launch-script.pending', DataRoot('') + '\launch-script.txt',
+      MoveFileReplaceExisting or MoveFileWriteThrough) then begin
+      Log('Could not activate the staged Bridge launcher. The previous entry is retained.');
+      exit;
+    end;
+    if not RenameFile(Marker + '.next', Marker) then
+      Log('New Bridge activated. Could not publish update completion receipt.');
+  end;
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);

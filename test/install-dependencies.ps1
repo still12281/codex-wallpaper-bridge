@@ -26,6 +26,18 @@ try{
   try{Get-WallpaperInstallDependency node|Out-Null}catch{$rejected=$true}
   Assert-Dependency $rejected 'Invalid explicit override was silently ignored'
 }finally{$env:CODEX_WALLPAPER_NODE=$previous;$env:PATH=$previousPath}
+$aliasRoot=Join-Path $root 'local-app-data'
+$alias=Join-Path $aliasRoot 'Microsoft/WindowsApps/pwsh.exe'
+New-VersionFixture $alias '7'
+$previousLocal=$env:LOCALAPPDATA;$previousPrograms=$env:ProgramFiles;$previousPwsh=$env:CODEX_WALLPAPER_PWSH
+try{
+  $env:LOCALAPPDATA=$aliasRoot;$env:ProgramFiles=Join-Path $root 'programs'
+  $env:PATH=(Split-Path -Parent $oldNode);$env:CODEX_WALLPAPER_PWSH=$null
+  Assert-Dependency ((Get-WallpaperInstallDependency pwsh) -ieq $alias) 'PowerShell app alias was missed without a refreshed PATH'
+}finally{
+  $env:LOCALAPPDATA=$previousLocal;$env:ProgramFiles=$previousPrograms
+  $env:PATH=$previousPath;$env:CODEX_WALLPAPER_PWSH=$previousPwsh
+}
 $mutex=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridge.Install');$owned=$false
 try{
   $owned=$mutex.WaitOne(0);Assert-Dependency $owned 'Another installation is already active'
@@ -36,4 +48,4 @@ try{
   $child=[Diagnostics.Process]::Start($info)
   try{$output=$child.StandardOutput.ReadToEndAsync();$errorOutput=$child.StandardError.ReadToEndAsync();if(-not $child.WaitForExit(20000)){$child.Kill();throw 'Install lock test timed out'};Assert-Dependency ($child.ExitCode -ne 0 -and ($output.Result+$errorOutput.Result).Contains('Another wallpaper installation is running')) 'Concurrent installer was not blocked before changing state'}finally{$child.Dispose()}
 }finally{if($owned){$mutex.ReleaseMutex()};$mutex.Dispose()}
-Write-Output 'PASS: FFmpeg/ffprobe pair, old runtime fallback, explicit override and concurrent-install rejection. No dependencies installed.'
+Write-Output 'PASS: PowerShell alias, FFmpeg/ffprobe pair, old runtime fallback, explicit override and concurrent-install rejection. No dependencies installed.'

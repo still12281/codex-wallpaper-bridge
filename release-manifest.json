@@ -34,8 +34,8 @@
     },
     {
       "path": "Install.cmd",
-      "utf8Bytes": 1861,
-      "sha256": "f1836cddb0db895659dba45e5cc1f043df50d9f852d316ad728e914182b65eeb"
+      "utf8Bytes": 2185,
+      "sha256": "d30afaf5bbb5870db45f3b87fc1283bd2f27899008aef5592a3ca9b779e3028e"
     },
     {
       "path": "LICENSE",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 15377,
-      "sha256": "e5ddb0201045db6f4abcf0a2b8268cf5b1e30885ab53466dd9498cd436bf4963"
+      "utf8Bytes": 15375,
+      "sha256": "cb287fb0d40ae305c8b4e4a1fe117a80c74cea0ef027e87b2db45a1892e889ca"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 17428,
-      "sha256": "dc0e7f65d0134a521a0eb01d4010c7a49a827386fede55b50fde45650d1ce5b1"
+      "utf8Bytes": 17588,
+      "sha256": "f8f523863c5984be50a87270fd45ccc50652bfb70c0fb3b3802caa3f74c0bfa7"
     },
     {
       "path": "README.zh-CN.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 17572,
-      "sha256": "6182eb71a6d8fe599dbb9add3265011ad7e2e11554a1122445454f72923a356b"
+      "utf8Bytes": 18067,
+      "sha256": "1c717851162f0082fc859445028aaa981e94f52864c18874a12f6c5f44b3e925"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -194,8 +194,8 @@
     },
     {
       "path": "docs/RELEASING.zh-CN.md",
-      "utf8Bytes": 3491,
-      "sha256": "02f3ef9e00d6c32193e4d0f1d177d6a1249e9b0d824f3943d5b789fc780d9fec"
+      "utf8Bytes": 3929,
+      "sha256": "07c21bf55cab7c4d72394006c11c526007cae7676e3b2018f28ad5cbe7fca925"
     },
     {
       "path": "docs/SCREENSHOTS.zh-CN.md",
@@ -361,7 +361,7 @@
     {
       "path": "package.json",
       "utf8Bytes": 1061,
-      "sha256": "bdf4c952f0df8a068d3ba2adb1d7db8556c5b8065e93451da9c00b50099b1a82"
+      "sha256": "08769a99fe122b2cb98fcdc0f1c96e9b1febea3315803961b8b6f8bac39d1a1c"
     },
     {
       "path": "progress.md",
@@ -390,8 +390,8 @@
     },
     {
       "path": "src/bridge-update.mjs",
-      "utf8Bytes": 11285,
-      "sha256": "d04a588276949853fa66fedb589673b6d0247669d7840a973582b75cd5f05de2"
+      "utf8Bytes": 12510,
+      "sha256": "042f4e033e145471fb0a92d27c2ca33a8cb1c34fe60eb3049ce79a113a62ea82"
     },
     {
       "path": "src/browser-web-source.mjs",
@@ -505,13 +505,13 @@
     },
     {
       "path": "src/realtime-source.mjs",
-      "utf8Bytes": 11437,
-      "sha256": "94ea97371459e53c6f6f7d4df862b7c7dbd0dde995c89cb56940574c30615bd4"
+      "utf8Bytes": 11607,
+      "sha256": "96622b0f42f4c31e94b8b40f525686ddfef4fba2f6ccc4ea9b700c1089932738"
     },
     {
       "path": "src/runtime-paths.mjs",
-      "utf8Bytes": 2946,
-      "sha256": "0f1b858b493b7eb4554dbce879846b898538d43c5312b3d6465532b377e2f7a3"
+      "utf8Bytes": 2997,
+      "sha256": "b68b2f816db412cace8aa2834b7c11a54ef6e0d43ebe6b28ee7c0d4197c7499c"
     },
     {
       "path": "src/runtime-status.mjs",
@@ -630,8 +630,8 @@
     },
     {
       "path": "test/bridge-update.test.mjs",
-      "utf8Bytes": 6856,
-      "sha256": "264771e0e3763f5a4c7735f261e8a4ae1cd29e9d65f77a7746e9ec60327151c3"
+      "utf8Bytes": 7628,
+      "sha256": "d51827e70d949c9d35c114260795c843babefb5f0eac65c879418c9f5bc65d03"
     },
     {
       "path": "test/browser-web-integration.mjs",
@@ -750,8 +750,8 @@
     },
     {
       "path": "test/install-dependencies.ps1",
-      "utf8Bytes": 3466,
-      "sha256": "08e202441aa4fd5330557e1853e500905e5b8f2e363a2d9231ad4ab9aaa58c9e"
+      "utf8Bytes": 4163,
+      "sha256": "06c9c16247f77631c98ab95069d65320f8eaf3f7dcf89978a3eb930c141ebc34"
     },
     {
       "path": "test/install-options.ps1",
@@ -1045,8 +1045,8 @@
     },
     {
       "path": "tools/prepare-webwallgl.mjs",
-      "utf8Bytes": 1797,
-      "sha256": "e9415aca2aebbc71cae15da6f3bb0fec9c4b97b7b93b3d8fb9fd4e74c9d14805"
+      "utf8Bytes": 2558,
+      "sha256": "a040bebdfaf1da2dae161ebf0eacdce7a1c715764d9535147267d6bce1ba4def"
     },
     {
       "path": "tools/release-files.mjs",
@@ -1165,8 +1165,8 @@
     },
     {
       "path": "windows/Build-Launcher.ps1",
-      "utf8Bytes": 3009,
-      "sha256": "f45463932c319c5b7a4b9156c9cbf219497484331054f4db04abcd46f60cb143"
+      "utf8Bytes": 3242,
+      "sha256": "f6453f31b999952a42ecde223f6e21c5fd24c9ed8638bf4795da06ea87fa97b0"
     },
     {
       "path": "windows/CleanProcess.cs",
@@ -1205,13 +1205,13 @@
     },
     {
       "path": "windows/Install-Wallpaper.ps1",
-      "utf8Bytes": 9978,
-      "sha256": "3175e76ea7c61cc5498f02183e07fb244e4c23b043f0797ba4f984a6f91578f4"
+      "utf8Bytes": 11655,
+      "sha256": "1db2c0d55dec8f7365f733198427e32aaa70208fd80ba9915fcdd6115db8b523"
     },
     {
       "path": "windows/InstallSupport.ps1",
-      "utf8Bytes": 7863,
-      "sha256": "b8f7c184488a5562ff50475c3fa71b2052eace61e064df7628783e25a2ce62ee"
+      "utf8Bytes": 7973,
+      "sha256": "66f7ee899ed77fdfb4814ea8cd944cb6b97db5fed4eb7a192de5084f5e4138b6"
     },
     {
       "path": "windows/LaunchPolicy.ps1",
@@ -1245,8 +1245,8 @@
     },
     {
       "path": "windows/Prepare-Realtime.ps1",
-      "utf8Bytes": 802,
-      "sha256": "ee44f2b50605a32d84cbbc33603836b5339a899d95dc3bb4deedc9345dc92c8e"
+      "utf8Bytes": 2417,
+      "sha256": "eabe28c233879b293b80113af4c8b7475b21edf6ca64e500e578ac481c734396"
     },
     {
       "path": "windows/Prepare-TaskbarEntry.ps1",
@@ -1270,8 +1270,8 @@
     },
     {
       "path": "windows/Setup-Bridge.ps1",
-      "utf8Bytes": 2330,
-      "sha256": "a71d90ecf5c2934eddf26a4cf9bdebdcf732c5d42d18a1aa3ad94d917a1f9112"
+      "utf8Bytes": 2633,
+      "sha256": "fa77d9ff6744d7b88c8a1c5c5a53735c49e1b3d649190beba5805f1664e619a0"
     },
     {
       "path": "windows/ShortcutIdentity.cs",
@@ -1325,8 +1325,8 @@
     },
     {
       "path": "windows/installer/CodexWallpaperBridge.iss",
-      "utf8Bytes": 14002,
-      "sha256": "35845173476659a50b53a89f096f6dd8112e5ef1ab946f87977d25bd95328959"
+      "utf8Bytes": 17069,
+      "sha256": "175b3f1a67ff5cad13de103cd60e0d402512b9296426a957576df898f491b80b"
     }
   ]
 }

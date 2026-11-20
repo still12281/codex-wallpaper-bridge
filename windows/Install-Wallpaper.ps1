@@ -3,7 +3,8 @@ param([string]$DataDirectory,[switch]$CheckOnly,[switch]$SkipDependencyInstall,[
   [ValidateSet('ask','separate','replace','none')][string]$ShortcutMode='ask',
   [ValidateSet('ask','enable','keep','disable')][string]$UpdateReconnect='ask',
   [ValidateSet('enable','keep','disable')][string]$LoginStartup='keep',
-  [switch]$NonInteractive,[switch]$NoPause)
+  [switch]$NonInteractive,[switch]$NoPause,[switch]$InstallVideoTools,[switch]$InstallNativeCapture,
+  [ValidatePattern('^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$')][string]$PanelUpdateId)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'InstallSupport.ps1')
 $installSourceRoot=Split-Path -Parent $PSScriptRoot
@@ -27,22 +28,32 @@ try{
   if(Test-Path -LiteralPath $installPolicyPath){$installPrevious=Get-Content -LiteralPath $installPolicyPath -Raw -ErrorAction Stop|ConvertFrom-Json}
   if($NoShortcuts){$ShortcutMode='none'}
   $installChoices=Resolve-WallpaperInstallChoices -ShortcutMode $ShortcutMode -UpdateReconnect $UpdateReconnect -Existing $installPrevious -NonInteractive:($NonInteractive -or $CheckOnly)
+  . (Join-Path $PSScriptRoot 'Runtime.ps1')
+  Import-WallpaperOptionalRuntimes -Root $installDataRoot
+  $previousStatusPath=Join-Path $installDataRoot 'install-status.json'
+  $previousStatus=if(Test-Path -LiteralPath $previousStatusPath){Get-Content -LiteralPath $previousStatusPath -Raw -ErrorAction Stop|ConvertFrom-Json}
+  $legacyCapture=$installPrevious -and $null -eq $installPrevious.nativeCapture -and $previousStatus.preparationSkipped -eq $false
+  $videoTools=$InstallVideoTools -or $installPrevious.videoTools -eq $true
+  $nativeCapture=$InstallNativeCapture -or $installPrevious.nativeCapture -eq $true -or $legacyCapture
   $installSpecs=@(
     @{name='pwsh';package='Microsoft.PowerShell'},
     @{name='node';package='OpenJS.NodeJS.LTS'},
-    @{name='ffmpeg';package='Gyan.FFmpeg'},
-    @{name='uv';package='astral-sh.uv'}
+    @{name='ffmpeg';package='Gyan.FFmpeg';optional=(-not $videoTools)},
+    @{name='uv';package='astral-sh.uv';optional=(-not $nativeCapture)}
   )
   $installResolved=@{};$installMissing=@()
   foreach($spec in $installSpecs){
-    $executable=Get-WallpaperInstallDependency $spec.name
-    if($executable){$installResolved[$spec.name]=$executable}else{$installMissing+=$spec}
+    $executable=$null
+    try{$executable=Get-WallpaperInstallDependency $spec.name}
+    catch{if(-not $spec.optional){throw};Write-Warning $_.Exception.Message}
+    if($executable){$installResolved[$spec.name]=$executable}
+    elseif(-not $spec.optional){$installMissing+=$spec}
   }
   if($CheckOnly){
     [ordered]@{checkOnly=$true;codex="$($installCodex.Version)";dataDirectory=$installDataRoot;dependencies=$installResolved;missing=@($installMissing|ForEach-Object package);choices=$installChoices;loginStartup=$LoginStartup;willStartClient=$false} | ConvertTo-Json -Depth 4
     if($installMissing.Count){exit 2};exit 0
   }
-  if($installMissing.Count -and $SkipDependencyInstall){throw ('Missing dependencies: '+(($installMissing|ForEach-Object package)-join ', '))}
+  if($installMissing.Count -and ($SkipDependencyInstall -or $PanelUpdateId)){throw ('Missing dependencies: '+(($installMissing|ForEach-Object package)-join ', '))}
   if($installMissing.Count){
     $installWinget=Get-Command winget.exe -ErrorAction SilentlyContinue
     if(-not $installWinget){throw 'WinGet is unavailable. Install App Installer from Microsoft Store, then run Install.cmd again. Manual commands: docs/INSTALL.zh-CN.md'}
@@ -74,12 +85,14 @@ try{
     Write-Host 'Preparing GPU scene runtime ...'
     & $installResolved.node (Join-Path $installDirectory 'tools/prepare-webwallgl.mjs')
     if($LASTEXITCODE -ne 0){throw 'GPU runtime download failed; rerun Install.cmd when the network is available.'}
-    Write-Host 'Preparing native capture (Python 3.12 and locked dependencies) ...'
-    & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Prepare-Realtime.ps1')
-    if($LASTEXITCODE -ne 0){throw 'Native capture preparation failed; rerun Install.cmd when the network is available.'}
+    if($nativeCapture){
+      Write-Host 'Preparing native capture (Python 3.12 and locked dependencies) ...'
+      & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Prepare-Realtime.ps1')
+      if($LASTEXITCODE -ne 0){throw 'Native capture preparation failed. See the capture error above.'}
+    }
   }
   Write-Host 'Building the unified entry ...'
-  & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Build-Launcher.ps1')
+  & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Build-Launcher.ps1') -DeferLaunchScript
   if($LASTEXITCODE -ne 0){throw 'Entry build failed; see the compiler message above.'}
   & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Prepare-TaskbarEntry.ps1')
   if($LASTEXITCODE -ne 0){throw 'Shortcut preparation failed; see the message above.'}
@@ -90,7 +103,7 @@ try{
     if(@($restored|Where-Object error).Count){throw 'Could not restore all original shortcuts. Inspect Restore-Shortcuts.ps1 output before switching modes.'}
     if(@($restored|Where-Object reason -eq 'shortcut-modified-preserved').Count){Write-Warning 'User-modified shortcuts were preserved while switching to separate mode.'}
   }
-  $installPolicy=[ordered]@{schemaVersion=1;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect}
+  $installPolicy=[ordered]@{schemaVersion=1;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect;videoTools=[bool]$videoTools;nativeCapture=[bool]$nativeCapture}
   [IO.File]::WriteAllText($installPolicyPath,($installPolicy|ConvertTo-Json),[Text.UTF8Encoding]::new($false))
   if($installChoices.shortcutMode -eq 'separate'){
     $installDesktop=Join-Path ([Environment]::GetFolderPath('Desktop')) 'Codex Wallpaper.lnk'
@@ -113,7 +126,13 @@ try{
     & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Set-LoginStartup.ps1') -Root $installDataRoot -Mode $LoginStartup
     if($LASTEXITCODE -ne 0){throw 'Base installation completed, but login startup could not be changed. See docs/LOGIN-STARTUP.zh-CN.md.'}
   }
-  [ordered]@{installed=$true;source=$installDirectory;entry=$installEntry;dataDirectory=$installDataRoot;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect;loginStartup=$LoginStartup;preparationSkipped=[bool]$SkipPreparation;clientStarted=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $installDataRoot 'install-status.json') -Encoding UTF8 -ErrorAction Stop
+  $launchScript=Join-Path $installDataRoot 'launch-script.txt'
+  $nextLaunchScript=if($PanelUpdateId){
+    Join-Path $installDataRoot ('updates/'+$PanelUpdateId+'/launch-script.pending')
+  }else{$launchScript+'.'+[guid]::NewGuid().ToString('N')+'.next'}
+  [IO.File]::WriteAllText($nextLaunchScript,(Join-Path $installDirectory 'windows/Start-CodexWallpaper.ps1'),[Text.UTF8Encoding]::new($false))
+  [ordered]@{installed=$true;source=$installDirectory;videoTools=[bool]$installResolved.ffmpeg;nativeCapturePrepared=($nativeCapture -and -not $SkipPreparation);entry=$installEntry;dataDirectory=$installDataRoot;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect;loginStartup=$LoginStartup;preparationSkipped=[bool]$SkipPreparation;clientStarted=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $installDataRoot 'install-status.json') -Encoding UTF8 -ErrorAction Stop
+  if(-not $PanelUpdateId){[IO.File]::Move($nextLaunchScript,$launchScript,$true)}
   Write-Host ''
   Write-Host 'Installed. Save drafts, exit ordinary Codex normally, then open the selected wallpaper entry.' -ForegroundColor Green
   Write-Host ('Entry: '+$installEntry)

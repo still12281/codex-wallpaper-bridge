@@ -143,7 +143,7 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3
 3. 按提示选择是否启用更新后一次重连；等待绿色 **Installed** 提示。依赖安装弹出 Windows 授权时，按提示确认。
 4. 保存工作并正常退出原来的 Codex，再从所选入口打开。任务栏需要手动取消旧固定项并固定新的入口。
 
-安装器自动检测并准备 **PowerShell 7、Node.js 22+、FFmpeg、uv、GPU 运行时和原版采集依赖**，复制程序到独立安装目录，生成带官方图标的桌面/开始菜单入口。不需要 Git、npm install 或手动编辑配置。首次下载依赖需要时间，安装器不会自动关闭或重启正在运行的 Codex。
+从 v0.3.2 起，标准安装复用或准备 **PowerShell 7、Node.js 22+、WebWallGL 与双声道组件**。需要导入图片或视频时可勾选「图片与视频导入」，需要原版采集时可勾选「Wallpaper Engine 原版采集」。安装器将程序复制到独立版本目录，按选择创建壁纸入口。不需要 Git、npm install 或手动编辑配置。首次下载依赖需要时间，安装器不会自动关闭或重启正在运行的 Codex。
 
 替换模式只处理当前用户桌面/开始菜单中经过路径或 Store 应用身份确认的 `.lnk`，保留原名并保存原文件备份；没有可替换文件时创建桌面 `Codex` 快捷方式。不改 Store 注册入口或任务栏固定数据。专用模式会保留原入口，后续启动也不会自动替换它。
 
@@ -151,7 +151,7 @@ irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3
 
 | 你想使用什么 | 还需要安装什么 |
 | --- | --- |
-| 普通图片 / 视频 | 无，安装器已准备基础依赖 |
+| 已有图片和视频播放 | 标准安装。添加本地素材时加装「图片与视频导入」 |
 | Wallpaper Engine 壁纸库 / 原版兼容 | Steam 中的 Wallpaper Engine，并至少运行一次 |
 | 网页浏览器（试验） | 本机 Chrome 或 Edge |
 | 系统音乐联动 | 安装器准备双声道组件，在「系统音乐联动」启用 |

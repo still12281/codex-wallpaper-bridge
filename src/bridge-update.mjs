@@ -1,13 +1,12 @@
 import {readFile,writeFile,mkdir,rename,rm} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
-import {getPowerShell} from './runtime-paths.mjs';
 
 const repo='still12281/codex-wallpaper-bridge',base='https://github.com/'+repo;
 const latest='https://api.github.com/repos/'+repo+'/releases/latest';
+const installedMessage='更新已安装。保存工作并正常退出 Codex，再从壁纸入口打开，新版本即生效。';
 const stable=/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 export function newerVersion(candidate,current){
  if(!stable.test(candidate)||!stable.test(current))return false;
@@ -66,6 +65,12 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
    }
   }catch(error){await rm(temp,{force:true}).catch(()=>{});throw error;}
  });
+ const readInstallerResult=async op=>{
+  const file=path.join(path.dirname(op.statusFile),'setup-complete');
+  try{return (await readFile(file,'utf8')).trim()===op.id;}
+  catch(error){if(error.code!=='ENOENT')throw error;return false;}
+ };
+ const installError=(op,code)=>'安装器未完成'+(code===undefined?'':'（'+code+'）')+'。安装日志位于 updates/'+op.id+'/installer.log。';
  const check=async(force=false)=>{
   if(checking)return checking;
   if(!operation&&state.phase!=='installed'&&(force||!lastCheck||now()-lastCheck>=60*60*1000))state={...state,phase:'checking',message:'正在检查 GitHub 正式版本…'};
@@ -84,6 +89,7 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
    const saved=JSON.parse(await readFile(activeFile,'utf8'));
    if(!/^[a-f0-9-]{36}$/.test(saved.id)||!stable.test(saved.version)||!Number.isFinite(saved.createdAt))throw Error('更新任务记录无效。');
    if(!newerVersion(saved.version,currentVersion)){await forget(saved.id);return snapshot();}
+   if(operation)return snapshot();
    operation={...saved,statusFile:path.join(root,'updates',saved.id,'status.json')};
    state={...state,available:true,latestVersion:saved.version,phase:'installing',message:'正在读取上次更新的状态…'};
   }catch(error){if(error.code!=='ENOENT'&&!(error instanceof SyntaxError))state={...state,phase:'error',message:error.message};}
@@ -92,14 +98,33 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
    const result=await readStatusFile(reading.statusFile);
    if(operation===reading&&result.id===reading.id&&['downloading','installing','installed','error'].includes(result.phase)){
     state={...state,phase:result.phase,message:result.message};
-    if(result.phase==='error'){await forget(operation.id);operation=null;}
+    if(result.phase==='error'){await forget(reading.id);if(operation===reading)operation=null;}
    }
   }catch(error){if(error.code!=='ENOENT'&&!(error instanceof SyntaxError)){state={...state,message:'暂时无法读取安装状态：'+error.message};}}
-  if(operation?.createdAt&&now()-operation.createdAt>20*60*1000&&!['installed','error'].includes(state.phase))state={...state,message:'更新耗时超过 20 分钟，请查看数据目录 updates 下的安装日志。当前任务保留，避免重复安装。'};
-  if(operation&&!['installed','error'].includes(state.phase)){
-   let abandoned=state.phase==='downloading'&&!alive(operation.ownerPid);
-   if(state.phase==='installing')try{const runner=JSON.parse(await readFile(path.join(root,'updates',operation.id,'runner.json'),'utf8'));abandoned=runner.id===operation.id&&!alive(runner.pid);}catch{}
-   if(abandoned){await saveResult(operation,'error','上次更新进程已退出，可重新点击更新。');await forget(operation.id);operation=null;state={...state,phase:'error',message:'上次更新进程已退出，可重新点击更新。'};}
+  if(!reading||operation!==reading||['installed','error'].includes(state.phase))return snapshot();
+  if(reading.runner==='inno'&&state.phase==='installing'){
+   try{
+    const installed=await readInstallerResult(reading);
+    if(operation!==reading)return snapshot();
+    if(installed){state={...state,phase:'installed',message:installedMessage};return snapshot();}
+   }catch(error){
+    if(operation===reading)state={...state,message:'暂时无法读取安装回执：'+error.message};
+    return snapshot();
+   }
+  }
+  const timedOut=now()-reading.createdAt>20*60*1000;
+  if(timedOut)state={...state,message:'更新耗时超过 20 分钟，请查看数据目录 updates 下的安装日志。当前任务保留，避免重复安装。'};
+  let abandoned=state.phase==='downloading'&&!alive(reading.ownerPid);
+  if(state.phase==='installing'){
+   const runner=await readFile(path.join(root,'updates',reading.id,'runner.json'),'utf8').then(JSON.parse).catch(()=>null);
+   if(operation!==reading||state.phase!=='installing')return snapshot();
+   abandoned=runner?.id===reading.id&&!alive(runner.pid);
+   if(!runner&&reading.runner==='inno'&&timedOut)abandoned=!alive(reading.ownerPid);
+  }
+  if(abandoned){
+   const message=reading.runner==='inno'?installError(reading):'上次更新进程已退出，可重新点击更新。';
+   await saveResult(reading,'error',message);await forget(reading.id);
+   if(operation===reading){operation=null;state={...state,phase:'error',message};}
   }
   return snapshot();
  };
@@ -107,7 +132,7 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
   await status();if(operation||state.phase==='installed')return snapshot();
   // Recheck before execution; never accept a URL, version or path from the page.
   const id=randomUUID(),directory=path.join(root,'updates',id);
-  const op={id,ownerPid:process.pid,createdAt:now(),statusFile:path.join(directory,'status.json')};
+  const op={id,ownerPid:process.pid,createdAt:now(),statusFile:path.join(directory,'status.json'),...(launch?{}:{runner:'inno'})};
   operation=op;state={...state,phase:'checking',message:'正在核对最新正式版本…'};
   void (async()=>{let temp;
    try{
@@ -130,10 +155,21 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
     await writeFile(requestFile,JSON.stringify({id,installer,sha256:expected,dataDirectory:root,statusFile}));
     state={...state,phase:'installing',message:'正在安装更新…'};await saveResult(op,state.phase,state.message);
     if(launch)await launch(requestFile);else{
-     const script=fileURLToPath(new URL('../windows/Install-BridgeUpdate.ps1',import.meta.url));
-     const child=spawn(getPowerShell(),['-NoProfile','-ExecutionPolicy','Bypass','-File',script,'-RequestFile',requestFile],{windowsHide:true,detached:true,stdio:'ignore'});
-     await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});
-     child.once('exit',code=>{void (async()=>{let result;try{result=await readStatusFile(statusFile);}catch{}if(!['installed','error'].includes(result?.phase))await saveResult(op,'error','更新执行器提前退出（'+code+'），请检查 PowerShell 和安装日志。');})().catch(()=>{});});child.unref();
+     const child=spawn(installer,[
+      '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOCLOSEAPPLICATIONS','/SP-',
+      '/UPDATE=keep','/LOGIN=keep','/DATADIR='+root,'/BRIDGEUPDATE='+id,
+      '/LOG='+path.join(directory,'installer.log')
+     ],{windowsHide:true,detached:true,stdio:'ignore'});
+     const started=new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});
+     child.once('exit',code=>{
+      void (async()=>{
+       if(await readInstallerResult(op))return;
+       await saveResult(op,'error',installError(op,code));
+      })().catch(()=>{});
+     });
+     await started;
+     try{await writeFile(path.join(directory,'runner.json'),JSON.stringify({id,pid:child.pid}),{flag:'wx'});}
+     finally{child.unref();}
     }
    }catch(error){if(temp)await rm(temp,{force:true}).catch(()=>{});await forget(id).catch(()=>{});operation=null;state={...state,phase:'error',message:error.message};}
   })();

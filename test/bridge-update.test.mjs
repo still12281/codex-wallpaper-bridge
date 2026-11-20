@@ -62,3 +62,17 @@ test('corrupt or truncated downloads and failed process launch never become inst
   const folders=await readdir(path.join(f.root,'updates'));assert.equal(folders.length,1);assert(!(await readdir(path.join(f.root,'updates',folders[0]))).some(n=>n.endsWith('.part')));
  }
 });
+
+test('an Inno receipt survives host restart and is bound to its operation',async()=>{
+ const f=await fixture();await f.updater.start();await wait(()=>f.launches);
+ const request=JSON.parse(await readFile(f.requestFile,'utf8'));
+ const active=path.join(f.root,'updates','active.json');
+ const saved=JSON.parse(await readFile(active,'utf8'));
+ await writeFile(active,JSON.stringify({...saved,runner:'inno'}));
+ const restarted=createBridgeUpdater({root:f.root,currentVersion:'0.2.2'});
+ const receipt=path.join(path.dirname(request.statusFile),'setup-complete');
+ await writeFile(receipt,'wrong-operation');
+ assert.equal((await restarted.status()).phase,'installing');
+ await writeFile(receipt,request.id);
+ assert.equal((await restarted.status()).phase,'installed');
+});

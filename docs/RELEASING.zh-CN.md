@@ -13,6 +13,8 @@ EXE 使用稳定 AppId 和当前用户安装范围。构建/验证时禁用自�
 
 双声道组件的源码为 media-bridge 提交 `a508378f4e5e654c8de60e1076d559dca258e825`。在该源码根目录应用 `git apply --unidiff-zero <media-bridge-sample-clock.patch>`，再以 Windows x64 MSVC Rust 工具链运行 `cargo build --release --locked -p media-bridge --no-default-features --features audio`。每次替换发布二进制都要同步校验值和组件下载地址，并重新验证安装。
 
+发布前在隔离 Windows 环境运行实际安装包。真机验收包括缺少 PowerShell 7 的标准首装、已有壁纸库的旧版升级，以及安装中断后可继续使用旧入口和重试。覆盖面板启动安装器、安装回执和重开后实际加载的版本。保留现有数据目录、快捷方式模式和启动设置。对无法通过旧面板启动执行器的版本，用同一候选 EXE 验证手动过渡。
+
 自动化安装支持 `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="<程序目录>" /DATADIR="<数据目录>" /SHORTCUTMODE=ask|separate|replace|none /UPDATE=keep|enable|disable /LOGIN=keep|enable|disable`。`/SKIPPREPARATION=1` 供已准备渲染组件的开发环境使用，首次完整安装使用默认准备流程。发布前可通过 `CODEX_WALLPAPER_MEDIA_ASSET` 指向本地构建资产，安装仍使用相同的组件落盘与 SHA-256 校验流程。升级沿用已登记的数据目录，迁移通过备份恢复完成。
 
 `tools/install-bootstrap.ps1` 是源码模板，不能直接作为远程入口。生成后的脚本调用现有 `Install.cmd`，下载缓存保留便于排错；不增加服务、更新轮询或自动关闭客户端。发布为 alpha 时保持 prerelease 标记，文档使用固定标签链接，不依赖 GitHub 的 latest 选择规则。

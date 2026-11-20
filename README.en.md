@@ -44,7 +44,7 @@ When Codex remains in the tray, the taskbar entry restores the existing main win
 ## Requirements
 
 - Windows 10/11, x64, with the official Microsoft Store Codex client installed.
-- The installer detects or prepares Node.js 22+, PowerShell 7, FFmpeg and uv. For a manually supplied FFmpeg, set `CODEX_WALLPAPER_FFMPEG` when it is outside PATH and local WinGet locations.
+- Standard setup requires Node.js 22+ and PowerShell 7. Image and video import requires FFmpeg with ffprobe. Original-engine capture requires uv and Python 3.12.
 - Wallpaper Engine only for Wallpaper Engine library features. Local image/video imports do not require it.
 - The unified entry is built with the Windows .NET Framework C# compiler, which the installer checks before building.
 
@@ -79,7 +79,7 @@ To deploy the source package manually:
 3. Double-click **[Install.cmd](Install.cmd)**. Choose a separate Codex Wallpaper entry or replacement of identified original shortcuts with backups, then choose whether to enable one graceful reconnect after future updates. Stay online and allow dependency installation if Windows asks.
 4. Wait for **Installed**, save work and exit ordinary Codex normally. Open the selected wallpaper entry. Taskbar pins must be replaced manually.
 
-The installer detects or installs PowerShell 7, Node.js 22+, FFmpeg and uv through WinGet; prepares the pinned WebWallGL runtime, stereo spectrum component and Python 3.12 capture dependencies; and copies reviewed source into a versioned installation. Git, npm install and manual JSON configuration are not required. It does not close or launch Codex. A future-update event task is registered only when explicitly enabled; there is no custom resident watcher. Separate-entry mode also prevents later startup from rewriting official shortcuts.
+Starting with v0.3.2, standard setup reuses or installs PowerShell 7 and Node.js 22+, prepares WebWallGL and the stereo spectrum component, and installs Bridge in a versioned directory. The wizard offers image and video import and original-engine capture as optional components. Git, npm install and manual JSON configuration are not required. It does not close or launch Codex. A future-update event task is registered only when explicitly enabled; there is no custom resident watcher. Separate-entry mode also prevents later startup from rewriting official shortcuts.
 
 Replacement affects verified current-user desktop/Start-menu `.lnk` files. It preserves Store registration, taskbar pins, unrelated shortcuts and custom arguments. See [shortcut restoration and installation options](docs/INSTALL.zh-CN.md).
 

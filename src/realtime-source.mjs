@@ -58,11 +58,12 @@ export async function startRealtime(entry,dataRoot,{isCurrent=()=>true}={}){
  const engine=await executable(),name='CodexWallpaperBridge-'+randomUUID();
  let uv=process.env.CODEX_WALLPAPER_UV;
  if(!uv){const candidates=[...(process.env.PATH||'').split(path.delimiter).filter(Boolean).map(p=>path.join(p.replace(/^"|"$/g,''),'uv.exe')),path.join(process.env.USERPROFILE||'', '.local/bin/uv.exe')];for(const candidate of candidates){try{await access(candidate);uv=candidate;break}catch{}}}
- if(!uv)throw Error('实时模式需要 uv，请安装 uv 或配置 CODEX_WALLPAPER_UV');await access(uv);
+ if(!uv)throw Error('未安装原版采集依赖。请重新运行安装器并选择「Wallpaper Engine 原版采集」，或配置 CODEX_WALLPAPER_UV。');await access(uv);
  const helper=fileURLToPath(new URL('./capture-scene.py',import.meta.url));
  const runtime={name,engine,profile,frame:null,sequence:0,lastFrameAt:0,error:null,paused:false,closed:false,helper:null};
  const invoke=promisify(execFile);
- const captureEnv={...process.env,UV_CACHE_DIR:process.env.UV_CACHE_DIR||path.join(dataRoot,'capture-cache')};
+ const cache=process.env.UV_CACHE_DIR||path.join(dataRoot,'capture-cache');
+ const captureEnv={...process.env,UV_CACHE_DIR:cache,UV_PYTHON_INSTALL_DIR:process.env.UV_PYTHON_INSTALL_DIR||path.join(cache,'python')};
  // Resolve the prepared environment once per start, then own Python directly.
  // Killing uv alone would not guarantee its Python child exits on Windows.
  const interpreter=(await invoke(uv,['run','--offline','--frozen','--script',helper,'--runtime-path'],{windowsHide:true,timeout:20000,maxBuffer:8192,env:captureEnv}).catch(error=>{throw Error('实时采集依赖未准备好，请先运行 Prepare-Realtime.ps1：'+error.message)})).stdout.trim();
