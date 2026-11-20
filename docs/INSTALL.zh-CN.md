@@ -2,14 +2,14 @@
 
 ## 推荐：EXE 安装向导
 
-适用于 Windows 10/11 x64。先安装并登录官方 Microsoft Store 版 Codex，下载并双击 [CodexWallpaperBridge-0.3.1-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.1/CodexWallpaperBridge-0.3.1-Setup.exe)。
+适用于 Windows 10/11 x64。先安装并登录官方 Microsoft Store 版 Codex，下载并双击 [CodexWallpaperBridge-0.3.2-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.2/CodexWallpaperBridge-0.3.2-Setup.exe)。
 
 1. 选择安装程序文件的位置，默认 `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`。
 2. 确认壁纸数据目录，默认 `%LOCALAPPDATA%\CodexWallpaperBridge`。向导优先沿用已有 EXE 安装记录，也会识别环境变量或现有壁纸快捷方式指向的数据目录。旧 ZIP 自选目录未被识别时，在此选择原目录。
 3. 选择独立入口、备份替换原快捷方式或不创建快捷方式；更新恢复和登录启动默认沿用现有设置。
 4. 保持联网，等待依赖与运行组件准备完成。安装结束后保存工作，正常退出 Codex，再从壁纸入口打开。
 
-从新版 EXE 升级时再次运行安装向导，沿用原数据目录。
+从新版 EXE 升级时再次运行安装向导，沿用原数据目录。 如果 v0.3.0 或 v0.3.1 的一键更新提示「更新执行器提前退出」，也使用上方安装包过渡一次。
 
 从 v0.3.2 起，标准安装支持播放已有的图片和视频，包含 WebWallGL 场景和音乐联动。导入本地图片或视频可加装「图片与视频导入」；使用原版实时采集可加装「Wallpaper Engine 原版采集」。以后可重新运行同一安装器选择组件，用原数据目录继续安装。命令行安装可传入 `-InstallVideoTools` 或 `-InstallNativeCapture`。v0.3.1 的安装包采用完整依赖配置。
 
@@ -22,14 +22,14 @@
 适用于 Windows 10/11 x64；先安装并登录官方 Microsoft Store 版 Codex。打开 PowerShell，执行：
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.1/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.2/install.ps1' | iex
 ```
 
 命令下载固定版本引导脚本；脚本从同一 Release 下载 ZIP，按内置 SHA-256 校验后解压，再调用 `Install.cmd`。无需 Git、手动下载 ZIP 或先安装 PowerShell 7。依赖、快捷方式和更新重连选项与下面的双击安装一致；不会关闭或重启当前 Codex。
 
 默认安装到 `%LOCALAPPDATA%\CodexWallpaperBridge`。想指定其它盘，可先在同一个 PowerShell 中设置 `$env:CODEX_WALLPAPER_DATA_DIR = 'D:\CodexWallpaperBridge'`，再执行上面的远程命令；升级时使用同一目录。下载及解压缓存留在终端显示的 `%TEMP%\CodexWallpaperBridge-install-*` 独立文件夹，成功后可自行删除；壁纸库不存放在此缓存中。
 
-每条命令对应固定版本；升级时使用新版 README/Release 提供的命令。脚本或下载被网络拦截时，按下文手动下载，不需要关闭安全软件。希望先审阅脚本，可在 [Release](https://github.com/still12281/codex-wallpaper-bridge/releases/tag/v0.3.1) 下载 `install.ps1` 和对应 `.sha256`；脚本的 `-CheckOnly` 选项只下载校验并检查安装条件，不执行安装。
+每条命令对应固定版本；升级时使用新版 README/Release 提供的命令。脚本或下载被网络拦截时，按下文手动下载，不需要关闭安全软件。希望先审阅脚本，可在 [Release](https://github.com/still12281/codex-wallpaper-bridge/releases/tag/v0.3.2) 下载 `install.ps1` 和对应 `.sha256`；脚本的 `-CheckOnly` 选项只下载校验并检查安装条件，不执行安装。
 
 ## ZIP 手动部署
 

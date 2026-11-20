@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+- Launch the verified setup EXE directly from the wallpaper panel. Keep the previous launcher active until setup completes, and record the result separately from the running wallpaper host.
+- Default to standard setup with PowerShell 7, Node.js, WebWallGL and stereo spectrum. Offer image/video import and original Wallpaper Engine capture as optional components.
+- Discover PowerShell 7 installed via MSI or an MSIX app execution alias. Reuse verified WebWallGL and existing Python capture environments during upgrades.
+
 ## 0.3.1
 
 - Recover WebGL spectrum capture when updates stall during system audio playback. Skip stale spectrum samples and show the active, paused, or recovering state in the wallpaper panel.

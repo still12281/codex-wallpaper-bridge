@@ -24,8 +24,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "utf8Bytes": 26553,
-      "sha256": "899c87ab5cedefd7b3351a5a3a73c877c799216ed78a3df480e6a6433e89bcc9"
+      "utf8Bytes": 27085,
+      "sha256": "39c8056e71da49a149ac0841a20b962db9c73695b61835f4674395d085c33072"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -49,13 +49,13 @@
     },
     {
       "path": "README.en.md",
-      "utf8Bytes": 15375,
-      "sha256": "cb287fb0d40ae305c8b4e4a1fe117a80c74cea0ef027e87b2db45a1892e889ca"
+      "utf8Bytes": 15495,
+      "sha256": "88e305410fdc2acd3bf1251aa3999baaaf3ff4ef0714dba261441812aed04c3a"
     },
     {
       "path": "README.md",
-      "utf8Bytes": 17588,
-      "sha256": "f8f523863c5984be50a87270fd45ccc50652bfb70c0fb3b3802caa3f74c0bfa7"
+      "utf8Bytes": 17722,
+      "sha256": "3dea4b78603a4b2f60113e254f23f0978368d06778568d885e54e0e4ee09d351"
     },
     {
       "path": "README.zh-CN.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/INSTALL.zh-CN.md",
-      "utf8Bytes": 18067,
-      "sha256": "1c717851162f0082fc859445028aaa981e94f52864c18874a12f6c5f44b3e925"
+      "utf8Bytes": 18189,
+      "sha256": "0a00539a5ed9b07c850d85416fcbabe9dee60eb03dd386e814ed86cd8d12dfc9"
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
@@ -1041,7 +1041,7 @@
     {
       "path": "tools/prepare-media-bridge.mjs",
       "utf8Bytes": 1844,
-      "sha256": "3da090ac180d78cfdd38de883e2d2514555a54a0fee8ad9a9209c1efbd94a027"
+      "sha256": "b3e910a489c1b63ffe315f3a134101c3906fb218500f54a30eb847ba805d7a89"
     },
     {
       "path": "tools/prepare-webwallgl.mjs",
