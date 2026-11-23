@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===31){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===32){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=31;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=32;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  // Share the native menu row's layout instead of covering workspace tabs.
@@ -11,17 +11,55 @@ export function installPanel(config,token){
  const findMenu=()=>{const native=document.getElementById('application-menu-trigger-file-menu')?.closest('[role="menubar"]');if(native)return native;const matches=document.querySelectorAll(anchorSelector);return matches.length===1?matches[0]:null;};
  let menuAnchor=null,placementQueued=false,disposed=false;
  const place=()=>{if(disposed)return;const candidate=findMenu(),rect=candidate?.getBoundingClientRect();const menu=rect?.width>0&&rect.height>0?candidate:null;menuAnchor=menu;if(menu){host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';if(host.parentElement!==menu.parentElement||host.previousElementSibling!==menu)menu.after(host);}else{host.style.cssText='position:fixed;display:inline-flex;align-items:center;top:4px;right:clamp(8px,11vw,144px);z-index:2147483000;app-region:no-drag;-webkit-app-region:no-drag';if(host.parentElement!==document.body)document.body.append(host);}host.dataset.cwbPlacement=menu?'menu':'fallback';};
- const queuePlace=()=>{if(placementQueued||disposed)return;placementQueued=true;requestAnimationFrame(()=>{placementQueued=false;place();});};
- const relevant='[class*="ApplicationMenuTopBar"],[role="menubar"],#application-menu-trigger-file-menu';
- const observer=new MutationObserver(changes=>{if(!host.isConnected||(menuAnchor&&!menuAnchor.isConnected)||changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&(n.matches?.(relevant)||n.querySelector?.(relevant)))))queuePlace();});
- observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('resize',queuePlace);host.__cwbPlace=place;host.__cwbDispose=()=>{disposed=true;observer.disconnect();window.removeEventListener('resize',queuePlace);if(scanShortcut)window.removeEventListener('keydown',scanShortcut,true);clearTimeout(scanToastTimer);clearTimeout(updateTimer);};
+ const queuePlace=()=>{if(placementQueued||disposed)return;placementQueued=true;requestAnimationFrame(()=>{placementQueued=false;place();placeScan();});};
+ const overlaySelector='dialog,[role="dialog"],[role="alertdialog"],[role="menu"],[popover]';
+ const relevant='[class*="ApplicationMenuTopBar"],[role="menubar"],#application-menu-trigger-file-menu,'+overlaySelector;
+ const observer=new MutationObserver(changes=>{if(!host.isConnected||(menuAnchor&&!menuAnchor.isConnected)||changes.some(c=>c.type==='attributes'?c.target!==scanEntry&&c.target.matches(overlaySelector):[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&n!==scanEntry&&(n.matches(relevant)||n.querySelector(relevant)))))queuePlace();});
+ const watchToggle=event=>{if(event.target!==scanEntry&&event.target!==scanToast&&event.target.matches?.(overlaySelector))queuePlace();};
+ observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open','data-state']});
+ document.addEventListener('toggle',watchToggle,true);s.addEventListener('toggle',watchToggle,true);window.addEventListener('resize',queuePlace);
+ host.__cwbPlace=()=>{place();placeScan();};host.__cwbDispose=()=>{disposed=true;observer.disconnect();document.removeEventListener('toggle',watchToggle,true);s.removeEventListener('toggle',watchToggle,true);window.removeEventListener('resize',queuePlace);if(scanShortcut)window.removeEventListener('keydown',scanShortcut,true);clearTimeout(scanToastTimer);clearTimeout(updateTimer);scanEntry.remove();};
  host.__cwbEntryState=()=>{const button=s.getElementById('toggle'),r=button?.getBoundingClientRect(),style=getComputedStyle(host);return {visible:!!(host.isConnected&&r?.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight&&style.display!=='none'&&style.visibility!=='hidden'),placement:host.dataset.cwbPlacement};};place();
  s.innerHTML=`<style>:host{font:13px system-ui;color:#e6edf5}button,select,input{font:inherit}button,select{color:inherit;background:#18283de8;border:1px solid #5c849b70;border-radius:8px;padding:8px 12px;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #6cd9e8;outline-offset:2px}button:disabled{opacity:.5;cursor:wait}dialog{color:inherit;background:#0d1927f5;border:1px solid #5886a480;border-radius:16px;width:min(390px,80vw);padding:24px;box-shadow:0 18px 70px #0008}dialog::backdrop{background:#0005}h2{font-size:19px;margin:0 0 6px}p{color:#9fb3c8;line-height:1.6}label{display:block;margin-top:20px}select,input[type=range]{width:100%;box-sizing:border-box;margin-top:8px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:24px}#status{min-height:38px;font-size:12px}#close{float:right;background:none;border:0;padding:4px}output{float:right;color:#87d7e5}</style>
  <button id="toggle" aria-label="打开壁纸设置" style="height:28px;padding:0 10px">壁纸</button><dialog aria-labelledby="title"><button id="close" aria-label="关闭">✕</button><h2 id="title">壁纸与外观</h2><label>我的壁纸<select id="library"></select></label><label>遮罩浓度 <output id="opacity"></output><input id="shade" type="range" min="25" max="85" step="5"></label><label><input id="pause" type="checkbox"> 仅聚焦 Codex 时播放动态壁纸</label><p id="status" role="status" aria-live="polite">就绪</p><footer><button id="import">导入图片 / 视频</button><button id="done">完成</button></footer><input id="file" type="file" hidden accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"></dialog>`;
  const surfaceRepair=document.createElement('div');surfaceRepair.id='cwb-surface-repair';surfaceRepair.style.cssText='margin:12px 0;padding:12px 0;border-top:1px solid var(--cwb-divider,#8195a440)';
- surfaceRepair.innerHTML='<button id="cwb-surface-scan" type="button" data-cwb-control aria-describedby="cwb-surface-scan-note" style="width:100%;min-height:36px">扫描并适配</button><p id="cwb-surface-scan-note" style="margin:8px 0 0">检查所有已打开的页面。菜单或弹窗打开时，也可按 Ctrl+Alt+Shift+W 直接扫描；完成后停止。</p><p id="cwb-surface-scan-result" role="status" aria-live="polite" aria-atomic="true" style="margin:6px 0 0"></p>';
- const scanToast=document.createElement('output');scanToast.id='cwb-scan-toast';scanToast.setAttribute('popover','manual');scanToast.setAttribute('role','status');scanToast.style.cssText='position:fixed;inset:auto 16px 20px auto;max-width:min(420px,80vw);margin:0;padding:12px 16px;border:1px solid var(--cwb-border);border-radius:12px;background:var(--cwb-canvas);color:var(--cwb-ink);font:13px system-ui;box-shadow:0 4px 20px #0003';s.append(scanToast);
- const notifyStatus=text=>{scanToast.textContent=text;scanToast.showPopover?.();clearTimeout(scanToastTimer);scanToastTimer=setTimeout(()=>scanToast.hidePopover?.(),6000);};
+ surfaceRepair.innerHTML='<button id="cwb-surface-scan" type="button" aria-describedby="cwb-surface-scan-note" style="width:100%;min-height:36px">扫描并适配</button><p id="cwb-surface-scan-note" style="margin:8px 0 0">检查所有已打开的页面。也可按 Ctrl+Alt+Shift+W 扫描。</p><p id="cwb-surface-scan-result" role="status" style="margin:6px 0 0"></p>';
+ const scanEntry=document.createElement('span');scanEntry.id='cwb-quick-scan';
+ const scanRoot=scanEntry.attachShadow({mode:'open'});
+ scanRoot.innerHTML=`<style>
+ :host{display:inline-flex;pointer-events:auto;flex:none;app-region:no-drag;-webkit-app-region:no-drag}
+ :host([popover]){position:fixed;inset:44px 12px auto auto;margin:0;padding:0;border:0;background:none}
+ :host([popover]:not(:popover-open)){display:none}
+ :host([data-placement="settings"]){position:absolute;inset:14px 48px auto auto;z-index:1}
+ button{height:28px;padding:0 8px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--cwb-ink,var(--color-text,CanvasText));font:13px system-ui;white-space:nowrap;cursor:pointer}
+ :host([popover]) button,:host([data-placement="settings"]) button{background:var(--cwb-field,Canvas);border-color:color-mix(in srgb,currentColor 22%,transparent)}
+ button:hover{background:color-mix(in srgb,Canvas 92%,CanvasText 8%)}button:focus-visible{outline:2px solid Highlight}button[aria-disabled=true]{cursor:progress}
+ output{position:fixed;inset:auto 16px 20px auto;max-width:min(420px,80vw);margin:0;padding:12px 16px;border:1px solid var(--cwb-border,#8195a480);border-radius:12px;background:var(--cwb-canvas,Canvas);color:var(--cwb-ink,CanvasText);font:13px system-ui;box-shadow:0 4px 20px #0003;pointer-events:none}
+ </style><button type="button" aria-keyshortcuts="Control+Alt+Shift+W">扫描并适配</button><output popover="manual" role="status"></output>`;
+ const scanButton=scanRoot.querySelector('button'),scanToast=scanRoot.querySelector('output');
+ const notifyStatus=text=>{if(disposed)return;placeScan();if(!scanEntry.isConnected)return;scanToast.textContent=text;scanToast.showPopover();clearTimeout(scanToastTimer);scanToastTimer=setTimeout(()=>scanToast.hidePopover(),6000);};
+ // Place the control in the active dialog's DOM so inertness and focus traps
+ // still work. A manual popover keeps other menus and dialogs clear of the button.
+ function placeScan(){
+  if(disposed)return;
+  const own=[...s.querySelectorAll('dialog:modal')].at(-1);
+  const active='dialog:modal,[role="dialog"]:is([aria-modal="true"],[data-state="open"]):not([data-state="closed"]),[role="alertdialog"]:not([data-state="closed"]),[role="menu"][data-state="open"],:popover-open';
+  const native=[...document.querySelectorAll(active)].filter(e=>e!==scanEntry&&e.getClientRects().length>0).at(-1);
+  const overlay=own||native;
+  const parent=overlay===dialog?dialog.querySelector('.cwb-titlebar')||dialog:overlay||s;
+  const mode=native?.classList.contains('settings-dialog')&&!own?'settings':overlay&&overlay!==dialog?'popover':own?'panel':'menu';
+  if(scanEntry.parentNode===parent&&scanEntry.dataset.placement===mode)return;
+  const showStatus=scanToast.matches(':popover-open');
+  if(showStatus)scanToast.hidePopover();
+  if(scanEntry.matches(':popover-open'))scanEntry.hidePopover();
+  scanEntry.dataset.placement=mode;
+  if(mode==='popover')scanEntry.setAttribute('popover','manual');else scanEntry.removeAttribute('popover');
+  if(mode==='menu')s.insertBefore(scanEntry,dialog);
+  else if(mode==='panel'&&parent.contains(repair))repair.before(scanEntry);
+  else parent.append(scanEntry);
+  if(mode==='popover')scanEntry.showPopover();
+  if(showStatus)scanToast.showPopover();
+ }
  const playback=document.createElement('section');
  playback.innerHTML=`<label>最大宽度<select id="resolution"><option value="960">960 · 省电</option><option value="1280">1280 · 均衡</option><option value="1920">1920 · 清晰</option><option value="2560">2560 · 高画质</option><option value="3840">3840 · 原画优先</option></select></label><label>帧率上限<select id="fps"><option value="12">12 FPS</option><option value="24">24 FPS · 推荐</option><option value="30">30 FPS</option><option value="60">60 FPS</option><option value="120">120 FPS · 仅GPU</option><option value="144">144 FPS · 仅GPU</option></select></label><p id="cwb-import-profile-note"></p><p>120/144仅用于GPU场景。高规格会增加占用。不会放大原素材或补高帧率；静态图片只调整尺寸。</p><button id="apply">应用播放规格</button>`;
  const quality=document.createElement('details');quality.id='cwb-playback-options';quality.className='cwb-feature';quality.innerHTML='<summary>播放与画质</summary>';const customPlayback=document.createElement('details');customPlayback.className='cwb-feature';customPlayback.innerHTML='<summary>自定义播放规格</summary>';customPlayback.append(playback);quality.append(customPlayback);s.getElementById('status').before(quality);
@@ -145,13 +183,20 @@ export function installPanel(config,token){
  host.__cwbRenderConfig=render;windowChrome=window.__cwbInstallPanelWindow?.(host,s,dialog);
  const title=$('title');title.after(repair);extraStyle.textContent+=' .cwb-titlebar #cwb-repair{width:auto;padding:0 8px!important;white-space:nowrap}';
  render(config);
+ let scanning=false;
  host.__cwbScanSurfaces=async()=>{
-  if(processing||livePending)return;
-  const button=$('cwb-surface-scan'),output=$('cwb-surface-scan-result');button.textContent='正在扫描…';surfaceRepair.setAttribute('aria-busy','true');output.textContent='正在检查已打开的页面…';
-  try{notifyStatus('正在检查已打开的页面…');const result=await busy(()=>send({action:'surface-rescan'}),'扫描适配失败');output.textContent=result?.message||'扫描未完成，请查看下方提示。';notifyStatus(output.textContent);}
-  finally{button.textContent='扫描并适配';surfaceRepair.setAttribute('aria-busy','false');}
+  if(scanning||disposed)return;
+  scanning=true;
+  const button=$('cwb-surface-scan'),output=$('cwb-surface-scan-result');
+  const status=text=>{output.textContent=text;if(!disposed)notifyStatus(text);};
+  button.disabled=true;button.textContent=scanButton.textContent='正在扫描…';scanButton.setAttribute('aria-disabled','true');
+  surfaceRepair.setAttribute('aria-busy','true');status('正在检查已打开的页面…');
+  try{const result=await send({action:'surface-rescan'});status(result.message||'扫描完成。');}
+  catch(error){status('扫描适配失败：'+error.message);}
+  finally{scanning=false;button.disabled=false;button.textContent=scanButton.textContent='扫描并适配';scanButton.removeAttribute('aria-disabled');surfaceRepair.setAttribute('aria-busy','false');}
  };
- $('cwb-surface-scan').onclick=host.__cwbScanSurfaces;
+ $('cwb-surface-scan').onclick=scanButton.onclick=host.__cwbScanSurfaces;
+ placeScan();
  const updates=document.createElement('details');updates.open=true;updates.className='cwb-feature';updates.setAttribute('aria-labelledby','cwb-update-title');updates.innerHTML='<summary id="cwb-update-title">版本与更新</summary><p id="cwb-update-status" role="status" aria-live="polite" aria-atomic="true">正在读取版本…</p><div class="cwb-row"><button id="cwb-update-check">检查更新</button><button id="cwb-update-install" hidden>一键更新</button></div><p>检查 GitHub 正式版本。更新保留壁纸库与设置，安装完成后重新打开 Codex 生效。</p>';
  $('status').before(updates);extraStyle.textContent+=' #cwb-update-status{overflow-wrap:anywhere}#cwb-update-install[hidden]{display:none}';
  let updateBusy=false;

@@ -81,6 +81,7 @@ try{
   await c.evaluate('window.__cwbThemeGuard?.dispose();document.getElementById("codex-wallpaper-bridge-style")?.remove();window.__cwbLayout?.dispose();true');
  }
  const materialResults=[];
+ await c.evaluate(`(()=>{const d=document.createElement('div');d.id='settings-fixture';d.innerHTML='<div role="dialog" class="settings-dialog"><div data-settings-panel><div class="group/settings"><div class="rounded-2xl border" id="account-card"></div></div></div></div><div class="group/settings"><div class="rounded-2xl border" id="legacy-settings-card"></div></div>';document.body.append(d);return true})()`);
  // Reproduce real composer + change-card structure, including the native /50
  // modifier and the precomputed light neutral-button token seen after restart.
  await c.evaluate(`(()=>{const style=document.createElement('style');style.textContent=':root{--color-background-neutral-soft-alpha:#fff} [class~="bg-surface-elevated-secondary/50"]{background:color-mix(in oklab,var(--color-surface-elevated-secondary) 50%,transparent)} .neutral{background:var(--color-background-neutral-soft-alpha);color:var(--color-text)} .semantic{background:#ba2623;color:#fff}';document.head.append(style);window.__cwbDecorate=${decorateShell.toString()};return true})()`);
@@ -89,6 +90,7 @@ try{
   const config={palette,visual:{glassOpacity:opacity,glassBlur:6,fontFamily:'inherit',codeFontFamily:'inherit'},darkOverlay:.4,lightOverlay:.4};
   const saved=JSON.stringify(config);
   await c.evaluate('window.__codexWallpaperBridge={ready:true};('+paintShell.toString()+')('+saved+')');
+  assert.deepEqual(await c.evaluate(`['#account-card','#legacy-settings-card'].map(id=>getComputedStyle(document.querySelector(id)).backgroundColor)`),['rgba(0, 0, 0, 0)',opacity===1?`rgb(${palette.r}, ${palette.g}, ${palette.b})`:`rgba(${palette.r}, ${palette.g}, ${palette.b}, ${opacity})`]);
   // Insert components after painting, as when native UI renders a new turn.
   await c.evaluate(`document.querySelector('main').innerHTML='<div class="bg-surface" data-composer-layout="multiline" data-composer-surface-variant="default"><div data-composer-body><textarea>Draft</textarea></div></div><div class="bg-surface" data-composer-layout="multiline" data-composer-surface-variant="default" data-composer-utility-bar-variant="home"><div class="bg-surface" data-composer-body>Home draft</div></div><div class="overflow-hidden bg-surface-elevated-secondary/50" id="diff-card"><div class="group/turn-diff-header"><button class="neutral" id="review">Review</button><button class="semantic" id="danger">Delete</button></div><div>Changed files</div></div><div class="overflow-hidden bg-surface-elevated-secondary/50" id="other-card">Other card</div><div data-user-message-bubble>Sent message</div><div data-browser-comment-editor-surface><div class="bg-surface-elevated-secondary"><div class="bg-inherit">Comment</div></div></div>';true`);
   await c.evaluate('('+installSurfaceTheme.toString()+')('+JSON.stringify({enabled:true,shell:true,palette})+')');

@@ -52,7 +52,34 @@ try{
  const scansBefore=await c.evaluate('window.__requests.filter(q=>q.action==="surface-rescan").length');
  await c.call('Input.dispatchKeyEvent',{type:'keyDown',code:'KeyW',key:'W',windowsVirtualKeyCode:87,modifiers:11});await c.call('Input.dispatchKeyEvent',{type:'keyUp',code:'KeyW',key:'W',windowsVirtualKeyCode:87,modifiers:11});await sleep(80);
  const modalScan=await c.evaluate('({scans:window.__requests.filter(q=>q.action==="surface-rescan").length,modal:document.getElementById("native-modal").matches(":modal"),focus:document.activeElement.id,saved:window.__scanSaved===JSON.stringify(window.__testConfig),panelOpen:window.__cwbPanelHost.shadowRoot.querySelector("dialog").open})');
- assert.deepEqual(modalScan,{scans:scansBefore+1,modal:true,focus:'native-focus',saved:true,panelOpen:false});await c.evaluate('document.getElementById("native-modal").close();document.getElementById("native-modal").remove();true');result.scanWorksInsideNativeModal=true;
+ assert.deepEqual(modalScan,{scans:scansBefore+1,modal:true,focus:'native-focus',saved:true,panelOpen:false});
+ const quickScanCount=()=>c.evaluate('window.__requests.filter(q=>q.action==="surface-rescan").length');
+ async function clickQuickScan(locate){
+  const point=await c.evaluate(`(()=>{const entry=${locate};const button=entry?.shadowRoot.querySelector('button');if(!button)return null;const r=button.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;return entry.shadowRoot.elementFromPoint(x,y)===button?{x,y}:null})()`);
+  assert(point,'The quick scan must receive pointer input in the active layer');
+  for(const type of ['mousePressed','mouseReleased'])await c.call('Input.dispatchMouseEvent',{type,...point,button:'left',clickCount:1});
+ }
+ await clickQuickScan('document.querySelector("#native-modal #cwb-quick-scan")');
+ assert.equal(await quickScanCount(),scansBefore+2);
+ await c.evaluate('document.getElementById("native-modal").close();document.getElementById("native-modal").remove();true');
+ await sleep(60);
+ await clickQuickScan('window.__cwbPanelHost.shadowRoot.getElementById("cwb-quick-scan")');
+ assert.equal(await quickScanCount(),scansBefore+3);
+ result.scanWorksInsideNativeModal=true;
+ await c.evaluate(`(()=>{const d=document.createElement('div');d.className='settings-dialog';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.dataset.state='open';d.style.cssText='position:fixed;inset:50px;z-index:30;pointer-events:auto';document.body.style.pointerEvents='none';document.body.append(d);return true})()`);
+ await sleep(60);
+ await c.evaluate(`window.__savedSend=window.__codexWallpaperSend;window.__codexWallpaperSend=raw=>{const q=JSON.parse(raw);if(q.action!=='surface-rescan')return window.__savedSend(raw);window.__requests.push(q);window.__cwbReply(q.id,{ok:false,error:'Fixture failure'});};true`);
+ await clickQuickScan('document.querySelector(".settings-dialog > #cwb-quick-scan")');
+ assert.equal(await quickScanCount(),scansBefore+4);
+ assert.equal(await c.evaluate('document.querySelector(".settings-dialog #cwb-quick-scan").shadowRoot.querySelector("output:popover-open").textContent'),'扫描适配失败：Fixture failure');
+ assert.equal(await ui('return !!s.querySelector("dialog[open]")'),false);
+ await c.evaluate(`document.querySelector('.settings-dialog').dataset.state='closed';window.__codexWallpaperSend=window.__savedSend;const m=document.createElement('div');m.setAttribute('role','menu');m.dataset.state='open';m.style.cssText='position:fixed;top:32px;left:4px;width:120px;height:48px;pointer-events:auto';document.body.append(m);true`);
+ await sleep(60);
+ await clickQuickScan('document.querySelector("[role=menu] > #cwb-quick-scan")');
+ assert.equal(await quickScanCount(),scansBefore+5);
+ assert.equal(await c.evaluate('document.querySelector("[role=menu]").dataset.state'),'open');
+ await c.evaluate('document.querySelector(".settings-dialog").remove();document.querySelector("[role=menu]").remove();document.body.style.pointerEvents="";true');
+ result.scanWorksWithSettingsAndMenuOpen=true;
  assert.equal(await ui('return s.getElementById("cwb-media-audio-fps").value'),'30');
  assert.deepEqual(await ui('return [...s.getElementById("cwb-media-audio-fps").options].map(e=>Number(e.value))'),[10,20,30,60,90,120]);
  await ui('s.getElementById("cwb-media-audio-fps").value="120";s.getElementById("cwb-media-save").onclick();return true');await sleep(150);
