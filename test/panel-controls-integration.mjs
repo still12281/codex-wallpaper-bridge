@@ -22,6 +22,8 @@ try{
  const config=defaultSettings();config.library=[{id:'fixture',name:'Fixture',mode:'webwallgl',limits:{maxWidth:1280,fps:30}}];config.selectedId='fixture';config.systemMedia={enabled:false,audio:true,audioFps:30};config.palette={r:240,g:241,b:243,dark:false};
  await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__cwbInstallFeatures='+installFeaturePanel.toString()+';window.__testConfig='+JSON.stringify(config)+';window.__requests=[];window.__codexWallpaperSend=raw=>{const q=JSON.parse(raw);window.__requests.push(q);if(q.action==="system-media-config")window.__testConfig.systemMedia={enabled:q.enabled,audio:q.audio,audioFps:q.audioFps};if(q.action==="display-tier")window.__testConfig.library[0].displayTier=q.tier;queueMicrotask(()=>window.__cwbReply(q.id,{ok:true,config:window.__testConfig,preview:null}));};('+installPanel.toString()+')(window.__testConfig,"test-token");true');
  const ui=s=>c.evaluate('(()=>{const s=document.getElementById("codex-wallpaper-controls").shadowRoot;'+s+'})()');
+ const menuStyles=await ui('const style=e=>{const x=getComputedStyle(e);return [x.height,x.fontFamily,x.fontSize,x.fontWeight,x.lineHeight,x.padding,x.borderRadius,x.backgroundColor,x.color]};return [style(s.getElementById("toggle")),style(s.getElementById("cwb-quick-scan").shadowRoot.querySelector("button"))]');
+ assert.deepEqual(menuStyles[0],menuStyles[1]);
  assert.equal(await ui('return s.getElementById("visual-fxEnabled").checked'),false);
  assert.equal(await ui('return s.getElementById("surface-options").classList.contains("cwb-feature")'),true,'Surface adaptation controls must use the same framed section as other settings');
  // The primary selector stays above optional settings at default and narrow sizes.
@@ -68,6 +70,7 @@ try{
  result.scanWorksInsideNativeModal=true;
  await c.evaluate(`(()=>{const d=document.createElement('div');d.className='settings-dialog';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.dataset.state='open';d.style.cssText='position:fixed;inset:50px;z-index:30;pointer-events:auto';document.body.style.pointerEvents='none';document.body.append(d);return true})()`);
  await sleep(60);
+ assert.equal(await c.evaluate('getComputedStyle(document.querySelector(".settings-dialog #cwb-quick-scan").shadowRoot.querySelector("button")).backgroundColor'),'rgba(0, 0, 0, 0)');
  await c.evaluate(`window.__savedSend=window.__codexWallpaperSend;window.__codexWallpaperSend=raw=>{const q=JSON.parse(raw);if(q.action!=='surface-rescan')return window.__savedSend(raw);window.__requests.push(q);window.__cwbReply(q.id,{ok:false,error:'Fixture failure'});};true`);
  await clickQuickScan('document.querySelector(".settings-dialog > #cwb-quick-scan")');
  assert.equal(await quickScanCount(),scansBefore+4);

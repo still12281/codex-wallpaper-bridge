@@ -52,7 +52,7 @@ export function installPanelWindow(host,shadow,dialog){
  :host .cwb-card button{background:transparent;border:0;padding:0;border-radius:0}
  :host .cwb-card button[aria-pressed=true]{outline-color:var(--cwb-accent)}
  :host #cwb-display-options h3{font-size:14px;margin:0}:host #cwb-display-options{margin:12px 0;gap:12px}
- :host .cwb-titlebar button{min-height:30px;border:0}:host #toggle{min-height:28px}
+ :host .cwb-titlebar button{min-height:30px;border:0}
  :host dialog[aria-busy=true] #status{color:var(--cwb-accent)}
  @media(prefers-reduced-motion:reduce){:host *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
  @media(forced-colors:active){:host button{border:1px solid ButtonText}:host :is(button,input,select,summary):focus-visible{outline-color:Highlight}}
@@ -127,7 +127,6 @@ export function installPanelWindow(host,shadow,dialog){
  :host dialog:not([aria-labelledby=title]) h2{font-size:18px;line-height:1.4;margin-bottom:12px}
  :host dialog:not([aria-labelledby=title]) p{color:var(--cwb-muted);line-height:1.7}
  :host .cwb-titlebar button{min-height:30px;padding:0;border:0;background:transparent}
- :host #toggle{min-height:28px;font-weight:500}
  @container cwb-panel (max-width:360px){:host .cwb-library-filters{padding:10px;gap:10px}:host #engine-import-actions,:host #cwb-import-preview>.cwb-row{grid-template-columns:minmax(0,1fr)}:host .cwb-library-grid{gap:10px}}
  @media(prefers-reduced-motion:reduce){:host *{transition:none!important;animation:none!important}}
  `;shadow.append(style);
