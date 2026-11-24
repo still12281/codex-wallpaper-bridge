@@ -16,14 +16,15 @@ test('release metadata binds stable version, exact repository, name, size and ch
  for(const mutate of [r=>r.prerelease=true,r=>r.assets.pop(),r=>r.assets[0].size=200*1024*1024,r=>r.assets[0].browser_download_url='https://example.com/run.exe',r=>r.tag_name='v0.3.0/evil']){const r=release();mutate(r);assert.throws(()=>releaseUpdate(r,'0.2.2'));}
 });
 async function fixture({badHash=false,truncate=false,redirect=false,failLaunch=false}={}){
- const root=await mkdtemp(path.join(os.tmpdir(),'cwb-update-'));let requests=0,launches=0,requestFile;
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-update-'));let requests=0,downloads=0,launches=0,requestFile;
  const updater=createBridgeUpdater({root,currentVersion:'0.2.2',request:async url=>{
   requests++;if(redirect)return new Response(null,{status:302,headers:{location:'https://example.com/installer'}});
   if(url.endsWith('/latest'))return Response.json(release());
   if(url.endsWith('.sha256'))return new Response((badHash?'0'.repeat(64):digest)+'  '+name+'\n');
+  downloads++;
   return new Response(truncate?bytes.subarray(0,4):bytes);
  },launch:async file=>{launches++;requestFile=file;if(failLaunch)throw Error('launch failed');}});
- return {root,updater,get requests(){return requests;},get launches(){return launches;},get requestFile(){return requestFile;}};
+ return {root,updater,get requests(){return requests;},get downloads(){return downloads;},get launches(){return launches;},get requestFile(){return requestFile;}};
 }
 test('checks cache, deduplicate and report network failures without claiming up to date',async()=>{
  const f=await fixture();await Promise.all([f.updater.check(),f.updater.check()]);assert.equal(f.requests,1);await f.updater.check();assert.equal(f.requests,1);await f.updater.check(true);assert.equal(f.requests,2);
@@ -46,6 +47,19 @@ test('starting an update returns before metadata networking and holds duplicate 
  const u=createBridgeUpdater({root,currentVersion:'0.2.2',request:async()=>{calls++;await gate;return Response.json({...release(),tag_name:'v0.2.2',assets:release().assets.map(a=>({...a,name:a.name.replace('0.3.0','0.2.2'),browser_download_url:a.browser_download_url.replaceAll('0.3.0','0.2.2')}))});}});
  assert.equal((await u.start()).phase,'checking');assert.equal((await u.start()).phase,'checking');assert.equal(calls,1);releaseNetwork();await wait(async()=>(await u.status()).phase==='idle');
 });
+test('an install retry reuses verified bytes and redownloads when all copies are damaged',async()=>{
+ const f=await fixture({failLaunch:true}),files=[];
+ for(let attempt=1;attempt<=3;attempt++){
+  await f.updater.start();
+  await wait(async()=>f.launches===attempt&&(await f.updater.status()).phase==='error');
+  const request=JSON.parse(await readFile(f.requestFile,'utf8'));
+  assert(!files.includes(request.installer));
+  assert.deepEqual(await readFile(request.installer),bytes);
+  files.push(request.installer);
+  assert.equal(f.downloads,attempt<3?1:2);
+  if(attempt===2)for(const file of files)await writeFile(file,Buffer.alloc(bytes.length));
+ }
+});
 test('long running installation keeps its real phase and later process loss permits retry',async()=>{
  const f=await fixture();await f.updater.start();await wait(()=>f.launches);
  const request=JSON.parse(await readFile(f.requestFile,'utf8'));
@@ -55,6 +69,18 @@ test('long running installation keeps its real phase and later process loss perm
  assert.equal((await restored.status()).phase,'installing');assert.match((await restored.status()).message,/20 分钟/);
  await writeFile(path.join(path.dirname(request.statusFile),'runner.json'),JSON.stringify({id:request.id,pid:2147483647}));
  assert.equal((await restored.status()).phase,'error');await assert.rejects(readFile(path.join(f.root,'updates','active.json')),e=>e.code==='ENOENT');
+});
+test('an abandoned installer reports its own failed component and backend log',async()=>{
+ const f=await fixture();await f.updater.start();await wait(()=>f.launches);
+ const request=JSON.parse(await readFile(f.requestFile,'utf8'));
+ const active=path.join(f.root,'updates','active.json'),operation=JSON.parse(await readFile(active,'utf8'));
+ const directory=path.dirname(request.statusFile);
+ await writeFile(active,JSON.stringify({...operation,runner:'inno'}));
+ await writeFile(path.join(directory,'setup-failure-component'),'capture');
+ await writeFile(path.join(directory,'setup-backend.log'),'Fixture error');
+ await writeFile(path.join(directory,'runner.json'),JSON.stringify({id:request.id,pid:2147483647}));
+ const u=createBridgeUpdater({root:f.root,currentVersion:'0.2.2'});
+ assert.match((await u.status()).message,/Wallpaper Engine 原版采集准备失败.+setup-backend\.log/);
 });
 test('corrupt or truncated downloads and failed process launch never become installed',async()=>{
  for(const options of [{badHash:true},{truncate:true},{failLaunch:true}]){

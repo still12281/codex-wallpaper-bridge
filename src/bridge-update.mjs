@@ -1,4 +1,5 @@
-import {readFile,writeFile,mkdir,rename,rm} from 'node:fs/promises';
+import {createReadStream,constants} from 'node:fs';
+import {readFile,writeFile,mkdir,rename,rm,copyFile,readdir,lstat} from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import path from 'node:path';
@@ -8,6 +9,7 @@ const repo='still12281/codex-wallpaper-bridge',base='https://github.com/'+repo;
 const latest='https://api.github.com/repos/'+repo+'/releases/latest';
 const installedMessage='更新已安装。保存工作并正常退出 Codex，再从壁纸入口打开，新版本即生效。';
 const stable=/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+const operationId=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 export function newerVersion(candidate,current){
  if(!stable.test(candidate)||!stable.test(current))return false;
  const a=candidate.split('.').map(BigInt),b=current.split('.').map(BigInt);
@@ -35,6 +37,24 @@ async function download(url,limit,{request=fetch,signal,onChunk}={}){
   return onChunk?length:Buffer.concat(chunks);
  }
  throw Error('更新下载重定向次数过多。');
+}
+// Keep each attempt's installer and receipt together. Copy an older verified
+// package into the new attempt so the process never depends on the old folder.
+async function reuseInstaller(directory,selected,expected,temp){
+ const entries=await readdir(path.dirname(directory),{withFileTypes:true});
+ for(const entry of entries){
+  if(!entry.isDirectory()||!operationId.test(entry.name)||entry.name===path.basename(directory))continue;
+  const candidate=path.join(path.dirname(directory),entry.name,selected.name);
+  const info=await lstat(candidate).catch(()=>null);
+  if(!info?.isFile()||info.size!==selected.size)continue;
+  try{await copyFile(candidate,temp,constants.COPYFILE_EXCL);}
+  catch(error){if(error.code==='ENOENT')continue;throw error;}
+  const hash=createHash('sha256');
+  for await(const chunk of createReadStream(temp))hash.update(chunk);
+  if(hash.digest('hex')===expected)return true;
+  await rm(temp);
+ }
+ return false;
 }
 export function createBridgeUpdater({root,currentVersion,request=fetch,launch,now=Date.now}){
  let release=null,checking=null,operation=null,lastCheck=0;
@@ -70,7 +90,13 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
   try{return (await readFile(file,'utf8')).trim()===op.id;}
   catch(error){if(error.code!=='ENOENT')throw error;return false;}
  };
- const installError=(op,code)=>'安装器未完成'+(code===undefined?'':'（'+code+'）')+'。安装日志位于 updates/'+op.id+'/installer.log。';
+ const installError=async(op,code)=>{
+  const directory=path.dirname(op.statusFile),backend=path.join(directory,'setup-backend.log');
+  const component=await readFile(path.join(directory,'setup-failure-component'),'utf8').catch(()=>null);
+  const label=new Map([['spectrum','系统频谱'],['gpu','GPU 壁纸'],['capture','Wallpaper Engine 原版采集']]).get(component?.trim());
+  const log=(await lstat(backend).catch(()=>null))?.isFile()?'setup-backend.log':'installer.log';
+  return (label?label+'准备失败':'安装器未完成')+(code==null?'':'（'+code+'）')+'。安装日志位于 updates/'+op.id+'/'+log+'。';
+ };
  const check=async(force=false)=>{
   if(checking)return checking;
   if(!operation&&state.phase!=='installed'&&(force||!lastCheck||now()-lastCheck>=60*60*1000))state={...state,phase:'checking',message:'正在检查 GitHub 正式版本…'};
@@ -87,7 +113,7 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
  const status=async()=>{
   if(!operation)try{
    const saved=JSON.parse(await readFile(activeFile,'utf8'));
-   if(!/^[a-f0-9-]{36}$/.test(saved.id)||!stable.test(saved.version)||!Number.isFinite(saved.createdAt))throw Error('更新任务记录无效。');
+   if(!operationId.test(saved.id)||!stable.test(saved.version)||!Number.isFinite(saved.createdAt))throw Error('更新任务记录无效。');
    if(!newerVersion(saved.version,currentVersion)){await forget(saved.id);return snapshot();}
    if(operation)return snapshot();
    operation={...saved,statusFile:path.join(root,'updates',saved.id,'status.json')};
@@ -122,7 +148,7 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
    if(!runner&&reading.runner==='inno'&&timedOut)abandoned=!alive(reading.ownerPid);
   }
   if(abandoned){
-   const message=reading.runner==='inno'?installError(reading):'上次更新进程已退出，可重新点击更新。';
+   const message=reading.runner==='inno'?await installError(reading):'上次更新进程已退出，可重新点击更新。';
    await saveResult(reading,'error',message);await forget(reading.id);
    if(operation===reading){operation=null;state={...state,phase:'error',message};}
   }
@@ -147,13 +173,16 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
     const match=checksum.match(/^([a-f0-9]{64})\s+\*?([^\r\n]+)$/i);
     if(!match||match[2]!==selected.name)throw Error('安装包校验文件格式无效。');
     const expected=match[1].toLowerCase();if(selected.digest&&selected.digest!==expected)throw Error('GitHub 安装包摘要与校验文件不一致。');
-    const hash=createHash('sha256');const {open}=await import('node:fs/promises');const file=await open(temp,'wx');let size;
-    try{size=await download(selected.url,selected.size,{request,signal:AbortSignal.timeout(120000),onChunk:async chunk=>{hash.update(chunk);await file.writeFile(chunk);}});}finally{await file.close();}
-    if(size!==selected.size||hash.digest('hex')!==expected)throw Error('安装包校验失败，已停止更新。');
+    const reused=await reuseInstaller(directory,selected,expected,temp);
+    if(!reused){
+     const hash=createHash('sha256');const {open}=await import('node:fs/promises');const file=await open(temp,'wx');let size;
+     try{size=await download(selected.url,selected.size,{request,signal:AbortSignal.timeout(120000),onChunk:async chunk=>{hash.update(chunk);await file.writeFile(chunk);}});}finally{await file.close();}
+     if(size!==selected.size||hash.digest('hex')!==expected)throw Error('安装包校验失败，已停止更新。');
+    }
     await rename(temp,installer);temp=null;
     const statusFile=path.join(directory,'status.json'),requestFile=path.join(directory,'request.json');
     await writeFile(requestFile,JSON.stringify({id,installer,sha256:expected,dataDirectory:root,statusFile}));
-    state={...state,phase:'installing',message:'正在安装更新…'};await saveResult(op,state.phase,state.message);
+    state={...state,phase:'installing',message:reused?'已复用并校验安装包，正在安装更新…':'正在安装更新…'};await saveResult(op,state.phase,state.message);
     if(launch)await launch(requestFile);else{
      const child=spawn(installer,[
       '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOCLOSEAPPLICATIONS','/SP-',
@@ -164,7 +193,7 @@ export function createBridgeUpdater({root,currentVersion,request=fetch,launch,no
      child.once('exit',code=>{
       void (async()=>{
        if(await readInstallerResult(op))return;
-       await saveResult(op,'error',installError(op,code));
+       await saveResult(op,'error',await installError(op,code));
       })().catch(()=>{});
      });
      await started;

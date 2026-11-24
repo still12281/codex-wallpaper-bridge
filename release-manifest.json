@@ -380,8 +380,8 @@
     },
     {
       "path": "src/bridge-update.mjs",
-      "utf8Bytes": 12510,
-      "sha256": "042f4e033e145471fb0a92d27c2ca33a8cb1c34fe60eb3049ce79a113a62ea82"
+      "utf8Bytes": 14238,
+      "sha256": "d58738e02281cc07b9dcf64d997e68bae2c0a9f4b37611d936344d5d6d4b7220"
     },
     {
       "path": "src/browser-web-source.mjs",
@@ -390,8 +390,8 @@
     },
     {
       "path": "src/capture-scene.py",
-      "utf8Bytes": 8477,
-      "sha256": "a75e98ced674f5f362b2268a0af08a2a0afdd149f3a4bef38bd506d1bb11425b"
+      "utf8Bytes": 9085,
+      "sha256": "7bbe2e7ec823e0359302c5c7e294cc34fd3c9a2d0ef04ab614ba2fca782e248d"
     },
     {
       "path": "src/capture-scene.py.lock",
@@ -495,8 +495,8 @@
     },
     {
       "path": "src/realtime-source.mjs",
-      "utf8Bytes": 11607,
-      "sha256": "96622b0f42f4c31e94b8b40f525686ddfef4fba2f6ccc4ea9b700c1089932738"
+      "utf8Bytes": 12306,
+      "sha256": "7d33d190d515b48a4d6b58dce365cd767d2ffe7c7d587170a0ff78f5d7e9b05c"
     },
     {
       "path": "src/runtime-paths.mjs",
@@ -615,8 +615,8 @@
     },
     {
       "path": "test/bridge-update.test.mjs",
-      "utf8Bytes": 7628,
-      "sha256": "d51827e70d949c9d35c114260795c843babefb5f0eac65c879418c9f5bc65d03"
+      "utf8Bytes": 9243,
+      "sha256": "fa19ccee8da2e224d1abbbc7c4b951102f118cb6efad55fd067627cc17fd1706"
     },
     {
       "path": "test/browser-web-integration.mjs",
@@ -735,8 +735,8 @@
     },
     {
       "path": "test/install-dependencies.ps1",
-      "utf8Bytes": 4163,
-      "sha256": "06c9c16247f77631c98ab95069d65320f8eaf3f7dcf89978a3eb930c141ebc34"
+      "utf8Bytes": 6625,
+      "sha256": "c738bbf215ecdc656483fa63e4f196890ce85445e594c56c131e8efabd8c78ff"
     },
     {
       "path": "test/install-options.ps1",
@@ -1190,8 +1190,8 @@
     },
     {
       "path": "windows/Install-Wallpaper.ps1",
-      "utf8Bytes": 11655,
-      "sha256": "1db2c0d55dec8f7365f733198427e32aaa70208fd80ba9915fcdd6115db8b523"
+      "utf8Bytes": 12124,
+      "sha256": "a2440275c14b233a987df24e0c7a7cbc6b815f14a4e64f10df9faf24fb6b4fb3"
     },
     {
       "path": "windows/InstallSupport.ps1",
@@ -1230,8 +1230,8 @@
     },
     {
       "path": "windows/Prepare-Realtime.ps1",
-      "utf8Bytes": 2417,
-      "sha256": "eabe28c233879b293b80113af4c8b7475b21edf6ca64e500e578ac481c734396"
+      "utf8Bytes": 5020,
+      "sha256": "a97422168a61b8017a3a6067332640f6f6a36169320001123fb9748d908dc92a"
     },
     {
       "path": "windows/Prepare-TaskbarEntry.ps1",

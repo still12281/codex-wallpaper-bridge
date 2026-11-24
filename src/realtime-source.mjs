@@ -2,7 +2,7 @@ import {access,readFile,realpath,writeFile} from 'node:fs/promises';
 import {StringDecoder} from 'node:string_decoder';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {spawn,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {discoverEngineRoots,projectKey} from './engine-library.mjs';
@@ -46,6 +46,17 @@ export async function nativeFullProfile(projectRoot){
  const desktop=await desktopSettings(await executable(),projectRoot);
  return realtimeProfile({maxWidth:3840,maxHeight:2160,fps:[60,30,24,12].find(f=>f<=desktop.fps)||12,jpegQuality:92});
 }
+async function preparedInterpreter(helper,cache){
+ try{
+  const lock=await readFile(helper+'.lock');
+  const digest=createHash('sha256').update(lock).digest('hex');
+  const recorded=(await readFile(path.join(cache,'runtime-'+digest+'.txt'),'utf8')).trim();
+  if(!path.isAbsolute(recorded)||path.basename(recorded).toLowerCase()!=='python.exe')return null;
+  const interpreter=await realpath(recorded),relative=path.relative(await realpath(cache),interpreter);
+  if(!relative||path.isAbsolute(relative)||relative.startsWith('..'+path.sep))return null;
+  return interpreter;
+ }catch{return null;}
+}
 let latestDiagnosticId=0;
 export async function startRealtime(entry,dataRoot,{isCurrent=()=>true}={}){
  const assertCurrent=()=>{if(!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
@@ -56,9 +67,6 @@ export async function startRealtime(entry,dataRoot,{isCurrent=()=>true}={}){
  const profile=realtimeProfile(entry.limits),project=await describeProject(entry.projectRoot);
  if(!['scene','web'].includes(project.type))throw Error('此项目不是实时场景或网页壁纸');
  const engine=await executable(),name='CodexWallpaperBridge-'+randomUUID();
- let uv=process.env.CODEX_WALLPAPER_UV;
- if(!uv){const candidates=[...(process.env.PATH||'').split(path.delimiter).filter(Boolean).map(p=>path.join(p.replace(/^"|"$/g,''),'uv.exe')),path.join(process.env.USERPROFILE||'', '.local/bin/uv.exe')];for(const candidate of candidates){try{await access(candidate);uv=candidate;break}catch{}}}
- if(!uv)throw Error('未安装原版采集依赖。请重新运行安装器并选择「Wallpaper Engine 原版采集」，或配置 CODEX_WALLPAPER_UV。');await access(uv);
  const helper=fileURLToPath(new URL('./capture-scene.py',import.meta.url));
  const runtime={name,engine,profile,frame:null,sequence:0,lastFrameAt:0,error:null,paused:false,closed:false,helper:null};
  const invoke=promisify(execFile);
@@ -66,7 +74,13 @@ export async function startRealtime(entry,dataRoot,{isCurrent=()=>true}={}){
  const captureEnv={...process.env,UV_CACHE_DIR:cache,UV_PYTHON_INSTALL_DIR:process.env.UV_PYTHON_INSTALL_DIR||path.join(cache,'python')};
  // Resolve the prepared environment once per start, then own Python directly.
  // Killing uv alone would not guarantee its Python child exits on Windows.
- const interpreter=(await invoke(uv,['run','--offline','--frozen','--script',helper,'--runtime-path'],{windowsHide:true,timeout:20000,maxBuffer:8192,env:captureEnv}).catch(error=>{throw Error('实时采集依赖未准备好，请先运行 Prepare-Realtime.ps1：'+error.message)})).stdout.trim();
+ let interpreter=await preparedInterpreter(helper,path.join(dataRoot,'capture-cache'));
+ if(!interpreter){
+  let uv=process.env.CODEX_WALLPAPER_UV;
+  if(!uv){const candidates=[...(process.env.PATH||'').split(path.delimiter).filter(Boolean).map(p=>path.join(p.replace(/^"|"$/g,''),'uv.exe')),path.join(process.env.USERPROFILE||'', '.local/bin/uv.exe')];for(const candidate of candidates){try{await access(candidate);uv=candidate;break}catch{}}}
+  if(!uv)throw Error('未安装原版采集依赖。请重新运行安装器并选择「Wallpaper Engine 原版采集」，或配置 CODEX_WALLPAPER_UV。');
+  interpreter=(await invoke(uv,['run','--offline','--frozen','--script',helper,'--runtime-path'],{windowsHide:true,timeout:20000,maxBuffer:8192,env:captureEnv}).catch(error=>{throw Error('实时采集依赖未准备好，请先运行 Prepare-Realtime.ps1：'+error.message)})).stdout.trim();
+ }
  await report('interpreter-ready',{interpreter});
  if(!path.isAbsolute(interpreter)||path.basename(interpreter).toLowerCase()!=='python.exe')throw Error('实时采集解释器路径无效');await access(interpreter);
  let cleanup;

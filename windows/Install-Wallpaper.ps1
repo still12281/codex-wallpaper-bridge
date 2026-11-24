@@ -9,7 +9,7 @@ $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'InstallSupport.ps1')
 $installSourceRoot=Split-Path -Parent $PSScriptRoot
 $installDataRoot=if($DataDirectory){$DataDirectory}elseif($env:CODEX_WALLPAPER_DATA_DIR){$env:CODEX_WALLPAPER_DATA_DIR}else{Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'CodexWallpaperBridge'}
-$installMutex=$null;$installLockOwned=$false
+$installMutex=$null;$installLockOwned=$false;$prepareComponent=$null
 try{
   if(-not $CheckOnly){
     $installMutex=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridge.Install')
@@ -74,22 +74,27 @@ try{
   & $installResolved.node (Join-Path $installSourceRoot 'tools/check-release.mjs')
   if($LASTEXITCODE -ne 0){throw 'Release file verification failed. Extract a clean copy and retry.'}
   if(-not $SkipPreparation){
+    $prepareComponent='spectrum'
     Write-Host 'Preparing the stereo spectrum component ...'
     & $installResolved.node (Join-Path $installSourceRoot 'tools/prepare-media-bridge.mjs')
     if($LASTEXITCODE -ne 0){throw 'Stereo media preparation failed; check the connection and rerun Install.cmd.'}
+    $prepareComponent=$null
   }
   $installCopy=& $installResolved.node (Join-Path $installSourceRoot 'tools/install-source.mjs') --data-dir $installDataRoot
   if($LASTEXITCODE -ne 0){throw 'Source installation failed; existing settings and versions were preserved.'}
   $installDirectory=($installCopy|ConvertFrom-Json).directory
   if(-not $SkipPreparation){
+    $prepareComponent='gpu'
     Write-Host 'Preparing GPU scene runtime ...'
     & $installResolved.node (Join-Path $installDirectory 'tools/prepare-webwallgl.mjs')
     if($LASTEXITCODE -ne 0){throw 'GPU runtime download failed; rerun Install.cmd when the network is available.'}
     if($nativeCapture){
+      $prepareComponent='capture'
       Write-Host 'Preparing native capture (Python 3.12 and locked dependencies) ...'
       & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Prepare-Realtime.ps1')
       if($LASTEXITCODE -ne 0){throw 'Native capture preparation failed. See the capture error above.'}
     }
+    $prepareComponent=$null
   }
   Write-Host 'Building the unified entry ...'
   & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Build-Launcher.ps1') -DeferLaunchScript
@@ -138,5 +143,13 @@ try{
   Write-Host ('Entry: '+$installEntry)
   Write-Host ('Data:  '+$installDataRoot)
   exit 0
-}catch{Write-Error $_ -ErrorAction Continue;exit 1}
+}catch{
+  $installError=$_
+  if($PanelUpdateId -and $prepareComponent){
+    try{[IO.File]::WriteAllText((Join-Path $installDataRoot ('updates/'+$PanelUpdateId+'/setup-failure-component')),$prepareComponent)}
+    catch{Write-Warning 'Could not record the failed preparation step.'}
+  }
+  Write-Error $installError -ErrorAction Continue
+  exit 1
+}
 finally{if($installLockOwned){$installMutex.ReleaseMutex()};if($installMutex){$installMutex.Dispose()}}

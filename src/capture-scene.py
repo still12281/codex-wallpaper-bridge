@@ -21,6 +21,21 @@ if sys.argv[1:] == ["--runtime-path"]:
 import cv2
 from windows_capture import Frame, InternalCaptureControl, WindowsCapture
 
+if sys.argv[1:] == ["--verify-runtime"]:
+    import importlib.metadata
+    from pathlib import Path
+    import tomllib
+
+    if sys.version_info[:2] != (3, 12) or struct.calcsize("P") != 8:
+        sys.exit("Capture requires 64-bit Python 3.12.")
+    with Path(__file__).with_suffix(".py.lock").open("rb") as lock_file:
+        packages = tomllib.load(lock_file)["package"]
+    for package in packages:
+        if importlib.metadata.version(package["name"]) != package["version"]:
+            sys.exit("Capture dependency differs from the lock: " + package["name"])
+    print(sys.executable)
+    sys.exit(0)
+
 
 def main():
     parser = argparse.ArgumentParser()

@@ -38,6 +38,41 @@ try{
   $env:LOCALAPPDATA=$previousLocal;$env:ProgramFiles=$previousPrograms
   $env:PATH=$previousPath;$env:CODEX_WALLPAPER_PWSH=$previousPwsh
 }
+function New-CaptureFixture([string]$File,[string]$Body){
+  [void][IO.Directory]::CreateDirectory((Split-Path -Parent $File))
+  $source=$File+'.cs'
+  [IO.File]::WriteAllText($source,('public static class Fixture { public static int Main(string[] args) { '+$Body+' } }'))
+  & $compiler /nologo /target:exe ('/out:'+$File) $source
+  if($LASTEXITCODE){throw 'Capture test fixture compilation failed'}
+}
+$captureData=Join-Path $root 'capture-data'
+$blockedPython=Join-Path $root 'blocked/python3.12.exe'
+$usablePython=Join-Path $root 'usable/python.exe'
+$preparedPython=Join-Path $captureData 'capture-cache/prepared/python.exe'
+$mockUv=Join-Path $root 'mock/uv.exe'
+New-CaptureFixture $blockedPython 'System.Console.Error.WriteLine("Unavailable Python (448)"); return 1;'
+foreach($python in $usablePython,$preparedPython) {
+  New-CaptureFixture $python 'System.Console.WriteLine(System.Reflection.Assembly.GetExecutingAssembly().Location); return 0;'
+}
+New-CaptureFixture $mockUv 'if(args[0]=="sync") return System.Array.IndexOf(args,System.Environment.GetEnvironmentVariable("CWB_FIXTURE_PYTHON"))>=0 ? 0 : 2; if(args[0]!="run") return 3; System.Console.WriteLine(System.Environment.GetEnvironmentVariable("CWB_FIXTURE_RUNTIME")); return 0;'
+$oldEnv=@{}
+foreach($name in 'LOCALAPPDATA','ProgramFiles','PATH','UV_CACHE_DIR','UV_PYTHON_INSTALL_DIR','CODEX_WALLPAPER_DATA_DIR','CODEX_WALLPAPER_PYTHON','CODEX_WALLPAPER_UV','CWB_FIXTURE_PYTHON','CWB_FIXTURE_RUNTIME'){
+  $oldEnv[$name]=[Environment]::GetEnvironmentVariable($name,'Process')
+}
+try{
+  $env:LOCALAPPDATA=Join-Path $root 'fixture-local';$env:ProgramFiles=Join-Path $root 'fixture-programs'
+  $env:PATH=(Split-Path -Parent $blockedPython)+';'+(Split-Path -Parent $usablePython)
+  $env:CODEX_WALLPAPER_DATA_DIR=$captureData;$env:CODEX_WALLPAPER_PYTHON=$null;$env:CODEX_WALLPAPER_UV=$mockUv
+  $env:CWB_FIXTURE_PYTHON=$usablePython;$env:CWB_FIXTURE_RUNTIME=$preparedPython
+  $prepare=Join-Path $PSScriptRoot '../windows/Prepare-Realtime.ps1'
+  $out=& $prepare
+  Assert-Dependency (($out -join ' ').Contains($usablePython)) 'A failed Python masked the working interpreter'
+  $env:CODEX_WALLPAPER_UV=Join-Path $root 'unavailable/uv.exe'
+  $out=& $prepare
+  Assert-Dependency (($out -join ' ').Contains('Reusing the verified native capture environment')) 'The published runtime was not reused'
+}finally{
+  foreach($name in $oldEnv.Keys){[Environment]::SetEnvironmentVariable($name,$oldEnv[$name],'Process')}
+}
 $mutex=[Threading.Mutex]::new($false,'Local\CodexWallpaperBridge.Install');$owned=$false
 try{
   $owned=$mutex.WaitOne(0);Assert-Dependency $owned 'Another installation is already active'
@@ -48,4 +83,4 @@ try{
   $child=[Diagnostics.Process]::Start($info)
   try{$output=$child.StandardOutput.ReadToEndAsync();$errorOutput=$child.StandardError.ReadToEndAsync();if(-not $child.WaitForExit(20000)){$child.Kill();throw 'Install lock test timed out'};Assert-Dependency ($child.ExitCode -ne 0 -and ($output.Result+$errorOutput.Result).Contains('Another wallpaper installation is running')) 'Concurrent installer was not blocked before changing state'}finally{$child.Dispose()}
 }finally{if($owned){$mutex.ReleaseMutex()};$mutex.Dispose()}
-Write-Output 'PASS: PowerShell alias, FFmpeg/ffprobe pair, old runtime fallback, explicit override and concurrent-install rejection. No dependencies installed.'
+Write-Output 'PASS: PowerShell alias, FFmpeg/ffprobe, runtime fallback and reuse, explicit overrides and concurrent-install rejection. No dependencies installed.'
