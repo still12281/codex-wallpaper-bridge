@@ -550,8 +550,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 47970,
-      "sha256": "a643feb074e7a65b7f5b99c09c05026433e175a378b98396137a4fab7eb15d5c"
+      "utf8Bytes": 48025,
+      "sha256": "720351846496b8dd308e2288edefea50e04e9564a65e23a68a8dcae76e52aed7"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -565,8 +565,8 @@
     },
     {
       "path": "src/wallpaper-style.mjs",
-      "utf8Bytes": 30582,
-      "sha256": "46ebf8c332f7c0055b021a74535bffca5b2708971ce93624ebe1b940889f4361"
+      "utf8Bytes": 30909,
+      "sha256": "8d114458d4aeb46edcc466587f5efac2b1db8cf35525e30241843cf8bb69e7ea"
     },
     {
       "path": "src/wallpaper-widgets.mjs",
@@ -810,8 +810,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 47770,
-      "sha256": "484f45ed5a597a7a6670e8bd9451c0195d2c3c2ccd972394f55e8cf8f1737d86"
+      "utf8Bytes": 49667,
+      "sha256": "6adff0d5516f2ddc1986e69036fffdc44d05af8e41faca71062bc87d5ddc9824"
     },
     {
       "path": "test/panel-entry-integration.mjs",

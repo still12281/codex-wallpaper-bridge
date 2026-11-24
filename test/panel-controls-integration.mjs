@@ -83,6 +83,28 @@ try{
  assert.equal(await c.evaluate('document.querySelector("[role=menu]").dataset.state'),'open');
  await c.evaluate('document.querySelector(".settings-dialog").remove();document.querySelector("[role=menu]").remove();document.body.style.pointerEvents="";true');
  result.scanWorksWithSettingsAndMenuOpen=true;
+ // Native chat previews anchor a fixed card from inside a hint popover.
+ await c.evaluate(`(()=>{
+  const fixture=document.createElement('section');
+  fixture.id='chat-preview-fixture';
+  fixture.innerHTML='<button style="position:fixed;left:60px;top:180px;width:120px;anchor-name:--chat-preview-fixture">Chat</button><div id="fixture-hover-card" role="dialog" popover="hint" style="position:fixed;inset:0 auto auto 0;margin:0;padding:0;border:0;width:0;height:0;overflow:visible"><div data-anchor-positioning style="position:fixed;position-anchor:--chat-preview-fixture;position-area:span-end end;width:180px;height:40px">Chat preview</div></div>';
+  document.body.append(fixture);
+  fixture.querySelector('[popover]').showPopover();
+ })()`);
+ const readPreview=()=>c.evaluate(`(()=>{
+  const host=document.getElementById('fixture-hover-card'),card=host.firstElementChild,anchor=host.previousElementSibling;
+  const rect=e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height];};
+  return {card:rect(card),anchor:rect(anchor),hostBlur:getComputedStyle(host).backdropFilter,
+   cardBlur:getComputedStyle(card).backdropFilter,cardBackground:getComputedStyle(card).backgroundColor,
+   scanInMenu:window.__cwbPanelHost.shadowRoot.getElementById('cwb-quick-scan')?.dataset.placement==='menu'};
+ })()`);
+ const nativePreview=await readPreview();
+ assert(nativePreview.card[0]>=nativePreview.anchor[0]+nativePreview.anchor[2]&&nativePreview.card[1]>100);
+ await c.evaluate('window.__codexWallpaperBridge={ready:true};('+paintShell.toString()+')(window.__testConfig);true');
+ await sleep(60);
+ assert.deepEqual(await readPreview(),{...nativePreview,hostBlur:'none',cardBlur:'blur(12px)',cardBackground:'rgba(240, 241, 243, 0.72)',scanInMenu:true});
+ await c.evaluate('document.getElementById("chat-preview-fixture").remove();true');
+ result.chatPreviewKeepsNativeAnchorAndMenuScan=true;
  assert.equal(await ui('return s.getElementById("cwb-media-audio-fps").value'),'30');
  assert.deepEqual(await ui('return [...s.getElementById("cwb-media-audio-fps").options].map(e=>Number(e.value))'),[10,20,30,60,90,120]);
  await ui('s.getElementById("cwb-media-audio-fps").value="120";s.getElementById("cwb-media-save").onclick();return true');await sleep(150);

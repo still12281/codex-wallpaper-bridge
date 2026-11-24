@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===33){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===34){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=33;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=34;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  const menuButtonStyle=selector=>`
@@ -15,7 +15,7 @@ export function installPanel(config,token){
  let menuAnchor=null,placementQueued=false,disposed=false;
  const place=()=>{if(disposed)return;const candidate=findMenu(),rect=candidate?.getBoundingClientRect();const menu=rect?.width>0&&rect.height>0?candidate:null;menuAnchor=menu;if(menu){host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';if(host.parentElement!==menu.parentElement||host.previousElementSibling!==menu)menu.after(host);}else{host.style.cssText='position:fixed;display:inline-flex;align-items:center;top:4px;right:clamp(8px,11vw,144px);z-index:2147483000;app-region:no-drag;-webkit-app-region:no-drag';if(host.parentElement!==document.body)document.body.append(host);}host.dataset.cwbPlacement=menu?'menu':'fallback';};
  const queuePlace=()=>{if(placementQueued||disposed)return;placementQueued=true;requestAnimationFrame(()=>{placementQueued=false;place();placeScan();});};
- const overlaySelector='dialog,[role="dialog"],[role="alertdialog"],[role="menu"],[popover]';
+ const overlaySelector=':is(dialog,[role="dialog"],[role="alertdialog"],[role="menu"],[popover]):not([popover="hint"])';
  const relevant='[class*="ApplicationMenuTopBar"],[role="menubar"],#application-menu-trigger-file-menu,'+overlaySelector;
  const observer=new MutationObserver(changes=>{if(!host.isConnected||(menuAnchor&&!menuAnchor.isConnected)||changes.some(c=>c.type==='attributes'?c.target!==scanEntry&&c.target.matches(overlaySelector):[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&n!==scanEntry&&(n.matches(relevant)||n.querySelector(relevant)))))queuePlace();});
  const watchToggle=event=>{if(event.target!==scanEntry&&event.target!==scanToast&&event.target.matches?.(overlaySelector))queuePlace();};
@@ -48,7 +48,7 @@ export function installPanel(config,token){
   if(disposed)return;
   const own=[...s.querySelectorAll('dialog:modal')].at(-1);
   const active='dialog:modal,[role="dialog"]:is([aria-modal="true"],[data-state="open"]):not([data-state="closed"]),[role="alertdialog"]:not([data-state="closed"]),[role="menu"][data-state="open"],:popover-open';
-  const native=[...document.querySelectorAll(active)].filter(e=>e!==scanEntry&&e.getClientRects().length>0).at(-1);
+  const native=[...document.querySelectorAll(active)].filter(e=>e!==scanEntry&&e.matches(overlaySelector)&&e.getClientRects().length>0).at(-1);
   const overlay=own||native;
   const parent=overlay===dialog?dialog.querySelector('.cwb-titlebar')||dialog:overlay||s;
   const mode=native?.classList.contains('settings-dialog')&&!own?'settings':overlay&&overlay!==dialog?'popover':own?'panel':'menu';
