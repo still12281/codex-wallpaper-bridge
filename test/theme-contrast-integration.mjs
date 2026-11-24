@@ -171,6 +171,34 @@ try{
  await c.evaluate('document.querySelector(".bottom-0").classList.remove("bottom-0");true');
  const fallback=await measure();
  assert.equal(fallback.client,500);assert.equal(fallback.footer,'rgb(20, 22, 28)');assert(fallback.editor);
- await c.evaluate('('+clearShell.toString()+')();true');assert.equal(await c.evaluate('!!window.__cwbTranscriptPaint||!!document.querySelector("[data-cwb-transcript-content]")||!!document.getElementById("codex-wallpaper-bridge-style")'),false);
+ await c.evaluate('document.querySelector(".absolute").classList.add("bottom-0");true');
+ const separated=await measure();
+ assert.equal(separated.client,320);
+ for(const attr of ['data-expanded-composer','data-thread-focus-mode']){
+  await c.evaluate('document.getElementById("draft").setAttribute('+JSON.stringify(attr)+',"");true');
+  assert.equal((await measure()).client,500);
+  await c.evaluate('document.getElementById("draft").removeAttribute('+JSON.stringify(attr)+');true');
+  assert.equal((await measure()).top,separated.top);
+  assert.equal((await measure()).client,320);
+ }
+ await c.evaluate(`(()=>{
+  const copy=document.getElementById('viewport').cloneNode(true);
+  copy.id='cached';copy.hidden=true;
+  copy.querySelector('#history').innerHTML='<span><i data-thread-focus-mode></i></span>';
+  document.body.appendChild(copy);
+ })()`);
+ const markedInCopy=()=>c.evaluate('!!document.querySelector("#cached [data-cwb-separated-scroll]")');
+ assert.equal(await markedInCopy(),false);
+ await c.evaluate('document.querySelector("#cached #history span").remove();true');
+ assert.equal(await markedInCopy(),true);
+ await c.evaluate('document.querySelector("#cached [data-thread-scroll-footer]").removeAttribute("data-thread-scroll-footer");true');
+ assert.equal(await markedInCopy(),false);
+ await c.evaluate('document.getElementById("history").style.height="50px";true');
+ const short=await measure();assert.equal(short.range,0);assert(short.editor);assert(!short.history);
+ await c.evaluate('('+paintShell.toString()+')({palette:{r:230,g:234,b:239,dark:false},lightOverlay:.4});true');
+ assert.equal((await measure()).footer,'rgba(0, 0, 0, 0)');
+ await c.evaluate('document.querySelector(".absolute").classList.remove("bottom-0");true');
+ assert.equal((await measure()).footer,'rgb(230, 234, 239)');
+ await c.evaluate('('+clearShell.toString()+')();true');assert.equal(await c.evaluate('!!window.__cwbTranscriptPaint||!!document.querySelector("[data-cwb-transcript-content],[data-cwb-separated-scroll]")||!!document.getElementById("codex-wallpaper-bridge-style")'),false);
  console.log(JSON.stringify({kind:'isolated-chromium-theme-hydration',results,materialResults,portalResults,layoutResults,streamingPaintAndCleanup:true},null,2));
 }finally{c?.close();browser?.kill()}

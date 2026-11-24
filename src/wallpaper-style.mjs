@@ -59,7 +59,8 @@ export function paintShell(config){
  const spacer=String.raw`.h-\[calc\(var\(--thread-scroll-padding-bottom\)-var\(--spacing\)\*4\)\]`;
  const thread='[data-request-input-activity-root] > .thread-scroll-container[data-app-action-timeline-scroll][style*="--thread-scroll-padding-bottom:"]';
  const footer='> .absolute.bottom-0 > [data-thread-scroll-footer]';
- const separated=thread+':has(> div > '+spacer+'):has('+footer+'):not(:has([data-expanded-composer],[data-thread-focus-mode]))';
+ const layoutMark='data-cwb-separated-scroll';
+ const separated=thread+'['+layoutMark+']';
  // Native browser guests are portaled beside #root. A positive root z-index
  // would place its transparent pane above the guest and intercept mouse input.
  // Clipping belongs to the marked element, not every text/code descendant.
@@ -116,7 +117,7 @@ export function paintShell(config){
  // Remove legacy bridge geometry once; native layout owns transcript spacing.
  if(window.__cwbLayout){window.__cwbLayout.dispose?.();delete window.__cwbLayout;for(const e of document.querySelectorAll('[data-cwb-thread-space],[style*="--cwb-footer-height"]')){e.removeAttribute('data-cwb-thread-space');e.style.removeProperty('--cwb-footer-height');}}
  // Sticky code retains its own local clip; the transcript uses browser overflow.
- if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==9)window.__cwbTranscriptPaint.dispose();
+ if(window.__cwbTranscriptPaint&&window.__cwbTranscriptPaint.version!==10)window.__cwbTranscriptPaint.dispose();
  if(!window.__cwbTranscriptPaint){
   const codeMarked=new Set(),observed=new Set(),pendingCode=new Set();
   let frame=0,codeFrame=0,disposed=false;
@@ -172,20 +173,22 @@ export function paintShell(config){
    });
   };
   const resize=new ResizeObserver(update);
+  const layout=watchScrollLayout();
   const mutation=new MutationObserver(changes=>{
+   layout.changed(changes);
    readingAnchor?.changed(changes);
    if(window.__cwbTranscriptPaint.codeEnabled&&changes.some(c=>[...c.addedNodes,...c.removedNodes].some(n=>n.nodeType===1&&
     (n.matches(structureSelector)||n.querySelector(structureSelector)))))queue();
   });
   mutation.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('scroll',scrollPaint,{capture:true,passive:true});window.addEventListener('resize',queue);
-  window.__cwbTranscriptPaint={version:9,codeEnabled:sync.code,refresh(anchorSupported){
+  window.__cwbTranscriptPaint={version:10,codeEnabled:sync.code,refresh(anchorSupported){
    if(anchorSupported)readingAnchor??=watchReadingAnchor();
    else{readingAnchor?.dispose();readingAnchor=null;}
    readingAnchor?.refresh();update();
   },dispose(){
    disposed=true;cancelAnimationFrame(frame);cancelAnimationFrame(codeFrame);resize.disconnect();mutation.disconnect();
-   readingAnchor?.dispose();
+   readingAnchor?.dispose();layout.dispose();
    document.removeEventListener('scroll',scrollPaint,true);window.removeEventListener('resize',queue);
    for(const e of codeMarked)cleanCode(e);delete window.__cwbTranscriptPaint;
   }};
@@ -195,6 +198,47 @@ export function paintShell(config){
  window.__cwbDecorate?.(config);
  window.__cwbStartupAppearance?.dispose();
  return {painted:true,dark,sharedOverlay:overlay,composerOverlay:sync.composer ? controlOpacity : null,surfaces:sync};
+
+ // Only structural changes can affect this guard. Keeping it out of the
+ // stylesheet avoids rechecking the transcript subtree while the user types.
+ function watchScrollLayout(){
+  const port='[data-app-action-timeline-scroll]';
+  const modes='[data-expanded-composer],[data-thread-focus-mode]';
+  const landmarks=port+','+modes;
+  let ports=new Set();
+  const shallow=new MutationObserver(refresh);
+  const attributes=new MutationObserver(refresh);
+  attributes.observe(document.body,{subtree:true,attributeFilter:['data-app-action-timeline-scroll','data-expanded-composer','data-thread-focus-mode']});
+  function refresh(){
+   const next=new Set(document.querySelectorAll(port));
+   for(const e of ports)if(!next.has(e))e.removeAttribute(layoutMark);
+   ports=next;
+   shallow.disconnect();
+   for(const e of ports){
+    // Only these two levels can supply the native spacer and footer.
+    for(const wrapper of e.children){
+     shallow.observe(wrapper,{attributeFilter:['class']});
+     for(const child of wrapper.children)shallow.observe(child,{attributeFilter:['class','data-thread-scroll-footer']});
+    }
+    e.toggleAttribute(layoutMark,!!e.querySelector(':scope > div > '+spacer)&&
+     !!e.querySelector(':scope '+footer)&&!e.querySelector(modes));
+   }
+  }
+  refresh();
+  return {
+   changed(changes){
+    if(changes.some(({target,addedNodes,removedNodes})=>{
+     const shallowChange=ports.has(target)||ports.has(target.parentElement);
+     return [...addedNodes,...removedNodes].some(n=>n.nodeType===1&&
+      (shallowChange||n.matches(landmarks)||(n.childElementCount&&n.querySelector(landmarks))));
+    }))refresh();
+   },
+   dispose(){
+    attributes.disconnect();shallow.disconnect();
+    for(const e of ports)e.removeAttribute(layoutMark);
+   }
+  };
+ }
 
  function watchReadingAnchor(){
   const port='.scrollContainer-fG6qEo',content='.transcriptContent-l_FOQD';
