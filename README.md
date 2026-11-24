@@ -4,7 +4,7 @@
 
 为 Windows Codex 桌面客户端添加静态与动态壁纸，在客户端内切换素材、搜索 Wallpaper Engine 库、调整播放规格。
 
-**v0.3.5** 减少支持的 Codex 聊天布局在输入和滚动时的重复样式计算，并让「扫描并适配」在菜单和弹窗打开时也可直接点击。
+**v0.3.6** 修复侧栏聊天的悬停预览盖住窗口左上角菜单栏的问题。预览会跟随聊天行，并保留玻璃效果。
 
 - 在「系统音乐联动」启用 WebGL 音频响应，可选每秒 10、20、30、60、90、120 次，默认 30。
 - 在「版本与更新」检查正式版并安装，正常退出 Codex 后从壁纸入口重新打开即可启用新版。
@@ -118,7 +118,7 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 
 ### 推荐：双击安装程序
 
-1. 下载 [CodexWallpaperBridge-0.3.5-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.5/CodexWallpaperBridge-0.3.5-Setup.exe)，双击打开安装向导。
+1. 下载 [CodexWallpaperBridge-0.3.6-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.6/CodexWallpaperBridge-0.3.6-Setup.exe)，双击打开安装向导。
 2. 选择程序目录和壁纸数据目录。从旧 ZIP 安装升级时，确认数据目录指向原壁纸库。
 3. 选择快捷方式、更新恢复和登录启动选项，等待依赖准备与安装完成。
 4. 保存工作、正常退出 Codex，再从壁纸入口打开。以后可以在 Windows“已安装的应用”中卸载；卸载保留壁纸库和设置。
@@ -130,10 +130,10 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 打开 **PowerShell**，复制执行：
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.5/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.6/install.ps1' | iex
 ```
 
-自动下载 **v0.3.5** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
+自动下载 **v0.3.6** 安装包、核对 SHA-256、解压并开始安装。按提示选择新建专用入口或备份替换原快捷方式，以及是否启用更新后一次重连。不需要 Git，也不用先手动下载 ZIP；Windows 自带 PowerShell 和 PowerShell 7 均可运行。
 
 安装成功后，保存工作并正常退出原 Codex，再打开所选壁纸入口。安装器不会自动关闭当前客户端。无法连接 GitHub 时使用下方手动下载方式。
 

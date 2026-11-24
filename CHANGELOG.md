@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.6
+
+- Keep sidebar chat previews anchored beside their rows by applying the glass effect to the visible card.
+- Keep “扫描并适配” in the menu bar when a hover preview opens. The scan control remains available in interactive menus and dialogs.
+
 ## 0.3.5
 
 - Reduce repeated transcript style checks during typing, composition, and scrolling in supported Codex chat layouts. Recheck the scrollport and footer only when their structure or composer mode changes.
