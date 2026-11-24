@@ -4,7 +4,7 @@
 
 A local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
 
-**v0.3.4** reduces brief stalls when fast scrolling ends in supported Codex chat layouts and preserves the native reading position.
+**v0.3.5** reduces repeated style checks while typing and scrolling in supported Codex chat layouts and keeps the scan control available in open menus and dialogs.
 
 - Enable WebGL audio response in **系统音乐联动** to choose 10, 20, 30, 60, 90 or 120 spectrum updates per second. The default is 30.
 - Use **版本与更新** to check for and install a stable release. Exit Codex normally and reopen the wallpaper entry to activate it.
@@ -33,7 +33,7 @@ See the [Chinese screenshot gallery](README.md#效果展示) and [capture proven
 - Optional folder search for Wallpaper projects or ordinary images/videos.
 - Wallpaper-derived colors across the chat, sidebar, and common settings surfaces.
 - Event-driven theme installation for owned plugin guests and nested documents, shared CSS for later components, and one bounded fallback pass after document load. No adaptation polling or continuous DOM scanning. Late hardcoded backgrounds, closed components and canvas rendering can still require exceptions.
-- Expand “页面适配与原生底色” in the wallpaper panel and click “扫描并适配” to rescan open owned documents, or press **Ctrl+Alt+Shift+W** while a native menu or modal is open. The result notification reports new adaptations and partial results while respecting native-background preferences.
+- Click “扫描并适配” in the menu bar or under “页面适配与原生底色” in the wallpaper panel to rescan loaded owned documents. In supported native menus and dialogs, click the scan control or press **Ctrl+Alt+Shift+W**. The result notification reports new adaptations and partial results while respecting native-background preferences.
 - Separate message and composer space to keep transparent input controls readable.
 - Silent video playback, pause on loss of focus, adjustable resolution/frame limits, and hot application after conversion.
 - One current playback file per wallpaper; previous playback copies are replaced after successful decode.
@@ -56,7 +56,7 @@ On Windows 10/11 x64, install and sign in to the official Microsoft Store Codex 
 
 ### Recommended: EXE installer
 
-Download [CodexWallpaperBridge-0.3.4-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.4/CodexWallpaperBridge-0.3.4-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
+Download [CodexWallpaperBridge-0.3.5-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.5/CodexWallpaperBridge-0.3.5-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
 
 The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal data defaults to `%LOCALAPPDATA%\CodexWallpaperBridge`. Uninstall through Windows **Installed apps** to remove the installer-managed program and owned Windows integrations while keeping the data folder. The `.exe.sha256` asset verifies the download.
 
@@ -65,10 +65,10 @@ The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal
 Run this in PowerShell:
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.4/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.5/install.ps1' | iex
 ```
 
-This downloads the fixed **v0.3.4** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
+This downloads the fixed **v0.3.5** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
 
 ### Optional ZIP deployment
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.5
+
+- Reduce repeated transcript style checks during typing, composition, and scrolling in supported Codex chat layouts. Recheck the scrollport and footer only when their structure or composer mode changes.
+- Keep “扫描并适配” clickable from the menu bar and supported menus and dialogs. Show scan progress and results in the active layer and retain the current dialog.
+
 ## 0.3.4
 
 - Reduce brief stalls after fast scrolling in supported Codex chat layouts. Keep the native reading anchor, and use Codex's original styling when the layout is unfamiliar.
