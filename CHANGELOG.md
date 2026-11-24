@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.7
+
+- Reuse a verified installer when retrying an update to the same version. Report the failed preparation step and its setup log in the wallpaper panel.
+- Reuse native capture environments that match the dependency lock and pass a runtime check. Continue to a usable 64-bit Python 3.12 when an earlier candidate fails.
+
 ## 0.3.6
 
 - Keep sidebar chat previews anchored beside their rows by applying the glass effect to the visible card.

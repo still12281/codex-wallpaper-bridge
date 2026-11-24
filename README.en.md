@@ -4,7 +4,7 @@
 
 A local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
 
-**v0.3.6** keeps sidebar chat previews anchored beside their rows, preserving the glass effect and keeping the menu bar clear.
+**v0.3.7** fixes updates blocked by unusable Python entries for native capture. Retries reuse verified packages, and upgrades reuse healthy capture environments.
 
 - Enable WebGL audio response in **系统音乐联动** to choose 10, 20, 30, 60, 90 or 120 spectrum updates per second. The default is 30.
 - Use **版本与更新** to check for and install a stable release. Exit Codex normally and reopen the wallpaper entry to activate it.
@@ -56,7 +56,7 @@ On Windows 10/11 x64, install and sign in to the official Microsoft Store Codex 
 
 ### Recommended: EXE installer
 
-Download [CodexWallpaperBridge-0.3.6-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.6/CodexWallpaperBridge-0.3.6-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
+Download [CodexWallpaperBridge-0.3.7-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.7/CodexWallpaperBridge-0.3.7-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
 
 The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal data defaults to `%LOCALAPPDATA%\CodexWallpaperBridge`. Uninstall through Windows **Installed apps** to remove the installer-managed program and owned Windows integrations while keeping the data folder. The `.exe.sha256` asset verifies the download.
 
@@ -65,10 +65,10 @@ The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal
 Run this in PowerShell:
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.6/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.3.7/install.ps1' | iex
 ```
 
-This downloads the fixed **v0.3.6** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
+This downloads the fixed **v0.3.7** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
 
 ### Optional ZIP deployment
 
