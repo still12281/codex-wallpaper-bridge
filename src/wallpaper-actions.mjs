@@ -32,6 +32,48 @@ export function normalizeLibrary(settings){
 }
 export function createActions(root,settings,apply,applyAppearance=apply,services={}){
  const uploads=new Map(),catalog=createEngineCatalog(),confirmations=new Map(),jobs=createImportJobs({progress:services.onImportProgress});
+ const saveManualSelection=async(entry,onlyIfChanged=false)=>{
+  const group=libraryGroups(settings.library,entry.id).find(group=>group.id===entry.id);
+  const preferred=group.entries.filter(variant=>variant.preferredRenderer===true);
+  const changed=preferred.length!==1||preferred[0]!==entry;
+  if(onlyIfChanged&&!changed)return;
+  const previous=entry.preferredRenderer;
+  for(const variant of preferred)delete variant.preferredRenderer;
+  entry.preferredRenderer=true;
+  try{await saveConfig(root,settings);}
+  catch(error){
+   if(previous===undefined)delete entry.preferredRenderer;
+   else entry.preferredRenderer=previous;
+   for(const variant of preferred)variant.preferredRenderer=true;
+   throw error;
+  }
+ };
+ const selectWallpaper=async(c,id,remember)=>{
+  const selected=settings.library.find(entry=>entry.id===id);
+  if(!selected)throw Error('壁纸不存在');
+  if(settings.selectedId===id&&(!services.isSelectedHealthy||await services.isSelectedHealthy(c))){
+   if(remember)await saveManualSelection(selected,true);
+   return {config:settings,message:'当前已使用此壁纸。'};
+  }
+  const previous=settings.selectedId;
+  settings.selectedId=id;
+  let prepared=false;
+  try{
+   await apply();
+   prepared=true;
+   if(remember)await saveManualSelection(selected);
+   else await saveConfig(root,settings);
+  }catch(error){
+   settings.selectedId=previous;
+   if(error.code!=='CWB_SELECTION_SUPERSEDED'){
+    try{await apply();}
+    catch(restoreError){throw Object.assign(Error(error.message+'；旧背景恢复未确认：'+restoreError.message,{cause:error}),{code:restoreError.code==='CWB_SELECTION_SUPERSEDED'?restoreError.code:'CWB_SELECTION_RESTORE_FAILED'});}
+    if(prepared)throw Object.assign(Error('壁纸设置保存失败：'+error.message,{cause:error}),{code:'CWB_SELECTION_SAVE_FAILED'});
+   }
+   throw error;
+  }
+  return {config:settings};
+ };
  const options=(c,req)=>{const job=jobs.get(c,req.operationId);return {acceptSizeRisk:req.acceptSizeRisk,signal:job?.controller.signal,onProgress:value=>jobs.report(job,{item:job?.item,...value})};};
  const committing=async(c,req,converted)=>{const job=jobs.get(c,req.operationId);if(job?.controller.signal.aborted){if(converted)await removeManagedFile(root,settings,converted.file);throw job.controller.signal.reason;}if(job)job.phase='committing';services.setImportPreparing?.(false);};
  const clearUpload=async u=>{await u.handle?.close().catch(()=>{});uploads.delete(u.id);await removeManagedFile(root,settings,u.file).catch(()=>{});};
@@ -158,7 +200,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   if(req.action==='rotation-next'){
    const tried=new Set(),skipped=[];let next;
    while((next=nextRotation(settings,Math.random,tried))){
-    try{const result=await action(c,{action:'select',selectedId:next.id});return {...result,rotation:{skipped},message:skipped.length?'已切换，跳过 '+skipped.length+' 个失败项目。':'已切换到下一张壁纸。'};}
+    try{const result=await selectWallpaper(c,next.id,false);return {...result,rotation:{skipped},message:skipped.length?'已切换，跳过 '+skipped.length+' 个失败项目。':'已切换到下一张壁纸。'};}
     catch(error){if(['CWB_SELECTION_SUPERSEDED','CWB_SELECTION_SAVE_FAILED','CWB_SELECTION_RESTORE_FAILED'].includes(error.code))throw error;const group=libraryGroups(settings.library,settings.selectedId).find(g=>g.entries.some(e=>e.id===next.id));for(const entry of group?.entries||[next])tried.add(entry.id);skipped.push({id:next.id,name:next.name,error:error.message});}
    }
    return {config:settings,rotation:{skipped,allFailed:skipped.length>0},message:skipped.length?'所有候选都未成功，保留当前背景；失败 '+skipped.length+' 项。':'至少需要两个未隐藏的逻辑壁纸项目。'};
@@ -176,7 +218,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
    const entry=existing||{id:randomUUID(),name:project.name+(engine==='chromium-web'?' · 网页浏览器':engine==='wallpaper-engine-h264'?' · 原版硬件传帧':mode==='webwallgl'?' · WebGL':' · 实时'),mode,...(engine?{engine}:{}),projectType:project.type,scripts:mode==='webwallgl'||engine==='chromium-web',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:engine==='chromium-web'?'Chromium 本地网页沙箱（试验）':mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
    if(!existing){const sibling=settings.library.find(e=>e.sourceKey===project.sourceKey||(e.workshopId&&e.workshopId===project.workshopId));if(sibling?.userProperties)entry.userProperties=structuredClone(sibling.userProperties);}await committing(c,req);const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
-   try{if(pending.applyNow)await apply();await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
+   try{if(pending.applyNow){await apply();await saveManualSelection(entry);}else await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
   if(req.action==='engine-list'){const search={scope:req.scope||'global',folder:req.folder||'',kind:req.kind||'engine'};const result=await catalog.search(search);settings.engineSearch=search;await saveConfig(root,settings);return result}
@@ -242,7 +284,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    try{contentHash??=await hashMedia(source.input,options(c,req));converted=await convertMedia(root,source.input,source.mime,id,requestedProfile,options(c,req))}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
    await committing(c,req,converted);const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey,...(contentHash?{contentHash}:{})};const previous=settings.selectedId;settings.library.push(entry);if(applyNow)settings.selectedId=id;
    const refresh=applyNow?apply:async()=>{};
-   try{await commitConverted(root,settings,entry,converted,{...entry},refresh,saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}
+   try{await commitConverted(root,settings,entry,converted,{...entry},refresh,applyNow?()=>saveManualSelection(entry):saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}
    return {config:settings,message:applyNow?'已导入“我的壁纸”并应用。':'已保存到“我的壁纸”；当前背景保持不变，可稍后从列表选择应用。'};
   }
   if(req.action==='appearance'){
@@ -256,12 +298,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    try{await applyAppearance();await saveConfig(root,settings)}catch(error){settings.surfaceSync=previous;await applyAppearance();throw error}
    return {config:settings,message:'已即时切换并保存；关闭开关可恢复该分区原生底色。'};
   }
-  if(req.action==='select'){
-   const selected=settings.library.find(e=>e.id===req.selectedId);if(!selected)throw Error('壁纸不存在');
-   if(settings.selectedId===req.selectedId&&(!services.isSelectedHealthy||await services.isSelectedHealthy(c)))return {config:settings,message:'当前已使用此壁纸。'};
-   const previous=settings.selectedId;settings.selectedId=req.selectedId;
-   let prepared=false;try{await apply();prepared=true;await saveConfig(root,settings)}catch(error){settings.selectedId=previous;if(error.code!=='CWB_SELECTION_SUPERSEDED')try{await apply();}catch(restoreError){throw Object.assign(Error(error.message+'；旧背景恢复未确认：'+restoreError.message,{cause:error}),{code:restoreError.code==='CWB_SELECTION_SUPERSEDED'?restoreError.code:'CWB_SELECTION_RESTORE_FAILED'});}if(prepared&&error.code!=='CWB_SELECTION_SUPERSEDED')throw Object.assign(Error('壁纸设置保存失败：'+error.message,{cause:error}),{code:'CWB_SELECTION_SAVE_FAILED'});throw error;}return {config:settings};
-  }
+  if(req.action==='select')return selectWallpaper(c,req.selectedId,true);
   if(req.action==='import-start'){
    if(!types[req.mime]||!Number.isInteger(req.size)||req.size<1||req.size>250*1024*1024)throw Error('仅支持250MB以内的图片或视频');
    if([...uploads.values()].some(u=>u.owner===c))throw Error('已有文件正在导入');
@@ -281,7 +318,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   const existingUpload=duplicateEntry(settings,{contentHash});if(existingUpload){uploads.delete(u.id);await removeManagedFile(root,settings,u.file);return duplicate(existingUpload,req.apply!==false,req.duplicatePolicy);}
   const converted=await convertMedia(root,path.join(root,u.file),u.mime,u.id,req.profile?realtimeProfile(req.profile):settings.playback,options(c,req));
   await committing(c,req,converted);const entry={id:u.id,name:u.name,sourceFile:u.file,sourceMime:u.mime,contentHash};const previous=settings.selectedId,applyNow=req.apply!==false;settings.library.push(entry);if(applyNow)settings.selectedId=entry.id;
-  try{await commitConverted(root,settings,entry,converted,{...entry},applyNow?apply:async()=>{},saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}uploads.delete(u.id);return {config:settings};
+  try{await commitConverted(root,settings,entry,converted,{...entry},applyNow?apply:async()=>{},applyNow?()=>saveManualSelection(entry):saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}uploads.delete(u.id);return {config:settings};
  };
  const action=async(c,req)=>{
  if(['update-status','update-check','update-install'].includes(req.action)){

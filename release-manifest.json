@@ -440,8 +440,8 @@
     },
     {
       "path": "src/library-model.mjs",
-      "utf8Bytes": 1437,
-      "sha256": "a40f31c99eabd9e10229ea4f4f3704ffdc01a0f8b7be66692233c5b7d45c33b5"
+      "utf8Bytes": 1512,
+      "sha256": "28118ea5ebe63ad0b314f4ee58f5909d81c2d15ddc7fc0777b6d5584e4fe3564"
     },
     {
       "path": "src/library-preview.mjs",
@@ -540,8 +540,8 @@
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 42995,
-      "sha256": "47d9cd0ab4072f7e152fafd7c488044c4ca69e0c2958610909d4467c6a2103d7"
+      "utf8Bytes": 44027,
+      "sha256": "2ce6687a5d1ca961d70468fa160216b9fb66e072c67e4cd50f2c166327e909e0"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -775,8 +775,8 @@
     },
     {
       "path": "test/library-model.test.mjs",
-      "utf8Bytes": 2845,
-      "sha256": "a8f5f077396b1885ba4253c67003a9a7352d37909ea244d848d87a629a9b0049"
+      "utf8Bytes": 5497,
+      "sha256": "0cb7653f196d819b01da0e66805cf7d4a79fb70b06458399b5fb1d9d47b0954b"
     },
     {
       "path": "test/lifetime-integration.mjs",
