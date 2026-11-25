@@ -121,6 +121,19 @@ try{
     $replacement=Install-WallpaperReplacementShortcuts -Root $installDataRoot -CodexAppId $installCodex.AppUserModelId
     if($replacement.createdFallback){Write-Host 'No original or existing managed .lnk found. Created a desktop Codex shortcut; Store registration and taskbar pins remain unchanged.'}
   }
+  $launchScript=Join-Path $installDataRoot 'launch-script.txt'
+  $activateBeforeIntegrations=-not $PanelUpdateId -and
+    ($installChoices.updateReconnect -eq 'enable' -or $LoginStartup -eq 'enable') -and
+    -not (Test-Path -LiteralPath $launchScript)
+  $nextLaunchScript=if($PanelUpdateId){
+    Join-Path $installDataRoot ('updates/'+$PanelUpdateId+'/launch-script.pending')
+  }else{$launchScript+'.'+[guid]::NewGuid().ToString('N')+'.next'}
+  $bootstrapScript=Join-Path $installDirectory 'windows/Start-CodexWallpaper.ps1'
+  if($activateBeforeIntegrations){
+    # Both optional integrations require a working entry. On upgrade, the old pointer already provides it.
+    [IO.File]::WriteAllText($nextLaunchScript,$bootstrapScript,[Text.UTF8Encoding]::new($false))
+    [IO.File]::Move($nextLaunchScript,$launchScript,$false)
+  }
   if($installChoices.updateReconnect -in @('enable','disable')){
     $updateArguments=@('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $installDirectory 'windows/Install-UpdateReconnect.ps1'),'-Root',$installDataRoot)
     if($installChoices.updateReconnect -eq 'disable'){$updateArguments+='-Uninstall'}
@@ -131,13 +144,9 @@ try{
     & $installResolved.pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $installDirectory 'windows/Set-LoginStartup.ps1') -Root $installDataRoot -Mode $LoginStartup
     if($LASTEXITCODE -ne 0){throw 'Base installation completed, but login startup could not be changed. See docs/LOGIN-STARTUP.zh-CN.md.'}
   }
-  $launchScript=Join-Path $installDataRoot 'launch-script.txt'
-  $nextLaunchScript=if($PanelUpdateId){
-    Join-Path $installDataRoot ('updates/'+$PanelUpdateId+'/launch-script.pending')
-  }else{$launchScript+'.'+[guid]::NewGuid().ToString('N')+'.next'}
-  [IO.File]::WriteAllText($nextLaunchScript,(Join-Path $installDirectory 'windows/Start-CodexWallpaper.ps1'),[Text.UTF8Encoding]::new($false))
+  if(-not $activateBeforeIntegrations){[IO.File]::WriteAllText($nextLaunchScript,$bootstrapScript,[Text.UTF8Encoding]::new($false))}
   [ordered]@{installed=$true;source=$installDirectory;videoTools=[bool]$installResolved.ffmpeg;nativeCapturePrepared=($nativeCapture -and -not $SkipPreparation);entry=$installEntry;dataDirectory=$installDataRoot;shortcutMode=$installChoices.shortcutMode;updateReconnect=$installChoices.updateReconnect;loginStartup=$LoginStartup;preparationSkipped=[bool]$SkipPreparation;clientStarted=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $installDataRoot 'install-status.json') -Encoding UTF8 -ErrorAction Stop
-  if(-not $PanelUpdateId){[IO.File]::Move($nextLaunchScript,$launchScript,$true)}
+  if(-not $PanelUpdateId -and -not $activateBeforeIntegrations){[IO.File]::Move($nextLaunchScript,$launchScript,$true)}
   Write-Host ''
   Write-Host 'Installed. Save drafts, exit ordinary Codex normally, then open the selected wallpaper entry.' -ForegroundColor Green
   Write-Host ('Entry: '+$installEntry)
