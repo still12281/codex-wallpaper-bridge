@@ -425,8 +425,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 42636,
-      "sha256": "fc2921659f6ef766ce66434111589120bb0e8055031d30de8ccac7178ce6bccc"
+      "utf8Bytes": 42694,
+      "sha256": "c34aa52975d8080c55096f282ed468b1e1af0d3ccb2cf3b02a4715a3eb6e5d76"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -535,13 +535,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 56428,
-      "sha256": "9d7086ab1f5b2900b429f74f2e9f1a8cb7435320162f75964d6c033a988bd91d"
+      "utf8Bytes": 56500,
+      "sha256": "6402b63170552561f2f86a3e1ac89cd780e40d2bb9f83ce39acb6f23bd179815"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 44969,
-      "sha256": "d7d948256474fd6a04ea1d277d74e2b415c209c948e7f2073ae9fe4775ad6bd6"
+      "utf8Bytes": 44894,
+      "sha256": "a113a268b91e47aa8b31861f1b184c24218bcb6bef670272a427b24087ee2e4e"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -550,8 +550,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 48355,
-      "sha256": "0a3b9438f69b5b09d3633e1e21276b617849ff20bf66500750697ce310ce27a2"
+      "utf8Bytes": 48384,
+      "sha256": "055db7cfe8c3db93b800f86ed4a2951e6f203bb84abd2101b947df478d81de63"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -625,8 +625,8 @@
     },
     {
       "path": "test/browser-web.test.mjs",
-      "utf8Bytes": 4146,
-      "sha256": "828df99ee9d6e72473e7c960b2ea87d8f5d2294f1b0e16ab67135e3a3ee127b0"
+      "utf8Bytes": 4239,
+      "sha256": "0f605f3ae56040f38214b864c760afdc79fe6d2af9faeeb331aacc669ecc96ae"
     },
     {
       "path": "test/cdp-client.test.mjs",
@@ -665,13 +665,13 @@
     },
     {
       "path": "test/display-regressions.test.mjs",
-      "utf8Bytes": 3862,
-      "sha256": "929999ab6dfc2c869420f4478189e17245a7278173e917314b651f5398433cc3"
+      "utf8Bytes": 3886,
+      "sha256": "d7ee71b2e5f37d7b180d9402a36f8fa64b1f94c1d8cdba1ce88773a3a23993d3"
     },
     {
       "path": "test/display-tiers.test.mjs",
-      "utf8Bytes": 10221,
-      "sha256": "5e60b5d300b7f406f85c258ce9beddfd51cf6e69fb8e936467b2dd71655550ce"
+      "utf8Bytes": 10557,
+      "sha256": "909cee999d62328e9b96fc4bebc373fadffe1ba04002b594b9d59675e8106b21"
     },
     {
       "path": "test/entry-queue.ps1",
@@ -870,8 +870,8 @@
     },
     {
       "path": "test/rotation-host-integration.mjs",
-      "utf8Bytes": 7661,
-      "sha256": "2d52d30b7fd8dfc2f128a89b63f7e7bfd71c798548625ec6917e0e586f11728b"
+      "utf8Bytes": 10973,
+      "sha256": "710a609dc8498b4379350688374a149c8fd64a9328c42607b8a490426c627790"
     },
     {
       "path": "test/run-regression.mjs",

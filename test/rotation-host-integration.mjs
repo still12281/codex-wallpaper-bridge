@@ -1,13 +1,17 @@
 // Actual host/queue and isolated browser. Never connects to the user's Codex.
 import {mkdtemp,mkdir,writeFile,readFile} from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import {spawn,execFile} from 'node:child_process';import {promisify} from 'node:util';import {createServer} from 'node:net';import {pathToFileURL} from 'node:url';import assert from 'node:assert/strict';
 import {connectCdp} from '../src/cdp-client.mjs';import {defaultSettings,findFFmpeg,getDataRoot} from '../src/runtime-paths.mjs';
+import {describeProject} from '../src/realtime-source.mjs';
 const temp=await mkdtemp(path.join(os.tmpdir(),'cwb-rotation-host-')),data=path.join(temp,'data'),project=path.join(temp,'scene');await mkdir(data);await mkdir(path.join(data,'media'));await mkdir(project);
 const pause=ms=>new Promise(r=>setTimeout(r,ms));async function until(check,ms=30000){const end=Date.now()+ms;while(Date.now()<end){try{const value=await check();if(value)return value;}catch{}await pause(100);}throw Error('Rotation host condition timed out');}
 let browser,host,c,errors='';const report={kind:'isolated-host-rotation-and-manual-priority-not-native-Codex'};
 try{
  const ffmpeg=await findFFmpeg();for(const [id,color]of [['a','blue'],['b','red']])await promisify(execFile)(ffmpeg,['-v','error','-nostdin','-n','-f','lavfi','-i','color='+color+':s=32x32','-frames:v','1','-threads','1',path.join(data,'media',id+'.png')],{windowsHide:true});
  await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene',file:'scene.json'}));await writeFile(path.join(project,'scene.json'),JSON.stringify({general:{clearcolor:'0.2 0.4 0.6',orthogonalprojection:{width:640,height:360}},objects:[]}));
- const settings=defaultSettings();settings.pauseOnBlur=false;settings.library=[{id:'a',file:'media/a.png',mime:'image/png',limits:{maxBytes:33554432},workshopId:'100'},{id:'gpu',name:'Generated GPU',mode:'webwallgl',projectRoot:project,limits:{maxWidth:1280,maxHeight:900,fps:24},workshopId:'101'},{id:'b',file:'media/b.png',mime:'image/png',limits:{maxBytes:33554432}},{id:'gpu-media',file:'media/b.png',mime:'image/png',limits:{maxBytes:33554432},workshopId:'101'}];settings.selectedId='a';await writeFile(path.join(data,'settings.json'),JSON.stringify(settings));
+ const secondProject=path.join(temp,'second-scene');await mkdir(secondProject);
+ for(const file of ['project.json','scene.json'])await writeFile(path.join(secondProject,file),await readFile(path.join(project,file)));
+ const second=await describeProject(secondProject);
+ const settings=defaultSettings();settings.pauseOnBlur=false;settings.library=[{id:'a',file:'media/a.png',mime:'image/png',limits:{maxBytes:33554432},workshopId:'100'},{id:'gpu',name:'Generated GPU',mode:'webwallgl',projectRoot:project,limits:{maxWidth:1280,maxHeight:900,fps:24},workshopId:'101'},{id:'b',file:'media/b.png',mime:'image/png',limits:{maxBytes:33554432}},{id:'gpu-media',file:'media/b.png',mime:'image/png',limits:{maxBytes:33554432},workshopId:'101'},{id:'gpu-alt',name:'Second GPU',mode:'webwallgl',projectRoot:second.root,sourceKey:second.sourceKey,limits:{maxWidth:1280,maxHeight:900,fps:24}}];settings.selectedId='a';await writeFile(path.join(data,'settings.json'),JSON.stringify(settings));
  const shell=path.join(temp,'shell.html');await writeFile(shell,'<!doctype html><body><header class="_ApplicationMenuTopBar_"><div role="menubar"></div></header><aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Generated fixture</main>');const url=pathToFileURL(shell).href;
  const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));
  browser=spawn(process.env.CODEX_WALLPAPER_TEST_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--disable-background-networking','--remote-debugging-port='+port,'--user-data-dir='+path.join(temp,'profile'),url],{windowsHide:true,stdio:'ignore'});
@@ -46,5 +50,58 @@ try{
  const rendererMessage=await c.evaluate('window.__cwbPanelHost.shadowRoot.getElementById("status").textContent');
  assert.match(rendererMessage,/当前已使用此壁纸|已热更新并保存/);
  report.rendererButtonCancelsRotationWithoutChangingOtherWallpaper=true;
- assert.equal(await c.evaluate('document.querySelectorAll("[data-cwb-renderer-id]").length'),0);assert.equal(errors,'');report.passed=true;
+ assert.equal(await c.evaluate('document.querySelectorAll("[data-cwb-renderer-id]").length'),0);
+ await rpc({action:'select',selectedId:'gpu-alt'});
+ await rpc({action:'rotation-config',enabled:false,intervalSeconds:10,order:'sequential',ids:['gpu-alt','gpu']});
+ const {confirmation}=await rpc({action:'display-renderer',selectedId:'gpu-alt',renderMode:'webwallgl'});
+ const confirm={action:'wallpaper-engine-confirm',confirmationToken:confirmation.token,confirmed:true};
+ // Emit requests before the new candidate's CDP evaluation returns to the host.
+ await c.evaluate(`(()=>{
+  window.__onGpuCandidate=callback=>{
+   const body=document.body,prepend=body.prepend;
+   body.prepend=function(...children){
+    prepend.apply(this,children);
+    if(children.some(child=>child.id?.startsWith('cwb-webgl-'))){
+     body.prepend=prepend;
+     callback();
+    }
+   };
+  };
+  __onGpuCandidate(()=>{
+   const confirms=Array.from({length:32},(_,i)=>__r.rpc({...${JSON.stringify(confirm)},operationId:'superseded-'+i}));
+   window.__queuedResults=Promise.all([...confirms,__r.rpc({action:'select',selectedId:'gpu-alt'})]);
+  });
+  return true;
+ })()`);
+ assert.equal((await rpc({action:'rotation-next'})).superseded,true);
+ const queued=await c.call('Runtime.evaluate',{expression:'window.__queuedResults',awaitPromise:true,returnByValue:true});
+ assert.equal(queued.result.value.length,33);
+ assert(queued.result.value.slice(0,32).every(result=>result.ok&&result.superseded));
+ assert.equal(queued.result.value.at(-1).config.selectedId,'gpu-alt');
+ assert.equal((await rpc(confirm)).config.selectedId,'gpu-alt');
+ report.supersededConfirmationsReleaseAllSlots=true;
+
+ const readSettings=async()=>JSON.parse(await readFile(path.join(data,'settings.json'),'utf8'));
+ for(const [button,field,value] of [
+  ['cwb-display-apply','cwb-display-tier','economy'],
+  ['cwb-quality-save','cwb-quality-post','low'],
+  ['apply','resolution','960']
+ ]){
+  await rpc({action:'select',selectedId:'gpu-alt'});
+  const before=await readSettings();
+  await c.evaluate(`(__onGpuCandidate(()=>{
+   const panel=window.__cwbPanelHost.shadowRoot;
+   panel.getElementById(${JSON.stringify(field)}).value=${JSON.stringify(value)};
+   panel.getElementById(${JSON.stringify(button)}).click();
+  }),true)`);
+  assert.equal((await rpc({action:'rotation-next'})).config.selectedId,'gpu');
+  await until(()=>c.evaluate('(()=>{const panel=window.__cwbPanelHost.shadowRoot;return panel.getElementById("status").textContent.includes("当前壁纸已切换")&&panel.querySelector("dialog").getAttribute("aria-busy")==="false"})()'));
+  await c.evaluate('window.__cwbPanelHost.shadowRoot.getElementById("error-dismiss").click();true');
+  const after=await readSettings();
+  assert.equal(after.selectedId,'gpu');
+  assert.deepEqual(after.playback,before.playback);
+  assert.deepEqual(after.library,before.library);
+ }
+ report.queuedDisplayActionsDoNotModifyEitherWallpaper=true;
+ assert.equal(errors,'');report.passed=true;
 }catch(e){report.error=e.stack;report.hostError=errors;process.exitCode=1;}finally{if(c){await c.call('Browser.close').catch(()=>{});c.close();}if(host)await until(async()=>host.exitCode!==null,15000).catch(()=>host.kill());if(browser&&browser.exitCode===null)browser.kill();console.log(JSON.stringify(report,null,2));}

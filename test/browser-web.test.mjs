@@ -21,8 +21,8 @@ test('browser and original Web versions save separately and configuration retain
  const restored=JSON.parse(await readFile(path.join(root,'settings.json'),'utf8'));normalizeLibrary(restored);assert.equal(restored.library.find(e=>e.id===browser.id).engine,'chromium-web');
  await actions(owner,{action:'duplicate-use',existingId:browser.id,apply:true});assert.equal(applies,1);
  let nativeProfileCalls=0;const tierActions=createActions(root,settings,async()=>{},async()=>{},{captureStatic:async()=>{return 'media/fixture.jpg';},nativeProfile:()=>{nativeProfileCalls++;throw Error('must not invoke WE');}});
- await tierActions(owner,{action:'display-tier',tier:'static'});assert.equal(browser.engine,'chromium-web');assert.equal(browser.displayTier,'static');await tierActions(owner,{action:'display-tier',tier:'custom'});assert.equal(browser.engine,'chromium-web');
- await tierActions(owner,{action:'display-tier',tier:'full'});assert.equal(settings.library.find(e=>e.id===browser.id).engine,'chromium-web');assert.equal(browser.limits.maxHeight,2160);assert.equal(nativeProfileCalls,0);
+ await tierActions(owner,{action:'display-tier',selectedId:settings.selectedId,tier:'static'});assert.equal(browser.engine,'chromium-web');assert.equal(browser.displayTier,'static');await tierActions(owner,{action:'display-tier',selectedId:settings.selectedId,tier:'custom'});assert.equal(browser.engine,'chromium-web');
+ await tierActions(owner,{action:'display-tier',selectedId:settings.selectedId,tier:'full'});assert.equal(settings.library.find(e=>e.id===browser.id).engine,'chromium-web');assert.equal(browser.limits.maxHeight,2160);assert.equal(nativeProfileCalls,0);
 });
 
 test('browser selection failure rolls back the active configuration and library',async()=>{

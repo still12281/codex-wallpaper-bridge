@@ -26,7 +26,7 @@ test('manual transparent-interface theme overrides sampling without overwriting 
 });
 test('independent scene quality uses custom mode and rolls back failures without erasing preferences',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-scene-quality-')),s=defaultSettings();s.library=[{id:'scene',mode:'webwallgl',displayTier:'balanced',quality:{postProcessing:'medium'},customDisplay:{limits:{maxWidth:960,fps:12}}}];s.selectedId='scene';s.systemMedia.audio=true;let fail=false;
- const action=createActions(root,s,async()=>{if(fail){fail=false;throw Error('shader failed');}},undefined,{configureMedia:async()=>{}}),values={action:'scene-quality',postProcessing:'low',particles:'medium',antiAliasing:'fxaa',videoTexScale:.75};
+ const action=createActions(root,s,async()=>{if(fail){fail=false;throw Error('shader failed');}},undefined,{configureMedia:async()=>{}}),values={action:'scene-quality',selectedId:s.selectedId,postProcessing:'low',particles:'medium',antiAliasing:'fxaa',videoTexScale:.75};
  await action(null,values);assert.equal(s.library[0].displayTier,'custom');assert.equal(s.library[0].customDisplay,undefined);assert.equal(s.library[0].quality.particles,'medium');assert.equal(s.systemMedia.audio,true);
  const saved=structuredClone(s.library[0]);fail=true;await assert.rejects(action(null,{...values,postProcessing:'high'}),/shader failed/);assert.deepEqual(s.library[0],saved);
  await assert.rejects(action(null,{...values,postProcessing:'off'}),/参数无效/);s.library[0].displayTier='static';await assert.rejects(action(null,values),/先启用/);

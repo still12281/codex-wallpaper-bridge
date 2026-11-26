@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===35){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===36){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=35;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=36;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  const menuButtonStyle=selector=>`
@@ -158,7 +158,7 @@ export function installPanel(config,token){
  $('import').onclick=()=>busy(async()=>{const picked=await send({action:'media-pick'});if(picked.cancelled||importCancelled)return {config,cancelled:true,message:'已取消选择文件。'};message('正在准备本机文件：'+picked.name);return send({action:'wallpaper-engine',projectToken:picked.projectToken,apply:true,profile:chosenProfile()});},'壁纸导入失败',true);
  function syncImportProfileNote(){const high=Number($('fps').value)>60,profile=high?(config.playback||{maxWidth:1280,fps:24}):{maxWidth:Number($('resolution').value),fps:Number($('fps').value)},capacity=profile.maxWidth<=1280&&profile.fps<=30?32:128;$('cwb-import-profile-note').textContent=(high?'GPU高刷独立保存；':'')+'新导入素材规格：最大宽度 '+profile.maxWidth+' / '+profile.fps+' FPS。视频按文件流式播放，不受原32/128 MiB文件总量限制；准备副本需要磁盘空间。图片副本仍保留 '+capacity+' MiB保护。';}$('fps').addEventListener('change',syncImportProfileNote);$('resolution').addEventListener('change',syncImportProfileNote);const chosenProfile=()=>Number($('fps').value)>60?{...(config.playback||{maxWidth:1280,fps:24})}:{maxWidth:Number($('resolution').value),fps:Number($('fps').value)};
  $('engine').onclick=()=>busy(()=>{message('正在读取 Wallpaper Engine 当前壁纸…');return send({action:'wallpaper-engine',renderMode:$('engine-render-mode').value,profile:chosenProfile()})},'壁纸导入失败',true);
- $('apply').onclick=()=>busy(()=>{message('正在按所选规格生成播放副本…');return send({action:'playback',maxWidth:Number($('resolution').value),fps:Number($('fps').value)})});
+ $('apply').onclick=()=>busy(()=>{message('正在按所选规格生成播放副本…');return send({action:'playback',selectedId:config.selectedId,maxWidth:Number($('resolution').value),fps:Number($('fps').value)})});
  $('delete').onclick=()=>busy(()=>deleteWallpaper($('delete-target').value));
  let engineItems=[];
  let inspectionKey='',inspectionState=null,inspectionLoading=false,inspectionGeneration=0;
