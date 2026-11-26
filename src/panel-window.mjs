@@ -82,11 +82,11 @@ export function installPanelWindow(host,shadow,dialog){
  .cwb-seg-btn.active{background:var(--cwb-seg-active);color:var(--cwb-ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 
  /* macOS Toggle Switch */
- .cwb-window-body input[type=checkbox]:not(.cwb-card input){-webkit-appearance:none;appearance:none;position:relative;width:38px;height:22px;border:0;border-radius:999px;background:var(--cwb-switch-off);cursor:pointer;flex:0 0 38px;margin:0;vertical-align:middle;transition:background-color 140ms}
- .cwb-window-body input[type=checkbox]:not(.cwb-card input)::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.24);transition:transform 140ms}
- .cwb-window-body input[type=checkbox]:not(.cwb-card input):checked{background:var(--cwb-accent)}
- .cwb-window-body input[type=checkbox]:not(.cwb-card input):checked::after{transform:translateX(16px)}
- .cwb-window-body input[type=checkbox]:not(.cwb-card input):disabled{opacity:.5;cursor:default}
+ .cwb-window-body input[type=checkbox]:not(.cwb-card input):not(.cwb-rot-list input){-webkit-appearance:none;appearance:none;position:relative;width:38px;height:22px;border:0;border-radius:999px;background:var(--cwb-switch-off);cursor:pointer;flex:0 0 38px;margin:0;vertical-align:middle;transition:background-color 140ms}
+ .cwb-window-body input[type=checkbox]:not(.cwb-card input):not(.cwb-rot-list input)::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.24);transition:transform 140ms}
+ .cwb-window-body input[type=checkbox]:not(.cwb-card input):not(.cwb-rot-list input):checked{background:var(--cwb-accent)}
+ .cwb-window-body input[type=checkbox]:not(.cwb-card input):not(.cwb-rot-list input):checked::after{transform:translateX(16px)}
+ .cwb-window-body input[type=checkbox]:not(.cwb-card input):not(.cwb-rot-list input):disabled{opacity:.5;cursor:default}
  .cwb-card input[type=checkbox]{width:16px!important;height:16px;margin:0 6px 0 0!important;accent-color:var(--cwb-accent);vertical-align:middle;flex-shrink:0}
 
  /* macOS Fine-Track Range Slider (exact prototype compact inline width) */
@@ -136,7 +136,18 @@ export function installPanelWindow(host,shadow,dialog){
  .cwb-inline-note{margin:0!important;padding:8px 14px;font-size:11.5px;color:var(--cwb-muted);background:var(--cwb-canvas)}
  .cwb-inline-note:empty{display:none}
  #cwb-visual{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
- #cwb-rotation-items{display:block;flex:0 0 auto;width:100%;max-width:100%;min-width:0;min-height:96px;max-height:156px;padding:4px}
+ .cwb-rot-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+ .cwb-rot-actions{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px}
+ #cwb-rotation-clear{min-height:26px;padding:0 10px;font-size:12px}
+ .cwb-rot-list{display:flex;flex-direction:column;width:100%;max-height:176px;overflow-y:auto;border:1px solid var(--cwb-border);border-radius:8px;background:var(--cwb-field);scrollbar-width:thin;scrollbar-color:var(--cwb-border) transparent}
+ .cwb-rot-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin:0;cursor:pointer;min-width:0;user-select:none;transition:background-color 90ms}
+ .cwb-rot-item+.cwb-rot-item{border-top:1px solid var(--cwb-hairline)}
+ .cwb-rot-item:hover{background:var(--cwb-surface-hover)}
+ .cwb-rot-item:has(input:checked){background:var(--cwb-accent-soft)}
+ .cwb-rot-list input[type=checkbox]{width:15px;height:15px;margin:0;accent-color:var(--cwb-accent);flex:0 0 15px;cursor:pointer}
+ .cwb-rot-name{flex:1 1 0;min-width:0;font-size:12.5px;font-weight:500;color:var(--cwb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .cwb-rot-mode{flex:0 0 auto;padding:1px 6px;border-radius:5px;background:var(--cwb-seg-bg);color:var(--cwb-muted);font-size:11px;line-height:1.45;white-space:nowrap}
+ .cwb-rot-empty{margin:0!important;padding:12px 10px;text-align:center;font-size:12px;color:var(--cwb-muted)}
 
  /* Saved Wallpapers Visual Gallery (EXACT prototype) */
  #cwb-saved-gallery-wrap{margin:0 0 14px}
