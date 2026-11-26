@@ -17,7 +17,7 @@ This is an independent community project, not an official OpenAI plugin. It conn
 
 ![Actual desktop client with an empty new-chat screen](docs/images/01-overview.png)
 
-See the [Chinese screenshot gallery](README.md#效果展示) and [capture provenance](docs/SCREENSHOTS.zh-CN.md) for all 11 actual desktop captures. Private fields were hidden before capture; the gallery uses self-made sample thumbnails. No chat transcript or desktop/taskbar is shown. The visible third-party wallpaper remains its author's work and is not licensed by this repository's code license.
+See the [Chinese screenshot gallery](README.md#效果展示) and [capture provenance](docs/SCREENSHOTS.zh-CN.md) for all 9 actual **v0.4.1** desktop captures. Only the Codex client window on an empty new-chat screen is captured, with no chat transcript or desktop/taskbar shown. Visible third-party wallpapers remain their authors' work and are not licensed by this repository's code license.
 
 ## Features
 
@@ -117,7 +117,7 @@ Open **壁纸** in the client. The current UI is in Chinese.
 
 Auto mode prefers complete GPU scenes and original Wallpaper Engine capture for Web projects. An explicit experimental Chromium Web mode is also available. Scene scripts and effects have project-dependent compatibility. See [WebGL](docs/WEBWALLGL.md), [native capture](docs/REALTIME.md) and [Chromium Web](docs/BROWSER-WEB-20261027.zh-CN.md) for mode-specific behavior.
 
-For a saved scene, choose **原版硬件传帧（AMD）** under **播放与画质 → 渲染方式** to use the original engine with hardware H.264 transport. This mode requires FFmpeg with `gfxcapture` and `h264_amf`, a compatible AMD driver, and WebCodecs. JPEG capture of the same scene takes over if the hardware transport is unavailable. [Native capture settings](docs/REALTIME.md)
+For a saved scene, choose **原版硬件传帧（AMD）** under **画质与播放 → 渲染方式** to use the original engine with hardware H.264 transport. This mode requires FFmpeg with `gfxcapture` and `h264_amf`, a compatible AMD driver, and WebCodecs. JPEG capture of the same scene takes over if the hardware transport is unavailable. [Native capture settings](docs/REALTIME.md)
 
 ## Development
 

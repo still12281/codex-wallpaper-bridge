@@ -1,8 +1,7 @@
 // Only these manually reviewed documentation captures may enter a release.
 export const reviewedImages=new Set([
- '01-overview','02-library','03-import-gallery','04-appearance','05-author-properties',
- '06-presets-rotation','07-batch-save','08-system-media','09-playback-quality',
- '10-light-theme','11-narrow-panel',
+ '01-overview','02-wallpapers','03-appearance','04-playback','05-effects-media',
+ '06-effects-rotation','07-advanced','08-dark-theme','09-narrow-panel',
 ].map(name=>'docs/images/'+name+'.png'));
 const signature=Buffer.from([137,80,78,71,13,10,26,10]);
 const crcTable=Array.from({length:256},(_,n)=>{for(let k=0;k<8;k++)n=(n&1)?0xedb88320^(n>>>1):n>>>1;return n>>>0});

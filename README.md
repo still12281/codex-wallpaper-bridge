@@ -47,31 +47,27 @@
 
 ## 效果展示
 
-以下均为**真实 Codex 桌面端实拍**；完整 [11 张图片索引与采集说明](docs/SCREENSHOTS.zh-CN.md)。
+以下均为 **v0.4.1 真实 Codex 桌面端实拍**；完整 [9 张图片索引与采集说明](docs/SCREENSHOTS.zh-CN.md)。
 
 <table>
-<tr><td width="50%"><b>图库与导入状态</b><br><img src="docs/images/03-import-gallery.png" alt="类型、分级、导入状态及单项操作" width="460"></td><td width="50%"><b>外观与特效</b><br><img src="docs/images/04-appearance.png" alt="透明度、字体、视差与点击特效" width="460"></td></tr>
-<tr><td><b>播放规格与场景画质</b><br><img src="docs/images/09-playback-quality.png" alt="分辨率、FPS与WebGL效果参数" width="460"></td><td><b>明亮主题</b><br><img src="docs/images/10-light-theme.png" alt="明亮主题的外观设置" width="460"></td></tr>
+<tr><td width="50%"><b>我的壁纸（五标签侧栏与画廊）</b><br><img src="docs/images/02-wallpapers.png" alt="我的壁纸标签页：Hero预览卡、快捷遮罩与三列已保存壁纸画廊" width="460"></td><td width="50%"><b>外观与遮罩</b><br><img src="docs/images/03-appearance.png" alt="外观与遮罩标签页：主题配色、玻璃质感、字体与视差" width="460"></td></tr>
+<tr><td><b>画质与播放（含 2K / 4K 档位）</b><br><img src="docs/images/04-playback.png" alt="画质与播放标签页：六档显示卡片、渲染方式与WebGL画质参数" width="460"></td><td><b>深色主题对比</b><br><img src="docs/images/08-dark-theme.png" alt="深色主题下的外观控制面板与主界面" width="460"></td></tr>
 </table>
 
 <details>
-<summary>更多实拍：壁纸库、批量选择、作者属性、预设轮播、音乐联动与窄面板</summary>
+<summary>更多实拍：音乐联动与指针特效、复选框轮播、适配与管理、窄面板布局</summary>
 
-| 壁纸库与当前运行方式 | 批量选择与保存入口 |
+| 系统音乐联动与光标特效 | 壁纸轮播（复选框列表）与作者属性 |
 | --- | --- |
-| ![壁纸库](docs/images/02-library.png) | ![批量选择](docs/images/07-batch-save.png) |
+| ![系统音乐联动与光标特效](docs/images/05-effects-media.png) | ![复选框壁纸轮播列表与作者属性](docs/images/06-effects-rotation.png) |
 
-| 作者属性 | 外观预设与轮播 |
+| 适配与管理（扫描、预设与版本更新） | 窄面板顶部 5 图标导航 |
 | --- | --- |
-| ![作者属性](docs/images/05-author-properties.png) | ![预设与轮播，私人素材列表已隐藏](docs/images/06-presets-rotation.png) |
-
-| 系统音乐联动 | 窄面板布局 |
-| --- | --- |
-| ![音乐联动，歌曲信息已隐藏](docs/images/08-system-media.png) | ![380像素宽面板](docs/images/11-narrow-panel.png) |
+| ![适配与管理](docs/images/07-advanced.png) | ![窄面板响应式顶部5图标布局](docs/images/09-narrow-panel.png) |
 
 </details>
 
-演示壁纸来源：[anime-girl-saint-4K-perseutech](https://steamcommunity.com/sharedfiles/filedetails/?id=3552392736)，工坊上传者 **perseu**。图片只展示客户端效果，不提供原壁纸文件；壁纸与客户端品牌的权利归各自权利人，不随本项目代码许可重新授权。
+演示壁纸来源：[发光少女 4K动态壁纸](https://steamcommunity.com/sharedfiles/filedetails/?id=3287715210)（Steam Workshop `3287715210`）。图片只展示客户端效果，不提供原壁纸文件；壁纸与客户端品牌的权利归各自权利人，不随本项目代码许可重新授权。
 
 ### 选择哪种运行方式
 
@@ -84,7 +80,7 @@
 
 GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原版兼容。打包场景、图片副本及单次资源读取预算见[大文件支持范围](docs/LARGE-MEDIA-20261027.zh-CN.md)。
 
-已保存的场景可在 **播放与画质 → 渲染方式** 选择 **原版硬件传帧（AMD）**。需要支持 `gfxcapture` 和 `h264_amf` 的 FFmpeg、兼容的 AMD 驱动及 WebCodecs。硬件传帧不可用时，同一场景转为原版 JPEG。 [原版传帧](docs/REALTIME.md)
+已保存的场景可在 **画质与播放 → 渲染方式** 选择 **原版硬件传帧（AMD）**。需要支持 `gfxcapture` 和 `h264_amf` 的 FFmpeg、兼容的 AMD 驱动及 WebCodecs。硬件传帧不可用时，同一场景转为原版 JPEG。 [原版传帧](docs/REALTIME.md)
 
 ## 加载与更新
 
@@ -180,7 +176,7 @@ ZIP 部署默认将数据与独立版本副本放在 `%LOCALAPPDATA%\CodexWallpa
 | 透明度与可读性 | 在「外观与遮罩」调整壁纸遮罩、玻璃不透明度与模糊、背景亮度、字体和字号；输入区和卡片跟随保存的玻璃设置，代码与终端保留阅读对比度 |
 | 壁纸自带的选项 | 「特效与联动 → 当前壁纸的作者属性」 |
 | 点击、拖尾和视差 | 「特效与联动」与「外观与遮罩」 |
-| 定时切换 | 「适配与管理 → 壁纸轮播」：间隔、顺序和素材 |
+| 定时切换 | 「特效与联动 → 壁纸轮播」：间隔、顺序和复选框素材列表 |
 | 保存一套外观 | 「适配与管理 → 外观预设」：保存、应用、导入/导出 JSON |
 | 歌曲显示和音频响应 | 在「特效与联动 → 系统音乐联动」启用并保存，默认频谱为 30 次/秒 |
 
