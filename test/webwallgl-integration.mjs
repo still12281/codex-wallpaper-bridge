@@ -34,10 +34,12 @@ try{
  const countListeners=async expression=>{const object=(await c.call('Runtime.evaluate',{expression,returnByValue:false})).result.objectId;const listeners=(await c.call('DOMDebugger.getEventListeners',{objectId:object})).listeners;await c.call('Runtime.releaseObject',{objectId:object});return listeners.length;};const before=[await countListeners('window'),await countListeners('document')];
  const activeEntry={id:'active',projectRoot:project,limits:{maxWidth:640,fps:24}},activeConfig={pauseOnBlur:false,systemMedia:{audio:true},palette:{r:20,g:22,b:28,dark:true}};
  player=await mountWebWallGL(c,activeEntry,{dataRoot:getDataRoot(),config:activeConfig});const activeId=await c.evaluate('window.__codexWallpaperBridge.rendererId');
+ activeEntry.palette=await c.evaluate('window.__codexWallpaperBridge.palette');
+ assert.equal(typeof activeEntry.palette.r,'number');
  const disconnected=new Promise(resolve=>c.ws.addEventListener('close',resolve,{once:true}));c.close();await disconnected;c=await connectCdp(targetSocket);
  activeEntry.preferredRenderer=true;
  player=await mountWebWallGL(c,activeEntry,{dataRoot:getDataRoot(),config:activeConfig,reconnect:true});
- assert.equal(player.id,activeId);assert(player.startup.reusedScene);assert(await player.signature());result.sameSceneAfterSocketClose=true;
+ assert.equal(player.id,activeId);assert(player.startup.reusedScene);assert(await player.signature());result.sameSceneAfterPaletteSaveAndReconnect=true;
  await c.evaluate('window.__codexWallpaperBridge.setSystemSpectrum({audioAvailable:true,bands:Array(64).fill(128)});true');await sleep(100);assert.equal((await player.sample()).systemAudioActive,true);await c.evaluate('window.__codexWallpaperBridge.setSystemSpectrum({audioAvailable:false,bands:Array(64).fill(0)});true');await sleep(100);assert.equal((await player.sample()).systemAudioActive,false);result.systemSpectrumAttachDetach=true;
  await c.evaluate('window.__testMediaActivity=[];window.__cwbMediaActivitySend=p=>window.__testMediaActivity.push(JSON.parse(p));('+installMediaActivity.toString()+')(' + JSON.stringify('test-token')+');true');
  assert.equal(await c.evaluate('window.__testMediaActivity.at(-1).active'),true);

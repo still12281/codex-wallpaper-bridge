@@ -440,8 +440,8 @@
     },
     {
       "path": "src/library-model.mjs",
-      "utf8Bytes": 1678,
-      "sha256": "8bb0eca2169e1da80c3a02c85395186234d1d9169b7d5b5709f3ee1c99274f43"
+      "utf8Bytes": 1763,
+      "sha256": "08556ceb8bee1f50086e901b07f27b6d1aa5331bd8cac8b337ad098d525a6fd8"
     },
     {
       "path": "src/library-preview.mjs",
@@ -965,8 +965,8 @@
     },
     {
       "path": "test/webwallgl-integration.mjs",
-      "utf8Bytes": 14071,
-      "sha256": "622b3bff20abf71e406a70fbb9bf456f9d3267c3c77b02c10dc837e241ee0a4c"
+      "utf8Bytes": 14217,
+      "sha256": "4f1487aa0bd51910e1026c02a67d58e9550b3307b17f659da322f8bbac924bfd"
     },
     {
       "path": "test/webwallgl-source.test.mjs",

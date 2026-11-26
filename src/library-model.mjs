@@ -24,6 +24,7 @@ export function libraryGroups(entries,selectedId){
 }
 
 export function wallpaperRenderKey(entry,audio){
- const {preferredRenderer,...playbackEntry}=entry??{};
+ // The library owns the preference, and the shell uses the sampled palette.
+ const {preferredRenderer,palette,...playbackEntry}=entry??{};
  return JSON.stringify([entry?playbackEntry:entry,audio]);
 }
