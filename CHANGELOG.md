@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.1
+
+### Improvements
+
+- **Rotation wallpaper checklist**. Replace the native multi-select list in **特效与联动 → 壁纸轮播** with a clickable checkbox list showing each wallpaper's mode tag, live selected count, and a **清空勾选** action. Leaving all items unchecked continues to rotate through all saved wallpapers.
+
+### Fixes
+
+- Fix excessive vertical whitespace and narrow `190 px` sizing on stacked rows in the embedded control panel (affecting the rotation wallpaper picker).
+- Bind the 6-card display-tier grid's 3-column breakpoint to the panel content width (`<= 620 px`) so tier labels remain unclipped at the default `700 × 580` window size.
+- Stack multi-control rows (**渲染方式**, **外观预设**, **删除指定壁纸**) cleanly across narrow and default widths, keep media playback icon buttons aligned without shrinking or overlapping long track status text, and restore the divider above **立即扫描并适配**.
+
 ## 0.4.0
 
 ### Highlights
