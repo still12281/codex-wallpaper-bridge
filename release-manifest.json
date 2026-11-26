@@ -415,8 +415,8 @@
     },
     {
       "path": "src/display-tiers.mjs",
-      "utf8Bytes": 2315,
-      "sha256": "0211540e5383fce2f46c4fbe2706c5ca6aa8811f48c870807da00b46991e3c79"
+      "utf8Bytes": 2508,
+      "sha256": "c1564fc1e70010cdb0560a1bed5841e8a74d72346ab5f0d1550d8c6f9b3568c5"
     },
     {
       "path": "src/engine-library.mjs",
@@ -425,8 +425,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 42694,
-      "sha256": "c34aa52975d8080c55096f282ed468b1e1af0d3ccb2cf3b02a4715a3eb6e5d76"
+      "utf8Bytes": 55971,
+      "sha256": "2410818b1ccc9dde63a9b0e8d7f4cb7f2bc4c9f9e0315249a4a81971ba49d4a8"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -475,8 +475,8 @@
     },
     {
       "path": "src/panel-window.mjs",
-      "utf8Bytes": 20416,
-      "sha256": "befefa022deb952c27cf675755b791b0227110901b8257e3deb448e18b02dda6"
+      "utf8Bytes": 42768,
+      "sha256": "139f809dd87f33605450f98aa1f308b7153a730869e43408422610413fb6eb1f"
     },
     {
       "path": "src/playback-metrics.mjs",
@@ -500,8 +500,8 @@
     },
     {
       "path": "src/runtime-paths.mjs",
-      "utf8Bytes": 2997,
-      "sha256": "b68b2f816db412cace8aa2834b7c11a54ef6e0d43ebe6b28ee7c0d4197c7499c"
+      "utf8Bytes": 3029,
+      "sha256": "ed515995818f4d65cc4ca5f737ac2b3fa1f6b4dda49bacfeef3fb4a5579e6bc8"
     },
     {
       "path": "src/runtime-status.mjs",
@@ -550,8 +550,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 48384,
-      "sha256": "055db7cfe8c3db93b800f86ed4a2951e6f203bb84abd2101b947df478d81de63"
+      "utf8Bytes": 49113,
+      "sha256": "ef5186e923d8198ec910ddd5a155e6cb62156767ace70f633c483570bffec04c"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -670,8 +670,8 @@
     },
     {
       "path": "test/display-tiers.test.mjs",
-      "utf8Bytes": 10557,
-      "sha256": "909cee999d62328e9b96fc4bebc373fadffe1ba04002b594b9d59675e8106b21"
+      "utf8Bytes": 11171,
+      "sha256": "b94659502339d70f4aa8a2efe77cd2f5100b7effbc9b3312740fb252d28927ea"
     },
     {
       "path": "test/entry-queue.ps1",
@@ -775,8 +775,8 @@
     },
     {
       "path": "test/library-model.test.mjs",
-      "utf8Bytes": 7777,
-      "sha256": "558099c7d4c8205140c42dbaf676dd21b3037c3cbc33b0f7a04eda36297fd7f5"
+      "utf8Bytes": 7822,
+      "sha256": "beb05686e63b9b716e448cdf8a7f76a5fb16555e6937f2084e57f8f44f9bfa64"
     },
     {
       "path": "test/lifetime-integration.mjs",
@@ -810,8 +810,8 @@
     },
     {
       "path": "test/panel-controls-integration.mjs",
-      "utf8Bytes": 50258,
-      "sha256": "2c1a9684339a9d3fba965f29b5dfd3e9dab858efcdd6094c95255b86156f5602"
+      "utf8Bytes": 54818,
+      "sha256": "2c358b0f8956f5650abe4679b440f5fd4f890c53e07c10fb9b0aa0d40fd03231"
     },
     {
       "path": "test/panel-entry-integration.mjs",
