@@ -70,7 +70,7 @@ export function installPanelWindow(host,shadow,dialog){
  :where(dialog button)[data-cwb-variant="danger"]:not(:disabled):hover{background:var(--cwb-danger-bg);border-color:var(--cwb-danger)}
  .cwb-soft-btn{background:var(--cwb-seg-bg);border-color:transparent;color:var(--cwb-ink)}
  .cwb-soft-btn:not(:disabled):hover{background:var(--cwb-raised)}
- .cwb-icon-btn{width:30px;padding:0}
+ .cwb-icon-btn{width:30px;flex:0 0 30px;padding:0}
  :where(dialog select,dialog input:not([type=checkbox]):not([type=range]):not([type=file]):not([type=color])){min-height:30px;padding:4px 10px;border:1px solid var(--cwb-border);border-radius:7px;background:var(--cwb-field);color:var(--cwb-ink);font-size:12.5px;font-weight:500;line-height:1.4}
  :host option,:host optgroup{background:var(--cwb-field);color:var(--cwb-ink)}
  :where(dialog input[type=color]){min-height:28px;height:28px;width:44px;padding:2px;border:1px solid var(--cwb-border);border-radius:7px;background:var(--cwb-field);cursor:pointer}
@@ -119,20 +119,24 @@ export function installPanelWindow(host,shadow,dialog){
  .cwb-page>.cwb-group-label:first-child,.cwb-section-stack>.cwb-group-label:first-child,#cwb-saved-gallery-wrap>.cwb-group-label{margin-top:0}
  .cwb-inset-group{background:var(--cwb-surface);border:1px solid var(--cwb-hairline);border-radius:11px;overflow:hidden;margin:0 0 14px}
  .cwb-setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 14px;min-height:44px;margin:0;color:var(--cwb-ink)}
- .cwb-setting-row+.cwb-setting-row,.cwb-fx-children>.cwb-setting-row,.cwb-inset-group>.cwb-inline-note,.cwb-inset-group>.cwb-group-footer{border-top:1px solid var(--cwb-hairline)}
+ .cwb-setting-row+.cwb-setting-row,.cwb-inline-note+.cwb-setting-row,.cwb-fx-children>.cwb-setting-row,.cwb-inset-group>.cwb-inline-note,.cwb-inset-group>.cwb-group-footer{border-top:1px solid var(--cwb-hairline)}
  .cwb-row-stack{flex-direction:column;align-items:stretch;gap:8px}
- .cwb-row-meta{min-width:120px;flex:1 1 140px;display:flex;flex-direction:column}
+ .cwb-row-meta{min-width:120px;flex:1 1 0;display:flex;flex-direction:column}
+ .cwb-row-stack>.cwb-row-meta{min-width:0;flex:0 0 auto}
  .cwb-row-title{font-size:13px;font-weight:500;line-height:1.35;color:var(--cwb-ink)}
  .cwb-row-desc{font-size:11.5px;color:var(--cwb-muted);margin-top:2px;line-height:1.4}
  .cwb-row-ctrl{flex:0 1 auto;min-width:0;max-width:62%;display:inline-flex;align-items:center;justify-content:flex-end;gap:8px}
+ .cwb-row-ctrl>button{flex-shrink:0}
+ .cwb-row-stack>.cwb-row-ctrl{flex:0 0 auto;width:100%;max-width:100%;justify-content:flex-start}
  .cwb-ctrl-wrap{flex-wrap:wrap}
- .cwb-setting-row select{min-width:110px;max-width:190px;flex:0 1 190px;text-overflow:ellipsis}
+ .cwb-row-ctrl select{min-width:110px;max-width:190px;flex:0 1 190px;text-overflow:ellipsis}
  .cwb-setting-row input[type=number],.cwb-setting-row input[type=text],#cwb-preset-name{width:110px;max-width:100%}
+ .cwb-row-stack .cwb-row-ctrl select,.cwb-row-stack .cwb-row-ctrl input[type=text],.cwb-row-stack #cwb-preset-name{flex:1 1 160px;width:auto;min-width:120px;max-width:100%}
  .cwb-group-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:var(--cwb-canvas)}
  .cwb-inline-note{margin:0!important;padding:8px 14px;font-size:11.5px;color:var(--cwb-muted);background:var(--cwb-canvas)}
  .cwb-inline-note:empty{display:none}
  #cwb-visual{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
- #cwb-rotation-items{width:100%;min-height:88px}
+ #cwb-rotation-items{display:block;flex:0 0 auto;width:100%;max-width:100%;min-width:0;min-height:96px;max-height:156px;padding:4px}
 
  /* Saved Wallpapers Visual Gallery (EXACT prototype) */
  #cwb-saved-gallery-wrap{margin:0 0 14px}
@@ -150,11 +154,11 @@ export function installPanelWindow(host,shadow,dialog){
 
  /* Display Tier Cards (EXACT prototype) */
  .cwb-tier-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;padding:12px 14px}
- .cwb-tier-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:50px;padding:8px 4px;border-radius:9px;border:1.5px solid var(--cwb-hairline);background:var(--cwb-canvas);text-align:center}
+ .cwb-tier-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;min-height:50px;padding:8px 4px;border-radius:9px;border:1.5px solid var(--cwb-hairline);background:var(--cwb-canvas);text-align:center;overflow:hidden}
  .cwb-tier-card:hover:not(:disabled){background:var(--cwb-surface-hover)}
  .cwb-tier-card.active{border-color:var(--cwb-accent);background:var(--cwb-accent-soft)}
- .cwb-tier-name{font-size:12.5px;font-weight:600;color:var(--cwb-ink)}
- .cwb-tier-spec{font-size:10.5px;color:var(--cwb-muted);font-variant-numeric:tabular-nums}
+ .cwb-tier-name{font-size:12.5px;font-weight:600;color:var(--cwb-ink);max-width:100%;overflow:hidden;text-overflow:ellipsis}
+ .cwb-tier-spec{font-size:10.5px;color:var(--cwb-muted);font-variant-numeric:tabular-nums;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 
  /* Disclosure Cards (only for Author Properties & Custom Specs) */
  details.cwb-feature{margin:0 0 14px;padding:0;border:1px solid var(--cwb-hairline);border-radius:11px;background:var(--cwb-surface);overflow:hidden}
@@ -232,6 +236,8 @@ export function installPanelWindow(host,shadow,dialog){
   .cwb-nav-icon{width:20px;height:20px;flex:0 0 20px;border-radius:5px}
   .cwb-window-body{padding:14px 14px 20px}
   .cwb-titlebar{padding:0 8px 0 12px}
+ }
+ @container cwb-panel (max-width:620px){
   .cwb-tier-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
  }
  @container cwb-panel (max-width:400px){
@@ -239,7 +245,8 @@ export function installPanelWindow(host,shadow,dialog){
   .cwb-setting-row,.cwb-group-footer{flex-direction:column;align-items:stretch;gap:8px}
   .cwb-row-meta{min-width:0;flex:0 0 auto}
   .cwb-row-ctrl,.cwb-slider-wrap{justify-content:flex-end;width:100%;max-width:100%}
-  .cwb-setting-row select{max-width:100%;flex:1 1 auto}
+  .cwb-row-stack>.cwb-row-ctrl{justify-content:flex-start}
+  .cwb-row-ctrl select{max-width:100%;flex:1 1 auto}
   .cwb-window-body input[type=range]{flex:1;width:auto}
   .cwb-hero-footer{flex-direction:column;align-items:stretch;gap:8px}
   .cwb-hero-actions{justify-content:flex-end}

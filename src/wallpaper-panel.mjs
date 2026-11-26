@@ -1,9 +1,9 @@
 export function installPanel(config,token){
  const previous=window.__cwbPanelHost||document.getElementById('codex-wallpaper-controls');
- if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===41){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
+ if(previous?.__cwbToken===token&&previous.__cwbPanelVersion===42){previous.__cwbPlace?.();previous.__cwbRenderConfig?.(config);return;}
  previous?.__cwbDispose?.();previous?.remove();
  const host=document.createElement('div');host.id='codex-wallpaper-controls';host.style.cssText='position:static;display:inline-flex;align-items:center;flex:0 0 auto;margin-inline-end:8px;app-region:no-drag;-webkit-app-region:no-drag';
- host.__cwbToken=token;host.__cwbPanelVersion=41;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
+ host.__cwbToken=token;host.__cwbPanelVersion=42;let features=null,scanShortcut=null,scanToastTimer=null,updateTimer=null;
  window.__cwbPanelHost=host;
  const s=host.attachShadow({mode:'open'});
  const menuButtonStyle=selector=>`
@@ -87,7 +87,7 @@ export function installPanel(config,token){
  surfaces.append(surfaceRepair);
  quality.before(surfaces);
  const remove=document.createElement('button');remove.id='delete';remove.type='button';remove.textContent='删除';
- const deletePicker=document.createElement('label');deletePicker.className='cwb-setting-row';deletePicker.innerHTML='<span class="cwb-row-meta"><span class="cwb-row-title">删除指定壁纸（仅 Codex）</span><span class="cwb-row-desc">仅从 Codex 移除，原素材保持不变</span></span><span class="cwb-row-ctrl"><select id="delete-target" aria-label="选择要删除的壁纸"></select></span>';
+ const deletePicker=document.createElement('div');deletePicker.className='cwb-setting-row cwb-row-stack';deletePicker.innerHTML='<span class="cwb-row-meta"><span class="cwb-row-title">删除指定壁纸（仅 Codex）</span><span class="cwb-row-desc">仅从 Codex 移除，原素材保持不变</span></span><span class="cwb-row-ctrl cwb-ctrl-wrap"><select id="delete-target" aria-label="选择要删除的壁纸"></select></span>';
  deletePicker.querySelector('.cwb-row-ctrl').append(remove);
  const management=document.createElement('div');management.id='cwb-management-group';management.className='cwb-inset-group';
  const clearSwitchCache=document.createElement('button');clearSwitchCache.id='clear-switch-cache';clearSwitchCache.type='button';clearSwitchCache.className='cwb-soft-btn';clearSwitchCache.textContent='清理缓存';clearSwitchCache.title='切换缓存最多512 MB，转换缓存最多256 MB；不删除原素材、已保存副本或当前画面';clearSwitchCache.onclick=()=>busy(async()=>{const cache=await caches.open('codex-wallpaper-resources-v1');for(const key of await cache.keys())await cache.delete(key);const r=await send({action:'conversion-cache-clear'});return {message:'切换缓存已清理。'+r.message};});
@@ -214,7 +214,7 @@ export function installPanel(config,token){
  $('cwb-surface-scan').onclick=scanButton.onclick=host.__cwbScanSurfaces;
  placeScan();
  const updates=document.createElement('div');updates.id='cwb-update-options';updates.className='cwb-inset-group';updates.setAttribute('aria-labelledby','cwb-update-title');
- updates.innerHTML='<div class="cwb-setting-row"><span class="cwb-row-meta"><span id="cwb-update-title" class="cwb-row-title">版本与更新</span><span id="cwb-update-status" class="cwb-row-desc" role="status" aria-live="polite" aria-atomic="true">正在读取版本…</span></span><span class="cwb-row-ctrl"><button id="cwb-update-check" type="button" class="cwb-soft-btn">检查更新</button><button id="cwb-update-install" type="button" data-cwb-variant="primary" hidden>一键更新</button></span></div>';
+ updates.innerHTML='<div class="cwb-setting-row"><span class="cwb-row-meta"><span id="cwb-update-title" class="cwb-row-title">版本与更新</span><span id="cwb-update-status" class="cwb-row-desc" role="status" aria-live="polite" aria-atomic="true">正在读取版本…</span></span><span class="cwb-row-ctrl cwb-ctrl-wrap"><button id="cwb-update-check" type="button" class="cwb-soft-btn">检查更新</button><button id="cwb-update-install" type="button" data-cwb-variant="primary" hidden>一键更新</button></span></div>';
  if(windowChrome?.placeUpdates)windowChrome.placeUpdates(updates);else $('status').before(updates);
  let updateBusy=false;
  const showUpdate=u=>{
