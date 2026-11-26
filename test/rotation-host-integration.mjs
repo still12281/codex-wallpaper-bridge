@@ -7,7 +7,7 @@ let browser,host,c,errors='';const report={kind:'isolated-host-rotation-and-manu
 try{
  const ffmpeg=await findFFmpeg();for(const [id,color]of [['a','blue'],['b','red']])await promisify(execFile)(ffmpeg,['-v','error','-nostdin','-n','-f','lavfi','-i','color='+color+':s=32x32','-frames:v','1','-threads','1',path.join(data,'media',id+'.png')],{windowsHide:true});
  await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene',file:'scene.json'}));await writeFile(path.join(project,'scene.json'),JSON.stringify({general:{clearcolor:'0.2 0.4 0.6',orthogonalprojection:{width:640,height:360}},objects:[]}));
- const settings=defaultSettings();settings.pauseOnBlur=false;settings.library=[{id:'a',file:'media/a.png',mime:'image/png',limits:{maxBytes:33554432}},{id:'gpu',name:'Generated GPU',mode:'webwallgl',projectRoot:project,limits:{maxWidth:1280,maxHeight:900,fps:24}},{id:'b',file:'media/b.png',mime:'image/png',limits:{maxBytes:33554432}}];settings.selectedId='a';await writeFile(path.join(data,'settings.json'),JSON.stringify(settings));
+ const settings=defaultSettings();settings.pauseOnBlur=false;settings.library=[{id:'a',file:'media/a.png',mime:'image/png',limits:{maxBytes:33554432},workshopId:'100'},{id:'gpu',name:'Generated GPU',mode:'webwallgl',projectRoot:project,limits:{maxWidth:1280,maxHeight:900,fps:24},workshopId:'101'},{id:'b',file:'media/b.png',mime:'image/png',limits:{maxBytes:33554432}},{id:'gpu-media',file:'media/b.png',mime:'image/png',limits:{maxBytes:33554432},workshopId:'101'}];settings.selectedId='a';await writeFile(path.join(data,'settings.json'),JSON.stringify(settings));
  const shell=path.join(temp,'shell.html');await writeFile(shell,'<!doctype html><body><header class="_ApplicationMenuTopBar_"><div role="menubar"></div></header><aside class="app-shell-left-panel"></aside><main data-app-shell-main-surface>Generated fixture</main>');const url=pathToFileURL(shell).href;
  const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));
  browser=spawn(process.env.CODEX_WALLPAPER_TEST_CHROME||'C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--disable-background-networking','--remote-debugging-port='+port,'--user-data-dir='+path.join(temp,'profile'),url],{windowsHide:true,stdio:'ignore'});
@@ -24,5 +24,27 @@ try{
  await rpc({action:'rotation-config',enabled:true,intervalSeconds:10,order:'sequential',ids:['a','gpu']});await pause(12000);assert.equal(JSON.parse(await readFile(path.join(data,'settings.json'))).selectedId,'a');report.backgroundWaits=true;
  await c.evaluate('window.__rotationObserver=new MutationObserver(()=>{if(!window.__manualRace&&document.querySelector("[id^=cwb-webgl-]")){window.__manualRace=true;__r.rpc({action:"select",selectedId:"b"}).then(value=>window.__manualResult=value);}});__rotationObserver.observe(document.body,{childList:true});document.hasFocus=()=>true;true');
  await until(()=>c.evaluate('window.__manualResult?.ok&&window.__cwbDesiredWallpaperId==="b"'),45000);assert.equal(JSON.parse(await readFile(path.join(data,'settings.json'))).selectedId,'b');assert.equal(await c.evaluate('window.__codexWallpaperBridge.mode||"media"'),'media');await rpc({action:'rotation-config',enabled:false,intervalSeconds:10,order:'sequential',ids:['a','gpu']});report.manualSelectionCancelsAutoGpuCandidate=true;
+ await rpc({action:'select',selectedId:'a'});
+ await c.evaluate(`(()=>{
+  const shadow=window.__cwbPanelHost.shadowRoot;
+  const observer=new MutationObserver(()=>{
+   if(!document.querySelector('[id^="cwb-webgl-"]'))return;
+   observer.disconnect();
+   shadow.getElementById('cwb-renderer').value='media';
+   shadow.getElementById('cwb-renderer-apply').click();
+   window.__rendererClicked=true;
+  });
+  observer.observe(document.body,{childList:true});
+  return true;
+ })()`);
+ const interrupted=await rpc({action:'rotation-next'});
+ assert.equal(interrupted.superseded,true);
+ await until(()=>c.evaluate('window.__rendererClicked&&window.__cwbPanelHost.shadowRoot.querySelector("dialog").getAttribute("aria-busy")==="false"'));
+ const afterRendererChange=JSON.parse(await readFile(path.join(data,'settings.json'),'utf8'));
+ assert.equal(afterRendererChange.selectedId,'a');
+ assert.equal(afterRendererChange.library.find(e=>e.id==='gpu-media').preferredRenderer,undefined);
+ const rendererMessage=await c.evaluate('window.__cwbPanelHost.shadowRoot.getElementById("status").textContent');
+ assert.match(rendererMessage,/当前已使用此壁纸|已热更新并保存/);
+ report.rendererButtonCancelsRotationWithoutChangingOtherWallpaper=true;
  assert.equal(await c.evaluate('document.querySelectorAll("[data-cwb-renderer-id]").length'),0);assert.equal(errors,'');report.passed=true;
 }catch(e){report.error=e.stack;report.hostError=errors;process.exitCode=1;}finally{if(c){await c.call('Browser.close').catch(()=>{});c.close();}if(host)await until(async()=>host.exitCode!==null,15000).catch(()=>host.kill());if(browser&&browser.exitCode===null)browser.kill();console.log(JSON.stringify(report,null,2));}

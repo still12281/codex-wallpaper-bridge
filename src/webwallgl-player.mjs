@@ -1,3 +1,4 @@
+import {wallpaperRenderKey} from './library-model.mjs';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
@@ -127,7 +128,7 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurr
  const started=performance.now(),startup={stages:{},resources:{requests:0,cacheHits:0,queueMs:0,transferMs:0}};
  const mark=stage=>{startup.stages[stage]=performance.now()-started;};
  let adopted=false;const assertCurrent=()=>{if(!adopted&&!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
- const key=createHash('sha256').update(JSON.stringify([entry,config.systemMedia?.audio===true])).digest('hex');
+ const key=createHash('sha256').update(wallpaperRenderKey(entry,config.systemMedia?.audio===true)).digest('hex');
  if(reconnect){
   const current=await c.evaluate('(()=>{const s=window.__codexWallpaperBridge,l=document.getElementById("codex-wallpaper-bridge-layer");return s?.ready&&!s.error&&s.reuse?.key==='+JSON.stringify(key)+'&&s.rendererId===l?.dataset.cwbRendererId&&s.reuse.url===l.shadowRoot?.firstElementChild?.src?s.reuse:null})()');
   if(current&&/^cwb-webgl-[a-f0-9-]{36}$/.test(current.id)&&/^cwbAsset[a-f0-9]{32}$/.test(current.binding)&&/^[a-f0-9-]{36}$/.test(current.controlToken)){

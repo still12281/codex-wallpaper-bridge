@@ -22,3 +22,8 @@ export function libraryGroups(entries,selectedId){
   return {...group,entry:preferred,id:preferred.id,name:String(preferred.name||'未命名壁纸').replace(/ · (?:视频层|WebGL|实时|网页浏览器)$/,'')};
  });
 }
+
+export function wallpaperRenderKey(entry,audio){
+ const {preferredRenderer,...playbackEntry}=entry??{};
+ return JSON.stringify([entry?playbackEntry:entry,audio]);
+}

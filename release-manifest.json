@@ -425,8 +425,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 42607,
-      "sha256": "9d14c3ae4be5b92937f2817c2d6e41a310071b0da5b2ab3be916848b62d243f9"
+      "utf8Bytes": 42636,
+      "sha256": "fc2921659f6ef766ce66434111589120bb0e8055031d30de8ccac7178ce6bccc"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -440,8 +440,8 @@
     },
     {
       "path": "src/library-model.mjs",
-      "utf8Bytes": 1512,
-      "sha256": "28118ea5ebe63ad0b314f4ee58f5909d81c2d15ddc7fc0777b6d5584e4fe3564"
+      "utf8Bytes": 1678,
+      "sha256": "8bb0eca2169e1da80c3a02c85395186234d1d9169b7d5b5709f3ee1c99274f43"
     },
     {
       "path": "src/library-preview.mjs",
@@ -535,13 +535,13 @@
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 56349,
-      "sha256": "820632da62d7affcd6d3f7ce0a618f1f5008a5b1e7bf80dee77d8c14141c22f6"
+      "utf8Bytes": 56428,
+      "sha256": "9d7086ab1f5b2900b429f74f2e9f1a8cb7435320162f75964d6c033a988bd91d"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 44027,
-      "sha256": "2ce6687a5d1ca961d70468fa160216b9fb66e072c67e4cd50f2c166327e909e0"
+      "utf8Bytes": 44969,
+      "sha256": "d7d948256474fd6a04ea1d277d74e2b415c209c948e7f2073ae9fe4775ad6bd6"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -550,8 +550,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 48277,
-      "sha256": "613381066a7587482b6ba6b06fa50de0e7651eff6613cce956f4a26f37248b0f"
+      "utf8Bytes": 48355,
+      "sha256": "0a3b9438f69b5b09d3633e1e21276b617849ff20bf66500750697ce310ce27a2"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -575,8 +575,8 @@
     },
     {
       "path": "src/webwallgl-player.mjs",
-      "utf8Bytes": 27408,
-      "sha256": "502d4f341d0b2f69f786f494d23c506070a8d0eb3859dc1cae9b1e7a81c8e9c9"
+      "utf8Bytes": 27466,
+      "sha256": "4fc60366283ce6507f19e99895fd0de984c235bb175632ba85386d7018e87be2"
     },
     {
       "path": "src/webwallgl-runtime.mjs",
@@ -625,8 +625,8 @@
     },
     {
       "path": "test/browser-web.test.mjs",
-      "utf8Bytes": 4115,
-      "sha256": "d8697c54830bf20e62921e0bf58b6f04e21585a054936e5b358df526c2f8c8d6"
+      "utf8Bytes": 4146,
+      "sha256": "828df99ee9d6e72473e7c960b2ea87d8f5d2294f1b0e16ab67135e3a3ee127b0"
     },
     {
       "path": "test/cdp-client.test.mjs",
@@ -670,8 +670,8 @@
     },
     {
       "path": "test/display-tiers.test.mjs",
-      "utf8Bytes": 10166,
-      "sha256": "b4d34bbab497583b4af3296cd0c5772b7fa3923758cfb37dba0ce018963d832c"
+      "utf8Bytes": 10221,
+      "sha256": "5e60b5d300b7f406f85c258ce9beddfd51cf6e69fb8e936467b2dd71655550ce"
     },
     {
       "path": "test/entry-queue.ps1",
@@ -775,8 +775,8 @@
     },
     {
       "path": "test/library-model.test.mjs",
-      "utf8Bytes": 5497,
-      "sha256": "0cb7653f196d819b01da0e66805cf7d4a79fb70b06458399b5fb1d9d47b0954b"
+      "utf8Bytes": 7777,
+      "sha256": "558099c7d4c8205140c42dbaf676dd21b3037c3cbc33b0f7a04eda36297fd7f5"
     },
     {
       "path": "test/lifetime-integration.mjs",
@@ -870,8 +870,8 @@
     },
     {
       "path": "test/rotation-host-integration.mjs",
-      "utf8Bytes": 6285,
-      "sha256": "1b08c38333a7c378a0a4b5330e4d3a2a259236cdebe6aef8deb7cb24d551d9bb"
+      "utf8Bytes": 7661,
+      "sha256": "2d52d30b7fd8dfc2f128a89b63f7e7bfd71c798548625ec6917e0e586f11728b"
     },
     {
       "path": "test/run-regression.mjs",
@@ -965,8 +965,8 @@
     },
     {
       "path": "test/webwallgl-integration.mjs",
-      "utf8Bytes": 14034,
-      "sha256": "3a158c1f417027a3e987771b412260c252e639ab7f744e30d7f2e807e6452069"
+      "utf8Bytes": 14071,
+      "sha256": "622b3bff20abf71e406a70fbb9bf456f9d3267c3c77b02c10dc837e241ee0a4c"
     },
     {
       "path": "test/webwallgl-source.test.mjs",

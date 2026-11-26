@@ -47,7 +47,7 @@ test('GPU FPS updates keep exact dimensions and media defaults, and roll back ho
 });
 test('switching a high-refresh GPU project to native uses a separate confirmed native FPS',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-high-native-')),project=path.join(root,'project');await mkdir(project);await writeFile(path.join(project,'project.json'),JSON.stringify({type:'scene'}));const s=defaultSettings();s.library=[{id:'gpu',mode:'webwallgl',projectRoot:project,limits:{maxWidth:1280,fps:144}}];s.selectedId='gpu';s.playback.fps=30;
- const action=createActions(root,s,async()=>{}),r=await action({}, {action:'display-renderer',renderMode:'native'});assert.equal(r.confirmation.renderer,'native');assert.equal(r.confirmation.limits.fps,30);assert.equal(s.library[0].limits.fps,144);
+ const action=createActions(root,s,async()=>{}),r=await action({}, {action:'display-renderer',selectedId:s.selectedId,renderMode:'native'});assert.equal(r.confirmation.renderer,'native');assert.equal(r.confirmation.limits.fps,30);assert.equal(s.library[0].limits.fps,144);
 });
 test('hardware transport is saved as a separate original-engine scene entry',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-native-h264-')),project=path.join(root,'project');
@@ -57,7 +57,7 @@ test('hardware transport is saved as a separate original-engine scene entry',asy
  const selected={id:'gpu',mode:'webwallgl',projectRoot:project,sourceKey,limits:{maxWidth:1280,maxHeight:900,fps:30}};
  settings.library=[jpeg,selected];settings.selectedId=selected.id;
  const owner={},act=createActions(root,settings,async()=>{});
- const request=await act(owner,{action:'display-renderer',renderMode:'native-h264'});
+ const request=await act(owner,{action:'display-renderer',selectedId:settings.selectedId,renderMode:'native-h264'});
  assert.equal(settings.selectedId,selected.id);
  await act(owner,{action:'wallpaper-engine-confirm',confirmationToken:request.confirmation.token,confirmed:true});
  assert.equal(settings.library.length,3);

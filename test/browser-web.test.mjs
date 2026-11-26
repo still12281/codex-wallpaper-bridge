@@ -28,6 +28,6 @@ test('browser and original Web versions save separately and configuration retain
 test('browser selection failure rolls back the active configuration and library',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-web-rollback-')),projectRoot=path.join(root,'project');await mkdir(projectRoot);await writeFile(path.join(projectRoot,'project.json'),JSON.stringify({type:'web',file:'index.html'}));
  const settings=defaultSettings();settings.library=[{id:'old',projectRoot,sourceKey:(await describeProject(projectRoot)).sourceKey,mode:'realtime'}];settings.selectedId='old';normalizeLibrary(settings);let attempts=0;
- const actions=createActions(root,settings,async()=>{attempts++;if(settings.selectedId!=='old')throw Error('first frame failed');}),owner={};const pending=await actions(owner,{action:'display-renderer',renderMode:'chromium-web'});
+ const actions=createActions(root,settings,async()=>{attempts++;if(settings.selectedId!=='old')throw Error('first frame failed');}),owner={};const pending=await actions(owner,{action:'display-renderer',selectedId:settings.selectedId,renderMode:'chromium-web'});
  await assert.rejects(actions(owner,{action:'wallpaper-engine-confirm',confirmationToken:pending.confirmation.token,confirmed:true}),/first frame failed/);assert.equal(settings.selectedId,'old');assert.equal(settings.library.length,1);assert.equal(attempts,2);
 });

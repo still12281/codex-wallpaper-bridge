@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,access,readFile} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import {libraryGroups} from '../src/library-model.mjs';
-import {createActions} from '../src/wallpaper-actions.mjs';
+import {libraryGroups,wallpaperRenderKey} from '../src/library-model.mjs';
+import {createActions,normalizeLibrary} from '../src/wallpaper-actions.mjs';
 import {defaultSettings} from '../src/runtime-paths.mjs';
 import {nextRotation} from '../src/appearance-model.mjs';
 import {describeProject} from '../src/realtime-source.mjs';
@@ -39,7 +39,7 @@ test('a confirmed renderer is remembered across switches and explicit rotation c
  settings.selectedId='gpu';
  const owner={};
  const actions=createActions(root,settings,async()=>{});
- const {confirmation}=await actions(owner,{action:'display-renderer',renderMode:'native'});
+ const {confirmation}=await actions(owner,{action:'display-renderer',selectedId:'gpu',renderMode:'native'});
  await actions(owner,{action:'wallpaper-engine-confirm',confirmationToken:confirmation.token,confirmed:true});
  const nativeId=settings.selectedId;
  assert.notEqual(nativeId,'gpu');
@@ -72,4 +72,44 @@ test('failing to save a manual selection restores the previous renderer preferen
  assert.equal(settings.selectedId,native.id);
  assert.equal(native.preferredRenderer,true);
  assert.equal(gpu.preferredRenderer,undefined);
+});
+
+test('migration remembers the active legacy variant once and leaves render keys stable',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-renderer-migrate-'));
+ const settings=defaultSettings();
+ const gpu={id:'gpu',mode:'webwallgl',workshopId:'12345',limits:{fps:24}};
+ const media={id:'media',workshopId:'12345',file:'media/a.png'};
+ const other={id:'other',file:'media/b.png'};
+ settings.library=[gpu,media,other];
+ settings.selectedId=media.id;
+ normalizeLibrary(settings);
+ await createActions(root,settings,async()=>{})({}, {action:'select',selectedId:other.id});
+ const saved=JSON.parse(await readFile(path.join(root,'settings.json'),'utf8'));
+ saved.selectedId=gpu.id;
+ normalizeLibrary(saved);
+ assert.equal(libraryGroups(saved.library,other.id).find(g=>g.entries.length===2).id,media.id);
+ const key=wallpaperRenderKey(gpu,true);
+ assert.equal(wallpaperRenderKey({...gpu,preferredRenderer:true},true),key);
+ assert.notEqual(wallpaperRenderKey({...gpu,limits:{fps:30}},true),key);
+ assert.notEqual(wallpaperRenderKey(gpu,false),key);
+});
+
+test('renderer actions and confirmations refuse a selection that changed while queued',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'cwb-renderer-target-'));
+ await writeFile(path.join(root,'project.json'),JSON.stringify({title:'Scene',type:'scene',file:'scene.json'}));
+ const settings=defaultSettings();
+ settings.library=[{id:'a',mode:'webwallgl',projectRoot:root},{id:'b',file:'media/b.png'}];
+ settings.selectedId='a';
+ const owner={};
+ let rendered=false;
+ const actions=createActions(root,settings,async()=>{rendered=true;});
+ const {confirmation}=await actions(owner,{action:'display-renderer',selectedId:'a',renderMode:'native'});
+ settings.selectedId='b';
+ const confirm={action:'wallpaper-engine-confirm',confirmationToken:confirmation.token,confirmed:true};
+ assert.equal(actions.isRendererConfirmation(owner,confirm),true);
+ await assert.rejects(actions(owner,confirm),/当前壁纸已切换/);
+ await assert.rejects(actions(owner,{action:'display-renderer',selectedId:'a',renderMode:'media'}),/当前壁纸已切换/);
+ assert.equal(settings.selectedId,'b');
+ assert.equal(settings.library.length,2);
+ assert.equal(rendered,false);
 });
