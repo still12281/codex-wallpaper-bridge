@@ -123,14 +123,14 @@ try{
   }
   $launchScript=Join-Path $installDataRoot 'launch-script.txt'
   $activateBeforeIntegrations=-not $PanelUpdateId -and
-    ($installChoices.updateReconnect -eq 'enable' -or $LoginStartup -eq 'enable') -and
+    ($installChoices.updateReconnect -ne 'keep' -or $LoginStartup -ne 'keep') -and
     -not (Test-Path -LiteralPath $launchScript)
   $nextLaunchScript=if($PanelUpdateId){
     Join-Path $installDataRoot ('updates/'+$PanelUpdateId+'/launch-script.pending')
   }else{$launchScript+'.'+[guid]::NewGuid().ToString('N')+'.next'}
   $bootstrapScript=Join-Path $installDirectory 'windows/Start-CodexWallpaper.ps1'
   if($activateBeforeIntegrations){
-    # Both optional integrations require a working entry. On upgrade, the old pointer already provides it.
+    # A failed optional change must leave the first installation usable. Upgrades retain their old pointer.
     [IO.File]::WriteAllText($nextLaunchScript,$bootstrapScript,[Text.UTF8Encoding]::new($false))
     [IO.File]::Move($nextLaunchScript,$launchScript,$false)
   }

@@ -1190,8 +1190,8 @@
     },
     {
       "path": "windows/Install-Wallpaper.ps1",
-      "utf8Bytes": 12727,
-      "sha256": "dd33ed4948b7e1b855457e5ac376cca84e3109274ac7a9d7b857f091526ba90d"
+      "utf8Bytes": 12724,
+      "sha256": "6bfe6e49e627f8c166b1b66cfcbf004280de2c0926ab2ad0ad86a0aa7a419b78"
     },
     {
       "path": "windows/InstallSupport.ps1",
