@@ -77,6 +77,7 @@ test('failing to save a manual selection restores the previous renderer preferen
 test('migration remembers the active legacy variant once and leaves render keys stable',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-renderer-migrate-'));
  const settings=defaultSettings();
+ delete settings.rendererPreferenceMigrated;
  const gpu={id:'gpu',mode:'webwallgl',workshopId:'12345',limits:{fps:24}};
  const media={id:'media',workshopId:'12345',file:'media/a.png'};
  const other={id:'other',file:'media/b.png'};
