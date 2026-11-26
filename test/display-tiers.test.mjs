@@ -13,6 +13,7 @@ test('static and economy stop audio/decorations without changing saved preferenc
  assert.equal(effectiveEntry(s.library[0]).mime,'image/png');assert.equal(effectiveEntry(s.library[0]).mode,undefined);
  s.library[0].displayTier='balanced';assert.equal(effectiveMediaSettings(s).audioFps,20);assert.equal(effectiveMediaSettings(s).audio,true);
  s.systemMedia.audioFps=120;assert.equal(effectiveMediaSettings(s).audioFps,20);
+ s.library[0].displayTier='qhd';assert.equal(effectiveMediaSettings(s).audioFps,30);assert.equal(DISPLAY_TIERS.qhd.maxWidth,2560);assert.equal(DISPLAY_TIERS.qhd.fps,30);assert.equal(DISPLAY_TIERS.qhd.videoTexScale,1);
  s.library[0].displayTier='full';assert.equal(effectiveMediaSettings(s).audioFps,120);assert.equal(DISPLAY_TIERS.full.videoTexScale,1);
  s.library[0].displayTier='custom';assert.equal(effectiveMediaSettings(s).audioFps,120);
 });
@@ -21,6 +22,7 @@ test('tier application persists only after a usable still is ready and preserves
  const actions=createActions(root,s,async()=>applies++,undefined,{captureStatic:async()=>{captures++;await writeFile(path.join(root,'media/still.png'),'fixture');return 'media/still.png';},configureMedia:async x=>configured=x});
  await actions(null,{action:'display-tier',selectedId:s.selectedId,tier:'static'});assert.equal(captures,1);assert.equal(configured.audio,false);assert.equal(s.library[0].mode,'webwallgl');assert.equal(s.library[0].projectRoot,'unchanged');assert.equal(s.systemMedia.audio,true);
  await actions(null,{action:'display-tier',selectedId:s.selectedId,tier:'balanced'});assert.equal(configured.audio,true);assert.equal(s.library[0].limits.fps,24);assert.equal(applies,2);assert.equal(JSON.parse(await readFile(path.join(root,'settings.json'),'utf8')).library[0].displayTier,'balanced');
+ await actions(null,{action:'display-tier',selectedId:s.selectedId,tier:'qhd'});assert.equal(configured.audio,true);assert.equal(configured.audioFps,30);assert.equal(s.library[0].limits.maxWidth,2560);assert.equal(s.library[0].limits.fps,30);assert.equal(s.library[0].videoTexScale,1);assert.equal(JSON.parse(await readFile(path.join(root,'settings.json'),'utf8')).library[0].displayTier,'qhd');
 });
 test('failed tier mount restores original configuration and requested audio',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-tier-fail-')),s=defaultSettings();s.library=[{id:'scene',mode:'webwallgl',limits:{maxWidth:1280,fps:30}}];s.selectedId='scene';s.systemMedia.audio=true;const before=structuredClone(s.library[0]);let n=0;
