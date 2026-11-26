@@ -146,6 +146,7 @@ try{
   <div class="absolute bottom-0" style="position:absolute;inset:auto 0 0;z-index:2"><div data-thread-scroll-footer style="height:114px;position:relative"><div aria-hidden="true" class="bg-surface"></div><input id="draft" value="Draft" style="position:absolute;left:20px;top:20px;width:100px;height:30px;background:rgb(0,200,0);border:0"></div></div></div></div>`;
  await c.evaluate('document.body.innerHTML='+JSON.stringify(fixture)+';true');
  const measure=()=>c.evaluate(`(()=>{const s=document.querySelector('[data-app-action-timeline-scroll]'),f=document.querySelector('[data-thread-scroll-footer]'),d=document.getElementById('draft'),edge=f.getBoundingClientRect().top;return {client:s.clientHeight,range:s.scrollHeight-s.clientHeight,top:s.scrollTop,edge,bottom:s.getBoundingClientRect().bottom,footer:getComputedStyle(f).backgroundColor,editor:document.elementFromPoint(32,edge+28)===d,draft:d.value,history:document.elementsFromPoint(140,edge+40).some(e=>e.id==='history')}})()`);
+ const settleScroll=()=>c.call('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`new Promise(resolve=>{const s=document.querySelector('[data-app-action-timeline-scroll]');let last=s.scrollTop,stable=0,frames=0;const step=()=>{const top=s.scrollTop;stable=top===last?stable+1:0;last=top;if(stable>=4||++frames>=40)resolve(top);else requestAnimationFrame(step);};requestAnimationFrame(step);})`});
  const setHeight=height=>c.evaluate(`(()=>{const s=document.querySelector('[data-app-action-timeline-scroll]');s.style.setProperty('--thread-scroll-padding-bottom',${height+16}+'px');document.querySelector('[data-thread-scroll-footer]').style.height=${height}+'px';return true})()`);
  const apply=()=>c.evaluate('window.__codexWallpaperBridge={ready:true};('+paintShell.toString()+')({palette:{r:20,g:22,b:28,dark:true},visual:{glassOpacity:.5},darkOverlay:.4});true');
  await c.evaluate('('+clearShell.toString()+')();true');
@@ -162,6 +163,7 @@ try{
    const sample=await measure();
    assert.equal(sample.edge,sample.bottom);assert(sample.editor);assert(!sample.history);assert.equal(sample.draft,'Draft');
   }
+  await settleScroll();
   const end=await measure();assert(end.top>0);
   layoutResults.push({footerHeight:height,composerInteractive:end.editor,historyOutsideComposer:!end.history});
  }

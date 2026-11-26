@@ -940,8 +940,8 @@
     },
     {
       "path": "test/theme-contrast-integration.mjs",
-      "utf8Bytes": 27733,
-      "sha256": "a7053fd1ecc349838bcc30d25024962f1c67e62820557aa153ff8a2e71735766"
+      "utf8Bytes": 28172,
+      "sha256": "973d8411ebb872830e7f08383d8d2e1c747b30f45001a89aac0dde3d4327ddf8"
     },
     {
       "path": "test/uninstall-shortcuts.ps1",
