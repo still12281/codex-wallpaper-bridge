@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.0
+
+### Highlights
+
+- Redesigned five-tab System Settings control panel with responsive narrow-width navigation
+- 2K (`2560 / 30 FPS`) display tier preset
+- Per-wallpaper renderer memory and stricter queued-edit binding
+
+### New features
+
+- **Control panel redesign**. Reorganize the embedded panel into five sidebar tabs (`我的壁纸`, `外观与遮罩`, `画质与播放`, `特效与联动`, `适配与管理`) with a compact five-icon top bar below `620 px`, hero preview card, six display-tier cards, segmented controls, switches, sidebar status indicator, and floating toast feedback. Free 8-edge resizing, maximize, and window geometry persistence remain available.
+- **2K display tier**. Add a 2K (`2560 / 30 FPS`) preset alongside the existing display tiers.
+- **Per-wallpaper renderer preference**. Remember each wallpaper's manually selected renderer across switches and restarts, keeping renderer selections and queued edits tied to the active wallpaper entry.
+
+### Fixes
+
+- Reuse loaded GPU scenes after saving a sampled wallpaper palette.
+- Preserve native anchors for project previews and tooltips.
+- Publish the first launcher before enabling startup integrations, and keep the launcher usable when disabling optional startup fails.
+- Release dropped imports cleanly and initialize `rendererPreferenceMigrated` in default settings for fresh configurations.
+
 ## 0.3.7
 
 - Reuse a verified installer when retrying an update to the same version. Report the failed preparation step and its setup log in the wallpaper panel.
