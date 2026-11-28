@@ -4,7 +4,7 @@
 
 A local wallpaper layer for the Codex desktop app on Windows. Pick static images or animated videos inside Codex, browse installed Wallpaper Engine libraries, and adjust playback quality without restarting the client.
 
-**v0.4.1** replaces the rotation multi-select box with a clickable checkbox list (with live selection count and clear action) and fixes panel layout spacing, 6-card display-tier wrapping at the default `700 × 580` width, and multi-control row alignment. Built on **v0.4.0**'s five-tab System Settings panel, **2K (2560 / 30 FPS)** display tier, and per-wallpaper renderer memory.
+**v0.4.2** adds one-time first-run confirmation for save-only/batch-saved live wallpapers (skipped by automatic rotation until manually approved), hardens ZIP `Install.cmd` lookup and bounded `8 MiB` async HTML serving in experimental Chromium Web mode, trims WebGL navigation failure diagnostics, and keeps live wallpapers streaming during catalog search and folder selection. Built on **v0.4.1**'s rotation checklist and **v0.4.0**'s five-tab System Settings panel, **2K (2560 / 30 FPS)** display tier, and per-wallpaper renderer memory.
 
 - Enable WebGL audio response in **特效与联动 → 系统音乐联动** to choose 10, 20, 30, 60, 90 or 120 spectrum updates per second. The default is 30.
 - Use **适配与管理 → 版本与更新** to check for and install a stable release. Exit Codex normally and reopen the wallpaper entry to activate it.
@@ -56,7 +56,7 @@ On Windows 10/11 x64, install and sign in to the official Microsoft Store Codex 
 
 ### Recommended: EXE installer
 
-Download [CodexWallpaperBridge-0.4.1-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.4.1/CodexWallpaperBridge-0.4.1-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
+Download [CodexWallpaperBridge-0.4.2-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.4.2/CodexWallpaperBridge-0.4.2-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
 
 The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal data defaults to `%LOCALAPPDATA%\CodexWallpaperBridge`. On multi-user computers, keep the default `%LOCALAPPDATA%` directory so non-system drives do not inherit write permissions for other local accounts. Uninstall through Windows **Installed apps** to remove the installer-managed program and owned Windows integrations while keeping the data folder. The `.exe.sha256` asset verifies the download.
 
@@ -65,10 +65,10 @@ The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal
 Run this in PowerShell:
 
 ```powershell
-irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.4.1/install.ps1' | iex
+irm 'https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.4.2/install.ps1' | iex
 ```
 
-This downloads the fixed **v0.4.1** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
+This downloads the fixed **v0.4.2** package, verifies its pinned SHA-256, extracts it and runs the existing installer. Choose a separate shortcut or replacement with backup, and whether to enable one graceful reconnect after future updates. Windows PowerShell and PowerShell 7 are supported for this download step; the installer prepares PowerShell 7 when needed. No Git or manual ZIP download is required. Save work and exit ordinary Codex normally after installation, then open the selected entry. The installer does not close your running client.
 
 ### Optional ZIP deployment
 

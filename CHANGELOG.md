@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.2
+
+### Security & Fixes
+
+- **First-run confirmation for saved live wallpapers**. Saving or batch-saving live wallpapers (WebGL, native Wallpaper Engine, or experimental Chromium Web) now stores entries as pending first-run confirmation (`needsRunConfirmation`) without running them. Automatic rotation skips unconfirmed entries, saved cards/previews/rotation checklists display confirmation state, and the first manual apply prompts once and persists approval per project and renderer. Previously saved libraries remain authorized on upgrade.
+- **ZIP `Install.cmd` executable lookup**. Prioritize `CODEX_WALLPAPER_PWSH`, standard fixed install paths (`%ProgramFiles%\PowerShell\7\pwsh.exe`, `%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe`, `%LOCALAPPDATA%\Microsoft\WindowsApps\winget.exe`), and `%SystemRoot%\System32\where.exe $PATH:...` while excluding the current working directory and script directory (both long and 8.3 short paths).
+- **Minimal WebGL frame-navigation diagnostics**. Strip full `frameTree` dumps and unrelated iframe URLs, query parameters, and titles from WebGL sandbox navigation errors, keeping only structured reason codes, match flags, and counts.
+- **Bounded async HTML serving in experimental Chromium Web mode**. Enforce the `8 MiB` size limit and bounded asynchronous stream reading across all `.html`/`.htm` files served for a project (normalized by `path.resolve` before routing so trailing-slash or `/.` variants cannot fall through to synchronous reads), while keeping vendored `vendor/dsh-wallpaper/serve.js` unmodified.
+- **Multi-user directory guidance**. Document in `SECURITY.md`, `README.md`, `README.en.md`, and `docs/INSTALL.zh-CN.md` that multi-user Windows systems should keep the default `%LOCALAPPDATA%\CodexWallpaperBridge` directory because non-system drives commonly inherit `Authenticated Users` Modify permissions.
+
+### Performance
+
+- **Keep live wallpaper streaming during catalog search and folder selection**. Move read-only `engine-list` directory scanning and `engine-pick-folder` dialogs outside the action lock that pauses `stream()` frame delivery, entering the serialized queue only briefly to persist `settings.engineSearch`.
+
 ## 0.4.1
 
 ### Improvements
