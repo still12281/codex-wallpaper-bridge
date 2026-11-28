@@ -5,6 +5,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import path from 'node:path';
 import {findFFmpeg} from './runtime-paths.mjs';
+import {resolveAuthorizedMedia} from './media-file-source.mjs';
 const run=promisify(execFile);
 const fingerprints=new Map(),previews=new Map();let previewBytes=0;
 const version=(file,info)=>JSON.stringify([file,info.dev,info.ino,info.size,info.mtimeMs,info.ctimeMs]);
@@ -23,10 +24,10 @@ async function projectPreview(root){
  const project=JSON.parse(await readFile(metadata,'utf8'));if(typeof project.preview!=='string'||path.isAbsolute(project.preview)||!/^\.(jpg|jpeg|png|webp|gif)$/i.test(path.extname(project.preview)))return null;
  const file=await realpath(path.join(canonical,project.preview)),relative=path.relative(canonical,file);if(relative.startsWith('..')||path.isAbsolute(relative)||(await stat(file)).size>8*1024*1024)return null;return file;
 }
-export async function libraryPreview(root,entry){
+export async function libraryPreview(root,entry,{settings}={}){
  const info={name:entry.name,label:libraryMode(entry),mode:entry.mode||'media',preview:null};
  try{
-  let file;if(['webwallgl','realtime'].includes(entry.mode))file=await projectPreview(entry.projectRoot);else{file=await realpath(path.resolve(root,entry.file));const relative=path.relative(await realpath(root),file);if(relative.startsWith('..')||path.isAbsolute(relative))throw Error('预览缓存路径越界');}
+  let file;if(['webwallgl','realtime'].includes(entry.mode))file=await projectPreview(entry.projectRoot);else{file=(await resolveAuthorizedMedia(root,settings,entry.file)).path;}
   if(!file)return info;const before=await stat(file),key=version(file,before);if(previews.has(key)){const cached=previews.get(key);previews.delete(key);previews.set(key,cached);info.preview=cached;return info;}
   const format={'.jpg':'jpeg_pipe','.jpeg':'jpeg_pipe','.png':'png_pipe','.webp':'webp_pipe','.gif':'gif','.mp4':'mov','.webm':'matroska'}[path.extname(file).toLowerCase()];if(!format)return info;
   const mime={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.gif':'image/gif'}[path.extname(file).toLowerCase()];
@@ -34,6 +35,6 @@ export async function libraryPreview(root,entry){
   else{const ffmpeg=await findFFmpeg();const {stdout}=await run(ffmpeg,['-hide_banner','-loglevel','error','-nostdin','-threads','1','-protocol_whitelist','file,pipe','-f',format,'-i',file,'-an','-vf','scale=640:360:force_original_aspect_ratio=decrease','-frames:v','1','-threads','1','-f','image2pipe','-vcodec','mjpeg','pipe:1'],{windowsHide:true,encoding:'buffer',timeout:12000,maxBuffer:2*1024*1024});info.preview='data:image/jpeg;base64,'+stdout.toString('base64');}
   if(version(file,await stat(file))!==key)throw Error('预览素材已改变');
   const size=Buffer.byteLength(info.preview||'');if(size&&size<=8*1024*1024){previews.set(key,info.preview);previewBytes+=size;while(previews.size>64||previewBytes>8*1024*1024){const oldest=previews.keys().next().value;previewBytes-=Buffer.byteLength(previews.get(oldest));previews.delete(oldest);}}
- }catch{info.preview=null;info.previewUnavailable=true;}
+ }catch(error){info.preview=null;info.previewUnavailable=true;if(error?.code==='CWB_MEDIA_MISSING'){info.missing=true;info.error=error.message;}}
  return info;
 }

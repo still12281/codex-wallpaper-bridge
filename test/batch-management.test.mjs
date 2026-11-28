@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile,readFile,readdir,unlink} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,readFile,readdir,realpath,unlink} from 'node:fs/promises';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import path from 'node:path';
@@ -192,22 +192,23 @@ test('display-tier upgrades static images from source and cleans orphan variant 
  assert.equal(downscaledProbe.width,1280);
  const originalCopy=imgEntry.file;
 
- // Switch static image to qhd (2560) -> must regenerate from source at 2560 width.
+ // Switch static image to qhd (2560) -> compatible 2K original is referenced directly without copying into media/.
  await actions(owner,{action:'display-tier',selectedId:imgEntry.id,tier:'qhd'});
  assert.equal(imgEntry.displayTier,'qhd');
  assert.equal(imgEntry.limits.maxWidth,2560);
  assert.equal(imgEntry.customDisplay.file,originalCopy);
- const upgradedProbe=await probeMedia(path.join(root,imgEntry.file));
+ assert.equal(imgEntry.file,await realpath(img));
+ assert.equal(imgEntry.importInfo.route,'direct');
+ const upgradedProbe=await probeMedia(path.resolve(root,imgEntry.file));
  assert.equal(upgradedProbe.width,2560);
- const qhdFile=imgEntry.file;
+ assert.deepEqual(await readdir(mediaDir),[path.basename(originalCopy)]);
 
- // Switch static image to economy (960) -> old qhd variant must be cleaned, customDisplay kept.
+ // Switch static image to economy (960) -> generates managed variant, preserves customDisplay and original source.
  await actions(owner,{action:'display-tier',selectedId:imgEntry.id,tier:'economy'});
  assert.equal(imgEntry.displayTier,'economy');
- const economyProbe=await probeMedia(path.join(root,imgEntry.file));
+ const economyProbe=await probeMedia(path.resolve(root,imgEntry.file));
  assert.equal(economyProbe.width,960);
  const filesAfterEconomy=await readdir(mediaDir);
- assert(!filesAfterEconomy.includes(path.basename(qhdFile)),'previous qhd variant should be deleted: '+filesAfterEconomy);
  assert(filesAfterEconomy.includes(path.basename(originalCopy)),'customDisplay backup should be preserved');
  assert(filesAfterEconomy.includes(path.basename(imgEntry.file)),'active economy file should exist');
 
@@ -220,7 +221,7 @@ test('display-tier upgrades static images from source and cleans orphan variant 
  assert(!filesAfterCustom.includes(path.basename(economyFile)),'economy variant should be deleted on return to custom');
  assert.deepEqual(filesAfterCustom,[path.basename(originalCopy)]);
 
- // 2. Video repeated display-tier switches must leave zero orphan variants.
+ // 2. Video repeated display-tier switches direct-read compatible tiers and leave zero orphan variants.
  const videoActions=createActions(root,settings,async()=>{},undefined,{configureMedia:async()=>{},pickMediaFile:async()=>({file:vid,files:[vid]})});
  const pickedVid=await videoActions(owner,{action:'media-pick',operationId:'pick-vid'});
  await videoActions(owner,{action:'wallpaper-engine',projectToken:pickedVid.projectToken,apply:true,profile:{maxWidth:1280,fps:24}});
@@ -234,17 +235,20 @@ test('display-tier upgrades static images from source and cleans orphan variant 
  const ecoPlan=await planMedia(root,vidEntry.sourcePath,'video/mp4',{maxWidth:960,fps:12});
  assert.equal(ecoPlan.route,'cache');
 
+ // Switching to smooth (1920/30) matches the 1080p30 source -> direct external reference and economy variant cleaned.
  await videoActions(owner,{action:'display-tier',selectedId:vidEntry.id,tier:'smooth'});
- const vidSmooth=vidEntry.file;
+ assert.equal(vidEntry.file,await realpath(vid));
+ assert.equal(vidEntry.importInfo.route,'direct');
  let dirFiles=await readdir(mediaDir);
  assert(!dirFiles.includes(path.basename(vidEco)),'video economy variant should be removed after switching to smooth: '+dirFiles);
  assert(dirFiles.includes(path.basename(vidOriginal)));
- assert(dirFiles.includes(path.basename(vidSmooth)));
+ assert.deepEqual(dirFiles.sort(),[path.basename(originalCopy),path.basename(vidOriginal)].sort());
 
  await videoActions(owner,{action:'display-tier',selectedId:vidEntry.id,tier:'balanced'});
  const vidBal=vidEntry.file;
+ assert(vidBal.startsWith('media/variant-'));
  dirFiles=await readdir(mediaDir);
- assert(!dirFiles.includes(path.basename(vidSmooth)),'video smooth variant should be removed after switching to balanced: '+dirFiles);
+ assert(dirFiles.includes(path.basename(vidBal)));
 
  await videoActions(owner,{action:'display-tier',selectedId:vidEntry.id,tier:'custom'});
  dirFiles=await readdir(mediaDir);

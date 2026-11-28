@@ -28,7 +28,7 @@ import {libraryGroups,wallpaperRenderKey} from './library-model.mjs';
 import {createPaletteTracker} from './appearance-model.mjs';
 import {playbackMetrics} from './playback-metrics.mjs';
 import {installSceneResourceCache,callSceneResourceCache} from './scene-resource-cache.mjs';
-import {bindMediaFile} from './media-file-source.mjs';
+import {bindMediaFile,resolveAuthorizedMedia} from './media-file-source.mjs';
 import {syncStartupAppearance,clearStartupAppearance} from './startup-appearance.mjs';
 
 const codeRoot=path.dirname(fileURLToPath(import.meta.url));
@@ -345,15 +345,16 @@ async function mount(c,target,{reconnect=false}={}){c.playbackReading=null;
    c.captureGeneration=(c.captureGeneration||0)+1;c.captureSource=source;c.hardwareDelivery=null;c.drawInFlight=0;c.captureBlocked=false;delete c.captureError;c.captureSentSequence=source.sequence;c.captureSequence=source.sequence;c.isRealtime=true;c.capturePaused=installed.paused;c.nextCapturePoll=0;c.reportedCaptureError=false;c.installed=true;return;
  }
  c.isRealtime=false;
- const mediaPath=path.resolve(root,entry.file),fileBacked=entry.mime?.startsWith('video/'),mediaLimit=fileBacked?Number.MAX_SAFE_INTEGER:Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024),info=await stat(mediaPath);
- if(!mediaPath.startsWith(root+path.sep)||info.size>mediaLimit)throw Error('Unsupported local media path or size');
+ const resolved=await resolveAuthorizedMedia(root,settings,entry.file);
+ const mediaPath=resolved.path,info=resolved.info,fileBacked=entry.mime?.startsWith('video/'),mediaLimit=fileBacked?Number.MAX_SAFE_INTEGER:Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024);
+ if(info.size>mediaLimit)throw Error('Unsupported local media path or size');
  status.mediaBytes=info.size;status.phase='loading-lightweight-video';delete status.error;void save();assertCurrent();
  const candidateId='media-'+randomUUID();await c.evaluate('('+prepareLayer.toString()+')('+info.size+','+JSON.stringify(entry.mime)+','+JSON.stringify(candidateId)+')');
  const key=createHash('sha256').update(JSON.stringify([mediaPath,info.size,info.mtimeMs,info.ctimeMs])).digest('hex');
- if(fileBacked){await bindMediaFile(c,root,entry.file,candidateId,{isCurrent});}
+ if(fileBacked){await bindMediaFile(c,root,entry.file,candidateId,{isCurrent,settings});}
  else if(!await callSceneResourceCache(c,'cached',[key,info.size,{media:true,candidateId}],{isCurrent})){
   const handle=candidateId;let bytes;
-  try{assertCurrent();bytes=await readFile(mediaPath);if(bytes.length!==info.size)throw Error('壁纸素材在加载时改变，请重试');await c.evaluate('window.__cwbSceneResources.begin('+JSON.stringify(handle)+','+JSON.stringify(key)+','+bytes.length+');true');
+  try{assertCurrent();bytes=await readFile(mediaPath);const after=await resolveAuthorizedMedia(root,settings,entry.file);if(after.path!==mediaPath||after.info.size!==info.size||after.info.mtimeMs!==info.mtimeMs||after.info.ctimeMs!==info.ctimeMs||bytes.length!==info.size)throw Error('壁纸素材在加载时改变，请重试');await c.evaluate('window.__cwbSceneResources.begin('+JSON.stringify(handle)+','+JSON.stringify(key)+','+bytes.length+');true');
    for(let offset=0;offset<bytes.length;offset+=4*1024*1024){assertCurrent();await c.evaluate('window.__cwbSceneResources.receive('+JSON.stringify(handle)+','+JSON.stringify(bytes.subarray(offset,offset+4*1024*1024).toString('base64'))+','+offset+');true');}
    assertCurrent();await callSceneResourceCache(c,'complete',[handle,{media:true,candidateId}],{isCurrent});
   }finally{bytes=null;await c.evaluate('window.__cwbSceneResources?.abort('+JSON.stringify(handle)+');true').catch(()=>{});}
@@ -426,8 +427,8 @@ async function tick(){
      await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbCaptureStats?.('+JSON.stringify(note)+');true');
     }
 
-    c.failures=0;c.retryAt=0;delete status.error;
-   }catch(error){c.installed=false;if(error.code==='CWB_SELECTION_SUPERSEDED'){c.retryAt=0;Object.assign(targetState,{phase:'selection-superseded'});continue;}c.failures=(c.failures||0)+1;c.retryAt=Date.now()+Math.min(30000,1000*2**Math.min(c.failures-1,5));c.lastError=error.message;Object.assign(targetState,{phase:'background-retrying',error:error.message,retryAt:new Date(c.retryAt).toISOString()});}
+    c.failures=0;c.retryAt=0;c.reportedMissingError=false;delete status.error;
+   }catch(error){c.installed=false;if(error.code==='CWB_SELECTION_SUPERSEDED'){c.retryAt=0;Object.assign(targetState,{phase:'selection-superseded'});continue;}if(error.code==='CWB_MEDIA_MISSING'){try{const hasControls=await c.evaluate('!!document.getElementById("codex-wallpaper-controls")');if(!hasControls){const {installPanel}=await import('./wallpaper-panel.mjs?v='+(await stat(path.join(codeRoot,'wallpaper-panel.mjs'))).mtimeMs);await c.evaluate('('+installPanel.toString()+')('+JSON.stringify(settings)+','+JSON.stringify(c.token)+')');}if(!c.reportedMissingError){c.reportedMissingError=true;await c.evaluate('document.getElementById("codex-wallpaper-controls")?.__cwbRuntimeError?.('+JSON.stringify(error.message)+',"壁纸原文件不可用",false);true');}}catch{}}c.failures=(c.failures||0)+1;c.retryAt=Date.now()+Math.min(30000,1000*2**Math.min(c.failures-1,5));c.lastError=error.message;Object.assign(targetState,{phase:'background-retrying',error:error.message,retryAt:new Date(c.retryAt).toISOString()});}
   }
   await publishTargets(observations);
  }catch(error){const ready=status.targets.find(targetReady);status.phase=ready?.phase||'waiting-for-cdp';if(ready)status.syncError=error.message;else status.error=error.message;void save()}

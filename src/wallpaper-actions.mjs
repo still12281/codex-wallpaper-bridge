@@ -206,7 +206,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    }
    const previous=structuredClone(entry);let created,convertedCacheKey;
    try{
-    const customKeys=['limits','quality','videoTexScale','file','mime'];
+    const customKeys=['limits','quality','videoTexScale','file','mime','importInfo'];
     if(req.tier!=='custom'&&(!entry.displayTier||entry.displayTier==='custom'))entry.customDisplay=Object.fromEntries(customKeys.filter(k=>entry[k]!==undefined).map(k=>[k,structuredClone(entry[k])]));
     if(req.tier==='custom'&&entry.customDisplay){for(const k of customKeys){if(k in entry.customDisplay)entry[k]=entry.customDisplay[k];else delete entry[k];}delete entry.customDisplay;}
     if(req.tier==='static'){
@@ -215,21 +215,25 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
      const limits=realtimeProfile(req.tier==='full'?{...tier,maxHeight:2160}:tier);if(req.tier==='full'&&entry.mode==='webwallgl')limits.exactResolution=true;
      if(['webwallgl','realtime'].includes(entry.mode)){entry.limits=limits;entry.quality={antiAliasing:req.tier==='full'?(entry.customDisplay?.quality?.antiAliasing||entry.quality?.antiAliasing||'fxaa'):'off',particles:tier.particles,postProcessing:tier.postProcessing};entry.videoTexScale=tier.videoTexScale;}
      else if(entry.mime?.startsWith('video/')||entry.mime?.startsWith('image/')){
-      const input=entry.sourcePath||path.join(root,entry.sourceFile||entry.file);
-      try{await stat(input)}catch{throw Error('原素材不可用，请重新导入后调整规格')}
-      const converted=await convertMedia(root,input,entry.sourceMime||entry.mime,entry.id,limits,options(c,req));
-      const ext=path.extname(converted.file)||'.mp4';
-      convertedCacheKey=converted.cacheKey;
-      created='media/variant-'+randomUUID()+ext;await rename(path.join(root,converted.file),path.join(root,created));entry.file=created;entry.mime=converted.mime;entry.limits=converted.limits;
+      const input=entry.sourcePath||path.resolve(root,entry.sourceFile||entry.file);
+      try{await stat(input)}catch{throw Error('原壁纸文件已移动、改名或被删除，原素材不可用，请重新导入后调整规格')}
+      const converted=await convertMedia(root,input,entry.sourceMime||entry.mime,entry.id,limits,{...options(c,req),allowDirect:!!entry.sourcePath});
+      if(converted.direct){
+       entry.file=converted.file;entry.mime=converted.mime;entry.limits=converted.limits;entry.importInfo=converted.importInfo;
+      }else{
+       const ext=path.extname(converted.file)||'.mp4';
+       convertedCacheKey=converted.cacheKey;
+       created='media/variant-'+randomUUID()+ext;await rename(path.join(root,converted.file),path.join(root,created));entry.file=created;entry.mime=converted.mime;entry.limits=converted.limits;entry.importInfo=converted.importInfo;
+      }
      }
     }
     entry.displayTier=req.tier;await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings);
    }catch(error){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previous);await services.configureMedia?.(effectiveMediaSettings(settings));await apply();if(created)await removeManagedFile(root,settings,created);throw error;}
-   if(convertedCacheKey&&entry.file)await rememberConversion(root,convertedCacheKey,entry.file).catch(()=>{});
+   if(convertedCacheKey&&entry.file&&!path.isAbsolute(entry.file))await rememberConversion(root,convertedCacheKey,entry.file).catch(()=>{});
    for(const oldFile of new Set([previous.file,previous.staticFile,previous.customDisplay?.file].filter(Boolean)))await removeManagedFile(root,settings,oldFile).catch(()=>{});
    return {config:settings,message:'已应用“'+tier.name+'”。'+tier.description+'；渲染器兼容范围不因档位改变。'};
   }
-  if(req.action==='library-preview'){const entry=settings.library.find(e=>e.id===req.selectedId);if(!entry)throw Error('壁纸不存在');return libraryPreview(root,entry);}
+  if(req.action==='library-preview'){const entry=settings.library.find(e=>e.id===req.selectedId);if(!entry)throw Error('壁纸不存在');return libraryPreview(root,entry,{settings});}
   if(req.action==='duplicate-use'){
    const entry=settings.library.find(e=>e.id===req.existingId);if(!entry||typeof req.apply!=='boolean')throw Error('已有壁纸不存在');if(!req.apply)return {config:settings,message:'已保留已有壁纸，未重复导入。'};return action(c,{action:'select',selectedId:entry.id});
   }
@@ -307,7 +311,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸；后续切换和轮播不再提醒。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
   if(req.action==='engine-list'){const {search,result}=await searchEngine(req);await commitEngineSearch(search);return result}
-  if(req.action==='engine-inspect'){const item=await catalog.resolve(req.projectToken);if(req.renderMode==='chromium-web'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='web',needsRealtime:true,mode:'chromium-web',label:project.type==='web'?'本地网页浏览器（试验）':'仅网页项目可使用浏览器模式',reason:'无窗口 Chromium 执行本地 HTML/脚本；不加载外网，不含系统音频或鼠标转发；暂停关闭浏览器，恢复重新加载。原版兼容模式仍可用。'}};}if(req.renderMode==='webwallgl'&&item.kind!=='media'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='scene',needsRealtime:true,mode:'webwallgl',label:project.type==='scene'?'WebWallGL 沙箱实时渲染':'当前网页不能用 WebGL 模式导入',reason:project.type==='scene'?'不启动 Wallpaper Engine 源窗口；执行场景脚本，效果兼容性取决于此项目。':'请改为原生实时模式，网页资源通道尚未通过验收。'}};}return {inspection:item.kind==='media'?{supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:item.mime.startsWith('video/')?'当前选中的是视频，生成副本后直接播放。':'当前选中的是图片，可直接导入。'}:await inspectEngineProject(item.root,req.renderMode,settings.rendererPriority)}}
+  if(req.action==='engine-inspect'){const item=await catalog.resolve(req.projectToken);if(req.renderMode==='chromium-web'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='web',needsRealtime:true,mode:'chromium-web',label:project.type==='web'?'本地网页浏览器（试验）':'仅网页项目可使用浏览器模式',reason:'无窗口 Chromium 执行本地 HTML/脚本；不加载外网，不含系统音频或鼠标转发；暂停关闭浏览器，恢复重新加载。原版兼容模式仍可用。'}};}if(req.renderMode==='webwallgl'&&item.kind!=='media'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='scene',needsRealtime:true,mode:'webwallgl',label:project.type==='scene'?'WebWallGL 沙箱实时渲染':'当前网页不能用 WebGL 模式导入',reason:project.type==='scene'?'不启动 Wallpaper Engine 源窗口；执行场景脚本，效果兼容性取决于此项目。':'请改为原生实时模式，网页资源通道尚未通过验收。'}};}return {inspection:item.kind==='media'?{supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:item.mime.startsWith('video/')?'当前选中的是视频，兼容规格直接引用原文件播放，超限时生成播放副本。':'当前选中的是图片，兼容规格直接引用原文件，超限时生成显示副本。'}:await inspectEngineProject(item.root,req.renderMode,settings.rendererPriority)}}
   if(req.action==='engine-pick-folder')return pickEngineFolder();
   if(req.action==='media-pick'){
    const signal=options(c,req).signal;
@@ -395,11 +399,11 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
     try{if(!hot||!await services.updateFrameRate?.(entry.limits.fps))await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings)}catch(error){entry.limits=previous;entry.displayTier=previousTier;if(previousCustom)entry.customDisplay=previousCustom;settings.playback=oldProfile;let restored=false;if(hot)try{restored=!!await services.updateFrameRate?.(previous.fps);}catch{}try{if(!restored)await apply();await services.configureMedia?.(effectiveMediaSettings(settings));}catch(restoreError){error.message+='；旧场景恢复失败：'+restoreError.message;}throw error}
     return {config:settings,message:entry.mode==='webwallgl'?'已更新GPU渲染上限；实际帧率受屏幕刷新、场景与负载限制，不补帧。':'已更新实时输出分辨率与采集帧率；Wallpaper Engine 全局帧率未修改。'};
    }
-   const input=entry.sourcePath||path.join(root,entry.sourceFile||entry.file);
-   try{await stat(input)}catch{throw Error('原素材不可用，请重新导入后调整规格')}
+   const input=entry.sourcePath||path.resolve(root,entry.sourceFile||entry.file);
+   try{await stat(input)}catch{throw Error('原壁纸文件已移动、改名或被删除，原素材不可用，请重新导入后调整规格')}
    const profile={maxWidth:Number(req.maxWidth),fps:Number(req.fps)};
    if(entry.displayTier!=='static'&&entry.limits?.maxWidth===profile.maxWidth&&(!entry.mime.startsWith('video/')||entry.limits?.fps===profile.fps))return {config:settings,message:'当前已是所选规格，无需重新生成。'};
-   const converted=await convertMedia(root,input,entry.sourceMime||entry.mime,entry.id,profile,options(c,req));
+   const converted=await convertMedia(root,input,entry.sourceMime||entry.mime,entry.id,profile,{...options(c,req),allowDirect:!!entry.sourcePath});
    const previous={...entry},oldProfile=settings.playback;settings.playback=profile;entry.displayTier='custom';delete entry.customDisplay;
    try{await commitConverted(root,settings,entry,converted,previous,apply,saveConfig)}catch(e){settings.playback=oldProfile;throw e}
    if(previous.customDisplay?.file)await removeManagedFile(root,settings,previous.customDisplay.file).catch(()=>{});
@@ -455,10 +459,10 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   }
   if(req.action!=='import-end')throw Error('不支持的操作');
   if(u.received!==u.size)throw Error('文件未传输完整');if(u.handle){await u.handle.close();u.handle=null;}
-  await planMedia(root,path.join(root,u.file),u.mime,req.profile?realtimeProfile(req.profile):settings.playback,options(c,req));const contentHash=await hashMedia(path.join(root,u.file),options(c,req));
+  await planMedia(root,path.join(root,u.file),u.mime,req.profile?realtimeProfile(req.profile):settings.playback,{...options(c,req),allowDirect:false});const contentHash=await hashMedia(path.join(root,u.file),options(c,req));
   await populateHashes({...options(c,req),bytes:u.size});
   const existingUpload=duplicateEntry(settings,{contentHash});if(existingUpload){uploads.delete(u.id);await removeManagedFile(root,settings,u.file);return duplicate(existingUpload,req.apply!==false,req.duplicatePolicy);}
-  const converted=await convertMedia(root,path.join(root,u.file),u.mime,u.id,req.profile?realtimeProfile(req.profile):settings.playback,options(c,req));
+  const converted=await convertMedia(root,path.join(root,u.file),u.mime,u.id,req.profile?realtimeProfile(req.profile):settings.playback,{...options(c,req),allowDirect:false});
   await committing(c,req,converted);const entry={id:u.id,name:u.name,sourceFile:u.file,sourceMime:u.mime,contentHash};const previous=settings.selectedId,applyNow=req.apply!==false;settings.library.push(entry);if(applyNow)settings.selectedId=entry.id;
   try{await commitConverted(root,settings,entry,converted,{...entry},applyNow?apply:async()=>{},applyNow?()=>saveManualSelection(entry):saveConfig)}catch(e){settings.library.pop();settings.selectedId=previous;if(applyNow)await apply();throw e}uploads.delete(u.id);return {config:settings};
  };

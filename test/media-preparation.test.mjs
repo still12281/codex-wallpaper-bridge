@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile,readFile,readdir,stat} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,readFile,readdir,stat,realpath} from 'node:fs/promises';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import os from 'node:os';import path from 'node:path';
@@ -10,14 +10,23 @@ import {planMedia,probeMedia} from '../src/media-preflight.mjs';
 import {createActions} from '../src/wallpaper-actions.mjs';
 import {commitConverted} from '../src/media-store.mjs';
 const run=promisify(execFile),profile={maxWidth:1280,fps:24};
-test('real media preparation copies compatible bytes, remuxes audio and filters only when needed',async()=>{
+test('real media preparation direct-references compatible external files (including audio MP4), keeps managed copy/remux when disabled, and transcodes only when needed',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-media-prepare-'));await mkdir(path.join(root,'media'));const ffmpeg=await findFFmpeg();
  const video=path.join(root,'source.mp4'),audio=path.join(root,'audio.mp4'),image=path.join(root,'source.png');
  await run(ffmpeg,['-v','error','-nostdin','-f','lavfi','-i','testsrc2=size=320x180:rate=24','-t','1','-c:v','libx264','-pix_fmt','yuv420p','-threads','2',video],{windowsHide:true});
  await run(ffmpeg,['-v','error','-nostdin','-i',video,'-f','lavfi','-i','sine=frequency=440','-t','1','-c:v','copy','-c:a','aac',audio],{windowsHide:true});
  await run(ffmpeg,['-v','error','-nostdin','-f','lavfi','-i','color=red:s=32x32','-frames:v','1','-threads','1',image],{windowsHide:true});
- for(const [file,mime,id]of [[video,'video/mp4','a1'],[image,'image/png','a2']]){const result=await convertMedia(root,file,mime,id,profile);assert.equal(result.importInfo.route,'copy');assert.deepEqual(await readFile(path.join(root,result.file)),await readFile(file));assert.equal(result.mime,mime);}
- const remux=await convertMedia(root,audio,'video/mp4','a3',profile);assert.equal(remux.importInfo.route,'remux');assert.equal((await probeMedia(path.join(root,remux.file))).audio,false);assert.equal((await probeMedia(audio)).audio,true);
+ for(const [file,mime,id]of [[video,'video/mp4','a1'],[audio,'video/mp4','a2'],[image,'image/png','a3']]){
+  const direct=await convertMedia(root,file,mime,id,profile);
+  assert.equal(direct.importInfo.route,'direct');
+  assert.equal(direct.direct,true);
+  assert.equal(direct.cacheKey,null);
+  assert.equal(direct.file,await realpath(file));
+  assert.equal(direct.mime,mime);
+ }
+ assert.deepEqual(await readdir(path.join(root,'media')),[]);
+ for(const [file,mime,id]of [[video,'video/mp4','b1'],[image,'image/png','b2']]){const result=await convertMedia(root,file,mime,id,profile,{allowDirect:false});assert.equal(result.importInfo.route,'copy');assert.deepEqual(await readFile(path.join(root,result.file)),await readFile(file));assert.equal(result.mime,mime);}
+ const remux=await convertMedia(root,audio,'video/mp4','b3',profile,{allowDirect:false});assert.equal(remux.importInfo.route,'remux');assert.equal((await probeMedia(path.join(root,remux.file))).audio,false);assert.equal((await probeMedia(audio)).audio,true);
  const transcode=await convertMedia(root,video,'video/mp4','a4',{...profile,fps:12});assert.equal(transcode.importInfo.route,'transcode');assert((await probeMedia(path.join(root,transcode.file))).fps<=12.01);
  const entry={id:'a4'},settings={library:[entry]};await commitConverted(root,settings,entry,transcode,{},async()=>{},async()=>{});
  const reused=await convertMedia(root,video,'video/mp4','a6',{...profile,fps:12});assert.equal(reused.importInfo.route,'cache');assert.deepEqual(await readFile(path.join(root,reused.file)),await readFile(path.join(root,entry.file)));assert.equal(reused.mime,'video/mp4');

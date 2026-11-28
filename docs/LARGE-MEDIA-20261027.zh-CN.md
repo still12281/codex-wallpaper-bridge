@@ -21,6 +21,22 @@
 
 外部证据：`../large-media-work/{result.json,native-result.json,panel-result.json,deploy-result.json,backup/}`及同目录脚本。生成素材、用户配置和日志不入Git；没有新增常驻监控或生产端强制GC。
 
+## 外部引用直读（兼容图片与 MP4 原片）
+
+- **免转码直读策略（`src/media-preflight.mjs`、`src/media-converter.mjs`、`src/wallpaper-actions.mjs`）**：
+  - 对通过本机选择器、文件夹扫描或 Wallpaper Engine 图片/视频项目导入的外部本地文件，当规格满足当前播放档位时，不再复制到 `media/`，而是将规范化后的外部 `sourcePath` 直接登记为播放路径（`route: "direct"`，零额外空间占用）。
+  - 兼容图片条件：`image/png`、`image/jpeg`、`image/webp`，无旋转元数据，分辨率不超过当前档位上限且文件大小不超过对应图片容量保护（32/128 MiB）。
+  - 兼容视频条件：`video/mp4` 容器、`h264` 编码、`yuv420p` 像素格式、方形像素、无旋转、分辨率与帧率不超过当前档位上限且视频流码率在直读阈值内；携带音轨的兼容 MP4 同样直接外部引用，由播放器 `<video muted>` 强制静音，不再额外 `remux` 生成副本。
+  - 分辨率/帧率超标、非 MP4/H.264/yuv420p（如 HEVC、MKV、WebM、GIF、10-bit）、带旋转或超高码率的原片，继续按默认温和档位（`1280 / 24 FPS`）经 `ffmpeg` 生成 `media/` 受管副本；旧浏览器分块上传入口（`import-end`）也继续使用受管路径。
+  - 切换快捷显示档位或手动调整播放规格时，仅在需要缩放/转码时生成受管变体；切回兼容规格或恢复 `custom` 时重新直读原片，并自动清理不再被引用的旧受管变体。
+- **安全围栏（`src/media-file-source.mjs`、`src/video-cdp-host.mjs`、`src/library-preview.mjs`）**：
+  - 媒体读取和缩略图预览统一通过 `resolveAuthorizedMedia` 校验，仅允许两类路径：`media/` 下的受管媒体文件，以及已在 `settings.library` 登记的本机外部媒体路径。
+  - 统一拒绝 UNC/网络共享路径、`..` 相对跳转、非受支持媒体扩展名，以及文件自身或任意上级目录上的符号链接/目录联接；加载视频和图片前后复核 `realpath`、`size`、`mtimeMs` 与 `ctimeMs`，防止加载期间路径替换或文件变更。
+- **原文件失效、删除与备份恢复（`src/media-store.mjs`、`src/video-cdp-host.mjs`、`tools/library-maintenance.mjs`）**：
+  - 外部原文件被移动、改名或删除（例如 Steam 取消订阅）时，手动切换返回明确错误并回滚保留当前背景，轮播跳过失效项继续切换下一张，缩略图预览降级返回不可用状态；若启动时当前选中项已失效，宿主仍保持设置面板可打开并提示错误。
+  - `removeManagedFile` 仅删除 `media/` 与 `staging/` 下的相对受管普通文件，拒绝绝对路径与符号链接；删除外部引用条目时只清理衍生受管变体和静态截图，不触碰外部原文件。
+  - `tools/library-maintenance.mjs` 的备份与恢复同步支持外部媒体引用（清单标记 `externalMedia: "references-only"`），保留路径引用且不复制大体积外部原片，拒绝 UNC 路径，并继续对受管文件执行流式 SHA-256 校验；`diagnose` 可检出丢失的外部媒体路径。
+
 ## 几GB场景如何处理
 
 视频现在有按需文件读取路径；GPU Scene包仍由WebWallGL整体解析，现有单资源512MiB/累计768MiB与纹理预算不因此解除。几GB场景优先选择已有“原版兼容模式”，让Wallpaper Engine读取和渲染，Codex接收采集帧；其实际可加载程度仍取决于原引擎及机器资源。没有宣称GPU几GB包已支持。

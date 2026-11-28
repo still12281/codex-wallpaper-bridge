@@ -8,6 +8,7 @@ import {hashMedia} from '../src/library-preview.mjs';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const absolute=p=>{if(!p||!path.isAbsolute(p))throw Error('Provide explicit absolute directories.');return path.resolve(p);};
 const inside=(root,file)=>{const relative=path.relative(root,file);return relative&&!relative.startsWith('..')&&!path.isAbsolute(relative);};
+const isUnc=value=>typeof value==='string'&&/^(?:\\\\|\/\/)/.test(value);
 const owned=relative=>/^(media|staging)\/[A-Za-z0-9._/-]+$/.test(relative)&&!relative.split('/').includes('..');
 async function emptyDestination(directory){try{if((await readdir(directory)).length)throw Error('Destination must be empty; existing data will not be overwritten.');}catch(e){if(e.code!=='ENOENT')throw e;}await mkdir(directory,{recursive:true});}
 async function configAt(root){const bytes=await readFile(path.join(root,'settings.json'));const settings=JSON.parse(bytes.toString('utf8'));if(!Array.isArray(settings.library)||settings.library.length>3000)throw Error('Invalid wallpaper library.');return {bytes,settings};}
@@ -16,13 +17,13 @@ async function copyExclusive(from,to){await mkdir(path.dirname(to),{recursive:tr
 async function backup(dataRoot,destination){
  dataRoot=await realpath(absolute(dataRoot));destination=absolute(destination);if(destination===dataRoot||inside(dataRoot,destination))throw Error('Backup must be outside the data directory.');
  const original=await configAt(dataRoot),settings=structuredClone(original.settings),files=new Map();
- for(const entry of settings.library)for(const holder of [entry,entry.customDisplay].filter(Boolean))for(const key of ['file','sourceFile','sourcePath','staticFile']){const value=holder[key];if(!value)continue;let resolved=path.resolve(dataRoot,value);try{resolved=await realpath(resolved);}catch(error){if(error.code!=='ENOENT'||!path.isAbsolute(value)||inside(dataRoot,resolved))throw error;}if(!inside(dataRoot,resolved)){if(!path.isAbsolute(value))throw Error('Invalid relative media reference.');continue;}const relative=path.relative(dataRoot,resolved).replaceAll('\\','/');if(!owned(relative))throw Error('Unsupported owned asset reference: '+relative);files.set(relative,await canonicalFile(dataRoot,relative));holder[key]=relative;}
+ for(const entry of settings.library)for(const holder of [entry,entry.customDisplay].filter(Boolean))for(const key of ['file','sourceFile','sourcePath','staticFile']){const value=holder[key];if(!value)continue;if(isUnc(value))throw Error('Unsupported network media reference: '+value);let resolved=path.resolve(dataRoot,value);try{resolved=await realpath(resolved);}catch(error){if(error.code!=='ENOENT'||!path.isAbsolute(value)||inside(dataRoot,resolved))throw error;}if(!inside(dataRoot,resolved)){if(!path.isAbsolute(value))throw Error('Invalid relative media reference.');continue;}const relative=path.relative(dataRoot,resolved).replaceAll('\\','/');if(!owned(relative))throw Error('Unsupported owned asset reference: '+relative);files.set(relative,await canonicalFile(dataRoot,relative));holder[key]=relative;}
  await emptyDestination(destination);const records=[];
  for(const [relative,source]of files){const info=await stat(source),sha256=await hashMedia(source),target=path.join(destination,relative);await copyExclusive(source,target);const after=await stat(source);if(after.size!==info.size||after.mtimeMs!==info.mtimeMs||after.ctimeMs!==info.ctimeMs||(await stat(target)).size!==info.size||await hashMedia(target)!==sha256)throw Error('Asset changed during backup: '+relative);records.push({path:relative,bytes:info.size,sha256});}
  if(hash((await configAt(dataRoot)).bytes)!==hash(original.bytes))throw Error('Settings changed during backup; this partial snapshot is not accepted. Retry into a new directory.');
  const bytes=Buffer.from(JSON.stringify(settings,null,2)+'\n');await writeFile(path.join(destination,'settings.json'),bytes,{flag:'wx'});records.push({path:'settings.json',bytes:bytes.length,sha256:hash(bytes)});
- await writeFile(path.join(destination,'backup-manifest.json'),JSON.stringify({format:'codex-wallpaper-backup',version:1,createdAt:new Date().toISOString(),externalProjects:'references-only',files:records},null,2),{flag:'wx'});
- return {backup:destination,files:records.length,externalProjects:'references-only'};
+ await writeFile(path.join(destination,'backup-manifest.json'),JSON.stringify({format:'codex-wallpaper-backup',version:1,createdAt:new Date().toISOString(),externalProjects:'references-only',externalMedia:'references-only',files:records},null,2),{flag:'wx'});
+ return {backup:destination,files:records.length,externalProjects:'references-only',externalMedia:'references-only'};
 }
 async function restore(snapshot,destination){
  snapshot=await realpath(absolute(snapshot));destination=absolute(destination);if(destination===snapshot||inside(snapshot,destination))throw Error('Restore must use a separate empty directory.');
@@ -30,9 +31,9 @@ async function restore(snapshot,destination){
  const seen=new Set(),verified=[];
  for(const row of manifest.files){if(typeof row.path!=='string'||(row.path!=='settings.json'&&!owned(row.path))||seen.has(row.path))throw Error('Invalid or duplicate backup path.');seen.add(row.path);const source=await canonicalFile(snapshot,row.path);if((await stat(source)).size!==row.bytes||await hashMedia(source)!==row.sha256)throw Error('Backup checksum mismatch: '+row.path);verified.push({path:row.path,source});}
  if(!seen.has('settings.json'))throw Error('Backup has no settings.');const {settings}=await configAt(snapshot);
- for(const entry of settings.library)for(const holder of [entry,entry.customDisplay].filter(Boolean))for(const key of ['file','sourceFile','sourcePath','staticFile']){const value=holder[key];if(value&&!path.isAbsolute(value)&&!seen.has(value.replaceAll('\\','/')))throw Error('Backup omits referenced asset: '+value);}
+ for(const entry of settings.library)for(const holder of [entry,entry.customDisplay].filter(Boolean))for(const key of ['file','sourceFile','sourcePath','staticFile']){const value=holder[key];if(!value)continue;if(isUnc(value))throw Error('Unsupported network media reference: '+value);if(!path.isAbsolute(value)&&!seen.has(value.replaceAll('\\','/')))throw Error('Backup omits referenced asset: '+value);}
  await emptyDestination(destination);for(const row of verified.filter(f=>f.path!=='settings.json')){const target=path.join(destination,row.path);await copyExclusive(row.source,target);if(await hashMedia(target)!==manifest.files.find(f=>f.path===row.path).sha256)throw Error('Asset changed during restore: '+row.path);}await copyExclusive(path.join(snapshot,'settings.json'),path.join(destination,'settings.json'));
- return {restored:destination,files:verified.length,activation:'Set CODEX_WALLPAPER_DATA_DIR and rebuild the launcher; current session was not changed.'};
+ return {restored:destination,files:verified.length,externalProjects:'references-only',externalMedia:'references-only',activation:'Set CODEX_WALLPAPER_DATA_DIR and rebuild the launcher; current session was not changed.'};
 }
 async function diagnose(dataRoot){
  dataRoot=await realpath(absolute(dataRoot));const {settings}=await configAt(dataRoot),missing=[];

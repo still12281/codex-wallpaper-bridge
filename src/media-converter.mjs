@@ -11,7 +11,13 @@ import {randomUUID} from 'node:crypto';
 export async function convertMedia(root,input,mime,id,profile={maxWidth:1280,fps:24},options={}){
  const start=performance.now(),{signal,onProgress=()=>{}}=options;
  if(!/^(default|[a-f0-9-]+)$/i.test(id))throw Error('壁纸标识无效');
- onProgress({phase:'预检'});const {source,limits,route,motion,rateMbps,cacheKey,cached,extension,outputMime}=await planMedia(root,input,mime,profile,options);signal?.throwIfAborted();
+ onProgress({phase:'预检'});const {source,canonicalInput,limits,route,motion,rateMbps,cacheKey,cached,extension,outputMime}=await planMedia(root,input,mime,profile,options);signal?.throwIfAborted();
+ if(route==='direct'){
+  onProgress({phase:'直接引用原文件',route,duration:source.duration});
+  const after=await stat(canonicalInput);
+  if(after.size!==source.bytes||after.mtimeMs!==source.mtimeMs||after.ctimeMs!==source.ctimeMs)throw Error('原素材在导入期间发生变化，请重试');
+  return {file:canonicalInput,destination:null,direct:true,cacheKey:null,mime:outputMime,limits:{...limits,fps:motion?limits.fps:null},importInfo:{route,direct:true,sourceWidth:source.width,sourceHeight:source.height,sourceFps:source.fps,duration:source.duration,probeMs:source.probeMs,probeCacheHit:!!source.probeCacheHit,conversionMs:0,totalMs:performance.now()-start}};
+ }
  const file='media/pending-'+id+'-'+randomUUID()+extension,destination='media/wallpaper-'+id+'-'+randomUUID()+extension,output=path.join(root,file);
  let conversionMs=0;
  try{
