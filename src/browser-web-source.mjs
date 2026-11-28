@@ -68,10 +68,11 @@ export function createBoundedHtmlHandler({root,assetPrefix,BASE,token,activeStre
   let subpath;
   try{subpath=decodeURIComponent(pathname.slice(assetPrefix.length)).replace(/^\/+/,'');}
   catch{res.setHeader('Cache-Control','no-store');res.statusCode=400;res.end('bad request');return true;}
-  if(!subpath||!/\.html?$/i.test(subpath))return false;
+  if(!subpath)return false;
+  const target=path.resolve(root,subpath);
+  if(!/\.html?$/i.test(target))return false;
   void (async()=>{
    res.setHeader('Cache-Control','no-store');
-   const target=path.resolve(root,subpath);
    const fence=why=>{note('html-fence',why+':'+subpath.slice(0,120));res.statusCode=403;res.end(`forbidden-scene-files[${subpath}]`);};
    if(!inside(root,target)){fence('path');return;}
    let linked=false,realTarget='',unresolved=false;

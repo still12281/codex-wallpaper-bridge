@@ -121,14 +121,19 @@ test('P0-3: Install.cmd ignores fake pwsh.exe and winget.exe in the current work
   PATH:emptyPathDir+';'+temp
  };
  const cmdExe=process.env.ComSpec||path.join(process.env.SystemRoot||'C:\\Windows','System32','cmd.exe');
- await assert.rejects(
-  execFileAsync(cmdExe,['/d','/c','Install.cmd','-CheckOnly','-NoPause'],{cwd:temp,env,windowsHide:true}),
-  error=>{
-   assert.equal(error.code,1);
-   assert.match(error.stdout,/PowerShell 7 is required/);
-   return true;
-  }
- );
+ for(const args of [
+  ['/d','/c','Install.cmd','-CheckOnly','-NoPause'],
+  ['/d','/c','Install.cmd','-NoPause']
+ ]){
+  await assert.rejects(
+   execFileAsync(cmdExe,args,{cwd:temp,env,windowsHide:true}),
+   error=>{
+    assert.equal(error.code,1);
+    assert.match(error.stdout,/PowerShell 7 is required/);
+    return true;
+   }
+  );
+ }
 });
 
 test('P0-4: WebWallGL frame navigation diagnostic omits unrelated iframe URLs, query parameters, and titles',()=>{
@@ -241,6 +246,15 @@ test('P1-6: browser-web-source enforces 8 MiB async bounded read for all HTML fi
 
   const hugeHtm=await fetch(origin+assetPrefix+'huge.HTM');
   assert.equal(hugeHtm.status,413);
+
+  // Normalized paths (trailing slash, /. suffix, or encoded segment) must still hit the bounded HTML handler.
+  for(const variant of ['huge.html/','huge.html/.','huge.html%2F.','sub%2F..%2Fhuge.html']){
+   const res=await fetch(origin+assetPrefix+variant);
+   assert.equal(res.status,413,variant);
+  }
+  const normalizedOk=await fetch(origin+assetPrefix+'sub.html/.');
+  assert.equal(normalizedOk.status,200);
+  assert((await normalizedOk.text()).includes('window.__shim=1;'));
 
   const missing=await fetch(origin+assetPrefix+'missing.html');
   assert.equal(missing.status,404);
