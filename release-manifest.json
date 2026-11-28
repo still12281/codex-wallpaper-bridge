@@ -873,8 +873,8 @@
     },
     {
       "path": "test/security-hardening.test.mjs",
-      "utf8Bytes": 13256,
-      "sha256": "ea811d898ab80296d6a7503f81a93d919cf302a90e624172d120985f0077a1b1"
+      "utf8Bytes": 15213,
+      "sha256": "d5156c64b0279e53e3c80a4ebaf8cb9ff3cbc88326645c878ffca833f2951d80"
     },
     {
       "path": "test/startup-health.ps1",

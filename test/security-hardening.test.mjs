@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {existsSync} from 'node:fs';
 import {mkdtemp,mkdir,writeFile,readFile,copyFile} from 'node:fs/promises';
 import {createServer} from 'node:http';
 import {execFile} from 'node:child_process';
@@ -109,30 +110,58 @@ test('P0-3: Install.cmd ignores fake pwsh.exe and winget.exe in the current work
  const temp=await mkdtemp(path.join(os.tmpdir(),'cwb-install-cmd-'));
  const fakeProg=path.join(temp,'prog'),fakeLocal=path.join(temp,'local'),emptyPathDir=path.join(temp,'empty');
  await mkdir(fakeProg);await mkdir(fakeLocal);await mkdir(emptyPathDir);
+ await mkdir(path.join(temp,'windows'));
  await copyFile(path.resolve('Install.cmd'),path.join(temp,'Install.cmd'));
+ // Stub installer prints the exact PowerShell executable launched by Install.cmd.
+ await writeFile(path.join(temp,'windows','Install-Wallpaper.ps1'),"Write-Output ('PWSH_PATH=' + (Get-Process -Id $PID).Path)\nexit 0\n");
  // Place decoy executables in cwd; they must never run even if cwd is also on PATH.
  await writeFile(path.join(temp,'pwsh.exe'),'decoy');
  await writeFile(path.join(temp,'winget.exe'),'decoy');
- const baseEnv=Object.fromEntries(Object.entries(process.env).filter(([k])=>!['path','codex_wallpaper_pwsh','programfiles','localappdata'].includes(k.toLowerCase())));
+ const baseEnv=Object.fromEntries(Object.entries(process.env).filter(([k])=>!['path','codex_wallpaper_pwsh','localappdata'].includes(k.toLowerCase())));
  const env={
   ...baseEnv,
-  ProgramFiles:fakeProg,
   LOCALAPPDATA:fakeLocal,
-  PATH:emptyPathDir+';'+temp
+  PATH:temp+';'+emptyPathDir
  };
  const cmdExe=process.env.ComSpec||path.join(process.env.SystemRoot||'C:\\Windows','System32','cmd.exe');
+ const standardPwsh=path.join(process.env.ProgramFiles||'C:\\Program Files','PowerShell','7','pwsh.exe');
+ const hasStandardPwsh=existsSync(standardPwsh);
+ const normalizedTemp=path.resolve(temp).toLowerCase()+path.sep;
  for(const args of [
   ['/d','/c','Install.cmd','-CheckOnly','-NoPause'],
   ['/d','/c','Install.cmd','-NoPause']
  ]){
-  await assert.rejects(
-   execFileAsync(cmdExe,args,{cwd:temp,env,windowsHide:true}),
-   error=>{
-    assert.equal(error.code,1);
-    assert.match(error.stdout,/PowerShell 7 is required/);
-    return true;
-   }
-  );
+  if(hasStandardPwsh){
+   // When standard %ProgramFiles%\PowerShell\7\pwsh.exe exists (e.g. GitHub windows-latest),
+   // Install.cmd must run it and never the decoy pwsh.exe in cwd.
+   const {stdout}=await execFileAsync(cmdExe,args,{cwd:temp,env,windowsHide:true});
+   const match=stdout.match(/PWSH_PATH=(.+)/);
+   assert(match,'expected stub output with launched pwsh path: '+stdout);
+   const launched=path.resolve(match[1].trim()).toLowerCase();
+   assert.equal(launched,path.resolve(standardPwsh).toLowerCase());
+   assert(!launched.startsWith(normalizedTemp),'must never launch decoy pwsh.exe from cwd');
+  }else{
+   await assert.rejects(
+    execFileAsync(cmdExe,args,{cwd:temp,env,windowsHide:true}),
+    error=>{
+     assert.equal(error.code,1);
+     assert.match(error.stdout,/PowerShell 7 is required/);
+     return true;
+    }
+   );
+  }
+ }
+ // Positive PATH check: even when decoy pwsh.exe in cwd appears first on PATH,
+ // Install.cmd skips cwd and executes a legitimate non-local pwsh.exe.
+ if(!hasStandardPwsh&&process.env.CODEX_WALLPAPER_PWSH&&existsSync(process.env.CODEX_WALLPAPER_PWSH)){
+  const realPwsh=path.resolve(process.env.CODEX_WALLPAPER_PWSH);
+  const pathEnv={...env,PATH:temp+';'+path.dirname(realPwsh)};
+  const {stdout}=await execFileAsync(cmdExe,['/d','/c','Install.cmd','-CheckOnly','-NoPause'],{cwd:temp,env:pathEnv,windowsHide:true});
+  const match=stdout.match(/PWSH_PATH=(.+)/);
+  assert(match,'expected stub output with launched pwsh path: '+stdout);
+  const launched=path.resolve(match[1].trim()).toLowerCase();
+  assert.equal(launched,realPwsh.toLowerCase());
+  assert(!launched.startsWith(normalizedTemp),'must never launch decoy pwsh.exe from cwd');
  }
 });
 
