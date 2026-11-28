@@ -1,13 +1,17 @@
-import {access,mkdir,readFile,realpath,stat} from 'node:fs/promises';
+import {createReadStream,realpath as realpathCb} from 'node:fs';
+import {access,lstat,mkdir,readFile,realpath,stat} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import {createServer} from 'node:http';
 import {randomUUID} from 'node:crypto';
+import {promisify} from 'node:util';
 import path from 'node:path';
 import {connectPipe} from './cdp-pipe.mjs';
 import {realtimeProfile} from './realtime-source.mjs';
 import {effectivePropertyValues} from './wallpaper-properties.mjs';
 import {createServeKit} from '../vendor/dsh-wallpaper/serve.js';
+import {weFocusGuardSource} from '../vendor/dsh-wallpaper/we-focus-guard.js';
 
+const realpathNative=promisify(realpathCb.native);
 const slots=new Set(),sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 export const MAX_WEB_HTML_BYTES=8*1024*1024;
 const rtcGuard="for(const key of ['RTCPeerConnection','webkitRTCPeerConnection'])try{Object.defineProperty(globalThis,key,{value:undefined,writable:false,configurable:false})}catch{}";
@@ -17,6 +21,89 @@ async function browserExecutable(){
  throw Error('网页浏览器模式需要已安装的 Chrome 或 Edge');
 }
 const inside=(root,file)=>{const relative=path.relative(root,file);return relative&&!relative.startsWith('..')&&!path.isAbsolute(relative);};
+function injectWebHtml(html,{token,readWebShim,buildSeedScript,BASE}){
+ const shim=readWebShim();
+ if(!shim||html.indexOf('data-we-shim')!==-1)return html;
+ const esc=value=>value.replace(/<\/script/gi,'<\\/script');
+ const seed=buildSeedScript();
+ const siteRoot=`${BASE}/scene-files/${token}/`;
+ const tag=`<script data-we-site-root="host">window.__weSiteRoot=${JSON.stringify(siteRoot)};</script>`
+  +`<script data-we-shim="host">${esc(shim)}</script>`
+  +`<script data-we-focus-guard="host">${esc(weFocusGuardSource())}</script>`
+  +(seed?`<script data-we-seed="host">${esc(seed)}</script>`:'');
+ const match=/<head[^>]*>/i.exec(html);
+ return match?html.slice(0,match.index+match[0].length)+tag+html.slice(match.index+match[0].length):tag+html;
+}
+async function readBoundedUtf8(filePath,maxBytes,activeStreams,res){
+ const info=await stat(filePath);
+ if(!info.isFile()){const error=Error('not-found');error.code='ENOENT';throw error;}
+ if(info.size>maxBytes){const error=Error('html-too-large');error.code='CWB_HTML_TOO_LARGE';throw error;}
+ return new Promise((resolve,reject)=>{
+  const chunks=[];let total=0,settled=false;
+  const stream=createReadStream(filePath);
+  activeStreams.add(stream);
+  const finish=(error,value)=>{
+   if(settled)return;
+   settled=true;
+   activeStreams.delete(stream);
+   res.off('close',onClose);
+   if(!stream.destroyed){try{stream.destroy();}catch{}}
+   if(error)reject(error);
+   else resolve(value);
+  };
+  const onClose=()=>{if(!res.writableEnded){const error=Error('aborted');error.code='CWB_ABORTED';finish(error);}};
+  res.once('close',onClose);
+  stream.on('data',chunk=>{
+   total+=chunk.length;
+   if(total>maxBytes){const error=Error('html-too-large');error.code='CWB_HTML_TOO_LARGE';finish(error);return;}
+   chunks.push(chunk);
+  });
+  stream.on('error',error=>finish(error));
+  stream.on('end',()=>finish(null,Buffer.concat(chunks,total).toString('utf8')));
+ });
+}
+export function createBoundedHtmlHandler({root,assetPrefix,BASE,token,activeStreams,maxHtmlBytes=MAX_WEB_HTML_BYTES,readWebShim,buildSeedScript,note=()=>{}}){
+ return (req,res,pathname)=>{
+  if((req.method||'GET').toUpperCase()!=='GET'||!pathname.startsWith(assetPrefix))return false;
+  let subpath;
+  try{subpath=decodeURIComponent(pathname.slice(assetPrefix.length)).replace(/^\/+/,'');}
+  catch{res.setHeader('Cache-Control','no-store');res.statusCode=400;res.end('bad request');return true;}
+  if(!subpath||!/\.html?$/i.test(subpath))return false;
+  void (async()=>{
+   res.setHeader('Cache-Control','no-store');
+   const target=path.resolve(root,subpath);
+   const fence=why=>{note('html-fence',why+':'+subpath.slice(0,120));res.statusCode=403;res.end(`forbidden-scene-files[${subpath}]`);};
+   if(!inside(root,target)){fence('path');return;}
+   let linked=false,realTarget='',unresolved=false;
+   try{
+    linked=(await lstat(target)).isSymbolicLink();
+    realTarget=await realpathNative(target);
+   }catch(error){
+    if(error?.code!=='ENOENT'&&error?.code!=='ENOTDIR')unresolved=true;
+   }
+   if(linked){fence('symlink');return;}
+   if(unresolved){fence('unresolved');return;}
+   let realRoot='';
+   try{realRoot=await realpathNative(root);}catch{}
+   if(!realRoot){fence('unresolved-root');return;}
+   if(realTarget&&!inside(realRoot,realTarget)){fence('realpath');return;}
+   res.setHeader('Access-Control-Allow-Origin','*');
+   const rawHtml=await readBoundedUtf8(target,maxHtmlBytes,activeStreams,res);
+   if(res.writableEnded||res.destroyed)return;
+   const html=injectWebHtml(rawHtml,{token,readWebShim,buildSeedScript,BASE});
+   res.setHeader('Content-Type','text/html; charset=utf-8');
+   res.end(html);
+  })().catch(error=>{
+   if(error?.code==='CWB_ABORTED'||res.writableEnded||res.destroyed)return;
+   if(error?.code==='ENOENT'||error?.code==='ENOTDIR'){res.statusCode=404;res.end('not found');return;}
+   if(error?.code==='CWB_HTML_TOO_LARGE'){note('html-limit',`${subpath.slice(0,120)}>${maxHtmlBytes}`);res.statusCode=413;res.end('html too large');return;}
+   note('html-read',error?.message||String(error));
+   if(!res.headersSent)res.statusCode=500;
+   if(!res.writableEnded)res.end('read failed');
+  });
+  return true;
+ };
+}
 // Own loopback assets and an opaque iframe. No author code is evaluated in Codex.
 export async function startBrowserWeb(entry,dataRoot,{isCurrent=()=>true}={}){
  const assertCurrent=()=>{if(!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
@@ -35,7 +122,9 @@ export async function startBrowserWeb(entry,dataRoot,{isCurrent=()=>true}={}){
  const token=randomUUID(),wrapperToken=randomUUID(),nonce=randomUUID(),BASE='/wallpaper-engine',assetPrefix=BASE+'/scene-files/'+token+'/',activeStreams=new Set();
  let server,origin,browser=null,control=Promise.resolve(),controlRevision=0,stopPromise,servedEntry=false,wire;
  const shim=await readFile(new URL('../vendor/webwallgl/web-shim.js',import.meta.url),'utf8').catch(error=>{slots.delete(slot);throw error;});
- const kit=createServeKit({BASE,activeStreams,maxHtmlBytes:MAX_WEB_HTML_BYTES,mediaMap:new Map([[token,metadata]]),log:{warn:value=>note('asset',value)},appendDiagLine:()=>{},traceRequests:()=>{},traceMediaRequests:()=>{},readWebShim:()=>shim,buildSeedScript:()=>`window.__weSetFps(${profile.fps});window.__weSetVolume(0);window.__weSeedProps(${JSON.stringify(wire)});`});
+ const buildSeedScript=()=>`window.__weSetFps(${profile.fps});window.__weSetVolume(0);window.__weSeedProps(${JSON.stringify(wire)});`;
+ const kit=createServeKit({BASE,activeStreams,mediaMap:new Map([[token,metadata]]),log:{warn:value=>note('asset',value)},appendDiagLine:()=>{},traceRequests:()=>{},traceMediaRequests:()=>{},readWebShim:()=>shim,buildSeedScript});
+ const serveBoundedHtml=createBoundedHtmlHandler({root,assetPrefix,BASE,token,activeStreams,maxHtmlBytes:MAX_WEB_HTML_BYTES,readWebShim:()=>shim,buildSeedScript,note});
  const entryPath=path.relative(root,html).split(path.sep).map(encodeURIComponent).join('/');
  const closeBrowser=async()=>{
   const owned=browser;if(!owned)return;browser=null;
@@ -115,7 +204,8 @@ export async function startBrowserWeb(entry,dataRoot,{isCurrent=()=>true}={}){
    if(!pathname.startsWith(assetPrefix))return fail(404);
    res.setHeader('Content-Security-Policy',`sandbox allow-scripts; default-src 'none'; script-src ${origin} blob: 'unsafe-inline' 'unsafe-eval'; style-src ${origin} 'unsafe-inline'; img-src ${origin} data: blob:; media-src ${origin} data: blob:; font-src ${origin} data:; connect-src ${origin}; worker-src blob:; frame-src 'none'; object-src 'none'; base-uri ${origin}; form-action 'none'`);
    res.once('finish',()=>{if(pathname===assetPrefix+entryPath&&res.statusCode===200)servedEntry=true;if(res.statusCode>=400){note('asset-status',res.statusCode);if(['document','script','style'].includes(req.headers['sec-fetch-dest']))runtime.error='网页必要资源加载失败：HTTP '+res.statusCode+'；请改用原版兼容模式';}});
-   Promise.resolve().then(()=>kit.handleSceneFiles(req,res,'media')).catch(error=>{note('serve',error.message);if(!res.headersSent)res.statusCode=500;if(!res.writableEnded)res.end();});
+   if(serveBoundedHtml(req,res,pathname))return;
+   try{kit.handleSceneFiles(req,res,'media');}catch(error){note('serve',error.message);if(!res.headersSent)res.statusCode=500;if(!res.writableEnded)res.end();}
   });
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});origin='http://127.0.0.1:'+server.address().port;
   await launch();assertCurrent();return runtime;

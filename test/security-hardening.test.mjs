@@ -11,7 +11,7 @@ import {defaultSettings} from '../src/runtime-paths.mjs';
 import {nextRotation,rotationCandidates} from '../src/appearance-model.mjs';
 import {wallpaperRenderKey} from '../src/library-model.mjs';
 import {summarizeFrameNavigationFailure} from '../src/webwallgl-player.mjs';
-import {MAX_WEB_HTML_BYTES} from '../src/browser-web-source.mjs';
+import {MAX_WEB_HTML_BYTES,createBoundedHtmlHandler} from '../src/browser-web-source.mjs';
 import {createServeKit} from '../vendor/dsh-wallpaper/serve.js';
 
 const execFileAsync=promisify(execFile);
@@ -185,51 +185,75 @@ test('P1-5: searchEngine and pickEngineFolder run independently from config comm
  assert.equal(picked.folder,project);
 });
 
-test('P1-6: serve.js enforces 8 MiB async bounded read for all HTML files',async()=>{
+test('P1-6: browser-web-source enforces 8 MiB async bounded read for all HTML files without modifying vendor/serve.js',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-serve-html-'));
  const projectJson=path.join(root,'project.json');
  await writeFile(projectJson,JSON.stringify({type:'web',file:'index.html'}));
  await writeFile(path.join(root,'index.html'),'<!doctype html><html><head></head><body>ok</body></html>');
  await writeFile(path.join(root,'sub.html'),'<!doctype html><html><head></head><body>sub</body></html>');
- // Create an auxiliary HTML file exceeding 8 MiB (8 MiB + 1 byte).
+ await writeFile(path.join(root,'asset.txt'),'plain-asset');
+ // Create auxiliary HTML files exceeding 8 MiB (8 MiB + 1 byte).
  const oversized=Buffer.alloc(MAX_WEB_HTML_BYTES+1,'a');
  await writeFile(path.join(root,'huge.html'),oversized);
  await writeFile(path.join(root,'huge.HTM'),oversized);
- const token='tok1',BASE='/wallpaper-engine',activeStreams=new Set(),warnings=[];
+ const token='tok1',BASE='/wallpaper-engine',assetPrefix=BASE+'/scene-files/'+token+'/',activeStreams=new Set(),notes=[];
+ const readWebShim=()=>'window.__shim=1;',buildSeedScript=()=>'window.__seed=1;';
  const kit=createServeKit({
   BASE,
   activeStreams,
-  maxHtmlBytes:MAX_WEB_HTML_BYTES,
   mediaMap:new Map([[token,projectJson]]),
-  log:{warn:msg=>warnings.push(msg)},
+  log:{warn:msg=>notes.push(['warn',msg])},
   appendDiagLine:()=>{},
   traceRequests:()=>{},
   traceMediaRequests:()=>{},
-  readWebShim:()=>'window.__shim=1;',
-  buildSeedScript:()=>'window.__seed=1;'
+  readWebShim,
+  buildSeedScript
+ });
+ const serveBoundedHtml=createBoundedHtmlHandler({
+  root,
+  assetPrefix,
+  BASE,
+  token,
+  activeStreams,
+  maxHtmlBytes:MAX_WEB_HTML_BYTES,
+  readWebShim,
+  buildSeedScript,
+  note:(kind,detail)=>notes.push([kind,detail])
  });
  const server=createServer((req,res)=>{
-  Promise.resolve().then(()=>kit.handleSceneFiles(req,res,'media')).catch(()=>{if(!res.headersSent)res.statusCode=500;if(!res.writableEnded)res.end();});
+  const pathname=new URL(req.url,'http://local').pathname;
+  if(serveBoundedHtml(req,res,pathname))return;
+  kit.handleSceneFiles(req,res,'media');
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const origin='http://127.0.0.1:'+server.address().port;
  try{
-  const okRes=await fetch(origin+BASE+'/scene-files/'+token+'/sub.html');
+  const okRes=await fetch(origin+assetPrefix+'sub.html');
   assert.equal(okRes.status,200);
   const okBody=await okRes.text();
   assert(okBody.includes('window.__shim=1;'));
+  assert(okBody.includes('window.__seed=1;'));
   assert(okBody.includes('sub'));
 
-  const hugeHtml=await fetch(origin+BASE+'/scene-files/'+token+'/huge.html');
+  const hugeHtml=await fetch(origin+assetPrefix+'huge.html');
   assert.equal(hugeHtml.status,413);
   assert.equal(hugeHtml.headers.get('cache-control'),'no-store');
 
-  const hugeHtm=await fetch(origin+BASE+'/scene-files/'+token+'/huge.HTM');
+  const hugeHtm=await fetch(origin+assetPrefix+'huge.HTM');
   assert.equal(hugeHtm.status,413);
 
-  const missing=await fetch(origin+BASE+'/scene-files/'+token+'/missing.html');
+  const missing=await fetch(origin+assetPrefix+'missing.html');
   assert.equal(missing.status,404);
-  assert(warnings.some(w=>w.includes('exceeds limit')));
+
+  const escaped=await fetch(origin+assetPrefix+'..%2Foutside.html');
+  assert.equal(escaped.status,403);
+
+  const asset=await fetch(origin+assetPrefix+'asset.txt');
+  assert.equal(asset.status,200);
+  assert.equal(await asset.text(),'plain-asset');
+
+  assert(notes.some(([kind])=>kind==='html-limit'));
+  assert.equal(activeStreams.size,0);
  }finally{
   server.closeAllConnections();
   await new Promise(resolve=>server.close(resolve));
