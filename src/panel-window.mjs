@@ -11,6 +11,8 @@ export function installPanelWindow(host,shadow,dialog){
  dialog:not([aria-labelledby="title"]){max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);overflow:auto;padding:22px;border:1px solid var(--cwb-border);border-radius:14px;background:var(--cwb-surface);color:var(--cwb-ink);box-shadow:var(--cwb-shadow,0 24px 68px rgba(0,0,0,.35))}
  dialog:not([aria-labelledby="title"]) h2{font-size:16px;font-weight:650;line-height:1.4;margin:0 0 10px}
  dialog:not([aria-labelledby="title"]) p{color:var(--cwb-muted);line-height:1.65;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+ .cwb-choice-check{display:flex;align-items:flex-start;gap:8px;margin:12px 0 0;padding:10px 12px;border:1px solid var(--cwb-border);border-radius:9px;background:var(--cwb-canvas);color:var(--cwb-ink);font-size:12.5px;line-height:1.5;cursor:pointer}
+ .cwb-choice-check input[type=checkbox]{width:16px;height:16px;margin:2px 0 0;accent-color:var(--cwb-accent);flex:0 0 16px;cursor:pointer}
  dialog:not([aria-labelledby="title"]) footer{margin-top:16px;padding-top:12px;border-top:1px solid var(--cwb-hairline);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 
  /* macOS Titlebar */
@@ -137,8 +139,8 @@ export function installPanelWindow(host,shadow,dialog){
  .cwb-inline-note:empty{display:none}
  #cwb-visual{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
  .cwb-rot-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
- .cwb-rot-actions{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px}
- #cwb-rotation-clear{min-height:26px;padding:0 10px;font-size:12px}
+ .cwb-rot-actions{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+ #cwb-rotation-clear,#cwb-rotation-approve-all{min-height:26px;padding:0 10px;font-size:12px}
  .cwb-rot-list{display:flex;flex-direction:column;width:100%;max-height:176px;overflow-y:auto;border:1px solid var(--cwb-border);border-radius:8px;background:var(--cwb-field);scrollbar-width:thin;scrollbar-color:var(--cwb-border) transparent}
  .cwb-rot-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin:0;cursor:pointer;min-width:0;user-select:none;transition:background-color 90ms}
  .cwb-rot-item+.cwb-rot-item{border-top:1px solid var(--cwb-hairline)}
@@ -151,13 +153,25 @@ export function installPanelWindow(host,shadow,dialog){
 
  /* Saved Wallpapers Visual Gallery (EXACT prototype) */
  #cwb-saved-gallery-wrap{margin:0 0 14px}
+ .cwb-saved-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;flex-wrap:wrap}
+ .cwb-saved-head .cwb-group-label{margin:0 0 0 4px}
+ #cwb-saved-manage-toggle{min-height:26px;padding:0 10px;font-size:12px}
+ .cwb-saved-toolbar{margin:0 0 8px}
+ #cwb-saved-search{width:100%}
+ .cwb-saved-manage-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 10px;padding:8px 10px;border:1px solid var(--cwb-hairline);border-radius:10px;background:var(--cwb-surface)}
+ #cwb-saved-manage-status{font-size:12px;font-weight:600;color:var(--cwb-muted)}
+ .cwb-saved-manage-actions{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+ .cwb-saved-manage-actions button{min-height:26px;padding:0 10px;font-size:12px}
  .cwb-saved-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+ .cwb-saved-empty{grid-column:1/-1;margin:0;padding:16px 10px;text-align:center;font-size:12px;color:var(--cwb-muted);border:1px dashed var(--cwb-border);border-radius:10px}
  .cwb-saved-card{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:0;min-height:0;border:1.5px solid var(--cwb-hairline);border-radius:10px;background:var(--cwb-surface);overflow:hidden;text-align:left;white-space:normal}
  .cwb-saved-card:hover:not(:disabled){border-color:var(--cwb-border);background:var(--cwb-surface)}
- .cwb-saved-card.is-selected{border-color:var(--cwb-accent);box-shadow:0 0 0 2px var(--cwb-accent-soft)}
+ .cwb-saved-card.is-selected,.cwb-saved-card.is-checked{border-color:var(--cwb-accent);box-shadow:0 0 0 2px var(--cwb-accent-soft)}
  .cwb-saved-thumb{position:relative;width:100%;aspect-ratio:16/10;background:linear-gradient(135deg,#25304d,#3a305f);overflow:hidden}
  .cwb-saved-thumb img{width:100%;height:100%;object-fit:cover;display:block}
  .cwb-saved-active{position:absolute;top:6px;left:6px;padding:2px 6px;border-radius:999px;background:var(--cwb-accent);color:#fff;font-size:10px;font-weight:600;line-height:1.4}
+ .cwb-saved-check{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:999px;border:1.5px solid rgba(255,255,255,.85);background:rgba(15,18,28,.55);color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+ .cwb-saved-card.is-checked .cwb-saved-check{background:var(--cwb-accent);border-color:var(--cwb-accent)}
  .cwb-saved-tag{position:absolute;bottom:6px;right:6px;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,.58);color:#fff;font-size:10px;font-weight:500;line-height:1.4}
  .cwb-saved-info{padding:7px 9px 8px;display:flex;flex-direction:column;gap:2px}
  .cwb-saved-name{font-size:12px;font-weight:600;color:var(--cwb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -271,7 +285,7 @@ export function installPanelWindow(host,shadow,dialog){
  `;shadow.append(style);
 
  for(const id of ['library-apply','engine-import','cwb-display-apply','cwb-renderer-apply','apply','cwb-quality-save','cwb-choice-confirm','realtime-accept'])if($(id))$(id).dataset.cwbVariant='primary';
- for(const id of ['library-delete','delete','cwb-preset-delete'])if($(id))$(id).dataset.cwbVariant='danger';
+ for(const id of ['library-delete','delete','delete-all','cwb-preset-delete'])if($(id))$(id).dataset.cwbVariant='danger';
 
  let maximized=false,restoreRect=null,dragging=null,sizing=null,toastTimer=null;
  const titlebar=document.createElement('header');titlebar.className='cwb-titlebar';titlebar.tabIndex=0;titlebar.title='拖动移动；双击最大化；方向键移动，Shift+方向键缩放';

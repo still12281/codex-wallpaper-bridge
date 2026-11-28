@@ -25,13 +25,26 @@ export async function discoverEngineRoots(){
 export function createEngineCatalog(){
  const tokens=new Map();let generation=0;
  return {
-  async registerMedia(file,owner){
+  async registerMedia(file,owner,{keepExisting=false}={}){
    if(typeof file!=='string'||!path.isAbsolute(file)||/^(?:\\\\|\/\/)/.test(file))throw Error('请选择本机媒体文件');
    const canonical=await realpath(file),info=await stat(canonical),mime=mediaTypes[path.extname(canonical).toLowerCase()];
    if(path.parse(canonical).root.startsWith(path.sep+path.sep))throw Error('请选择本机媒体文件');
    if(!mime||!info.isFile()||!Number.isSafeInteger(info.size)||info.size<1)throw Error('媒体文件无效');
+   if(!keepExisting)for(const [key,value]of tokens)if(value.picked&&value.owner===owner)tokens.delete(key);
+   const token=randomUUID(),sourceKey=projectKey(canonical);tokens.set(token,{root:path.dirname(canonical),file:canonical,mime,sourceKey,kind:'media',owner,picked:true});return {projectToken:token,name:path.basename(canonical),type:mime.startsWith('video/')||mime==='image/gif'?'video':'image'};
+  },
+  async registerMediaFiles(files,owner){
+   if(!Array.isArray(files)||!files.length)throw Error('请选择本机媒体文件');
+   if(files.length>100)throw Error('每次最多选择100个本地文件，请分批选择');
    for(const [key,value]of tokens)if(value.picked&&value.owner===owner)tokens.delete(key);
-   const token=randomUUID(),sourceKey=projectKey(canonical);tokens.set(token,{root:path.dirname(canonical),file:canonical,mime,sourceKey,kind:'media',owner,picked:true});return {projectToken:token,name:path.basename(canonical)};
+   const items=[];
+   try{
+    for(const file of files)items.push(await this.registerMedia(file,owner,{keepExisting:true}));
+   }catch(error){
+    for(const [key,value]of tokens)if(value.picked&&value.owner===owner)tokens.delete(key);
+    throw error;
+   }
+   return items.length===1?{...items[0],items}:{items};
   },
   releaseOwner(owner){for(const [key,value]of tokens)if(value.owner===owner)tokens.delete(key);},
   async search({scope='global',folder='',kind='engine',roots:givenRoots}={}){

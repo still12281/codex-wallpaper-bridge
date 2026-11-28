@@ -408,13 +408,13 @@
     },
     {
       "path": "src/engine-library.mjs",
-      "utf8Bytes": 8787,
-      "sha256": "7f22c9e811b2305ff503d1e2305609f23e9b9a05ce295d6d8223bfaa3ea30b90"
+      "utf8Bytes": 9526,
+      "sha256": "edfadf1555f2230a878b6609f6904ca808fa64f0b0f4d05320129c002be83f95"
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 59159,
-      "sha256": "43a750a0765c14967c0790cd347eba6ac6ebb15d37786b536271a80848d3d2e4"
+      "utf8Bytes": 70317,
+      "sha256": "17bda252d84ac21f380e550fcb3eee483135b7087a4cee5ee635481926f7a636"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -463,8 +463,8 @@
     },
     {
       "path": "src/panel-window.mjs",
-      "utf8Bytes": 44878,
-      "sha256": "c1cdf2a49b20284c0fc7f335264b210e5ce6db57b9d8a26ea13828e122f36031"
+      "utf8Bytes": 46729,
+      "sha256": "513900bf26e01a8179582639b6d596fc5b25362a1e89f65d57b1cfb10551a582"
     },
     {
       "path": "src/playback-metrics.mjs",
@@ -528,8 +528,8 @@
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 50312,
-      "sha256": "d0a7de2a93a8179edeb9e28e18583a6d73f7026368aa6954d01aeb32ab6a53ab"
+      "utf8Bytes": 54631,
+      "sha256": "648869431c29eeb4563bba726a67954879c0e39d5a8bb29f145baff85fd1381a"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -538,8 +538,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 49678,
-      "sha256": "6a9c1db93f7ff1fad2624f1745b0690fad8b848927f4d2d3a48413e7c7d362a6"
+      "utf8Bytes": 53565,
+      "sha256": "c4024a44798e8c778b42033089c02a5aa031e4edafbaf52b1d2a413f1f204d5c"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -595,6 +595,16 @@
       "path": "test/automatic-surfaces.test.mjs",
       "utf8Bytes": 1447,
       "sha256": "c15b2428a2c7bce8f3682bfcb09f29f876d35bbb70de612960b8cb21ea2a6cf8"
+    },
+    {
+      "path": "test/batch-management.test.mjs",
+      "utf8Bytes": 14231,
+      "sha256": "6b82bb82f9140dda2eb4c17496026a33b07fdcd5c76dd7fe2f824c80280558e2"
+    },
+    {
+      "path": "test/batch-panel-integration.mjs",
+      "utf8Bytes": 13519,
+      "sha256": "a27f00c56fe265a5d2b0a33b18bda6e765c69e3b3cd0071abf8921a51c0d6f20"
     },
     {
       "path": "test/bridge-update-runner.ps1",
@@ -1213,8 +1223,8 @@
     },
     {
       "path": "windows/Pick-MediaFile.ps1",
-      "utf8Bytes": 619,
-      "sha256": "bc16126e6902febb1b132f91e736cdf0161855aa0ac549b5d2c28fb10a3c9b1f"
+      "utf8Bytes": 655,
+      "sha256": "ea0b2bba1d252cec1600040ebc0a4c5d65c0ff2e9fa7927452c1320704dec544"
     },
     {
       "path": "windows/Pick-WallpaperFolder.ps1",
