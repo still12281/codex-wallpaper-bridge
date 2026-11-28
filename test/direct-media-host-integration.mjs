@@ -110,7 +110,17 @@ try{
  await wait(()=>c.evaluate('!!document.getElementById("codex-wallpaper-controls")?.shadowRoot?.getElementById("toggle")'));
  const errBanner=await wait(()=>c.evaluate('document.getElementById("codex-wallpaper-controls")?.shadowRoot?.getElementById("status")?.textContent||""').then(t=>/移动、改名或被删除/.test(t)?t:null));
  assert.match(errBanner,/移动、改名或被删除/);
+ // Open panel: missing external preview shows explicit missing label and does not cache the failure.
+ await c.evaluate('document.getElementById("codex-wallpaper-controls").shadowRoot.getElementById("toggle").click();true');
+ const missingMode=await wait(()=>c.evaluate('document.getElementById("codex-wallpaper-controls").shadowRoot.getElementById("library-preview-mode")?.textContent||""').then(t=>t.includes('原文件不可用')?t:null));
+ assert.match(missingMode,/原文件不可用/);
+ assert.equal(await c.evaluate('document.getElementById("codex-wallpaper-controls").shadowRoot.getElementById("library-preview-image").hidden'),true);
+ // Restore moved MP4 and re-select its card -> preview recovers without being stuck on cached failure.
+ await rename(path.join(ext,'moved-away.mp4'),cMp4);
+ await c.evaluate('(()=>{const s=document.getElementById("codex-wallpaper-controls").shadowRoot;s.querySelector("[data-saved-id=ext-png-a]")?.click();s.querySelector("[data-saved-id=ext-mp4]")?.click();return true;})()');
+ await wait(()=>c.evaluate('(()=>{const img=document.getElementById("codex-wallpaper-controls").shadowRoot.getElementById("library-preview-image");return !img.hidden&&img.src.startsWith("data:image/jpeg;base64,");})()'));
  result.startupMissingExternalKeepsPanelReachable=true;
+ result.missingPreviewShowsReasonAndRecovers=true;
 
  assert.equal(errors,'');
  result.passed=true;

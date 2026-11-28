@@ -23,8 +23,9 @@ export async function probeMedia(input,{signal}={}){
  try{const {stdout}=await run(ffprobe,['-v','error','-protocol_whitelist','file,pipe','-show_streams','-show_format','-of','json',input],{windowsHide:true,timeout:12000,maxBuffer:2*1024*1024,signal});parsed=JSON.parse(stdout);}
  catch(error){if(signal?.aborted)throw signal.reason;throw Error('素材预检失败：文件损坏、无法读取或缺少可用的 ffprobe（'+error.message.slice(0,160)+'）');}
  const video=parsed.streams?.find(s=>s.codec_type==='video'&&!s.disposition?.attached_pic);if(!video?.width||!video?.height)throw Error('素材没有可读取的图像/视频流');
- const bitrate=Math.max(0,Number(video.bit_rate)||0);
- const result={key,bytes:info.size,mtimeMs:info.mtimeMs,ctimeMs:info.ctimeMs,width:video.width,height:video.height,codec:video.codec_name,pixelFormat:video.pix_fmt,sar:video.sample_aspect_ratio,rotation:Number(video.tags?.rotate||video.side_data_list?.find(s=>s.rotation!==undefined)?.rotation||0),fps:rate(video.avg_frame_rate||video.r_frame_rate),bitrate,duration:Math.max(0,Number(parsed.format?.duration||video.duration)||0),audio:parsed.streams.some(s=>s.codec_type==='audio'),format:parsed.format?.format_name||'',probeMs:performance.now()-start};
+ const duration=Math.max(0,Number(parsed.format?.duration||video.duration)||0);
+ const bitrate=Math.max(0,Number(video.bit_rate)||Number(parsed.format?.bit_rate)||(duration>0?Math.round(info.size*8/duration):0));
+ const result={key,bytes:info.size,mtimeMs:info.mtimeMs,ctimeMs:info.ctimeMs,width:video.width,height:video.height,codec:video.codec_name,pixelFormat:video.pix_fmt,sar:video.sample_aspect_ratio,rotation:Number(video.tags?.rotate||video.side_data_list?.find(s=>s.rotation!==undefined)?.rotation||0),fps:rate(video.avg_frame_rate||video.r_frame_rate),bitrate,duration,audio:parsed.streams.some(s=>s.codec_type==='audio'),format:parsed.format?.format_name||'',probeMs:performance.now()-start};
  probes.set(key,result);while(probes.size>32)probes.delete(probes.keys().next().value);return result;
 }
 export async function planMedia(root,input,mime,profile,options={}){

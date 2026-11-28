@@ -75,7 +75,14 @@ test('direct external reference imports compatible image and MP4 (with audio) wi
  assert(webmEntry.file.startsWith('media/wallpaper-'));
  assert.equal(webmEntry.importInfo.route,'transcode');
 
- // 5. UNC path is refused by preflight.
+ // 5. High-bitrate MP4 within resolution/fps cap still transcodes instead of direct-reading.
+ const ffmpeg=await findFFmpeg(),highBitrate=path.join(ext,'high-bitrate.mp4');
+ await run(ffmpeg,['-v','error','-nostdin','-f','lavfi','-i','nullsrc=s=640x360:r=24,noise=alls=100:allf=t+u','-t','1','-c:v','libx264','-preset','ultrafast','-crf','0','-pix_fmt','yuv420p',highBitrate],{windowsHide:true});
+ const highPlan=await planMedia(root,highBitrate,'video/mp4',{maxWidth:1280,fps:24});
+ assert(highPlan.source.bitrate>20e6,'expected high bitrate fixture > 20 Mbps, got '+highPlan.source.bitrate);
+ assert.equal(highPlan.route,'transcode');
+
+ // 6. UNC path is refused by preflight.
  await assert.rejects(planMedia(root,'\\\\server\\share\\video.mp4','video/mp4',{maxWidth:1280,fps:24}),/网络路径/);
 });
 

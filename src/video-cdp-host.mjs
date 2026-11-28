@@ -319,11 +319,15 @@ async function mount(c,target,{reconnect=false}={}){c.playbackReading=null;
  const ticket=activeSelection??selectionRevision,selectionStamp=selectionEpoch+':'+ticket,isCurrent=()=>!stopped&&ticket===selectionRevision;
  const assertCurrent=()=>{if(!isCurrent())throw Object.assign(Error('已跳过先前的选择'),{code:'CWB_SELECTION_SUPERSEDED'});};assertCurrent();
 
+ const entry=effectiveEntry(settings.library.find(e=>e.id===settings.selectedId));
+ let preResolved=null;
+ if(entry&&!['webwallgl','realtime'].includes(entry.mode)&&c.reportedMissingError){
+  preResolved=await resolveAuthorizedMedia(root,settings,entry.file);
+ }
  const load=async file=>import('./'+file+'?v='+(await stat(path.join(codeRoot,file))).mtimeMs);
  const [{installNativeWidgets},{paintShell},{installPanel}]=await Promise.all([load('wallpaper-widgets.mjs'),load('wallpaper-style.mjs'),load('wallpaper-panel.mjs')]);
  // Early background paint must not import native app modules before React is
  // ready. The shell transition below activates the terminal adapter later.
- const entry=effectiveEntry(settings.library.find(e=>e.id===settings.selectedId));
  assertCurrent();await c.evaluate('window.__cwbLibraryGroups='+libraryGroups.toString()+';window.__cwbInstallPanelWindow='+installPanelWindow.toString()+';window.__cwbPickerModel='+adapters.picker+';window.__cwbInstallFx='+adapters.fx+';window.__cwbFrameFreeze='+installFrameFreeze.toString()+';window.__cwbDecorate='+decorateShell.toString()+';window.__cwbInstallFeatures='+installFeaturePanel.toString()+';('+installSceneResourceCache.toString()+')();window.__cwbApplyWidgets=config=>{if(!document.querySelector("aside.app-shell-left-panel")||!document.querySelector("main[data-app-shell-main-surface],main[class*=\\"_MainContentSurface_\\"],main.main-surface"))return Promise.resolve({phase:"waiting-for-native-shell"});return ('+installNativeWidgets.toString()+')(config)};(()=>{const prefix='+JSON.stringify(selectionEpoch+':')+',stamp='+JSON.stringify(selectionStamp)+';if(!window.__cwbSelectionStamp?.startsWith(prefix)||Number(window.__cwbSelectionStamp.slice(prefix.length))<='+ticket+'){window.__cwbSelectionStamp=stamp;window.__cwbDesiredWallpaperId='+JSON.stringify(entry?.id||null)+';}return true})()');
  if(entry?.mode==='webwallgl'){
   const previous=c.webPlayer,next=await mountWebWallGL(c,entry,{dataRoot:root,config:displaySettings(settings),isCurrent,selectionStamp,reconnect});if(!next)return false;
@@ -345,7 +349,7 @@ async function mount(c,target,{reconnect=false}={}){c.playbackReading=null;
    c.captureGeneration=(c.captureGeneration||0)+1;c.captureSource=source;c.hardwareDelivery=null;c.drawInFlight=0;c.captureBlocked=false;delete c.captureError;c.captureSentSequence=source.sequence;c.captureSequence=source.sequence;c.isRealtime=true;c.capturePaused=installed.paused;c.nextCapturePoll=0;c.reportedCaptureError=false;c.installed=true;return;
  }
  c.isRealtime=false;
- const resolved=await resolveAuthorizedMedia(root,settings,entry.file);
+ const resolved=preResolved||await resolveAuthorizedMedia(root,settings,entry.file);
  const mediaPath=resolved.path,info=resolved.info,fileBacked=entry.mime?.startsWith('video/'),mediaLimit=fileBacked?Number.MAX_SAFE_INTEGER:Math.min(128*1024*1024,entry.limits?.maxBytes||32*1024*1024);
  if(info.size>mediaLimit)throw Error('Unsupported local media path or size');
  status.mediaBytes=info.size;status.phase='loading-lightweight-video';delete status.error;void save();assertCurrent();
@@ -394,7 +398,7 @@ async function tick(){
    if(!page.body)continue;
    const tree=await c.call('Page.getFrameTree');
    if(tree.frameTree.frame.url!==target.url)continue;
-   if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.captureBlocked=false;c.failed=false;c.retryAt=0;c.failures=0;c.mediaActivity=null;c.needsTaskbar=true;c.mainBindingPending=true;c.shellObserved=false;c.readyObserved=false;startupEvent('page-ready',target.id);await c.call('Runtime.addBinding',{name:'__cwbMediaActivitySend'});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});}
+   if(c.loaderId!==tree.frameTree.frame.loaderId){c.loaderId=tree.frameTree.frame.loaderId;c.installed=false;c.captureBlocked=false;c.failed=false;c.retryAt=0;c.failures=0;c.reportedMissingError=false;c.mediaActivity=null;c.needsTaskbar=true;c.mainBindingPending=true;c.shellObserved=false;c.readyObserved=false;startupEvent('page-ready',target.id);await c.call('Runtime.addBinding',{name:'__cwbMediaActivitySend'});await c.call('Runtime.addBinding',{name:'__codexWallpaperSend'});}
    if(c.mainBindingPending&&c.needsTaskbar&&target.url===appUrl&&page.visibleGeometry){
     c.needsTaskbar=false;
     scheduleTaskbar({targetId:target.id,loaderId:c.loaderId,geometry:page.visibleGeometry});

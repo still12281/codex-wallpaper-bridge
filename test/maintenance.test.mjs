@@ -34,4 +34,10 @@ test('backup roundtrip preserves external project and external media references 
  const manifest=JSON.parse(await readFile(path.join(snapshot,'backup-manifest.json'),'utf8'));manifest.files[0].path='../escape.mp4';await writeFile(path.join(snapshot,'backup-manifest.json'),JSON.stringify(manifest));await assert.rejects(run('restore',snapshot,path.join(temp,'unsafe-restore')),/Invalid or duplicate backup path/);await assert.rejects(access(path.join(temp,'escape.mp4')));
  const uncData=path.join(temp,'unc-data');await mkdir(uncData);await writeFile(path.join(uncData,'settings.json'),JSON.stringify({library:[{id:'u',file:'\\\\server\\share\\x.mp4'}]}));
  await assert.rejects(run('backup',uncData,path.join(temp,'unc-backup')),/Unsupported network media reference/);
+ const travData=path.join(temp,'trav-data');await mkdir(travData);await writeFile(path.join(travData,'settings.json'),JSON.stringify({library:[{id:'t',file:path.join(temp,'sub')+path.sep+'..'+path.sep+'x.mp4'}]}));
+ await assert.rejects(run('backup',travData,path.join(temp,'trav-backup')),/Unsupported relative traversal/);
+ const parentFile=path.join(temp,'not-a-dir');await writeFile(parentFile,'regular-file');
+ const enotdirData=path.join(temp,'enotdir-data');await mkdir(enotdirData);await writeFile(path.join(enotdirData,'settings.json'),JSON.stringify({library:[{id:'nd',file:path.join(parentFile,'child.mp4')}]}));
+ const diagEnotdir=JSON.parse((await run('diagnose',enotdirData)).stdout);
+ assert(diagEnotdir.missing.some(item=>item.id==='nd'&&item.field==='file'));
 });

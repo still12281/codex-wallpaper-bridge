@@ -69,8 +69,8 @@
     },
     {
       "path": "SECURITY.md",
-      "utf8Bytes": 4068,
-      "sha256": "4e389501b4d6eaeafb2513998b0cd48d5a72764fb0ca45370a0ddafc8ef98472"
+      "utf8Bytes": 4766,
+      "sha256": "5e38310fb2b05bb1bb141cd1fda8ff262f0cc57035a4e2a829a569e52d5dfeaa"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -129,8 +129,8 @@
     },
     {
       "path": "docs/LARGE-MEDIA-20261027.zh-CN.md",
-      "utf8Bytes": 4715,
-      "sha256": "116e910183b5e677639f0f642090b16883105a4f52a1c3c000358dca6cd94ad1"
+      "utf8Bytes": 7872,
+      "sha256": "1f31d4494d932936fe730187c2db8cf41fc8a5a2fee8883d1b397183d374c36b"
     },
     {
       "path": "docs/LOGIN-STARTUP.zh-CN.md",
@@ -413,8 +413,8 @@
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 70998,
-      "sha256": "2784c639f14f523015d4ab6a74e366416071d0370cbfbb184114d4d5932389f2"
+      "utf8Bytes": 71178,
+      "sha256": "0ea81bb5b58444cecba46eb3c45bd9f40511080ff4aff592f5045c2a9a432c1a"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -433,18 +433,18 @@
     },
     {
       "path": "src/library-preview.mjs",
-      "utf8Bytes": 4963,
-      "sha256": "5f74076cbf02d5a5c3b25a9afb35a9e727740a178c71ad94bb8b5d1098393afa"
+      "utf8Bytes": 4994,
+      "sha256": "267c539c61ba9ba724d097a3d0196f5b1cd3fff9ea17a0ac16fcaf592c3b38d4"
     },
     {
       "path": "src/media-converter.mjs",
-      "utf8Bytes": 5426,
-      "sha256": "9369654f60e78defad0b47db19500c4ea4f5cd0399c829897bbf77e1d5a753ad"
+      "utf8Bytes": 6120,
+      "sha256": "0044162c19761bcf5f73522d3d8f2542202c18bda3d10bd515d53be9bf982ca1"
     },
     {
       "path": "src/media-file-source.mjs",
-      "utf8Bytes": 2348,
-      "sha256": "5c84aa2b25473f5559bc37f1a9c1c4ee92bc9ba43aa427888d1cb164c3ecf605"
+      "utf8Bytes": 5388,
+      "sha256": "173264c2ca2d5b34943c742ef2e191330d8f197ff7a16949aa238cc1f3df1b1b"
     },
     {
       "path": "src/media-power.mjs",
@@ -453,13 +453,13 @@
     },
     {
       "path": "src/media-preflight.mjs",
-      "utf8Bytes": 5136,
-      "sha256": "485fa7f5e0ce52e6a503c6dd9faac14adeb1784e3de6a26a443a0298b261d4a1"
+      "utf8Bytes": 6210,
+      "sha256": "477e285c597d2a2e7aea986f4a1218a392959bd7c93e6b7f8ab784f49ae57ade"
     },
     {
       "path": "src/media-store.mjs",
-      "utf8Bytes": 2130,
-      "sha256": "1069d7a17f406d9330e94ede71af55b5c52a3842cb5a1a43c3bd8eb788e2866f"
+      "utf8Bytes": 2712,
+      "sha256": "53bc5b1b2e3da16514c3d03fe636ba2d739296d363fb82fa0c9c68b697d6b6e2"
     },
     {
       "path": "src/panel-window.mjs",
@@ -518,28 +518,28 @@
     },
     {
       "path": "src/upstream-adapters.mjs",
-      "utf8Bytes": 7560,
-      "sha256": "385043e037f5eca44388d419d165cefbbd3b458271908065506e6fb2e7a74556"
+      "utf8Bytes": 7545,
+      "sha256": "b4a6d1dbbd990526dfb6c7ff58170ccae95ee70aad3403e6621bd50f9704861c"
     },
     {
       "path": "src/video-cdp-host.mjs",
-      "utf8Bytes": 57861,
-      "sha256": "e5624323a346b1a74094303cc857a86811a9396c218fe8103dc617740ae600db"
+      "utf8Bytes": 58961,
+      "sha256": "afcf987aa2e08e6dd14e696f600b8d0f66541b07a4fdba0b94a445064ca4b674"
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 54866,
-      "sha256": "67689a054f7e19a241d9efb284094e1b43da54637f4ad300ca0e86395c5f94f2"
+      "utf8Bytes": 55448,
+      "sha256": "4ecd52accb6c9d07de90f8f88d1523efc8e70c490ee28b2967029083536d20c6"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
-      "utf8Bytes": 4917,
-      "sha256": "fbd034bd590f479eca0e5a981269cfbe0cc1cdcb881527d976e190083fb7d409"
+      "utf8Bytes": 4992,
+      "sha256": "82c8b3a03257c7c572ee7d3ee0bb035e8dee7dfef57d026a5f4e36455f12d756"
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 53861,
-      "sha256": "785805e3267198c8c3a10fd1ded4622900e7ebf37cdcee2369f616ffec2650d2"
+      "utf8Bytes": 53968,
+      "sha256": "39f97a9d7745e34a1e335a265f0765fda20736fbeb12fdd58cb912cfa58a2186"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -598,8 +598,8 @@
     },
     {
       "path": "test/batch-management.test.mjs",
-      "utf8Bytes": 14997,
-      "sha256": "7d9f01291d8c291ead67a626ac79b788ffaf6b72a39be457311556e5861716e4"
+      "utf8Bytes": 15309,
+      "sha256": "bc04bfc2061400e7aa03117a5cbda6c73a1272a6668868b449b92d7b60634a56"
     },
     {
       "path": "test/batch-panel-integration.mjs",
@@ -660,6 +660,16 @@
       "path": "test/core.test.mjs",
       "utf8Bytes": 5273,
       "sha256": "933c81bd84892d7468084f3d1a4f9ca04232378b8aa70415fa92787065985433"
+    },
+    {
+      "path": "test/direct-external-media.test.mjs",
+      "utf8Bytes": 14449,
+      "sha256": "1ed489b30d03484300e71778b920a18fecce0d75cd8ee918df1cde2743bea043"
+    },
+    {
+      "path": "test/direct-media-host-integration.mjs",
+      "utf8Bytes": 10631,
+      "sha256": "035512cf050130c96361ad7077b6861d82bda1f2ba26385520ed86d49064f1f0"
     },
     {
       "path": "test/display-regressions.test.mjs",
@@ -788,8 +798,8 @@
     },
     {
       "path": "test/maintenance.test.mjs",
-      "utf8Bytes": 3209,
-      "sha256": "c72485abd5a4b58fc798d1c88ed78139410e8a3479b5421100ceede8e2766e93"
+      "utf8Bytes": 6235,
+      "sha256": "7a52f130b73b22453df7900d863cd56973449ac3cb1bed8a8a2ede339b92414e"
     },
     {
       "path": "test/media-picker.test.mjs",
@@ -803,8 +813,8 @@
     },
     {
       "path": "test/media-preparation.test.mjs",
-      "utf8Bytes": 4929,
-      "sha256": "28778c38e7eabaa69bd84abc01e37cbcd2c3aea9a196768ac9d7288aaf7def9c"
+      "utf8Bytes": 5491,
+      "sha256": "526ff538f1ef3addd6f1cc8b8795570efe3cfbe93b68b476c7383bcb5be3199a"
     },
     {
       "path": "test/panel-controls-integration.mjs",
@@ -873,8 +883,8 @@
     },
     {
       "path": "test/run-regression.mjs",
-      "utf8Bytes": 3982,
-      "sha256": "85d0990632173b3dbca8c706b649e714671da5212da74c520e82bf31627da61e"
+      "utf8Bytes": 4032,
+      "sha256": "6b170bfa81f2e6e4885484fbb81d12c0a2975e5ef3aa78cedd1d522337408192"
     },
     {
       "path": "test/runtime-status.test.mjs",
@@ -1013,8 +1023,8 @@
     },
     {
       "path": "tools/library-maintenance.mjs",
-      "utf8Bytes": 8523,
-      "sha256": "66aea38e54801867c9b85952b97b75921d19ae3f20c700393e3bc33cbd865474"
+      "utf8Bytes": 9264,
+      "sha256": "078bd3a885cc4fd65653ea72a2816cbe0876b54f871c2c6112cc740f0679f183"
     },
     {
       "path": "tools/media-bridge-sample-clock.patch",

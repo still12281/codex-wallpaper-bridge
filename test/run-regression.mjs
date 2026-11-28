@@ -8,8 +8,8 @@ const cwd=path.resolve(import.meta.dirname,'..');
 const unitFiles=(await readdir(import.meta.dirname)).filter(file=>file.endsWith('.test.mjs')).sort();
 const tests={
  unit:[['node','--test','--test-concurrency=1',...unitFiles.map(file=>'test/'+file)],['node','tools/check-release.mjs']],
- ui:['panel-entry','panel-controls','automatic-surfaces','theme-contrast','code-reading','style-invalidation'].map(integration),
- render:['integration.mjs','import-host-integration.mjs','lifetime-integration.mjs','rotation-host-integration.mjs',
+ ui:['panel-entry','panel-controls','batch-panel','automatic-surfaces','theme-contrast','code-reading','style-invalidation'].map(integration),
+ render:['integration.mjs','import-host-integration.mjs','direct-media-host-integration.mjs','lifetime-integration.mjs','rotation-host-integration.mjs',
   'resource-cache-integration.mjs','webwallgl-integration.mjs','browser-web-integration.mjs'].map(file=>['node','test/'+file]),
  startup:[...['startup-priority','startup-transition'].map(integration),
   ...['clean-process','client-window','client-window-binding','launch-policy','process-snapshot','root-revalidation',
