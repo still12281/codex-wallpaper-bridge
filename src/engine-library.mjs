@@ -47,6 +47,7 @@ export function createEngineCatalog(){
    return items.length===1?{...items[0],items}:{items};
   },
   releaseOwner(owner){for(const [key,value]of tokens)if(value.owner===owner)tokens.delete(key);},
+  releasePicked(owner){for(const [key,value]of tokens)if(value.picked&&value.owner===owner)tokens.delete(key);},
   async search({scope='global',folder='',kind='engine',roots:givenRoots}={}){
    if(!['engine','media'].includes(kind))throw Error('搜索类型无效');if(kind==='media'&&scope!=='folder')throw Error('图片/视频搜索请指定文件夹');
    let roots,warnings=[];if(givenRoots)roots=givenRoots;else if(scope==='folder'){if(typeof folder!=='string'||!path.isAbsolute(folder)||folder.startsWith('\\\\'))throw Error('请选择本地文件夹，或填写完整路径');if(!await exists(folder))throw Error('文件夹不存在或无法读取');roots=[await realpath(folder)]}else if(scope==='global'){({roots,warnings}=await discoverEngineRoots())}else throw Error('搜索范围无效');

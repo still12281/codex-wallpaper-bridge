@@ -8,7 +8,7 @@ import os from 'node:os';
 import {createActions,normalizeLibrary} from '../src/wallpaper-actions.mjs';
 import {defaultSettings,findFFmpeg} from '../src/runtime-paths.mjs';
 import {nextRotation,rotationCandidates} from '../src/appearance-model.mjs';
-import {probeMedia} from '../src/media-preflight.mjs';
+import {planMedia,probeMedia} from '../src/media-preflight.mjs';
 
 const execFileAsync=promisify(execFile);
 
@@ -50,6 +50,16 @@ test('media-pick supports multi-select owner tokens, preserves single-file shape
 
  response={files:[f1,'\\\\server\\share\\bad.png']};
  await assert.rejects(actions(owner,{action:'media-pick',operationId:'pick-unc'}),/本机媒体文件/);
+
+ // Repeatedly cancelling multi-pick must release both job slots (>32) and picked tokens.
+ response={files:[f1,f2]};
+ for(let i=0;i<35;i++){
+  const op='pick-cancel-'+i;
+  const picked=await actions(owner,{action:'media-pick',operationId:op});
+  const cancelled=await actions(owner,{action:'import-cancel',operationId:op});
+  assert.equal(cancelled.cancelAccepted,true);
+  await assert.rejects(actions(owner,{action:'wallpaper-engine',projectToken:picked.items[0].projectToken,apply:false,operationId:'after-cancel-'+i}),/过期/);
+ }
 });
 
 test('batch save optional per-batch realtime authorization leaves default unconfirmed and never creates global bypass',async()=>{
@@ -220,6 +230,9 @@ test('display-tier upgrades static images from source and cleans orphan variant 
  await videoActions(owner,{action:'display-tier',selectedId:vidEntry.id,tier:'economy'});
  const vidEco=vidEntry.file;
  assert.notEqual(vidEco,vidOriginal);
+ // Economy tier conversion should populate conversion cache for instant reuse on return.
+ const ecoPlan=await planMedia(root,vidEntry.sourcePath,'video/mp4',{maxWidth:960,fps:12});
+ assert.equal(ecoPlan.route,'cache');
 
  await videoActions(owner,{action:'display-tier',selectedId:vidEntry.id,tier:'smooth'});
  const vidSmooth=vidEntry.file;

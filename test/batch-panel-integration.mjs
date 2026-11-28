@@ -115,6 +115,11 @@ try{
  assert.equal(await ui('return s.getElementById("cwb-batch-status").textContent'),'已勾选 0 项');
  await ui('s.getElementById("cwb-batch-select-filtered").click();return true');
  assert.match(await ui('return s.getElementById("cwb-batch-status").textContent'),/^已勾选 100 项/);
+ // Individual checkbox must block checking the 101st item.
+ await ui('for(let i=0;i<4;i++)s.getElementById("cwb-next").click();return true');
+ const blocked101=await ui('const unchecked=[...s.querySelectorAll(".cwb-card input")].find(e=>!e.checked);if(!unchecked)return null;unchecked.checked=true;unchecked.dispatchEvent(new Event("change"));return {checked:unchecked.checked,status:s.getElementById("cwb-batch-status").textContent}');
+ assert(blocked101&&blocked101.checked===false&&blocked101.status.startsWith('已勾选 100 项'),JSON.stringify(blocked101));
+ await ui('for(let i=0;i<4;i++)s.getElementById("cwb-prev").click();return true');
  await ui('s.getElementById("cwb-batch-clear").click();return true');
  result.browseRangeSelectAndCap=true;
 
@@ -139,7 +144,12 @@ try{
  assert.equal(batchReqs.find(q=>q.projectToken==='tok-6').authorizeRealtime,true);
  result.batchImportOptionalRealtimeAuth=true;
 
- // 4. Local multi-pick imports multiple files via batch confirmation flow
+ // 4. Local multi-pick cancel releases server job, and confirm imports via batch flow
+ await ui('s.getElementById("import").click();return true');
+ await waitFor(()=>ui('return s.getElementById("cwb-choice-dialog").open&&s.getElementById("cwb-choice-title").textContent==="批量导入 2 个本机文件"'));
+ await ui('s.getElementById("cwb-choice-cancel").click();return true');
+ await waitFor(()=>ui('return !s.getElementById("import").disabled'));
+ assert.equal(await c.evaluate('window.__requests.filter(q=>q.action==="import-cancel").length'),1);
  await ui('s.getElementById("import").click();return true');
  await waitFor(()=>ui('return s.getElementById("cwb-choice-dialog").open&&s.getElementById("cwb-choice-title").textContent==="批量导入 2 个本机文件"'));
  assert.equal(await ui('return s.getElementById("cwb-choice-check-wrap").hidden'),true);
@@ -164,11 +174,26 @@ try{
  assert.equal(approveReq.confirmed,true);
  assert.deepEqual(approveReq.ids,['saved-0','saved-1']);
  assert.equal(await ui('return s.getElementById("cwb-rotation-approve-all").hidden'),true);
+ // Chunking >500 pending realtime entries into multiple 500-sized requests
+ await c.evaluate('window.__extraPending=Array.from({length:520},(_,i)=>({id:"p-extra-"+i,name:"Extra "+i,mode:"webwallgl",projectRoot:"root-"+i,needsRunConfirmation:true}));window.__testConfig.library.push(...window.__extraPending);document.getElementById("codex-wallpaper-controls").__cwbRenderConfig(window.__testConfig);true');
+ assert.equal(await ui('return s.getElementById("cwb-rotation-approve-all").textContent'),'批量确认（520 项）');
+ await ui('s.getElementById("cwb-rotation-approve-all").click();return true');
+ assert.equal(await ui('return s.getElementById("cwb-choice-dialog").open'),true);
+ await ui('s.getElementById("cwb-choice-confirm").click();return true');
+ await waitFor(()=>ui('return !s.getElementById("import").disabled'));
+ const chunkSizes=await c.evaluate('window.__requests.filter(q=>q.action==="realtime-authorize-batch").slice(-2).map(q=>q.ids.length)');
+ assert.deepEqual(chunkSizes,[500,20]);
+ await c.evaluate('window.__testConfig.library=window.__testConfig.library.filter(e=>!e.id.startsWith("p-extra-"));document.getElementById("codex-wallpaper-controls").__cwbRenderConfig(window.__testConfig);true');
  result.rotationBatchApprove=true;
 
- // 6. Saved gallery batch management -> select page & batch delete, plus layout check at 360px
+ // 6. Saved gallery batch management -> select-all label switches under search, select page & batch delete, plus layout check at 360px
  await ui('s.getElementById("cwb-tab-wallpapers").click();s.getElementById("cwb-picker-close").click();s.getElementById("cwb-saved-manage-toggle").click();return true');
  assert.equal(await ui('return s.getElementById("cwb-saved-manage-bar").hidden'),false);
+ assert.equal(await ui('return s.getElementById("cwb-saved-select-all").textContent'),'全选全部');
+ await ui('const input=s.getElementById("cwb-saved-search");input.value="Wallpaper";input.dispatchEvent(new Event("input"));return true');
+ assert.equal(await ui('return s.getElementById("cwb-saved-select-all").textContent'),'全选筛选');
+ await ui('const input=s.getElementById("cwb-saved-search");input.value="";input.dispatchEvent(new Event("input"));return true');
+ assert.equal(await ui('return s.getElementById("cwb-saved-select-all").textContent'),'全选全部');
  await ui('document.getElementById("codex-wallpaper-controls").__cwbSetPanelSize(360,520);return true');
  await sleep(40);
  assert.equal(await ui('const b=s.querySelector(".cwb-window-body");return b.scrollWidth<=b.clientWidth+1'),true);

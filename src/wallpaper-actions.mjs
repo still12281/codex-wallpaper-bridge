@@ -10,7 +10,7 @@ import {createEngineCatalog} from './engine-library.mjs';
 import {convertMedia} from './media-converter.mjs';
 import {planMedia} from './media-preflight.mjs';
 import {createImportJobs} from './import-jobs.mjs';
-import {clearConversionCache} from './conversion-cache.mjs';
+import {clearConversionCache,rememberConversion} from './conversion-cache.mjs';
 import {readWallpaperProperties,validatePropertyPatch,propertyDefinitions,effectivePropertyValues} from './wallpaper-properties.mjs';
 import {currentEngineSource,getCurrentEngineProject,inspectEngineProject} from './wallpaper-engine-source.mjs';
 import {commitConverted,removeManagedFile} from './media-store.mjs';
@@ -204,7 +204,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
     const projectRoot=entry.projectRoot||await findWorkshopProject(entry.workshopId),project=await describeProject(projectRoot);
     if(['scene','web'].includes(project.type))return action(c,{action:'display-native',selectedId:entry.id});
    }
-   const previous=structuredClone(entry);let created;
+   const previous=structuredClone(entry);let created,convertedCacheKey;
    try{
     const customKeys=['limits','quality','videoTexScale','file','mime'];
     if(req.tier!=='custom'&&(!entry.displayTier||entry.displayTier==='custom'))entry.customDisplay=Object.fromEntries(customKeys.filter(k=>entry[k]!==undefined).map(k=>[k,structuredClone(entry[k])]));
@@ -219,11 +219,13 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
       try{await stat(input)}catch{throw Error('原素材不可用，请重新导入后调整规格')}
       const converted=await convertMedia(root,input,entry.sourceMime||entry.mime,entry.id,limits,options(c,req));
       const ext=path.extname(converted.file)||'.mp4';
+      convertedCacheKey=converted.cacheKey;
       created='media/variant-'+randomUUID()+ext;await rename(path.join(root,converted.file),path.join(root,created));entry.file=created;entry.mime=converted.mime;entry.limits=converted.limits;
      }
     }
     entry.displayTier=req.tier;await apply();await services.configureMedia?.(effectiveMediaSettings(settings));await saveConfig(root,settings);
    }catch(error){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previous);await services.configureMedia?.(effectiveMediaSettings(settings));await apply();if(created)await removeManagedFile(root,settings,created);throw error;}
+   if(convertedCacheKey&&entry.file)await rememberConversion(root,convertedCacheKey,entry.file).catch(()=>{});
    for(const oldFile of new Set([previous.file,previous.staticFile,previous.customDisplay?.file].filter(Boolean)))await removeManagedFile(root,settings,oldFile).catch(()=>{});
    return {config:settings,message:'已应用“'+tier.name+'”。'+tier.description+'；渲染器兼容范围不因档位改变。'};
   }
@@ -469,7 +471,10 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   req={...req};const u=uploads.get(req.uploadId);if(!req.operationId&&u?.owner===c)req.operationId=u.operationId;
   if(req.action==='import-cancel'){
    const active=jobs.get(c,req.operationId),result=jobs.cancel(c,req.operationId);
-   if(active?.phase!=='committing')for(const upload of uploads.values())if(upload.owner===c&&(!req.uploadId||upload.id===req.uploadId)&&(!req.operationId||upload.operationId===req.operationId)){await clearUpload(upload);if(active?.phase==='queued')jobs.end(active);}
+   if(active?.phase!=='committing'){
+    catalog.releasePicked?.(c);
+    for(const upload of uploads.values())if(upload.owner===c&&(!req.uploadId||upload.id===req.uploadId)&&(!req.operationId||upload.operationId===req.operationId)){await clearUpload(upload);if(active?.phase==='queued')jobs.end(active);}
+   }
    if(active&&!active.inFlight&&active.phase!=='queued'&&active.phase!=='committing')jobs.end(active);return result;
   }
   if(c?.ws&&c.ws.readyState!==1)throw Object.assign(Error('导入窗口已断开'),{code:'IMPORT_CANCELLED'});

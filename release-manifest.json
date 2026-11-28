@@ -408,13 +408,13 @@
     },
     {
       "path": "src/engine-library.mjs",
-      "utf8Bytes": 9526,
-      "sha256": "edfadf1555f2230a878b6609f6904ca808fa64f0b0f4d05320129c002be83f95"
+      "utf8Bytes": 9639,
+      "sha256": "f338f6f9422a28cb8f042c1e72f044e33c2792532ed4280b142476bbf6aed27b"
     },
     {
       "path": "src/feature-panel.mjs",
-      "utf8Bytes": 70317,
-      "sha256": "17bda252d84ac21f380e550fcb3eee483135b7087a4cee5ee635481926f7a636"
+      "utf8Bytes": 70998,
+      "sha256": "2784c639f14f523015d4ab6a74e366416071d0370cbfbb184114d4d5932389f2"
     },
     {
       "path": "src/freeze-frame.mjs",
@@ -528,8 +528,8 @@
     },
     {
       "path": "src/wallpaper-actions.mjs",
-      "utf8Bytes": 54631,
-      "sha256": "648869431c29eeb4563bba726a67954879c0e39d5a8bb29f145baff85fd1381a"
+      "utf8Bytes": 54866,
+      "sha256": "67689a054f7e19a241d9efb284094e1b43da54637f4ad300ca0e86395c5f94f2"
     },
     {
       "path": "src/wallpaper-engine-source.mjs",
@@ -538,8 +538,8 @@
     },
     {
       "path": "src/wallpaper-panel.mjs",
-      "utf8Bytes": 53565,
-      "sha256": "c4024a44798e8c778b42033089c02a5aa031e4edafbaf52b1d2a413f1f204d5c"
+      "utf8Bytes": 53861,
+      "sha256": "785805e3267198c8c3a10fd1ded4622900e7ebf37cdcee2369f616ffec2650d2"
     },
     {
       "path": "src/wallpaper-pointer.mjs",
@@ -598,13 +598,13 @@
     },
     {
       "path": "test/batch-management.test.mjs",
-      "utf8Bytes": 14231,
-      "sha256": "6b82bb82f9140dda2eb4c17496026a33b07fdcd5c76dd7fe2f824c80280558e2"
+      "utf8Bytes": 14997,
+      "sha256": "7d9f01291d8c291ead67a626ac79b788ffaf6b72a39be457311556e5861716e4"
     },
     {
       "path": "test/batch-panel-integration.mjs",
-      "utf8Bytes": 13519,
-      "sha256": "a27f00c56fe265a5d2b0a33b18bda6e765c69e3b3cd0071abf8921a51c0d6f20"
+      "utf8Bytes": 16489,
+      "sha256": "0b3d41953e1778bcf9868191455c05308dc7a9f76fe1a4f3725fa4ba77515f7b"
     },
     {
       "path": "test/bridge-update-runner.ps1",
