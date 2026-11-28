@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.0
+
+### Highlights
+
+- Direct external media playback for compatible local images and MP4 videos without copying originals into `media/`
+- Batch import selection, local multi-file picker, saved-library management, and batch first-run authorization for rotation
+
+### New features
+
+- **Direct external media reference**. Compatible local images (`PNG`, `JPEG`, `WebP`, unrotated and within the active resolution and byte cap) and compatible `MP4` videos (`H.264`, `yuv420p`, square pixels, unrotated, within resolution/FPS and bitrate limits, including files with audio tracks muted via `<video muted>`) are referenced directly from their registered local paths instead of creating duplicate copies under `media/`. Oversized, high-bitrate, or incompatible formats (`HEVC`, `MKV`, `WebM`, `GIF`, 10-bit) continue to transcode under the default `1280 / 24 FPS` profile. Switching display tiers creates managed variants only when scaling or transcoding is required and resumes direct playback while cleaning up unused variants when switching back to a compatible tier.
+- **Registered-path media security fence & missing-source handling**. Extend playback and thumbnail preview verification to allow managed `media/` assets and local external paths explicitly registered in `settings.library`, while rejecting UNC/network paths, `..` traversal, symbolic links and directory junctions along the path, and non-media extensions, with `realpath` + size/timestamp re-verification around loading. Moved or deleted external files report a clear error without replacing the active background, are skipped by automatic rotation, display a non-cached missing-file status in saved previews, and keep the settings panel reachable on startup. Deleting an externally referenced entry removes only derived managed stills or variants; `tools/library-maintenance.mjs` preserves external media references (`externalMedia: "references-only"`) during backup/restore and reports missing/non-directory paths in `diagnose`.
+- **Batch import, multi-file pick & saved-library management**. Add page/range batch selection in catalog browsing, multi-file selection (up to 100 files) in the native Windows picker, saved-library search, pagination, batch deletion, and confirmed clear-all, plus optional per-batch live-wallpaper authorization and chunked batch approval in **特效与联动 → 壁纸轮播**.
+
+### Fixes
+
+- Regenerate static images from their original source when upgrading display tiers, cache display-tier conversions for reuse, and clean up orphaned variant files across repeated tier switches.
+- Release cancelled multi-pick jobs and owner tokens cleanly, cap catalog batch card selection at 100 items, and force `<video>` playback to stay muted even when WebGL scene volume is non-zero.
+
 ## 0.4.2
 
 ### Security & Fixes
