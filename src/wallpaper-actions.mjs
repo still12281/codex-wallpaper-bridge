@@ -53,9 +53,37 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    throw error;
   }
  };
+ const realtimeRendererFor=entry=>entry.mode==='webwallgl'?'webwallgl':entry.engine==='chromium-web'?'chromium-web':entry.engine==='wallpaper-engine-h264'?'native-h264':'native';
+ const validateRealtimeProject=(project,renderer)=>{
+  if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
+  if(renderer==='chromium-web'&&project.type!=='web')throw Error('网页浏览器模式仅支持网页项目');
+  if(renderer==='native-h264'&&project.type!=='scene')throw Error('原版硬件传帧仅支持场景项目');
+  if(renderer==='webwallgl'&&project.type!=='scene')throw Error('网页 WebWallGL 资源通道尚未通过验收，请选择原生实时模式');
+ };
+ const createRealtimeEntry=(project,renderer,limits,{needsRunConfirmation=false}={})=>{
+  const mode=renderer==='webwallgl'?'webwallgl':'realtime';
+  const engine=renderer==='chromium-web'?'chromium-web':renderer==='native-h264'?'wallpaper-engine-h264':mode==='realtime'?'wallpaper-engine':undefined;
+  const entry={id:randomUUID(),name:project.name+(engine==='chromium-web'?' · 网页浏览器':engine==='wallpaper-engine-h264'?' · 原版硬件传帧':mode==='webwallgl'?' · WebGL':' · 实时'),mode,...(engine?{engine}:{}),projectType:project.type,scripts:mode==='webwallgl'||engine==='chromium-web',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:engine==='chromium-web'?'Chromium 本地网页沙箱（试验）':mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits,...(needsRunConfirmation?{needsRunConfirmation:true}:{})};
+  const sibling=settings.library.find(e=>e.sourceKey===project.sourceKey||(e.workshopId&&e.workshopId===project.workshopId));
+  if(sibling?.userProperties)entry.userProperties=structuredClone(sibling.userProperties);
+  return {mode,engine,entry};
+ };
+ const requestEntryRunConfirmation=async(c,entry,remember)=>{
+  if(!['realtime','webwallgl'].includes(entry.mode)||!entry.projectRoot)throw Error('此壁纸缺少完整项目引用');
+  const renderer=realtimeRendererFor(entry),project=await describeProject(entry.projectRoot);
+  validateRealtimeProject(project,renderer);
+  const limits={...(renderer==='webwallgl'?gpuProfile:realtimeProfile)(entry.limits||settings.playback),...(entry.limits?.exactResolution?{exactResolution:true}:{})},token=randomUUID();
+  for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
+  confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow:true,limits,renderer,entryId:entry.id,remember});
+  return {confirmation:{token,name:project.name||entry.name,apply:true,firstRun:true,entryId:entry.id,limits,renderer},message:'此实时壁纸首次运行前需要确认一次。'};
+ };
  const selectWallpaper=async(c,id,remember)=>{
   const selected=settings.library.find(entry=>entry.id===id);
   if(!selected)throw Error('壁纸不存在');
+  if(selected.needsRunConfirmation===true){
+   if(!c)throw Error('此实时壁纸尚未完成首次运行确认');
+   return requestEntryRunConfirmation(c,selected,remember);
+  }
   if(settings.selectedId===id&&(!services.isSelectedHealthy||await services.isSelectedHealthy(c))){
    if(remember)await saveManualSelection(selected,true);
    return {config:settings,message:'当前已使用此壁纸。'};
@@ -90,12 +118,25 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
   if(!entry)throw Error('当前壁纸不存在');
   return entry;
  };
+ const saveRealtimeDeferred=async(c,req,projectRoot,profile,renderer='native',duplicatePolicy)=>{
+  const project=await describeProject(projectRoot);
+  validateRealtimeProject(project,renderer);
+  const limits={...(renderer==='webwallgl'?gpuProfile:realtimeProfile)(profile||settings.playback),...(profile?.exactResolution?{exactResolution:true}:{})};
+  const mode=renderer==='webwallgl'?'webwallgl':'realtime';
+  const engine=renderer==='chromium-web'?'chromium-web':renderer==='native-h264'?'wallpaper-engine-h264':mode==='realtime'?'wallpaper-engine':undefined;
+  const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey&&(!engine||(e.engine||'wallpaper-engine')===engine));
+  if(existing&&duplicatePolicy!=='use')return duplicate(existing,false,duplicatePolicy);
+  if(existing)return {config:settings,message:'该实时壁纸已在我的壁纸中，当前背景保持不变。'};
+  const {entry}=createRealtimeEntry(project,renderer,limits,{needsRunConfirmation:true});
+  await committing(c,req);
+  settings.library.push(entry);
+  try{await saveConfig(root,settings);}
+  catch(error){settings.library.splice(settings.library.indexOf(entry),1);throw error;}
+  return {config:settings,message:'实时壁纸已保存为待首次确认；首次手动应用时确认一次，确认前不参与轮播，当前背景保持不变。'};
+ };
  const requestRealtime=async(c,projectRoot,applyNow,profile,renderer='native',duplicatePolicy,nativeFull=false,rendererTargetId)=>{
   const project=await describeProject(projectRoot);
-  if(!['scene','web'].includes(project.type))throw Error('此项目不支持实时模式');
-  if(renderer==='chromium-web'&&project.type!=='web')throw Error('网页浏览器模式仅支持网页项目');
-  if(renderer==='native-h264'&&project.type!=='scene')throw Error('原版硬件传帧仅支持场景项目');
-  if(renderer==='webwallgl'&&project.type!=='scene')throw Error('网页 WebWallGL 资源通道尚未通过验收，请选择原生实时模式');
+  validateRealtimeProject(project,renderer);
   const limits={...(renderer==='webwallgl'?gpuProfile:realtimeProfile)(profile||settings.playback),...(profile?.exactResolution?{exactResolution:true}:{})},token=randomUUID();
   for(const [id,p]of confirmations)if(p.expires<Date.now()||p.owner===c)confirmations.delete(id);
   confirmations.set(token,{owner:c,expires:Date.now()+300000,project,applyNow,limits,renderer,duplicatePolicy,nativeFull,rendererTargetId});
@@ -224,6 +265,28 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const pending=confirmations.get(req.confirmationToken);
    if(!pending||pending.owner!==c||pending.expires<Date.now()||req.confirmed!==true)throw Error('实时导入确认已失效，请重新选择');
    confirmations.delete(req.confirmationToken);
+   if(pending.entryId!==undefined){
+    const entry=settings.library.find(e=>e.id===pending.entryId);
+    if(!entry)throw Error('壁纸不存在');
+    const project=await describeProject(pending.project.root);
+    if(project.sourceKey!==pending.project.sourceKey)throw Error('壁纸项目已改变，请重新确认');
+    await committing(c,req);
+    const previous=settings.selectedId,previousFallback=settings.realtimeFallbackId,hadPending=entry.needsRunConfirmation===true;
+    if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;
+    settings.selectedId=entry.id;
+    try{
+     await apply();
+     delete entry.needsRunConfirmation;
+     if(pending.remember!==false)await saveManualSelection(entry);
+     else await saveConfig(root,settings);
+    }catch(error){
+     settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;
+     if(hadPending)entry.needsRunConfirmation=true;
+     if(error.code!=='CWB_SELECTION_SUPERSEDED')await apply().catch(()=>{});
+     throw error;
+    }
+    return {config:settings,message:'已确认并应用实时壁纸；后续切换和轮播不再提醒。'};
+   }
    if(pending.rendererTargetId!==undefined)requireSelectedWallpaper(pending.rendererTargetId);
    const project=await describeProject(pending.project.root);
    if(project.sourceKey!==pending.project.sourceKey)throw Error('壁纸项目已改变，请重新确认');
@@ -231,14 +294,14 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const engine=pending.renderer==='chromium-web'?'chromium-web':pending.renderer==='native-h264'?'wallpaper-engine-h264':mode==='realtime'?'wallpaper-engine':undefined;
    const existing=settings.library.find(e=>e.mode===mode&&e.sourceKey===project.sourceKey&&(!engine||(e.engine||'wallpaper-engine')===engine));
    if(existing&&pending.duplicatePolicy!=='use')return duplicate(existing,pending.applyNow,pending.duplicatePolicy);
-   const entry=existing||{id:randomUUID(),name:project.name+(engine==='chromium-web'?' · 网页浏览器':engine==='wallpaper-engine-h264'?' · 原版硬件传帧':mode==='webwallgl'?' · WebGL':' · 实时'),mode,...(engine?{engine}:{}),projectType:project.type,scripts:mode==='webwallgl'||engine==='chromium-web',projectRoot:project.root,sourceKey:project.sourceKey,workshopId:project.workshopId,source:engine==='chromium-web'?'Chromium 本地网页沙箱（试验）':mode==='webwallgl'?'WebWallGL 沙箱场景':'Wallpaper Engine 原生实时场景',limits:pending.limits};
-   if(!existing){const sibling=settings.library.find(e=>e.sourceKey===project.sourceKey||(e.workshopId&&e.workshopId===project.workshopId));if(sibling?.userProperties)entry.userProperties=structuredClone(sibling.userProperties);}await committing(c,req);const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
-   try{if(pending.applyNow){await apply();await saveManualSelection(entry);}else await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
-   return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
+   const entry=existing||createRealtimeEntry(project,pending.renderer,pending.limits).entry;
+   await committing(c,req);const previous=settings.selectedId,previousLimits=entry.limits,previousFallback=settings.realtimeFallbackId,previousEntry=existing?structuredClone(entry):null;if(existing)entry.limits=pending.limits;if(pending.nativeFull){entry.displayTier='full';delete entry.customDisplay;if(mode==='webwallgl'){entry.quality={postProcessing:'high',particles:'high',antiAliasing:'fxaa'};entry.videoTexScale=1;}}if(!existing)settings.library.push(entry);if(pending.applyNow){if(settings.library.some(e=>e.id===previous&&!['realtime','webwallgl'].includes(e.mode)))settings.realtimeFallbackId=previous;settings.selectedId=entry.id}
+   try{if(pending.applyNow){await apply();delete entry.needsRunConfirmation;await saveManualSelection(entry);}else await saveConfig(root,settings)}catch(error){settings.selectedId=previous;settings.realtimeFallbackId=previousFallback;if(previousEntry){for(const k of Object.keys(entry))delete entry[k];Object.assign(entry,previousEntry);}else entry.limits=previousLimits;if(!existing)settings.library.splice(settings.library.indexOf(entry),1);if(pending.applyNow)await apply();throw error}
+   return {config:settings,message:pending.applyNow?'已保存并应用实时壁纸；后续切换和轮播不再提醒。':'实时壁纸已保存；未启动渲染，当前背景保持不变。'};
   }
-  if(req.action==='engine-list'){const search={scope:req.scope||'global',folder:req.folder||'',kind:req.kind||'engine'};const result=await catalog.search(search);settings.engineSearch=search;await saveConfig(root,settings);return result}
+  if(req.action==='engine-list'){const {search,result}=await searchEngine(req);await commitEngineSearch(search);return result}
   if(req.action==='engine-inspect'){const item=await catalog.resolve(req.projectToken);if(req.renderMode==='chromium-web'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='web',needsRealtime:true,mode:'chromium-web',label:project.type==='web'?'本地网页浏览器（试验）':'仅网页项目可使用浏览器模式',reason:'无窗口 Chromium 执行本地 HTML/脚本；不加载外网，不含系统音频或鼠标转发；暂停关闭浏览器，恢复重新加载。原版兼容模式仍可用。'}};}if(req.renderMode==='webwallgl'&&item.kind!=='media'){const project=await describeProject(item.root);return {inspection:{supported:project.type==='scene',needsRealtime:true,mode:'webwallgl',label:project.type==='scene'?'WebWallGL 沙箱实时渲染':'当前网页不能用 WebGL 模式导入',reason:project.type==='scene'?'不启动 Wallpaper Engine 源窗口；执行场景脚本，效果兼容性取决于此项目。':'请改为原生实时模式，网页资源通道尚未通过验收。'}};}return {inspection:item.kind==='media'?{supported:true,needsRealtime:false,mode:'media',label:'不需要实时渲染',reason:item.mime.startsWith('video/')?'当前选中的是视频，生成副本后直接播放。':'当前选中的是图片，可直接导入。'}:await inspectEngineProject(item.root,req.renderMode,settings.rendererPriority)}}
-  if(req.action==='engine-pick-folder'){const result=await promisify(execFile)(getPowerShell(),['-NoProfile','-STA','-File',fileURLToPath(new URL('../windows/Pick-WallpaperFolder.ps1',import.meta.url)),'-InitialPath',settings.engineSearch?.folder||''],{windowsHide:true,timeout:150000});return JSON.parse(result.stdout)}
+  if(req.action==='engine-pick-folder')return pickEngineFolder();
   if(req.action==='media-pick'){
    const signal=options(c,req).signal;
    try{
@@ -285,16 +348,16 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    const projectRoot=resolved?.root||(workshopId?await findWorkshopProject(workshopId):null);
    if((req.renderMode||'auto')==='auto'&&projectRoot&&resolved?.kind!=='media'){
     const inspection=await inspectEngineProject(projectRoot,'auto',settings.rendererPriority);
-    if(inspection.needsRealtime){const project=await describeProject(projectRoot),renderer=inspection.mode==='webwallgl'?'webwallgl':inspection.mode==='chromium-web'?'chromium-web':'native',existing=duplicateEntry(settings,{mode:renderer==='webwallgl'?'webwallgl':'realtime',...(renderer==='webwallgl'?{}:{engine:renderer==='chromium-web'?'chromium-web':'wallpaper-engine'}),sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,renderer,req.duplicatePolicy)}
+    if(inspection.needsRealtime){const project=await describeProject(projectRoot),renderer=inspection.mode==='webwallgl'?'webwallgl':inspection.mode==='chromium-web'?'chromium-web':'native',existing=duplicateEntry(settings,{mode:renderer==='webwallgl'?'webwallgl':'realtime',...(renderer==='webwallgl'?{}:{engine:renderer==='chromium-web'?'chromium-web':'wallpaper-engine'}),sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return applyNow?requestRealtime(c,projectRoot,applyNow,req.profile,renderer,req.duplicatePolicy):saveRealtimeDeferred(c,req,projectRoot,req.profile,renderer,req.duplicatePolicy)}
    }
-   if(req.renderMode==='chromium-web'&&projectRoot){const project=await describeProject(projectRoot);if(project.type!=='web')throw Error('网页浏览器模式仅支持网页项目');const existing=duplicateEntry(settings,{mode:'realtime',engine:'chromium-web',sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,'chromium-web',req.duplicatePolicy);}
-   if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type)){const existing=duplicateEntry(settings,{mode:req.renderMode,...(req.renderMode==='realtime'?{engine:'wallpaper-engine'}:{}),sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return requestRealtime(c,projectRoot,applyNow,req.profile,req.renderMode==='webwallgl'?'webwallgl':'native',req.duplicatePolicy)}}
+   if(req.renderMode==='chromium-web'&&projectRoot){const project=await describeProject(projectRoot);if(project.type!=='web')throw Error('网页浏览器模式仅支持网页项目');const existing=duplicateEntry(settings,{mode:'realtime',engine:'chromium-web',sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);return applyNow?requestRealtime(c,projectRoot,applyNow,req.profile,'chromium-web',req.duplicatePolicy):saveRealtimeDeferred(c,req,projectRoot,req.profile,'chromium-web',req.duplicatePolicy);}
+   if(['realtime','webwallgl'].includes(req.renderMode)&&projectRoot){const project=await describeProject(projectRoot);if(['scene','web'].includes(project.type)){const existing=duplicateEntry(settings,{mode:req.renderMode,...(req.renderMode==='realtime'?{engine:'wallpaper-engine'}:{}),sourceKey:project.sourceKey,workshopId:project.workshopId});if(existing)return duplicate(existing,applyNow,req.duplicatePolicy);const renderer=req.renderMode==='webwallgl'?'webwallgl':'native';return applyNow?requestRealtime(c,projectRoot,applyNow,req.profile,renderer,req.duplicatePolicy):saveRealtimeDeferred(c,req,projectRoot,req.profile,renderer,req.duplicatePolicy)}}
    let contentHash;if(resolved?.kind==='media'){await planMedia(root,resolved.file,resolved.mime,req.profile?realtimeProfile(req.profile):settings.playback,options(c,req));contentHash=await hashMedia(resolved.file,options(c,req));await populateHashes({...options(c,req),bytes:(await stat(resolved.file)).size});}const existing=duplicateEntry(settings,{sourceKey:resolved?.sourceKey,workshopId,contentHash});
    if(existing){
     return duplicate(existing,applyNow,req.duplicatePolicy);
    }
    const id=randomUUID();let source,converted;
-   try{source=resolved?.kind==='media'?{input:resolved.file,mime:resolved.mime,name:path.basename(resolved.file),source:'本地图片/视频',sourceKey:resolved.sourceKey,temporary:false}:await currentEngineSource(root,id,workshopId,resolved?.root)}catch(error){if(error.code==='REALTIME_REQUIRED')return requestRealtime(c,projectRoot,applyNow,req.profile,'native',req.duplicatePolicy);throw error}
+   try{source=resolved?.kind==='media'?{input:resolved.file,mime:resolved.mime,name:path.basename(resolved.file),source:'本地图片/视频',sourceKey:resolved.sourceKey,temporary:false}:await currentEngineSource(root,id,workshopId,resolved?.root)}catch(error){if(error.code==='REALTIME_REQUIRED')return applyNow?requestRealtime(c,projectRoot,applyNow,req.profile,'native',req.duplicatePolicy):saveRealtimeDeferred(c,req,projectRoot,req.profile,'native',req.duplicatePolicy);throw error}
    const job=jobs.get(c,req.operationId);if(job)job.item=source.name;const requestedProfile=req.profile?realtimeProfile(req.profile):settings.playback;
    try{contentHash??=await hashMedia(source.input,options(c,req));converted=await convertMedia(root,source.input,source.mime,id,requestedProfile,options(c,req))}catch(e){if(source.temporary)await removeManagedFile(root,settings,source.input);throw e}
    await committing(c,req,converted);const entry={id,name:source.name,source:source.source,sourcePath:source.input,sourceMime:source.mime,workshopId:source.workshopId,sourceKey:source.sourceKey,...(contentHash?{contentHash}:{})};const previous=settings.selectedId;settings.library.push(entry);if(applyNow)settings.selectedId=id;
@@ -360,6 +423,23 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
    throw error;
   }finally{services.setImportPreparing?.(false);if(job)job.inFlight=false;if(job&&!retain)jobs.end(job);}
  };
+ const searchEngine=async req=>{
+  const search={scope:req.scope||'global',folder:req.folder||'',kind:req.kind||'engine'};
+  const result=await (services.searchCatalog?services.searchCatalog(search):catalog.search(search));
+  return {search,result};
+ };
+ const commitEngineSearch=async search=>{
+  settings.engineSearch=search;
+  await saveConfig(root,settings);
+ };
+ const pickEngineFolder=async()=>{
+  if(services.pickFolder)return services.pickFolder(settings.engineSearch?.folder||'');
+  const result=await promisify(execFile)(getPowerShell(),['-NoProfile','-STA','-File',fileURLToPath(new URL('../windows/Pick-WallpaperFolder.ps1',import.meta.url)),'-InitialPath',settings.engineSearch?.folder||''],{windowsHide:true,timeout:150000});
+  return JSON.parse(result.stdout);
+ };
+ action.searchEngine=searchEngine;
+ action.commitEngineSearch=commitEngineSearch;
+ action.pickEngineFolder=pickEngineFolder;
  action.beginImport=(c,req)=>jobs.begin(c,req);
  action.discardQueuedImport=job=>{
   if(job?.phase==='queued'&&!job.inFlight)jobs.end(job);
@@ -367,7 +447,7 @@ export function createActions(root,settings,apply,applyAppearance=apply,services
  action.isRendererConfirmation=(c,req)=>{
   if(req.action!=='wallpaper-engine-confirm'||req.confirmed!==true)return false;
   const pending=confirmations.get(req.confirmationToken);
-  return !!pending&&pending.owner===c&&pending.expires>=Date.now()&&pending.rendererTargetId!==undefined;
+  return !!pending&&pending.owner===c&&pending.expires>=Date.now()&&(pending.rendererTargetId!==undefined||pending.entryId!==undefined);
  };
  action.disposeOwner=async c=>{catalog.releaseOwner(c);for(const [token,pending]of confirmations)if(pending.owner===c)confirmations.delete(token);for(const job of jobs.ownerJobs(c)){jobs.cancel(c,job.id);jobs.end(job);}for(const u of [...uploads.values()])if(u.owner===c)await clearUpload(u);};
  return action;

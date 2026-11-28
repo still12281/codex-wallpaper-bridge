@@ -58,7 +58,7 @@ On Windows 10/11 x64, install and sign in to the official Microsoft Store Codex 
 
 Download [CodexWallpaperBridge-0.4.1-Setup.exe](https://github.com/still12281/codex-wallpaper-bridge/releases/download/v0.4.1/CodexWallpaperBridge-0.4.1-Setup.exe) and open the English/Simplified Chinese wizard. Choose separate program and wallpaper-data folders, then select shortcut, update-recovery and login-startup options. When upgrading a ZIP installation, select its existing data folder. After installation, save work, exit Codex normally and open the wallpaper entry.
 
-The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal data defaults to `%LOCALAPPDATA%\CodexWallpaperBridge`. Uninstall through Windows **Installed apps** to remove the installer-managed program and owned Windows integrations while keeping the data folder. The `.exe.sha256` asset verifies the download.
+The program defaults to `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`; personal data defaults to `%LOCALAPPDATA%\CodexWallpaperBridge`. On multi-user computers, keep the default `%LOCALAPPDATA%` directory so non-system drives do not inherit write permissions for other local accounts. Uninstall through Windows **Installed apps** to remove the installer-managed program and owned Windows integrations while keeping the data folder. The `.exe.sha256` asset verifies the download.
 
 ### Optional PowerShell installation
 

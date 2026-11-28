@@ -13,13 +13,12 @@ test('browser and original Web versions save separately and configuration retain
  const sourceKey=(await describeProject(projectRoot)).sourceKey,settings=defaultSettings();settings.library=[{id:'original',name:'Fixture',mode:'realtime',projectRoot,sourceKey,limits:{maxWidth:1280,fps:24}}];normalizeLibrary(settings);settings.selectedId='original';let applies=0;
  const actions=createActions(root,settings,async()=>{applies++;}),owner={};
  const catalog=await actions(owner,{action:'engine-list',scope:'folder',folder:projectRoot});
- const pending=await actions(owner,{action:'wallpaper-engine',projectToken:catalog.wallpapers[0].token,renderMode:'chromium-web',apply:false});assert.equal(pending.confirmation.renderer,'chromium-web');
- const confirmation=pending.confirmation;
- await actions(owner,{action:'wallpaper-engine-confirm',confirmationToken:confirmation.token,confirmed:true});
- assert.equal(settings.library.length,2);const browser=settings.library.find(e=>e.engine==='chromium-web');assert(browser.scripts);assert.equal(browser.projectType,'web');assert.equal(applies,0);assert.equal(settings.selectedId,'original');
+ const saved=await actions(owner,{action:'wallpaper-engine',projectToken:catalog.wallpapers[0].token,renderMode:'chromium-web',apply:false});assert.equal(saved.confirmation,undefined);
+ assert.equal(settings.library.length,2);const browser=settings.library.find(e=>e.engine==='chromium-web');assert(browser.scripts);assert.equal(browser.projectType,'web');assert.equal(browser.needsRunConfirmation,true);assert.equal(applies,0);assert.equal(settings.selectedId,'original');
  assert.equal(duplicateEntry(settings,{mode:'realtime',engine:'wallpaper-engine',sourceKey}).id,'original');assert.equal(duplicateEntry(settings,{mode:'realtime',engine:'chromium-web',sourceKey}).id,browser.id);
- const restored=JSON.parse(await readFile(path.join(root,'settings.json'),'utf8'));normalizeLibrary(restored);assert.equal(restored.library.find(e=>e.id===browser.id).engine,'chromium-web');
- await actions(owner,{action:'duplicate-use',existingId:browser.id,apply:true});assert.equal(applies,1);
+ const restored=JSON.parse(await readFile(path.join(root,'settings.json'),'utf8'));normalizeLibrary(restored);assert.equal(restored.library.find(e=>e.id===browser.id).engine,'chromium-web');assert.equal(restored.library.find(e=>e.id===browser.id).needsRunConfirmation,true);
+ const firstRun=await actions(owner,{action:'duplicate-use',existingId:browser.id,apply:true});assert.equal(firstRun.confirmation.renderer,'chromium-web');assert.equal(firstRun.confirmation.firstRun,true);assert.equal(applies,0);
+ await actions(owner,{action:'wallpaper-engine-confirm',confirmationToken:firstRun.confirmation.token,confirmed:true});assert.equal(applies,1);assert.equal(browser.needsRunConfirmation,undefined);
  let nativeProfileCalls=0;const tierActions=createActions(root,settings,async()=>{},async()=>{},{captureStatic:async()=>{return 'media/fixture.jpg';},nativeProfile:()=>{nativeProfileCalls++;throw Error('must not invoke WE');}});
  await tierActions(owner,{action:'display-tier',selectedId:settings.selectedId,tier:'static'});assert.equal(browser.engine,'chromium-web');assert.equal(browser.displayTier,'static');await tierActions(owner,{action:'display-tier',selectedId:settings.selectedId,tier:'custom'});assert.equal(browser.engine,'chromium-web');
  await tierActions(owner,{action:'display-tier',selectedId:settings.selectedId,tier:'full'});assert.equal(settings.library.find(e=>e.id===browser.id).engine,'chromium-web');assert.equal(browser.limits.maxHeight,2160);assert.equal(nativeProfileCalls,0);

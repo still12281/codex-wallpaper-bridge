@@ -31,6 +31,6 @@ test('cancellation during commit does not delete a source being adopted',async()
 test('declining repeated scene reviews releases the bounded operation slots',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cwb-cancel-review-'));await mkdir(path.join(root,'media'));await mkdir(path.join(root,'scene'));await writeFile(path.join(root,'scene/project.json'),JSON.stringify({title:'Fixture',type:'scene'}));
  const owner={},config=defaultSettings(),actions=createActions(root,config,async()=>{}),catalog=await actions(owner,{action:'engine-list',scope:'folder',folder:root,kind:'engine'}),projectToken=catalog.wallpapers[0].token;
- for(let i=0;i<40;i++){const operationId='review-'+i;assert((await actions(owner,{action:'wallpaper-engine',operationId,projectToken,renderMode:'webwallgl',apply:false})).confirmation);assert((await actions(owner,{action:'import-cancel',operationId})).cancelAccepted);}
+ for(let i=0;i<40;i++){const operationId='review-'+i;assert((await actions(owner,{action:'wallpaper-engine',operationId,projectToken,renderMode:'webwallgl',apply:true})).confirmation);assert((await actions(owner,{action:'import-cancel',operationId})).cancelAccepted);}
  assert.deepEqual(config.library,[]);
 });

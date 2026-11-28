@@ -40,6 +40,7 @@
 import {
   createReadStream, existsSync, lstatSync, readFileSync, realpathSync, statSync,
 } from 'node:fs';
+import { stat as statAsync } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { dirname, resolve, sep } from 'node:path';
 import { weFocusGuardSource } from './we-focus-guard.js';
@@ -500,18 +501,62 @@ export function createServeKit(c) {
       if (realTarget && realTarget !== realRoot && !realTarget.startsWith(realRoot + sep)) { fenceOut('realpath'); return; }
       res.setHeader('Access-Control-Allow-Origin', '*');
       if (method === 'GET' && /\.html?$/i.test(target)) {
-        // 入口 HTML 必须 no-store：它带着注入的 shim + 用户属性种子，且上游同步会
-        // 换掉它携带的哈希引用（缓存住了就等于把旧种子喂给壁纸）。
+        // 入口及辅助 HTML 统一走异步有界读取与 8 MiB 上限，避免超大页面阻塞宿主并拉高内存。
         res.setHeader('Cache-Control', 'no-store');
-        if (!existsSync(target)) { res.statusCode = 404; res.end('not found'); return; }
-        let html;
-        try { html = readFileSync(target, 'utf8'); } catch { res.statusCode = 500; res.end('read failed'); return; }
-        html = injectEntryHtml(html, {
-          token, htmlPath: target, readWebShim, buildSeedScript, weFocusGuardSource, BASE,
+        const maxHtmlBytes = Number.isInteger(c.maxHtmlBytes) && c.maxHtmlBytes > 0 ? c.maxHtmlBytes : 8 * 1024 * 1024;
+        return (async () => {
+          const info = await statAsync(target);
+          if (!info.isFile()) { const err = new Error('not-found'); err.code = 'ENOENT'; throw err; }
+          if (info.size > maxHtmlBytes) { const err = new Error('html-too-large'); err.code = 'CWB_HTML_TOO_LARGE'; throw err; }
+          const rawHtml = await new Promise((resolveHtml, rejectHtml) => {
+            const chunks = [];
+            let total = 0;
+            let settled = false;
+            const stream = createReadStream(target);
+            activeStreams.add(stream);
+            const finish = (err, value) => {
+              if (settled) return;
+              settled = true;
+              activeStreams.delete(stream);
+              res.off('close', onClose);
+              if (!stream.destroyed) { try { stream.destroy(); } catch { /* ignore */ } }
+              if (err) rejectHtml(err);
+              else resolveHtml(value);
+            };
+            const onClose = () => {
+              if (!res.writableEnded) {
+                const err = new Error('aborted'); err.code = 'CWB_ABORTED';
+                finish(err);
+              }
+            };
+            res.once('close', onClose);
+            stream.on('data', (chunk) => {
+              total += chunk.length;
+              if (total > maxHtmlBytes) {
+                const err = new Error('html-too-large'); err.code = 'CWB_HTML_TOO_LARGE';
+                finish(err);
+                return;
+              }
+              chunks.push(chunk);
+            });
+            stream.on('error', (err) => finish(err));
+            stream.on('end', () => finish(null, Buffer.concat(chunks, total).toString('utf8')));
+          });
+          if (res.writableEnded || res.destroyed) return;
+          const html = injectEntryHtml(rawHtml, {
+            token, htmlPath: target, readWebShim, buildSeedScript, weFocusGuardSource, BASE,
+          });
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(html);
+        })().catch((err) => {
+          if (err?.code === 'CWB_ABORTED' || res.writableEnded || res.destroyed) return;
+          if (err?.code === 'ENOENT' || err?.code === 'ENOTDIR') { res.statusCode = 404; res.end('not found'); return; }
+          if (err?.code === 'CWB_HTML_TOO_LARGE') {
+            log.warn(`scene-files html exceeds limit (${maxHtmlBytes} bytes): subpath="${subpath}"`);
+            res.statusCode = 413; res.end('html too large'); return;
+          }
+          res.statusCode = 500; res.end('read failed');
         });
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.end(html);
-        return;
       }
       // 其余壁纸自有文件（`scene.pkg` 100–336MB、`project.json`）：内容由 size+mtime
       // 唯一确定 ⇒ 走可重验证缓存（ETag/304），并记进载荷账本 ——

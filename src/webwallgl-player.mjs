@@ -124,6 +124,13 @@ function createCandidate(id,limits){
  const resize=()=>{if(limits.exactResolution){const width=limits.maxWidth/2,height=limits.maxHeight/2,scale=Math.max(innerWidth/width,innerHeight/height);frame.style.width=width+'px';frame.style.height=height+'px';frame.style.left=(innerWidth-width*scale)/2+'px';frame.style.top=(innerHeight-height*scale)/2+'px';frame.style.transformOrigin='top left';frame.style.transform='scale('+scale+')';return;}const scale=Math.min(1,(limits.maxWidth||1280)/innerWidth,(limits.maxHeight||900)/innerHeight),width=Math.max(1,Math.floor(innerWidth*scale)),height=Math.max(1,Math.floor(innerHeight*scale));frame.style.width=width+'px';frame.style.height=height+'px';frame.style.transformOrigin='top left';frame.style.transform='scale('+1/scale+')';};resize();const observer=new ResizeObserver(resize);observer.observe(layer);layer.__cwbCandidateDispose=()=>observer.disconnect();return {url};
 }
 
+export function summarizeFrameNavigationFailure({dom,frameTree,targetInfos,candidateUrl}){
+ const countFrames=node=>node?(node.childFrames||[]).reduce((sum,child)=>sum+1+countFrames(child),0):0;
+ const countMatchedFrames=node=>node?(node.frame?.url===candidateUrl?1:0)+(node.childFrames||[]).reduce((sum,child)=>sum+countMatchedFrames(child),0):0;
+ const iframeTargets=(targetInfos||[]).filter(t=>t?.type==='iframe');
+ return {reason:'wallpaper-frame-not-navigated',readyState:dom?.ready||null,layerFound:!!dom?.layer,framePresent:!!dom?.framePresent,frameMatchesCandidate:!!dom?.frameMatchesCandidate,frameTreeChildCount:countFrames(frameTree),frameTreeMatches:countMatchedFrames(frameTree),iframeTargetCount:iframeTargets.length,iframeTargetMatches:iframeTargets.filter(t=>t.url===candidateUrl).length};
+}
+
 export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurrent=()=>true,selectionStamp,reconnect=false,reuse=null}){
  const started=performance.now(),startup={stages:{},resources:{requests:0,cacheHits:0,queueMs:0,transferMs:0}};
  const mark=stage=>{startup.stages[stage]=performance.now()-started;};
@@ -161,7 +168,7 @@ export async function mountWebWallGL(c,entry,{dataRoot,config,probe=false,isCurr
    if(!frame){const {targetInfos}=await c.call('Target.getTargets');const child=targetInfos.find(t=>t.type==='iframe'&&t.url===candidate.url);if(child){({sessionId}=await c.call('Target.attachToTarget',{targetId:child.targetId,flatten:true}));frame=(await c.call('Page.getFrameTree',{},sessionId)).frameTree.frame;}}
    if(frame)break;await sleep(100);
   }
-  if(!frame){const tree=await c.call('Page.getFrameTree'),inventory=(await c.call('Target.getTargets')).targetInfos,dom=await c.evaluate('(()=>{const layer=document.getElementById('+JSON.stringify(id)+');return {ready:document.readyState,url:location.href,layer:!!layer,frame:layer?.shadowRoot?.querySelector("iframe")?.src}})()');throw Error('壁纸沙箱 iframe 未导航：'+JSON.stringify({dom,tree:tree.frameTree,targets:inventory.filter(t=>t.type==='iframe')}));}
+  if(!frame){const tree=await c.call('Page.getFrameTree'),inventory=(await c.call('Target.getTargets')).targetInfos,dom=await c.evaluate('(()=>{const layer=document.getElementById('+JSON.stringify(id)+');const frame=layer?.shadowRoot?.querySelector("iframe");return {ready:document.readyState,layer:!!layer,framePresent:!!frame,frameMatchesCandidate:frame?.src==='+JSON.stringify(candidate.url)+'};})()');throw Error('壁纸沙箱 iframe 未导航：'+JSON.stringify(summarizeFrameNavigationFailure({dom,frameTree:tree.frameTree,targetInfos:inventory,candidateUrl:candidate.url})));}
   mark('frameReady');({executionContextId:contextId}=await c.call('Page.createIsolatedWorld',{frameId:frame.id,worldName:id},sessionId));
   await c.call('Runtime.addBinding',{name:binding,executionContextId:contextId},sessionId);
   const handleRequest=request=>{

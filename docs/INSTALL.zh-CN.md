@@ -126,6 +126,8 @@ $script = (Get-Content -LiteralPath (Join-Path $root 'launch-script.txt') -Raw).
 
 这会安装到指定目录并生成指向它的快捷方式。后续升级仍传相同目录。已有安装的库迁移请使用[备份和恢复](MAINTENANCE.zh-CN.md)，不要直接覆盖其它安装的设置。
 
+> **多账户电脑注意**：数据目录中同时存放 `CodexEntry.exe`、`launch-script.txt` 和已安装脚本。默认 `%LOCALAPPDATA%\CodexWallpaperBridge` 仅当前用户与管理员可写；而 Windows 非系统盘（如 `D:\`、`E:\`）根目录通常会向“已验证用户（Authenticated Users）”继承修改权限。**多账户共用电脑建议使用默认 `%LOCALAPPDATA%` 目录**；确需放在非系统盘时，请手动收紧目标目录写权限。
+
 ## 首次设置壁纸
 
 1. 从安装时选择的壁纸入口打开客户端，点击顶部 **壁纸**。

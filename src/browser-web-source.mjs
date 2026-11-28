@@ -9,6 +9,7 @@ import {effectivePropertyValues} from './wallpaper-properties.mjs';
 import {createServeKit} from '../vendor/dsh-wallpaper/serve.js';
 
 const slots=new Set(),sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+export const MAX_WEB_HTML_BYTES=8*1024*1024;
 const rtcGuard="for(const key of ['RTCPeerConnection','webkitRTCPeerConnection'])try{Object.defineProperty(globalThis,key,{value:undefined,writable:false,configurable:false})}catch{}";
 async function browserExecutable(){
  const candidates=[process.env.CODEX_WALLPAPER_CHROMIUM,path.join(process.env.ProgramFiles||'C:/Program Files','Google/Chrome/Application/chrome.exe'),path.join(process.env['ProgramFiles(x86)']||'C:/Program Files (x86)','Microsoft/Edge/Application/msedge.exe')].filter(Boolean);
@@ -23,7 +24,7 @@ export async function startBrowserWeb(entry,dataRoot,{isCurrent=()=>true}={}){
  if(!inside(root,metadata)||(await stat(metadata)).size>1024*1024)throw Error('网页项目元数据无效');
  const project=JSON.parse(await readFile(metadata,'utf8'));
  if(String(project.type).toLowerCase()!=='web'||typeof project.file!=='string'||path.isAbsolute(project.file)||!/^\.html?$/i.test(path.extname(project.file)))throw Error('此模式仅支持本地 HTML 网页项目');
- const html=await realpath(path.resolve(root,project.file));if(!inside(root,html)||(await stat(html)).size>8*1024*1024)throw Error('网页入口越界或超过 8 MiB');
+ const html=await realpath(path.resolve(root,project.file));if(!inside(root,html)||(await stat(html)).size>MAX_WEB_HTML_BYTES)throw Error('网页入口越界或超过 8 MiB');
  // Upstream injects before author scripts. Refuse author meta CSP here rather
  // than accidentally running a shim before that policy takes effect.
  const policyText=(await readFile(html,'utf8')).replace(/&#(?:x([a-f\d]+)|(\d+));?/gi,(match,hex,decimal)=>{const value=parseInt(hex||decimal,hex?16:10);return value<=0x10ffff?String.fromCodePoint(value):match;}).replace(/&(?:Tab|NewLine);/g,' ');
@@ -34,7 +35,7 @@ export async function startBrowserWeb(entry,dataRoot,{isCurrent=()=>true}={}){
  const token=randomUUID(),wrapperToken=randomUUID(),nonce=randomUUID(),BASE='/wallpaper-engine',assetPrefix=BASE+'/scene-files/'+token+'/',activeStreams=new Set();
  let server,origin,browser=null,control=Promise.resolve(),controlRevision=0,stopPromise,servedEntry=false,wire;
  const shim=await readFile(new URL('../vendor/webwallgl/web-shim.js',import.meta.url),'utf8').catch(error=>{slots.delete(slot);throw error;});
- const kit=createServeKit({BASE,activeStreams,mediaMap:new Map([[token,metadata]]),log:{warn:value=>note('asset',value)},appendDiagLine:()=>{},traceRequests:()=>{},traceMediaRequests:()=>{},readWebShim:()=>shim,buildSeedScript:()=>`window.__weSetFps(${profile.fps});window.__weSetVolume(0);window.__weSeedProps(${JSON.stringify(wire)});`});
+ const kit=createServeKit({BASE,activeStreams,maxHtmlBytes:MAX_WEB_HTML_BYTES,mediaMap:new Map([[token,metadata]]),log:{warn:value=>note('asset',value)},appendDiagLine:()=>{},traceRequests:()=>{},traceMediaRequests:()=>{},readWebShim:()=>shim,buildSeedScript:()=>`window.__weSetFps(${profile.fps});window.__weSetVolume(0);window.__weSeedProps(${JSON.stringify(wire)});`});
  const entryPath=path.relative(root,html).split(path.sep).map(encodeURIComponent).join('/');
  const closeBrowser=async()=>{
   const owned=browser;if(!owned)return;browser=null;
@@ -114,7 +115,7 @@ export async function startBrowserWeb(entry,dataRoot,{isCurrent=()=>true}={}){
    if(!pathname.startsWith(assetPrefix))return fail(404);
    res.setHeader('Content-Security-Policy',`sandbox allow-scripts; default-src 'none'; script-src ${origin} blob: 'unsafe-inline' 'unsafe-eval'; style-src ${origin} 'unsafe-inline'; img-src ${origin} data: blob:; media-src ${origin} data: blob:; font-src ${origin} data:; connect-src ${origin}; worker-src blob:; frame-src 'none'; object-src 'none'; base-uri ${origin}; form-action 'none'`);
    res.once('finish',()=>{if(pathname===assetPrefix+entryPath&&res.statusCode===200)servedEntry=true;if(res.statusCode>=400){note('asset-status',res.statusCode);if(['document','script','style'].includes(req.headers['sec-fetch-dest']))runtime.error='网页必要资源加载失败：HTTP '+res.statusCode+'；请改用原版兼容模式';}});
-   try{kit.handleSceneFiles(req,res,'media');}catch(error){note('serve',error.message);if(!res.headersSent)res.statusCode=500;res.end();}
+   Promise.resolve().then(()=>kit.handleSceneFiles(req,res,'media')).catch(error=>{note('serve',error.message);if(!res.headersSent)res.statusCode=500;if(!res.writableEnded)res.end();});
   });
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});origin='http://127.0.0.1:'+server.address().port;
   await launch();assertCurrent();return runtime;

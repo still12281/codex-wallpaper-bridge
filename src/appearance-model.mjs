@@ -36,7 +36,7 @@ export function parsePreset(input){
 export function rotationCandidates(settings){
  const rotation=settings.rotation||{},hidden=new Set(settings.hiddenWallpaperIds||[]),ids=new Set(rotation.ids||[]);
  return libraryGroups(settings.library,settings.selectedId).filter(group=>!group.entries.some(e=>[e.workshopId,e.sourceKey,e.id].some(key=>hidden.has(key)))).map(group=>{
-  const valid=group.entries.filter(e=>['webwallgl','realtime'].includes(e.mode)?!!e.projectRoot:!!e.file);
+  const valid=group.entries.filter(e=>['webwallgl','realtime'].includes(e.mode)?(!!e.projectRoot&&e.needsRunConfirmation!==true):!!e.file);
   const explicit=valid.find(e=>ids.has(e.id)),entry=explicit||valid.find(e=>e.id===group.id)||valid[0];
   return {...group,entry,id:entry?.id};
  }).filter(group=>group.entry&&(!ids.size||group.entries.some(e=>ids.has(e.id))));

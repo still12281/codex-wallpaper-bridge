@@ -26,8 +26,8 @@ test('auto routing persists scene GPU and Web native priority while explicit cho
  assert.equal((await inspectEngineProject(root,'auto',config.rendererPriority)).mode,'realtime');
  assert.equal((await inspectEngineProject(root,'auto',{web:'chromium-web'})).mode,'chromium-web');
  const actions=createActions(root,config,async()=>{}),owner={},catalog=await actions(owner,{action:'engine-list',scope:'folder',folder:root}),token=catalog.wallpapers[0].token;
- const auto=await actions(owner,{action:'wallpaper-engine',projectToken:token,apply:false});assert.equal(auto.confirmation.renderer,'native');
- const browser=await actions(owner,{action:'wallpaper-engine',projectToken:token,renderMode:'chromium-web',apply:false});assert.equal(browser.confirmation.renderer,'chromium-web');
+ const auto=await actions(owner,{action:'wallpaper-engine',projectToken:token,apply:true});assert.equal(auto.confirmation.renderer,'native');
+ const browser=await actions(owner,{action:'wallpaper-engine',projectToken:token,renderMode:'chromium-web',apply:true});assert.equal(browser.confirmation.renderer,'chromium-web');
  await writeFile(path.join(root,'project.json'),JSON.stringify({type:'scene'}));assert.equal((await inspectEngineProject(root,'auto',config.rendererPriority)).mode,'webwallgl');
 });
 
@@ -37,10 +37,10 @@ test('auto scene uses GPU rendering and preserves old video records until confir
  const settings=defaultSettings();settings.library=[{id:'video',sourceKey:'unrelated-project'}];settings.selectedId='video';let applied=0;
  const actions=createActions(root,settings,async()=>applied++),client={};
  const list=await actions(client,{action:'engine-list',scope:'folder',folder:project});
- const pending=await actions(client,{action:'wallpaper-engine',projectToken:list.wallpapers[0].token,apply:false});
+ const pending=await actions(client,{action:'wallpaper-engine',projectToken:list.wallpapers[0].token,apply:true});
  assert.equal(pending.confirmation.renderer,'webwallgl');assert.equal(settings.library.length,1);assert.equal(applied,0);
  await actions(client,{action:'wallpaper-engine-confirm',confirmationToken:pending.confirmation.token,confirmed:true});
- assert.equal(settings.library.length,2);assert.equal(settings.library[1].mode,'webwallgl');assert.equal(settings.selectedId,'video');assert.equal(applied,0);
+ assert.equal(settings.library.length,2);assert.equal(settings.library[1].mode,'webwallgl');assert.equal(settings.library[1].needsRunConfirmation,undefined);assert.equal(settings.selectedId,settings.library[1].id);assert.equal(applied,1);
 });
 
 test('deleting an inactive item does not apply; deleting current never starts an adjacent realtime item',async()=>{

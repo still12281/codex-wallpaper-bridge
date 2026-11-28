@@ -119,7 +119,7 @@ GPU 场景加载失败时保留当前背景；需要原引擎效果时选择原�
 3. 选择快捷方式、更新恢复和登录启动选项，等待依赖准备与安装完成。
 4. 保存工作、正常退出 Codex，再从壁纸入口打开。以后可以在 Windows“已安装的应用”中卸载；卸载保留壁纸库和设置。
 
-安装程序提供简体中文和英文向导。个人数据默认位于 `%LOCALAPPDATA%\CodexWallpaperBridge`，安装程序文件默认位于 `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`；两者独立存放。对应 `.exe.sha256` 用于核对下载完整性。
+安装程序提供简体中文和英文向导。个人数据默认位于 `%LOCALAPPDATA%\CodexWallpaperBridge`，安装程序文件默认位于 `%LOCALAPPDATA%\Programs\CodexWallpaperBridge`；两者独立存放。多账户电脑建议使用默认 `%LOCALAPPDATA%` 目录，避免非系统盘默认向其他本机账户继承写权限。对应 `.exe.sha256` 用于核对下载完整性。
 
 ### 命令行安装（可选）
 
